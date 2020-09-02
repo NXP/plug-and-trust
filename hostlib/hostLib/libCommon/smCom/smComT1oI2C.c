@@ -83,6 +83,7 @@ U16 smComT1oI2C_Open(void *conn_ctx, U8 mode, U8 seqCnt, U8 *T1oI2Catr, U16 *T1o
     AtrRsp.p_data = T1oI2Catr;
 
     if (conn_ctx == NULL) {
+        // Connection context is stored in global variable contained in phNxpEse_Api.c
         smComT1oI2C_Init(NULL, NULL);
     }
 

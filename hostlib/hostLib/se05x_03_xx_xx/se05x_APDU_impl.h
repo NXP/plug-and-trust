@@ -231,31 +231,14 @@ smStatus_t Se05x_API_WriteECKey(pSe05xSession_t session_ctx,
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "WriteECKey []");
 #endif /* VERBOSE_APDU_LOGS */
-    if ((policy != NULL) && (policy->object_exist == kSE05x_Result_FAILURE))
-    {
-        tlvRet = TLVSET_Se05xPolicy("policy", &pCmdbuf, &cmdbufLen, kSE05x_TAG_POLICY, policy);
-        if (0 != tlvRet) {
-            goto cleanup;
-        }
+    tlvRet = TLVSET_Se05xPolicy("policy", &pCmdbuf, &cmdbufLen, kSE05x_TAG_POLICY, policy);
+    if (0 != tlvRet) {
+        goto cleanup;
     }
     tlvRet = TLVSET_MaxAttemps("maxAttempt", &pCmdbuf, &cmdbufLen, kSE05x_TAG_MAX_ATTEMPTS, maxAttempt);
     if (0 != tlvRet) {
         goto cleanup;
     }
-#if SSS_HAVE_SE05X_VER_GTE_05_08
-    /* Tag policy Check is not applicable for Generate key */
-    if (((privKey != NULL) && (privKeyLen != 0))
-        || ((pubKey != NULL) && (pubKeyLen != 0)))
-    {
-        if ((policy != NULL) && (policy->object_exist == kSE05x_Result_SUCCESS))
-        {
-            tlvRet = TLVSET_Se05xPolicy("check policy", &pCmdbuf, &cmdbufLen, kSE05x_TAG_POLICY_CHECK, policy);
-            if (0 != tlvRet) {
-                goto cleanup;
-            }
-        }
-    }
-#endif
     tlvRet = TLVSET_U32("object id", &pCmdbuf, &cmdbufLen, kSE05x_TAG_1, objectID);
     if (0 != tlvRet) {
         goto cleanup;
@@ -316,28 +299,10 @@ smStatus_t Se05x_API_WriteRSAKey(pSe05xSession_t session_ctx,
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "WriteRSAKey []");
 #endif /* VERBOSE_APDU_LOGS */
-    if ((policy != NULL) && (policy->object_exist == kSE05x_Result_FAILURE))
-    {
-        tlvRet = TLVSET_Se05xPolicy("To be Checked(last 3 not pdf)", &pCmdbuf, &cmdbufLen, kSE05x_TAG_POLICY, policy);
-        if (0 != tlvRet) {
-            goto cleanup;
-        }
+    tlvRet = TLVSET_Se05xPolicy("To be Checked(last 3 not pdf)", &pCmdbuf, &cmdbufLen, kSE05x_TAG_POLICY, policy);
+    if (0 != tlvRet) {
+        goto cleanup;
     }
-#if SSS_HAVE_SE05X_VER_GTE_05_08
-    /* Tag policy Check is not applicable for Generate key */
-    if (((p != NULL)&&(pLen != 0)) ||
-        ((pubExp != NULL) && (pubExpLen != 0)) ||
-        ((priv != NULL) && (privLen != 0)))
-    {
-        if ((policy != NULL) && (policy->object_exist == kSE05x_Result_SUCCESS))
-        {
-            tlvRet = TLVSET_Se05xPolicy("check policy", &pCmdbuf, &cmdbufLen, kSE05x_TAG_POLICY_CHECK, policy);
-            if (0 != tlvRet) {
-                goto cleanup;
-            }
-        }
-    }
-#endif
     tlvRet = TLVSET_U32("object id", &pCmdbuf, &cmdbufLen, kSE05x_TAG_1, objectID);
     if (0 != tlvRet) {
         goto cleanup;
@@ -408,26 +373,14 @@ smStatus_t Se05x_API_WriteSymmKey(pSe05xSession_t session_ctx,
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "WriteSymmKey []");
 #endif /* VERBOSE_APDU_LOGS */
-    if ((policy != NULL) && (policy->object_exist == kSE05x_Result_FAILURE))
-    {
-        tlvRet = TLVSET_Se05xPolicy("policy", &pCmdbuf, &cmdbufLen, kSE05x_TAG_POLICY, policy);
-        if (0 != tlvRet) {
-            goto cleanup;
-        }
+    tlvRet = TLVSET_Se05xPolicy("policy", &pCmdbuf, &cmdbufLen, kSE05x_TAG_POLICY, policy);
+    if (0 != tlvRet) {
+        goto cleanup;
     }
     tlvRet = TLVSET_MaxAttemps("maxAttempt", &pCmdbuf, &cmdbufLen, kSE05x_TAG_MAX_ATTEMPTS, maxAttempt);
     if (0 != tlvRet) {
         goto cleanup;
     }
-#if SSS_HAVE_SE05X_VER_GTE_05_08
-    if ((policy != NULL) && (policy->object_exist == kSE05x_Result_SUCCESS))
-    {
-        tlvRet = TLVSET_Se05xPolicy("check policy", &pCmdbuf, &cmdbufLen, kSE05x_TAG_POLICY_CHECK, policy);
-        if (0 != tlvRet) {
-            goto cleanup;
-        }
-    }
-#endif
     tlvRet = TLVSET_U32("object id", &pCmdbuf, &cmdbufLen, kSE05x_TAG_1, objectID);
     if (0 != tlvRet) {
         goto cleanup;
@@ -468,22 +421,10 @@ smStatus_t Se05x_API_WriteBinary(pSe05xSession_t session_ctx,
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "WriteBinary []");
 #endif /* VERBOSE_APDU_LOGS */
-    if ((policy != NULL) && (policy->object_exist == kSE05x_Result_FAILURE))
-    {
-        tlvRet = TLVSET_Se05xPolicy("policy", &pCmdbuf, &cmdbufLen, kSE05x_TAG_POLICY, policy);
-        if (0 != tlvRet) {
-            goto cleanup;
-        }
+    tlvRet = TLVSET_Se05xPolicy("policy", &pCmdbuf, &cmdbufLen, kSE05x_TAG_POLICY, policy);
+    if (0 != tlvRet) {
+        goto cleanup;
     }
-#if SSS_HAVE_SE05X_VER_GTE_05_08
-    if ((policy != NULL) && (policy->object_exist == kSE05x_Result_SUCCESS))
-    {
-        tlvRet = TLVSET_Se05xPolicy("check policy", &pCmdbuf, &cmdbufLen, kSE05x_TAG_POLICY_CHECK, policy);
-        if (0 != tlvRet) {
-            goto cleanup;
-        }
-    }
-#endif
     tlvRet = TLVSET_U32("object id", &pCmdbuf, &cmdbufLen, kSE05x_TAG_1, objectID);
     if (0 != tlvRet) {
         goto cleanup;
@@ -679,22 +620,10 @@ smStatus_t Se05x_API_WritePCR(pSe05xSession_t session_ctx,
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "WritePCR []");
 #endif /* VERBOSE_APDU_LOGS */
-    if ((policy != NULL) && (policy->object_exist == kSE05x_Result_FAILURE))
-    {
-        tlvRet = TLVSET_Se05xPolicy("policy", &pCmdbuf, &cmdbufLen, kSE05x_TAG_POLICY, policy);
-        if (0 != tlvRet) {
-            goto cleanup;
-        }
+    tlvRet = TLVSET_Se05xPolicy("policy", &pCmdbuf, &cmdbufLen, kSE05x_TAG_POLICY, policy);
+    if (0 != tlvRet) {
+        goto cleanup;
     }
-#if SSS_HAVE_SE05X_VER_GTE_05_08
-    if ((policy != NULL) && (policy->object_exist == kSE05x_Result_SUCCESS))
-    {
-        tlvRet = TLVSET_Se05xPolicy("check policy", &pCmdbuf, &cmdbufLen, kSE05x_TAG_POLICY_CHECK, policy);
-        if (0 != tlvRet) {
-            goto cleanup;
-        }
-    }
-#endif
     tlvRet = TLVSET_U32("object id", &pCmdbuf, &cmdbufLen, kSE05x_TAG_1, pcrID);
     if (0 != tlvRet) {
         goto cleanup;

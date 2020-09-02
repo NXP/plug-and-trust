@@ -473,50 +473,44 @@ smStatus_t Se05x_API_SetAppletFeatures(pSe05xSession_t session_ctx, pSe05xApplet
  * If the object already exists, P1KeyPart is ignored.
  *
  * @rst
- * +---------+--------------------------------+------------------------------------------------+
- * | Field   | Value                          | Description                                    |
- * +=========+================================+================================================+
- * | P1      | :cpp:type:`SE05x_KeyPart_t`\|  | See :cpp:type:`SE05x_P1_t`,  P1KeyPart should  |
- * |         | P1_EC                          | only be set for new objects.                   |
- * +---------+--------------------------------+------------------------------------------------+
- * | P2      | P2_DEFAULT                     | See P2                                         |
- * +---------+--------------------------------+------------------------------------------------+
- * | Payload | TLV[TAG_POLICY]                | Byte array containing the object policy.       |
- * |         |                                | [Optional: default policy applies]             |
- * |         |                                | [Conditional - only when the object            |
- * |         |                                | identifier is not in use yet]                  |
- * +---------+--------------------------------+------------------------------------------------+
- * |         | TLV[TAG_MAX_ATTEMPTS]          | 2-byte maximum number of attempts. If 0 is     |
- * |         |                                | given, this means unlimited.   [Optional:      |
- * |         |                                | default unlimited]   [Conditional: only when   |
- * |         |                                | the object  identifier is not in use yet and   |
- * |         |                                | INS includes  INS_AUTH_OBJECT; see             |
- * |         |                                | AuthenticationObjectPolicies ]                 |
- * +---------+--------------------------------+------------------------------------------------+
- * |         | TLV[TAG_POLICY_CHECK]          | Byte array containing the object policy.to be  |
- * |         |                                | compared against.    [Optional: if present,    |
- * |         |                                | the existing policy must match this policy for |
- * |         |                                | the  command to be executed.]                  |
- * +---------+--------------------------------+------------------------------------------------+
- * |         | TLV[TAG_1]                     | 4-byte object identifier                       |
- * +---------+--------------------------------+------------------------------------------------+
- * |         | TLV[TAG_2]                     | 1-byte curve identifier, see ECCurve           |
- * |         |                                | [Conditional: only when the object  identifier |
- * |         |                                | is not in use yet; ]                           |
- * +---------+--------------------------------+------------------------------------------------+
- * |         | TLV[TAG_3]                     | Private key value (see :cpp:type:`ECKeyRef`  ) |
- * |         |                                | [Conditional: only when the private key is     |
- * |         |                                | externally generated and P1KeyPart is either   |
- * |         |                                | P1_KEY_PAIR  or P1_PRIVATE]                    |
- * +---------+--------------------------------+------------------------------------------------+
- * |         | TLV[TAG_4]                     | Public key value (see :cpp:type:`ECKeyRef`  )  |
- * |         |                                | [Conditional: only when the public key is      |
- * |         |                                | externally generated and P1KeyPart is either   |
- * |         |                                | P1_KEY_PAIR  or P1_PUBLIC]                     |
- * +---------+--------------------------------+------------------------------------------------+
- * |         | TLV[TAG_11]                    | 4-byte version, maximum is 134217727 (or       |
- * |         |                                | 0x7FFFFFFF)..    [Optional]                    |
- * +---------+--------------------------------+------------------------------------------------+
+ * +---------+------------------------+------------------------------------------------+
+ * | Field   | Value                  | Description                                    |
+ * +=========+========================+================================================+
+ * | P1      | :cpp:type:`SE05x_P1_t` | See  :cpp:type:`SE05x_P1_t` ,  P1KeyType       |
+ * |         | | P1_EC                | should only be set for new objects.            |
+ * +---------+------------------------+------------------------------------------------+
+ * | P2      | P2_DEFAULT             | See P2                                         |
+ * +---------+------------------------+------------------------------------------------+
+ * | Payload | TLV[TAG_POLICY]        | Byte array containing the object policy.       |
+ * |         |                        | [Optional: default policy applies]             |
+ * |         |                        | [Conditional - only when the object            |
+ * |         |                        | identifier is not in use yet]                  |
+ * +---------+------------------------+------------------------------------------------+
+ * |         | TLV[TAG_MAX_ATTEMPTS]  | 2-byte maximum number of attempts. If 0 is     |
+ * |         |                        | given, this means unlimited.   [Optional:      |
+ * |         |                        | default unlimited]   [Conditional: only when   |
+ * |         |                        | the object  identifier is not in use yet and   |
+ * |         |                        | INS includes  INS_AUTH_OBJECT; see             |
+ * |         |                        | AuthenticationObjectPolicies ]                 |
+ * +---------+------------------------+------------------------------------------------+
+ * |         | TLV[TAG_1]             | 4-byte object identifier                       |
+ * +---------+------------------------+------------------------------------------------+
+ * |         | TLV[TAG_2]             | 1-byte curve identifier, see ECCurve           |
+ * |         |                        | [Conditional: only when the object  identifier |
+ * |         |                        | is not in use yet; ]                           |
+ * +---------+------------------------+------------------------------------------------+
+ * |         | TLV[TAG_3]             | Private key value (see  :cpp:type:`ECKeyRef`   |
+ * |         |                        | )   [Conditional: only when the private key is |
+ * |         |                        | externally generated and P1KeyType is either   |
+ * |         |                        | P1_KEY_PAIR  or P1_PRIVATE]                    |
+ * +---------+------------------------+------------------------------------------------+
+ * |         | TLV[TAG_4]             | Public key value (see  :cpp:type:`ECKeyRef`  ) |
+ * |         |                        | [Conditional: only when the public key is      |
+ * |         |                        | externally generated and P1KeyType is either   |
+ * |         |                        | P1_KEY_PAIR  or P1_PUBLIC]                     |
+ * +---------+------------------------+------------------------------------------------+
+ * |         | TLV[TAG_11]            | 4-byte version    [Optional]                   |
+ * +---------+------------------------+------------------------------------------------+
  * @endrst
  *
  * @param[in]  session_ctx  The session context
@@ -606,7 +600,7 @@ smStatus_t Se05x_API_WriteECKey(pSe05xSession_t session_ctx,
  * +---------+-------------------------------+------------------------------------------------+
  * | P2      | P2_DEFAULT or P2_RAW          | See :cpp:type:`SE05x_P2_t`; P2_RAW only in     |
  * |         |                               | case P1KeyPart = P1_KEY_PAIR and  TLV[TAG_3]   |
- * |         |                               | until TLV[TAG_10] is empty and the SE05X  must |
+ * |         |                               | until TLV[TAG_10] is empty and the  must       |
  * |         |                               | generate a raw RSA key pair; all other  cases: |
  * |         |                               | P2_DEFAULT.                                    |
  * +---------+-------------------------------+------------------------------------------------+
@@ -614,11 +608,6 @@ smStatus_t Se05x_API_WriteECKey(pSe05xSession_t session_ctx,
  * |         |                               | [Optional: default policy applies]             |
  * |         |                               | [Conditional: only when the object identifier  |
  * |         |                               | is not in use yet]                             |
- * +---------+-------------------------------+------------------------------------------------+
- * |         | TLV[TAG_POLICY_CHECK]         | Byte array containing the object policy.to be  |
- * |         |                               | compared against.    [Optional: if present,    |
- * |         |                               | the existing policy must match this policy     |
- * |         |                               | for the command to be executed.]               |
  * +---------+-------------------------------+------------------------------------------------+
  * |         | TLV[TAG_1]                    | 4-byte object identifier                       |
  * +---------+-------------------------------+------------------------------------------------+
@@ -658,8 +647,7 @@ smStatus_t Se05x_API_WriteECKey(pSe05xSession_t session_ctx,
  * +---------+-------------------------------+------------------------------------------------+
  * |         | TLV[TAG_10]                   | Public Key (Modulus)                           |
  * +---------+-------------------------------+------------------------------------------------+
- * |         | TLV[TAG_11]                   | 4-byte version, maximum is 134217727 (or       |
- * |         |                               | 0x7FFFFFFF).    [Optional]                     |
+ * |         | TLV[TAG_11]                   | 4-byte version    [Optional]                   |
  * +---------+-------------------------------+------------------------------------------------+
  * @endrst
  *
@@ -731,46 +719,37 @@ smStatus_t Se05x_API_WriteRSAKey(pSe05xSession_t session_ctx,
  * # Command to Applet
  *
  * @rst
- * +---------+-----------------------+------------------------------------------------+
- * | Field   | Value                 | Description                                    |
- * +=========+=======================+================================================+
- * | P1      | See above             | See :cpp:type:`SE05x_P1_t`                     |
- * +---------+-----------------------+------------------------------------------------+
- * | P2      | P2_DEFAULT            | See :cpp:type:`SE05x_P2_t`                     |
- * +---------+-----------------------+------------------------------------------------+
- * | Payload | TLV[TAG_POLICY]       | Byte array containing the object policy.       |
- * |         |                       | [Optional: default policy applies]             |
- * |         |                       | [Conditional: only when the object identifier  |
- * |         |                       | is not in use yet]                             |
- * +---------+-----------------------+------------------------------------------------+
- * |         | TLV[TAG_MAX_ATTEMPTS] | 2-byte maximum number of attempts. If 0 is     |
- * |         |                       | given, this means unlimited.   [Optional:      |
- * |         |                       | default unlimited]   [Conditional: only when   |
- * |         |                       | the object identifier is not in use yet and    |
- * |         |                       | INS includes  INS_AUTH_OBJECT; see             |
- * |         |                       | AuthenticationObjectPolicies]                  |
- * +---------+-----------------------+------------------------------------------------+
- * |         | TLV[TAG_POLICY_CHECK] | Byte array containing the object policy.to be  |
- * |         |                       | compared against.    [Optional: if present,    |
- * |         |                       | the existing policy must match this policy     |
- * |         |                       | for the command to be executed.]               |
- * +---------+-----------------------+------------------------------------------------+
- * |         | TLV[TAG_1]            | 4-byte object identifier                       |
- * +---------+-----------------------+------------------------------------------------+
- * |         | TLV[TAG_2]            | 4-byte KEK identifier   [Conditional: only     |
- * |         |                       | when the key value is RFC3394 wrapped]         |
- * +---------+-----------------------+------------------------------------------------+
- * |         | TLV[TAG_3]            | Key value, either plain or RFC3394 wrapped.    |
- * +---------+-----------------------+------------------------------------------------+
- * |         | TLV[TAG_4]            | 2-byte minimum tag length for AEAD operations, |
- * |         |                       | minimum is 4 and  maximum is 16.   [Optional:  |
- * |         |                       | default value = 16 bytes]   [Conditional: only |
- * |         |                       | allowed for P1 = P1_AES]                       |
- * +---------+-----------------------+------------------------------------------------+
- * |         | TLV[TAG_11]           | 4-byte version, maximum is 134217727 (or       |
- * |         |                       | 0x7FFFFFFF).    [Optional: default value = 0   |
- * |         |                       | (= no versioning)]                             |
- * +---------+-----------------------+------------------------------------------------+
+ * +---------+-----------------------+-----------------------------------------------+
+ * | Field   | Value                 | Description                                   |
+ * +=========+=======================+===============================================+
+ * | P1      | See above             | See :cpp:type:`SE05x_P1_t`                    |
+ * +---------+-----------------------+-----------------------------------------------+
+ * | P2      | P2_DEFAULT            | See :cpp:type:`SE05x_P2_t`                    |
+ * +---------+-----------------------+-----------------------------------------------+
+ * | Payload | TLV[TAG_POLICY]       | Byte array containing the object policy.      |
+ * |         |                       | [Optional: default policy applies]            |
+ * |         |                       | [Conditional: only when the object identifier |
+ * |         |                       | is not in use yet]                            |
+ * +---------+-----------------------+-----------------------------------------------+
+ * |         | TLV[TAG_MAX_ATTEMPTS] | 2-byte maximum number of attempts. If 0 is    |
+ * |         |                       | given, this means unlimited.   [Optional:     |
+ * |         |                       | default unlimited]   [Conditional: only when  |
+ * |         |                       | the object identifier is not in use yet and   |
+ * |         |                       | INS includes  INS_AUTH_OBJECT; see            |
+ * |         |                       | AuthenticationObjectPolicies]                 |
+ * +---------+-----------------------+-----------------------------------------------+
+ * |         | TLV[TAG_1]            | 4-byte object identifier                      |
+ * +---------+-----------------------+-----------------------------------------------+
+ * |         | TLV[TAG_2]            | 4-byte KEK identifier   [Conditional: only    |
+ * |         |                       | when the key value is RFC3394 wrapped]        |
+ * +---------+-----------------------+-----------------------------------------------+
+ * |         | TLV[TAG_3]            | Key value, either plain or RFC3394 wrapped.   |
+ * +---------+-----------------------+-----------------------------------------------+
+ * |         | TLV[TAG_4]            | Tag length for GCM/GMAC. Will only be used if |
+ * |         |                       | the object is an  AESKey.   [Optional]        |
+ * +---------+-----------------------+-----------------------------------------------+
+ * |         | TLV[TAG_11]           | 4-byte version    [Optional]                  |
+ * +---------+-----------------------+-----------------------------------------------+
  * @endrst
  *
  * @param[in]  session_ctx  The session context
@@ -803,34 +782,31 @@ smStatus_t Se05x_API_WriteSymmKey(pSe05xSession_t session_ctx,
  * # Command to Applet
  *
  * @rst
- * +---------+-----------------------+------------------------------------------------+
- * | Field   | Value                 | Description                                    |
- * +=========+=======================+================================================+
- * | P1      | P1_COUNTER            | See :cpp:type:`SE05x_P1_t`                     |
- * +---------+-----------------------+------------------------------------------------+
- * | P2      | P2_DEFAULT            | See :cpp:type:`SE05x_P2_t`                     |
- * +---------+-----------------------+------------------------------------------------+
- * | Payload | TLV[TAG_POLICY]       | Byte array containing the object policy.       |
- * |         |                       | [Optional: default policy applies]             |
- * |         |                       | [Conditional: only when the object identifier  |
- * |         |                       | is not in use yet]                             |
- * +---------+-----------------------+------------------------------------------------+
- * |         | TLV[TAG_POLICY_CHECK] | Byte array containing the object policy.to be  |
- * |         |                       | compared against.    [Optional: if present,    |
- * |         |                       | the existing policy must match this policy     |
- * |         |                       | for the command to be executed.]               |
- * +---------+-----------------------+------------------------------------------------+
- * |         | TLV[TAG_1]            | 4-byte counter identifier.                     |
- * +---------+-----------------------+------------------------------------------------+
- * |         | TLV[TAG_2]            | 2-byte counter size (1 up to 8 bytes).         |
- * |         |                       | [Conditional: only if object doesn't exist yet |
- * |         |                       | and TAG_3 is not given]                        |
- * +---------+-----------------------+------------------------------------------------+
- * |         | TLV[TAG_3]            | Counter value   [Optional: - if object doesn't |
- * |         |                       | exist: must be present if TAG_2 is not given.  |
- * |         |                       | - if object exists: if not present, increment  |
- * |         |                       | by 1. if present, set counter to value.]       |
- * +---------+-----------------------+------------------------------------------------+
+ * +---------+-----------------+-----------------------------------------------+
+ * | Field   | Value           | Description                                   |
+ * +=========+=================+===============================================+
+ * | P1      | P1_BINARY       | See :cpp:type:`SE05x_P1_t`                    |
+ * +---------+-----------------+-----------------------------------------------+
+ * | P2      | P2_DEFAULT      | See :cpp:type:`SE05x_P2_t`                    |
+ * +---------+-----------------+-----------------------------------------------+
+ * | Payload | TLV[TAG_POLICY] | Byte array containing the object policy.      |
+ * |         |                 | [Optional: default policy applies]            |
+ * |         |                 | [Conditional: only when the object identifier |
+ * |         |                 | is not in use yet]                            |
+ * +---------+-----------------+-----------------------------------------------+
+ * |         | TLV[TAG_1]      | 4-byte object identifier                      |
+ * +---------+-----------------+-----------------------------------------------+
+ * |         | TLV[TAG_2]      | 2-byte file offset   [Optional: default = 0]  |
+ * +---------+-----------------+-----------------------------------------------+
+ * |         | TLV[TAG_3]      | 2-byte file length (up to 0x7FFF).            |
+ * |         |                 | [Conditional: only when the object identifier |
+ * |         |                 | is not in use yet]                            |
+ * +---------+-----------------+-----------------------------------------------+
+ * |         | TLV[TAG_4]      | Data to be written   [Optional: if not given, |
+ * |         |                 | TAG_3 must be filled]                         |
+ * +---------+-----------------+-----------------------------------------------+
+ * |         | TLV[TAG_11]     | 4-byte version    [Optional]                  |
+ * +---------+-----------------+-----------------------------------------------+
  * @endrst
  *
  *
@@ -1001,33 +977,28 @@ smStatus_t Se05x_API_IncCounter(pSe05xSession_t session_ctx, uint32_t objectID);
  * # Command to Applet
  *
  * @rst
- * +---------+-----------------------+------------------------------------------------+
- * | Field   | Value                 | Description                                    |
- * +=========+=======================+================================================+
- * | P1      | P1_PCR                | See :cpp:type:`SE05x_P1_t`                     |
- * +---------+-----------------------+------------------------------------------------+
- * | P2      | P2_DEFAULT            | See :cpp:type:`SE05x_P2_t`                     |
- * +---------+-----------------------+------------------------------------------------+
- * | Payload | TLV[TAG_POLICY]       | Byte array containing the object policy.       |
- * |         |                       | [Optional: default policy applies]             |
- * |         |                       | [Conditional: only when the object identifier  |
- * |         |                       | is not in use yet]                             |
- * +---------+-----------------------+------------------------------------------------+
- * |         | TLV[TAG_POLICY_CHECK] | Byte array containing the object policy.to be  |
- * |         |                       | compared against.    [Optional: if present,    |
- * |         |                       | the existing policy  must match this policy    |
- * |         |                       | for the command to be  executed.]              |
- * +---------+-----------------------+------------------------------------------------+
- * |         | TLV[TAG_1]            | 4-byte PCR identifier.                         |
- * +---------+-----------------------+------------------------------------------------+
- * |         | TLV[TAG_2]            | Initial value.   [Conditional: only when the   |
- * |         |                       | object identifier is not in use yet]           |
- * +---------+-----------------------+------------------------------------------------+
- * |         | TLV[TAG_3]            | Data to be extended to the existing PCR.       |
- * |         |                       | [Conditional: only when the object identifier  |
- * |         |                       | is already in use]   [Optional: not present if |
- * |         |                       | a Reset is requested]                          |
- * +---------+-----------------------+------------------------------------------------+
+ * +---------+-----------------+------------------------------------------------+
+ * | Field   | Value           | Description                                    |
+ * +=========+=================+================================================+
+ * | P1      | P1_PCR          | See :cpp:type:`SE05x_P1_t`                     |
+ * +---------+-----------------+------------------------------------------------+
+ * | P2      | P2_DEFAULT      | See :cpp:type:`SE05x_P2_t`                     |
+ * +---------+-----------------+------------------------------------------------+
+ * | Payload | TLV[TAG_POLICY] | Byte array containing the object policy.       |
+ * |         |                 | [Optional: default policy applies]             |
+ * |         |                 | [Conditional: only when the object identifier  |
+ * |         |                 | is not in use yet]                             |
+ * +---------+-----------------+------------------------------------------------+
+ * |         | TLV[TAG_1]      | 4-byte PCR identifier.                         |
+ * +---------+-----------------+------------------------------------------------+
+ * |         | TLV[TAG_2]      | Initial hash value   [Conditional: only when   |
+ * |         |                 | the object identifier is not in use yet]       |
+ * +---------+-----------------+------------------------------------------------+
+ * |         | TLV[TAG_3]      | Data to be extended to the existing PCR.       |
+ * |         |                 | [Conditional: only when the object identifier  |
+ * |         |                 | is already in use]   [Optional: not present if |
+ * |         |                 | a Reset is requested]                          |
+ * +---------+-----------------+------------------------------------------------+
  * @endrst
  *
  * # R-APDU Body

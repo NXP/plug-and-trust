@@ -32,6 +32,8 @@
 static char* default_axSmDevice_name = "/dev/i2c-1";
 static int default_axSmDevice_addr = 0x48;      // 7-bit address
 
+#define DEV_NAME_BUFFER_SIZE 64
+
 /**
 * Opens the communication channel to I2C device
 */
@@ -42,11 +44,18 @@ i2c_error_t axI2CInit(void **conn_ctx, const char *pDevName)
     char *pdev_name = NULL;
     char *pdev_addr_str = NULL;
     U32 dev_addr = 0x00;
-    char temp[32] = { 0, };
+    char temp[DEV_NAME_BUFFER_SIZE] = { 0, };
 
     if (pDevName != NULL && (strcasecmp("none", pDevName) != 0) ) {
-        memcpy(temp, pDevName, strlen(pDevName));
-        temp[strlen(pDevName)] = '\0';
+        if ((strlen(pDevName) + 1) < DEV_NAME_BUFFER_SIZE) {
+            memcpy(temp, pDevName, strlen(pDevName));
+            temp[strlen(pDevName)] = '\0';
+        }
+        else {
+            LOG_E("Connection string passed as argument is too long (%d).", strlen(pDevName));
+            LOG_I("Pass i2c device address in the format <i2c_port>:<i2c_addr(optional. Default 0x48)>.");
+            LOG_I("Example ./example /dev/i2c-1:0x48 OR ./example /dev/i2c-1");
+        }
 
         pdev_name = strtok(temp, ":");
         if (pdev_name == NULL) {
@@ -99,6 +108,7 @@ i2c_error_t axI2CInit(void **conn_ctx, const char *pDevName)
     if (ioctl(axSmDevice, I2C_FUNCS, &funcs) < 0)
     {
         LOG_E("Cannot get i2c adapter functionality\n");
+        close(axSmDevice);
         return I2C_FAILED;
     }
     else
@@ -114,6 +124,7 @@ i2c_error_t axI2CInit(void **conn_ctx, const char *pDevName)
             else
             {
                 LOG_E("I2C driver does not support Read Block!\n");
+                close(axSmDevice);
                 return I2C_FAILED;
             }
 #endif
@@ -121,6 +132,7 @@ i2c_error_t axI2CInit(void **conn_ctx, const char *pDevName)
         else
         {
             LOG_E("I2C driver CANNOT support plain i2c-level commands!\n");
+            close(axSmDevice);
             return I2C_FAILED;
         }
     }
@@ -131,14 +143,22 @@ i2c_error_t axI2CInit(void **conn_ctx, const char *pDevName)
 }
 
 /**
-* Closes the communication channel to I2C device (not implemented)
+* Closes the communication channel to I2C device
 */
 void axI2CTerm(void* conn_ctx, int mode)
 {
     AX_UNUSED_ARG(mode);
+    // printf("axI2CTerm (enter) i2c device =  %d\n", *(int*)(conn_ctx));
     if (conn_ctx != NULL) {
+        if (close(*(int*)(conn_ctx)) != 0) {
+            LOG_E("Failed to close i2c device %d.\n", *(int*)(conn_ctx));
+        }
+        else {
+            LOG_D("Close i2c device %d.\n", *(int*)(conn_ctx));
+        }
         free(conn_ctx);
     }
+    // printf("axI2CTerm (exit)\n");
     return;
 }
 

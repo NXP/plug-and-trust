@@ -662,7 +662,7 @@ sss_status_t sss_mbedtls_key_store_allocate(sss_mbedtls_key_store_t *keyStore, u
     ENSURE_OR_GO_CLEANUP(keyStore->keystore_shadow == NULL);
 
     keyStore->max_object_count = MAX_KEY_OBJ_COUNT;
-    keyStore->objects          = (sss_mbedtls_object_t **)SSS_MALLOC(MAX_KEY_OBJ_COUNT * sizeof(sss_mbedtls_object_t *));
+    keyStore->objects = (sss_mbedtls_object_t **)SSS_MALLOC(MAX_KEY_OBJ_COUNT * sizeof(sss_mbedtls_object_t *));
     ENSURE_OR_GO_CLEANUP(keyStore->objects != NULL);
     memset(keyStore->objects, 0, (MAX_KEY_OBJ_COUNT * sizeof(sss_mbedtls_object_t *)));
     ks_sw_fat_allocate(&keyStore->keystore_shadow);
@@ -2712,7 +2712,6 @@ static sss_status_t sss_mbedtls_set_key(
                 ENSURE_OR_GO_EXIT(ret == 0);
 
                 retval = kStatus_SSS_Success;
-
             }
 #else
             ret = mbedtls_mpi_read_binary(&pEcpPrv->d, data, dataLen);

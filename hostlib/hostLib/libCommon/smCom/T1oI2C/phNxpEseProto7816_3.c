@@ -542,11 +542,16 @@ static bool_t phNxpEseProro7816_SaveRxframeData(uint8_t *p_data, uint32_t data_l
     uint32_t offset = 0;
     phNxpEseRx_Cntx_t *pRx_EseCntx = &phNxpEseProto7816_3_Var.phNxpEseRx_Cntx;
     LOG_D("Data[0]=0x%x len=%ld Data[%ld]=0x%x Data[%ld]=0x%x ", p_data[0], data_len,data_len-1, p_data[data_len-2],p_data[data_len-1]);
-
-    offset = pRx_EseCntx->pRsp->len;
-    phNxpEse_memcpy((pRx_EseCntx->pRsp->p_data + offset), p_data, data_len);
-    pRx_EseCntx->pRsp->len += data_len;
-    return TRUE;
+    if (pRx_EseCntx->pRsp != NULL) {
+        offset = pRx_EseCntx->pRsp->len;
+        phNxpEse_memcpy((pRx_EseCntx->pRsp->p_data + offset), p_data, data_len);
+        pRx_EseCntx->pRsp->len += data_len;
+        return TRUE;
+    }
+    else {
+        LOG_D("Invalid response");
+        return FALSE;
+    }
 }
 
 /******************************************************************************
@@ -1341,11 +1346,16 @@ bool_t phNxpEseProto7816_Reset(void)
 bool_t phNxpEseProto7816_Open(void* conn_ctx, phNxpEseProto7816InitParam_t initParam, phNxpEse_data *AtrRsp)
 {
     bool_t status = FALSE;
+    phNxpEseRx_Cntx_t *pRx_EseCntx = &phNxpEseProto7816_3_Var.phNxpEseRx_Cntx;
     status = phNxpEseProto7816_ResetProtoParams();
     LOG_D("%s: First open completed", __FUNCTION__);
     /* Update WTX max. limit */
     phNxpEseProto7816_3_Var.wtx_counter_limit = initParam.wtx_counter_limit;
     phNxpEseProto7816_3_Var.rnack_retry_limit = initParam.rnack_retry_limit;
+    /*Intialise the buffers before hand so that we are able to receive data
+    if RSync goes to recovery handling*/
+    pRx_EseCntx->pRsp = AtrRsp;
+    pRx_EseCntx->pRsp->len = 0;
     if(initParam.interfaceReset) /* Do interface reset */
     {
         /*After power ON , initialization state takes 5ms after which slave enters active

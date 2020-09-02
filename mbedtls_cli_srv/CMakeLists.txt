@@ -142,7 +142,6 @@ add_executable(${PROJECT_NAME} ../sss/ex/mbedtls/ex_sss_ssl2.c ${MBEDTLS_SOURCES
 FILE(
     GLOB
     INC_DIR
-    ../../simw-top
     ../sss/inc
     ../sss/port/default
     ../sss/ex/src
@@ -161,6 +160,7 @@ FILE(
 TARGET_INCLUDE_DIRECTORIES(
     ${PROJECT_NAME}
     PUBLIC
+    ../
     ${INC_DIR}
     )
 
@@ -193,6 +193,7 @@ add_executable( ${PROJECT_NAME}
 TARGET_INCLUDE_DIRECTORIES(
     ${PROJECT_NAME}
     PUBLIC
+    ../
     ${INC_DIR}
     )
 

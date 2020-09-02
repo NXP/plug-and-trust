@@ -322,16 +322,15 @@ sss_status_t nxECKey_InternalAuthenticate(pSe05xSession_t se05xSession,
     const uint8_t tagEpkSeEcka[] = {0x7F, 0x49};
     const uint8_t tagSigSeEcka[] = {0x5F, 0x37};
 
-    const tlvHeader_t hdr       = {{CLA_GP_7816 | CLA_GP_SECURITY_BIT, INS_GP_INTERNAL_AUTHENTICATE, 00, 00}};
-    uint8_t scpParms[3]         = {0xAB, SCP_CONFIG, SECURITY_LEVEL};
+    const tlvHeader_t hdr               = {{CLA_GP_7816 | CLA_GP_SECURITY_BIT, INS_GP_INTERNAL_AUTHENTICATE, 00, 00}};
+    uint8_t scpParms[3]                 = {0xAB, SCP_CONFIG, SECURITY_LEVEL};
     uint8_t appletName[APPLET_NAME_LEN] = APPLET_NAME;
     sss_asymmetric_t asym;
     uint8_t sig_host5F37[100];
     size_t sig_host5F37Len = sizeof(sig_host5F37);
 
-    size_t cntrlRefTemp_Len = 0 + 1 + 1 + APPLET_NAME_LEN /*TLV AID */ + 1 + 1 +
-                              sizeof(scpParms) /* TLV SCP Params */ + 1 + 1 + 1 /* TLV Keytype */ + 1 + 1 +
-                              1 /* TLV KeyLEN */;
+    size_t cntrlRefTemp_Len = 0 + 1 + 1 + APPLET_NAME_LEN /*TLV AID */ + 1 + 1 + sizeof(scpParms) /* TLV SCP Params */ +
+                              1 + 1 + 1 /* TLV Keytype */ + 1 + 1 + 1 /* TLV KeyLEN */;
 
 #if NX_LOG_ENABLE_SCP_DEBUG
     nLog("APDU", NX_LEVEL_DEBUG, "ECKey Internal authenticate []");
@@ -388,7 +387,7 @@ sss_status_t nxECKey_InternalAuthenticate(pSe05xSession_t se05xSession,
     cmdbufLen++;
     memcpy(pCmdbuf, sig_host5F37, sig_host5F37Len);
     cmdbufLen += sig_host5F37Len;
-    status = kStatus_SSS_Fail;
+    status    = kStatus_SSS_Fail;
     retStatus = DoAPDUTxRx_s_Case4(se05xSession, &hdr, cmdbuf, cmdbufLen, rspbuf, &rspbufLen);
     if (retStatus == SM_OK) {
         size_t rspIndex = 0;

@@ -51,15 +51,15 @@
 
 /* doc:start:sss-heap_mgmt */
 #ifndef SSS_MALLOC
-    #define SSS_MALLOC malloc
+#define SSS_MALLOC malloc
 #endif // SSS_MALLOC
 
 #ifndef SSS_FREE
-    #define SSS_FREE free
+#define SSS_FREE free
 #endif // SSS_FREE
 
 #ifndef SSS_CALLOC
-    #define SSS_CALLOC calloc
+#define SSS_CALLOC calloc
 #endif // SSS_CALLOC
 /* doc:end:sss-heap_mgmt */
 

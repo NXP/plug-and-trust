@@ -137,6 +137,115 @@ static sss_status_t sss_se05x_aead_CCMfinish(sss_se05x_aead_t *context,
     size_t *tagLen);
 #endif
 
+#if SSSFTR_SE05X_ECC && SSSFTR_SE05X_KEY_SET
+static smStatus_t sss_se05x_LL_set_ec_key(pSe05xSession_t session_ctx,
+    pSe05xPolicy_t policy,
+    SE05x_MaxAttemps_t maxAttempt,
+    uint32_t objectID,
+    SE05x_ECCurve_t curveID,
+    const uint8_t *privKey,
+    size_t privKeyLen,
+    const uint8_t *pubKey,
+    size_t pubKeyLen,
+    const SE05x_INS_t ins_type,
+    const SE05x_KeyPart_t key_part,
+    SE05x_Result_t obj_exists);
+
+#if SSS_HAVE_SE05X_VER_GTE_04_04
+typedef smStatus_t (*fp_Ec_KeyWrite_t)(pSe05xSession_t session_ctx,
+    pSe05xPolicy_t policy,
+    SE05x_MaxAttemps_t maxAttempt,
+    uint32_t objectID,
+    SE05x_ECCurve_t curveID,
+    const uint8_t *privKey,
+    size_t privKeyLen,
+    const uint8_t *pubKey,
+    size_t pubKeyLen,
+    const SE05x_INS_t ins_type,
+    const SE05x_KeyPart_t key_part,
+    uint32_t version);
+#endif //SSS_HAVE_SE05X_VER_GTE_04_04
+#endif //SSSFTR_SE05X_ECC && SSSFTR_SE05X_KEY_SET
+
+#if SSSFTR_SE05X_AES && SSSFTR_SE05X_KEY_SET
+static smStatus_t sss_se05x_LL_set_symm_key(pSe05xSession_t session_ctx,
+    pSe05xPolicy_t policy,
+    SE05x_MaxAttemps_t maxAttempt,
+    uint32_t objectID,
+    SE05x_KeyID_t kekID,
+    const uint8_t *keyValue,
+    size_t keyValueLen,
+    const SE05x_INS_t ins_type,
+    const SE05x_SymmKeyType_t type,
+    SE05x_Result_t obj_exists);
+
+#if SSS_HAVE_SE05X_VER_GTE_04_04
+typedef smStatus_t (*fp_Symm_KeyWrite_t)(pSe05xSession_t session_ctx,
+    pSe05xPolicy_t policy,
+    SE05x_MaxAttemps_t maxAttempt,
+    uint32_t objectID,
+    SE05x_KeyID_t kekID,
+    const uint8_t *keyValue,
+    size_t keyValueLen,
+    const SE05x_INS_t ins_type,
+    const SE05x_SymmKeyType_t type,
+    uint32_t version);
+#endif //SSS_HAVE_SE05X_VER_GTE_04_04
+#endif //SSSFTR_SE05X_AES && SSSFTR_SE05X_KEY_SET
+
+#if SSSFTR_SE05X_RSA && SSSFTR_SE05X_KEY_SET
+static smStatus_t sss_se05x_LL_set_RSA_key(pSe05xSession_t session_ctx,
+    pSe05xPolicy_t policy,
+    uint32_t objectID,
+    uint16_t size,
+    const uint8_t *p,
+    size_t pLen,
+    const uint8_t *q,
+    size_t qLen,
+    const uint8_t *dp,
+    size_t dpLen,
+    const uint8_t *dq,
+    size_t dqLen,
+    const uint8_t *qInv,
+    size_t qInvLen,
+    const uint8_t *pubExp,
+    size_t pubExpLen,
+    const uint8_t *priv,
+    size_t privLen,
+    const uint8_t *pubMod,
+    size_t pubModLen,
+    const SE05x_INS_t ins_type,
+    const SE05x_KeyPart_t key_part,
+    const SE05x_RSAKeyFormat_t rsa_format,
+    SE05x_Result_t obj_exists);
+
+#if SSS_HAVE_SE05X_VER_GTE_04_04
+typedef smStatus_t (*fp_RSA_KeyWrite_t)(pSe05xSession_t session_ctx,
+    pSe05xPolicy_t policy,
+    uint32_t objectID,
+    uint16_t size,
+    const uint8_t *p,
+    size_t pLen,
+    const uint8_t *q,
+    size_t qLen,
+    const uint8_t *dp,
+    size_t dpLen,
+    const uint8_t *dq,
+    size_t dqLen,
+    const uint8_t *qInv,
+    size_t qInvLen,
+    const uint8_t *pubExp,
+    size_t pubExpLen,
+    const uint8_t *priv,
+    size_t privLen,
+    const uint8_t *pubMod,
+    size_t pubModLen,
+    const SE05x_INS_t ins_type,
+    const SE05x_KeyPart_t key_part,
+    const SE05x_RSAKeyFormat_t rsa_format,
+    uint32_t version);
+#endif //SSS_HAVE_SE05X_VER_GTE_04_04
+#endif //SSSFTR_SE05X_RSA && SSSFTR_SE05X_KEY_SET
 /* ************************************************************************** */
 /* Defines                                                                    */
 /* ************************************************************************** */
@@ -1261,11 +1370,11 @@ static sss_status_t sss_se05x_key_store_set_rsa_key(sss_se05x_key_store_t *keySt
 
     se05x_policy.value     = (uint8_t *)policy_buff;
     se05x_policy.value_len = policy_buff_len;
-
     SE05x_INS_t transient_type;
     SE05x_RSAKeyFormat_t rsa_format;
-    uint8_t IdExists    = 0;
-    size_t keyBitLength = 0;
+    uint8_t IdExists          = 0;
+    size_t keyBitLength       = 0;
+    SE05x_Result_t obj_exists = kSE05x_Result_NA;
 
     /* Assign proper instruction type based on keyObject->isPersistant  */
     (keyObject->isPersistant) ? (transient_type = kSE05x_INS_NA) : (transient_type = kSE05x_INS_TRANSIENT);
@@ -1320,10 +1429,10 @@ static sss_status_t sss_se05x_key_store_set_rsa_key(sss_se05x_key_store_t *keySt
 
         IdExists     = CheckIfKeyIdExists(keyObject->keyId, &keyStore->session->s_ctx);
         keyBitLength = (IdExists == 1) ? 0 : keyBitLen;
-        se05x_policy.object_exist = (IdExists == 1) ? kSE05x_Result_SUCCESS : kSE05x_Result_FAILURE;
+        obj_exists   = (IdExists == 1) ? kSE05x_Result_SUCCESS : kSE05x_Result_FAILURE;
 
         /* Set the Public Exponent */
-        status = Se05x_API_WriteRSAKey(&keyStore->session->s_ctx,
+        status = sss_se05x_LL_set_RSA_key(&keyStore->session->s_ctx,
             &se05x_policy,
             keyObject->keyId,
             (U16)keyBitLength,
@@ -1338,14 +1447,15 @@ static sss_status_t sss_se05x_key_store_set_rsa_key(sss_se05x_key_store_t *keySt
             SE05X_RSA_NO_pubMod,
             transient_type,
             kSE05x_KeyPart_Public,
-            rsa_format);
+            rsa_format,
+            obj_exists);
         if (status != SM_OK) {
             retval = kStatus_SSS_Fail;
             goto exit;
         }
 
         /* Set the Modulus */
-        status = Se05x_API_WriteRSAKey(&keyStore->session->s_ctx,
+        status = sss_se05x_LL_set_RSA_key(&keyStore->session->s_ctx,
             NULL,
             keyObject->keyId,
             0,
@@ -1360,7 +1470,8 @@ static sss_status_t sss_se05x_key_store_set_rsa_key(sss_se05x_key_store_t *keySt
             rsaNlen,
             transient_type,
             kSE05x_KeyPart_NA,
-            rsa_format);
+            rsa_format,
+            obj_exists);
 
         if (status != SM_OK) {
             retval = kStatus_SSS_Fail;
@@ -1399,10 +1510,10 @@ static sss_status_t sss_se05x_key_store_set_rsa_key(sss_se05x_key_store_t *keySt
 
             IdExists     = CheckIfKeyIdExists(keyObject->keyId, &keyStore->session->s_ctx);
             keyBitLength = (IdExists == 1) ? 0 : keyBitLen;
-			se05x_policy.object_exist = (IdExists == 1) ? kSE05x_Result_SUCCESS : kSE05x_Result_FAILURE;
+            obj_exists   = (IdExists == 1) ? kSE05x_Result_SUCCESS : kSE05x_Result_FAILURE;
 
             // Set D(Private exponent) component
-            status = Se05x_API_WriteRSAKey(&keyStore->session->s_ctx,
+            status = sss_se05x_LL_set_RSA_key(&keyStore->session->s_ctx,
                 &se05x_policy,
                 keyObject->keyId,
                 (U16)keyBitLength,
@@ -1417,7 +1528,8 @@ static sss_status_t sss_se05x_key_store_set_rsa_key(sss_se05x_key_store_t *keySt
                 SE05X_RSA_NO_pubMod,
                 transient_type,
                 kSE05x_KeyPart_Private,
-                rsa_format);
+                rsa_format,
+                obj_exists);
 
             if (status != SM_OK) {
                 retval = kStatus_SSS_Fail;
@@ -1425,7 +1537,7 @@ static sss_status_t sss_se05x_key_store_set_rsa_key(sss_se05x_key_store_t *keySt
             }
 
             // Set N(Modulus) component
-            status = Se05x_API_WriteRSAKey(&keyStore->session->s_ctx,
+            status = sss_se05x_LL_set_RSA_key(&keyStore->session->s_ctx,
                 NULL,
                 keyObject->keyId,
                 0,
@@ -1440,7 +1552,8 @@ static sss_status_t sss_se05x_key_store_set_rsa_key(sss_se05x_key_store_t *keySt
                 rsaNlen,
                 transient_type,
                 kSE05x_KeyPart_NA,
-                rsa_format);
+                rsa_format,
+                obj_exists);
 
             if (status != SM_OK) {
                 retval = kStatus_SSS_Fail;
@@ -1478,10 +1591,10 @@ static sss_status_t sss_se05x_key_store_set_rsa_key(sss_se05x_key_store_t *keySt
 
             IdExists     = CheckIfKeyIdExists(keyObject->keyId, &keyStore->session->s_ctx);
             keyBitLength = (IdExists == 1) ? 0 : keyBitLen;
-			se05x_policy.object_exist = (IdExists == 1) ? kSE05x_Result_SUCCESS : kSE05x_Result_FAILURE;
+            obj_exists   = (IdExists == 1) ? kSE05x_Result_SUCCESS : kSE05x_Result_FAILURE;
 
             // Set P component
-            status = Se05x_API_WriteRSAKey(&keyStore->session->s_ctx,
+            status = sss_se05x_LL_set_RSA_key(&keyStore->session->s_ctx,
                 &se05x_policy,
                 keyObject->keyId,
                 (U16)keyBitLength,
@@ -1496,7 +1609,8 @@ static sss_status_t sss_se05x_key_store_set_rsa_key(sss_se05x_key_store_t *keySt
                 SE05X_RSA_NO_pubMod,
                 transient_type,
                 kSE05x_KeyPart_Private,
-                rsa_format);
+                rsa_format,
+                obj_exists);
 
             if (status != SM_OK) {
                 retval = kStatus_SSS_Fail;
@@ -1504,7 +1618,7 @@ static sss_status_t sss_se05x_key_store_set_rsa_key(sss_se05x_key_store_t *keySt
             }
 
             // Set Q component
-            status = Se05x_API_WriteRSAKey(&keyStore->session->s_ctx,
+            status = sss_se05x_LL_set_RSA_key(&keyStore->session->s_ctx,
                 NULL,
                 keyObject->keyId,
                 0,
@@ -1519,7 +1633,8 @@ static sss_status_t sss_se05x_key_store_set_rsa_key(sss_se05x_key_store_t *keySt
                 SE05X_RSA_NO_pubMod,
                 transient_type,
                 kSE05x_KeyPart_NA,
-                rsa_format);
+                rsa_format,
+                obj_exists);
 
             if (status != SM_OK) {
                 retval = kStatus_SSS_Fail;
@@ -1527,7 +1642,7 @@ static sss_status_t sss_se05x_key_store_set_rsa_key(sss_se05x_key_store_t *keySt
             }
 
             // Set DP component
-            status = Se05x_API_WriteRSAKey(&keyStore->session->s_ctx,
+            status = sss_se05x_LL_set_RSA_key(&keyStore->session->s_ctx,
                 NULL,
                 keyObject->keyId,
                 0,
@@ -1542,7 +1657,8 @@ static sss_status_t sss_se05x_key_store_set_rsa_key(sss_se05x_key_store_t *keySt
                 SE05X_RSA_NO_pubMod,
                 transient_type,
                 kSE05x_KeyPart_NA,
-                rsa_format);
+                rsa_format,
+                obj_exists);
 
             if (status != SM_OK) {
                 retval = kStatus_SSS_Fail;
@@ -1550,7 +1666,7 @@ static sss_status_t sss_se05x_key_store_set_rsa_key(sss_se05x_key_store_t *keySt
             }
 
             // Set DQ component
-            status = Se05x_API_WriteRSAKey(&keyStore->session->s_ctx,
+            status = sss_se05x_LL_set_RSA_key(&keyStore->session->s_ctx,
                 NULL,
                 keyObject->keyId,
                 0,
@@ -1565,7 +1681,8 @@ static sss_status_t sss_se05x_key_store_set_rsa_key(sss_se05x_key_store_t *keySt
                 SE05X_RSA_NO_pubMod,
                 transient_type,
                 kSE05x_KeyPart_NA,
-                rsa_format);
+                rsa_format,
+                obj_exists);
 
             if (status != SM_OK) {
                 retval = kStatus_SSS_Fail;
@@ -1573,7 +1690,7 @@ static sss_status_t sss_se05x_key_store_set_rsa_key(sss_se05x_key_store_t *keySt
             }
 
             // Set INV_Q component
-            status = Se05x_API_WriteRSAKey(&keyStore->session->s_ctx,
+            status = sss_se05x_LL_set_RSA_key(&keyStore->session->s_ctx,
                 NULL,
                 keyObject->keyId,
                 0,
@@ -1588,7 +1705,8 @@ static sss_status_t sss_se05x_key_store_set_rsa_key(sss_se05x_key_store_t *keySt
                 SE05X_RSA_NO_pubMod,
                 transient_type,
                 kSE05x_KeyPart_NA,
-                rsa_format);
+                rsa_format,
+                obj_exists);
 
             if (status != SM_OK) {
                 retval = kStatus_SSS_Fail;
@@ -1624,10 +1742,10 @@ static sss_status_t sss_se05x_key_store_set_rsa_key(sss_se05x_key_store_t *keySt
 
             IdExists     = CheckIfKeyIdExists(keyObject->keyId, &keyStore->session->s_ctx);
             keyBitLength = (IdExists == 1) ? 0 : keyBitLen;
-			se05x_policy.object_exist = (IdExists == 1) ? kSE05x_Result_SUCCESS : kSE05x_Result_FAILURE;
+            obj_exists   = (IdExists == 1) ? kSE05x_Result_SUCCESS : kSE05x_Result_FAILURE;
 
             // Set E(Public exponent) component
-            status = Se05x_API_WriteRSAKey(&keyStore->session->s_ctx,
+            status = sss_se05x_LL_set_RSA_key(&keyStore->session->s_ctx,
                 &se05x_policy,
                 keyObject->keyId,
                 (U16)keyBitLength,
@@ -1642,7 +1760,8 @@ static sss_status_t sss_se05x_key_store_set_rsa_key(sss_se05x_key_store_t *keySt
                 SE05X_RSA_NO_pubMod,
                 transient_type,
                 kSE05x_KeyPart_Pair,
-                rsa_format);
+                rsa_format,
+                obj_exists);
 
             if (status != SM_OK) {
                 retval = kStatus_SSS_Fail;
@@ -1650,7 +1769,7 @@ static sss_status_t sss_se05x_key_store_set_rsa_key(sss_se05x_key_store_t *keySt
             }
 
             // Set D(Private exponent) component
-            status = Se05x_API_WriteRSAKey(&keyStore->session->s_ctx,
+            status = sss_se05x_LL_set_RSA_key(&keyStore->session->s_ctx,
                 NULL,
                 keyObject->keyId,
                 0,
@@ -1665,7 +1784,8 @@ static sss_status_t sss_se05x_key_store_set_rsa_key(sss_se05x_key_store_t *keySt
                 SE05X_RSA_NO_pubMod,
                 transient_type,
                 kSE05x_KeyPart_NA,
-                rsa_format);
+                rsa_format,
+                obj_exists);
 
             if (status != SM_OK) {
                 retval = kStatus_SSS_Fail;
@@ -1673,7 +1793,7 @@ static sss_status_t sss_se05x_key_store_set_rsa_key(sss_se05x_key_store_t *keySt
             }
 
             // Set N(Modulus) component
-            status = Se05x_API_WriteRSAKey(&keyStore->session->s_ctx,
+            status = sss_se05x_LL_set_RSA_key(&keyStore->session->s_ctx,
                 NULL,
                 keyObject->keyId,
                 0,
@@ -1688,7 +1808,8 @@ static sss_status_t sss_se05x_key_store_set_rsa_key(sss_se05x_key_store_t *keySt
                 rsaNlen,
                 transient_type,
                 kSE05x_KeyPart_NA,
-                rsa_format);
+                rsa_format,
+                obj_exists);
 
             if (status != SM_OK) {
                 retval = kStatus_SSS_Fail;
@@ -1725,10 +1846,10 @@ static sss_status_t sss_se05x_key_store_set_rsa_key(sss_se05x_key_store_t *keySt
 
             IdExists     = CheckIfKeyIdExists(keyObject->keyId, &keyStore->session->s_ctx);
             keyBitLength = (IdExists == 1) ? 0 : keyBitLen;
-			se05x_policy.object_exist = (IdExists == 1) ? kSE05x_Result_SUCCESS : kSE05x_Result_FAILURE;
+            obj_exists   = (IdExists == 1) ? kSE05x_Result_SUCCESS : kSE05x_Result_FAILURE;
 
             // Set P component
-            status = Se05x_API_WriteRSAKey(&keyStore->session->s_ctx,
+            status = sss_se05x_LL_set_RSA_key(&keyStore->session->s_ctx,
                 &se05x_policy,
                 keyObject->keyId,
                 (U16)keyBitLength,
@@ -1743,7 +1864,8 @@ static sss_status_t sss_se05x_key_store_set_rsa_key(sss_se05x_key_store_t *keySt
                 SE05X_RSA_NO_pubMod,
                 transient_type,
                 kSE05x_KeyPart_Pair,
-                rsa_format);
+                rsa_format,
+                obj_exists);
 
             if (status != SM_OK) {
                 retval = kStatus_SSS_Fail;
@@ -1751,7 +1873,7 @@ static sss_status_t sss_se05x_key_store_set_rsa_key(sss_se05x_key_store_t *keySt
             }
 
             // Set Q component
-            status = Se05x_API_WriteRSAKey(&keyStore->session->s_ctx,
+            status = sss_se05x_LL_set_RSA_key(&keyStore->session->s_ctx,
                 NULL,
                 keyObject->keyId,
                 0,
@@ -1766,7 +1888,8 @@ static sss_status_t sss_se05x_key_store_set_rsa_key(sss_se05x_key_store_t *keySt
                 SE05X_RSA_NO_pubMod,
                 transient_type,
                 kSE05x_KeyPart_NA,
-                rsa_format);
+                rsa_format,
+                obj_exists);
 
             if (status != SM_OK) {
                 retval = kStatus_SSS_Fail;
@@ -1774,7 +1897,7 @@ static sss_status_t sss_se05x_key_store_set_rsa_key(sss_se05x_key_store_t *keySt
             }
 
             // Set DP component
-            status = Se05x_API_WriteRSAKey(&keyStore->session->s_ctx,
+            status = sss_se05x_LL_set_RSA_key(&keyStore->session->s_ctx,
                 NULL,
                 keyObject->keyId,
                 0,
@@ -1789,7 +1912,8 @@ static sss_status_t sss_se05x_key_store_set_rsa_key(sss_se05x_key_store_t *keySt
                 SE05X_RSA_NO_pubMod,
                 transient_type,
                 kSE05x_KeyPart_NA,
-                rsa_format);
+                rsa_format,
+                obj_exists);
 
             if (status != SM_OK) {
                 retval = kStatus_SSS_Fail;
@@ -1797,7 +1921,7 @@ static sss_status_t sss_se05x_key_store_set_rsa_key(sss_se05x_key_store_t *keySt
             }
 
             // Set DQ component
-            status = Se05x_API_WriteRSAKey(&keyStore->session->s_ctx,
+            status = sss_se05x_LL_set_RSA_key(&keyStore->session->s_ctx,
                 NULL,
                 keyObject->keyId,
                 0,
@@ -1812,7 +1936,8 @@ static sss_status_t sss_se05x_key_store_set_rsa_key(sss_se05x_key_store_t *keySt
                 SE05X_RSA_NO_pubMod,
                 transient_type,
                 kSE05x_KeyPart_NA,
-                rsa_format);
+                rsa_format,
+                obj_exists);
 
             if (status != SM_OK) {
                 retval = kStatus_SSS_Fail;
@@ -1820,7 +1945,7 @@ static sss_status_t sss_se05x_key_store_set_rsa_key(sss_se05x_key_store_t *keySt
             }
 
             // Set INV_Q component
-            status = Se05x_API_WriteRSAKey(&keyStore->session->s_ctx,
+            status = sss_se05x_LL_set_RSA_key(&keyStore->session->s_ctx,
                 NULL,
                 keyObject->keyId,
                 0,
@@ -1835,7 +1960,8 @@ static sss_status_t sss_se05x_key_store_set_rsa_key(sss_se05x_key_store_t *keySt
                 SE05X_RSA_NO_pubMod,
                 transient_type,
                 kSE05x_KeyPart_NA,
-                rsa_format);
+                rsa_format,
+                obj_exists);
 
             if (status != SM_OK) {
                 retval = kStatus_SSS_Fail;
@@ -1843,7 +1969,7 @@ static sss_status_t sss_se05x_key_store_set_rsa_key(sss_se05x_key_store_t *keySt
             }
 
             // Set E (Public exponent) component
-            status = Se05x_API_WriteRSAKey(&keyStore->session->s_ctx,
+            status = sss_se05x_LL_set_RSA_key(&keyStore->session->s_ctx,
                 NULL,
                 keyObject->keyId,
                 0,
@@ -1858,7 +1984,8 @@ static sss_status_t sss_se05x_key_store_set_rsa_key(sss_se05x_key_store_t *keySt
                 SE05X_RSA_NO_pubMod,
                 transient_type,
                 kSE05x_KeyPart_NA,
-                rsa_format);
+                rsa_format,
+                obj_exists);
 
             if (status != SM_OK) {
                 retval = kStatus_SSS_Fail;
@@ -1866,7 +1993,7 @@ static sss_status_t sss_se05x_key_store_set_rsa_key(sss_se05x_key_store_t *keySt
             }
 
             // Set N (Modulus) component
-            status = Se05x_API_WriteRSAKey(&keyStore->session->s_ctx,
+            status = sss_se05x_LL_set_RSA_key(&keyStore->session->s_ctx,
                 NULL,
                 keyObject->keyId,
                 0,
@@ -1881,7 +2008,8 @@ static sss_status_t sss_se05x_key_store_set_rsa_key(sss_se05x_key_store_t *keySt
                 rsaNlen,
                 transient_type,
                 kSE05x_KeyPart_NA,
-                rsa_format);
+                rsa_format,
+                obj_exists);
 
             if (status != SM_OK) {
                 retval = kStatus_SSS_Fail;
@@ -2145,8 +2273,6 @@ static sss_status_t sss_se05x_key_store_set_ecc_key(sss_se05x_key_store_t *keySt
 
     se05x_policy.value     = (uint8_t *)policy_buff;
     se05x_policy.value_len = policy_buff_len;
-    se05x_policy.object_exist = kSE05x_Result_FAILURE;
-
 
     if (keyObject->curve_id == 0) {
         keyObject->curve_id = se05x_sssKeyTypeLenToCurveId(keyObject->cipherType, keyBitLen);
@@ -2169,7 +2295,6 @@ static sss_status_t sss_se05x_key_store_set_ecc_key(sss_se05x_key_store_t *keySt
 
     if (exists == kSE05x_Result_SUCCESS) {
         /* Check if object is of same curve id */
-        se05x_policy.object_exist = kSE05x_Result_SUCCESS;
         status = Se05x_API_EC_CurveGetId(&keyObject->keyStore->session->s_ctx, keyObject->keyId, &retCurveId);
         ENSURE_OR_GO_EXIT(status == SM_OK);
 
@@ -2181,9 +2306,9 @@ static sss_status_t sss_se05x_key_store_set_ecc_key(sss_se05x_key_store_t *keySt
             goto exit;
         }
 
-        if (se05x_policy.value_len != 0) {
-            LOG_W("Policy + Existing Key is not a valid combination");
-        }
+        //if (se05x_policy.value_len != 0) {
+        //    LOG_W("Policy + Existing Key is not a valid combination");
+        //}
     }
     else {
         curveId = keyObject->curve_id;
@@ -2303,7 +2428,7 @@ static sss_status_t sss_se05x_key_store_set_ecc_key(sss_se05x_key_store_t *keySt
         }
 #endif
 
-        status = Se05x_API_WriteECKey(&keyStore->session->s_ctx,
+        status = sss_se05x_LL_set_ec_key(&keyStore->session->s_ctx,
             &se05x_policy,
             SE05x_MaxAttemps_UNLIMITED,
             keyObject->keyId,
@@ -2313,7 +2438,8 @@ static sss_status_t sss_se05x_key_store_set_ecc_key(sss_se05x_key_store_t *keySt
             pPublicKey,
             publicKeyLen,
             transient_type,
-            key_part);
+            key_part,
+            exists);
         ENSURE_OR_GO_EXIT(status == SM_OK);
     }
     else if (keyObject->objectType == kSSS_KeyPart_Public) {
@@ -2395,7 +2521,7 @@ static sss_status_t sss_se05x_key_store_set_ecc_key(sss_se05x_key_store_t *keySt
         }
 #endif
 
-        status = Se05x_API_WriteECKey(&keyStore->session->s_ctx,
+        status = sss_se05x_LL_set_ec_key(&keyStore->session->s_ctx,
             &se05x_policy,
             SE05x_MaxAttemps_NA,
             keyObject->keyId,
@@ -2405,7 +2531,8 @@ static sss_status_t sss_se05x_key_store_set_ecc_key(sss_se05x_key_store_t *keySt
             pPublicKey,
             publicKeyLen,
             transient_type,
-            key_part);
+            key_part,
+            exists);
 
         ENSURE_OR_GO_EXIT(status == SM_OK);
     }
@@ -2452,7 +2579,7 @@ static sss_status_t sss_se05x_key_store_set_ecc_key(sss_se05x_key_store_t *keySt
 
         pPrivKey = &key[privateKeyIndex];
 
-        status = Se05x_API_WriteECKey(&keyStore->session->s_ctx,
+        status = sss_se05x_LL_set_ec_key(&keyStore->session->s_ctx,
             &se05x_policy,
             SE05x_MaxAttemps_NA,
             keyObject->keyId,
@@ -2462,7 +2589,8 @@ static sss_status_t sss_se05x_key_store_set_ecc_key(sss_se05x_key_store_t *keySt
             NULL,
             0,
             transient_type,
-            key_part);
+            key_part,
+            exists);
         ENSURE_OR_GO_EXIT(status == SM_OK);
     }
     else {
@@ -2490,16 +2618,17 @@ static sss_status_t sss_se05x_key_store_set_aes_key(sss_se05x_key_store_t *keySt
     SE05x_INS_t transient_type;
     SE05x_SymmKeyType_t type = 0;
     SE05x_KeyID_t kekID      = SE05x_KeyID_KEK_NONE;
-    uint8_t IdExists = 0;
+    uint8_t IdExists         = 0;
+    SE05x_Result_t objExists = kSE05x_Result_NA;
 
     /* Assign proper instruction type based on keyObject->isPersistant  */
     (keyObject->isPersistant) ? (transient_type = kSE05x_INS_NA) : (transient_type = kSE05x_INS_TRANSIENT);
 
+    IdExists  = CheckIfKeyIdExists(keyObject->keyId, &keyStore->session->s_ctx);
+    objExists = (IdExists == 1) ? kSE05x_Result_SUCCESS : kSE05x_Result_FAILURE;
+
     se05x_policy.value     = (uint8_t *)policy_buff;
     se05x_policy.value_len = policy_buff_len;
-    IdExists = CheckIfKeyIdExists(keyObject->keyId, &keyStore->session->s_ctx);
-
-    se05x_policy.object_exist = (IdExists == 1) ? kSE05x_Result_SUCCESS : kSE05x_Result_FAILURE;
 
     if (keyBitLen % 8 == 0) {
         if (keyObject->cipherType == kSSS_CipherType_AES) {
@@ -2515,7 +2644,7 @@ static sss_status_t sss_se05x_key_store_set_aes_key(sss_se05x_key_store_t *keySt
         if (keyStore->kekKey != NULL) {
             kekID = keyStore->kekKey->keyId;
         }
-        status = Se05x_API_WriteSymmKey(&keyStore->session->s_ctx,
+        status = sss_se05x_LL_set_symm_key(&keyStore->session->s_ctx,
             &se05x_policy,
             SE05x_MaxAttemps_NA,
             keyObject->keyId,
@@ -2523,7 +2652,8 @@ static sss_status_t sss_se05x_key_store_set_aes_key(sss_se05x_key_store_t *keySt
             key,
             keyLen,
             transient_type,
-            type);
+            type,
+            objExists);
         ENSURE_OR_GO_EXIT(status == SM_OK);
     }
     else {
@@ -2548,23 +2678,23 @@ static sss_status_t sss_se05x_key_store_set_des_key(sss_se05x_key_store_t *keySt
     smStatus_t status   = SM_NOT_OK;
     Se05xPolicy_t se05x_policy;
     SE05x_INS_t transient_type;
-    SE05x_KeyID_t kekID = SE05x_KeyID_KEK_NONE;
-    uint8_t IdExists = 0;
+    SE05x_KeyID_t kekID      = SE05x_KeyID_KEK_NONE;
+    uint8_t IdExists         = 0;
+    SE05x_Result_t objExists = kSE05x_Result_NA;
 
     /* Assign proper instruction type based on keyObject->isPersistant  */
     (keyObject->isPersistant) ? (transient_type = kSE05x_INS_NA) : (transient_type = kSE05x_INS_TRANSIENT);
+    IdExists = CheckIfKeyIdExists(keyObject->keyId, &keyStore->session->s_ctx);
 
+    objExists              = (IdExists == 1) ? kSE05x_Result_SUCCESS : kSE05x_Result_FAILURE;
     se05x_policy.value     = (uint8_t *)policy_buff;
     se05x_policy.value_len = policy_buff_len;
-    IdExists = CheckIfKeyIdExists(keyObject->keyId, &keyStore->session->s_ctx);
-    se05x_policy.object_exist = (IdExists == 1) ? kSE05x_Result_SUCCESS : kSE05x_Result_FAILURE;
-
 
     if (keyStore->kekKey != NULL) {
         kekID = keyStore->kekKey->keyId;
     }
 
-    status = Se05x_API_WriteSymmKey(&keyStore->session->s_ctx,
+    status = sss_se05x_LL_set_symm_key(&keyStore->session->s_ctx,
         &se05x_policy,
         SE05x_MaxAttemps_NA,
         keyObject->keyId,
@@ -2572,7 +2702,8 @@ static sss_status_t sss_se05x_key_store_set_des_key(sss_se05x_key_store_t *keySt
         key,
         keyLen,
         transient_type,
-        kSE05x_SymmKeyType_DES);
+        kSE05x_SymmKeyType_DES,
+        objExists);
     ENSURE_OR_GO_EXIT(status == SM_OK);
 
     retval = kStatus_SSS_Success;
@@ -2638,9 +2769,12 @@ static sss_status_t sss_se05x_key_store_set_cert(sss_se05x_key_store_t *keyStore
     smStatus_t status   = SM_NOT_OK;
     Se05xPolicy_t se05x_policy;
     uint16_t data_rem;
-    uint16_t offset   = 0;
-    uint16_t fileSize = 0;
-    uint8_t IdExists  = 0;
+    uint16_t offset           = 0;
+    uint16_t fileSize         = 0;
+    uint8_t IdExists          = 0;
+#if SSS_HAVE_SE05X_VER_GTE_04_04
+    SE05x_Result_t obj_exists = kSE05x_Result_NA;
+#endif
 
     ENSURE_OR_GO_EXIT(keyLen < 0xFFFFu);
 
@@ -2650,12 +2784,40 @@ static sss_status_t sss_se05x_key_store_set_cert(sss_se05x_key_store_t *keyStore
 
     se05x_policy.value     = (uint8_t *)policy_buff;
     se05x_policy.value_len = policy_buff_len;
-    se05x_policy.object_exist = (IdExists == 1) ? kSE05x_Result_SUCCESS : kSE05x_Result_FAILURE;
+
 
     while (data_rem > 0) {
         uint16_t chunk = (data_rem > BINARY_WRITE_MAX_LEN) ? BINARY_WRITE_MAX_LEN : data_rem;
         data_rem       = data_rem - chunk;
 
+#if SSS_HAVE_SE05X_VER_GTE_04_04
+        /* Call APIs For SE051 */
+        obj_exists = (IdExists == 1) ? kSE05x_Result_SUCCESS : kSE05x_Result_FAILURE;
+        if (obj_exists == kSE05x_Result_FAILURE) {
+            status = Se05x_API_WriteBinary_Ver(&keyStore->session->s_ctx,
+                &se05x_policy,
+                keyObject->keyId,
+                offset,
+                (uint16_t)fileSize,
+                (key + offset),
+                chunk,
+                0);
+        }
+        else if (obj_exists == kSE05x_Result_SUCCESS) {
+            status = Se05x_API_UpdateBinary_Ver(&keyStore->session->s_ctx,
+                &se05x_policy,
+                keyObject->keyId,
+                offset,
+                (uint16_t)fileSize,
+                (key + offset),
+                chunk,
+                0);
+        }
+        else {
+            LOG_E("Invalid Object exist status!!!");
+        }
+#else
+        /* Call APIs For SE050 */
         status = Se05x_API_WriteBinary(&keyStore->session->s_ctx,
             &se05x_policy,
             keyObject->keyId,
@@ -2663,12 +2825,12 @@ static sss_status_t sss_se05x_key_store_set_cert(sss_se05x_key_store_t *keyStore
             (uint16_t)fileSize,
             (key + offset),
             chunk);
+#endif
         ENSURE_OR_GO_EXIT(status == SM_OK);
 
         fileSize = 0;
         offset   = offset + chunk;
     }
-
     retval = kStatus_SSS_Success;
 exit:
     return retval;
@@ -2877,7 +3039,6 @@ sss_status_t sss_se05x_key_store_generate_key(
 
         IdExists = CheckIfKeyIdExists(keyObject->keyId, &keyStore->session->s_ctx);
         curve_id = (IdExists == 1) ? 0 : keyObject->curve_id;
-        se05x_policy.object_exist = (IdExists == 1) ? kSE05x_Result_SUCCESS : kSE05x_Result_FAILURE;
 
         status = Se05x_API_WriteECKey(&keyStore->session->s_ctx,
             &se05x_policy,
@@ -2910,9 +3071,9 @@ sss_status_t sss_se05x_key_store_generate_key(
             retval = kStatus_SSS_Fail;
             goto exit;
         }
+
         IdExists     = CheckIfKeyIdExists(keyObject->keyId, &keyStore->session->s_ctx);
         keyBitLength = (IdExists == 1) ? 0 : keyBitLen;
-        se05x_policy.object_exist = (IdExists == 1) ? kSE05x_Result_SUCCESS : kSE05x_Result_FAILURE;
 
         status = Se05x_API_WriteRSAKey(&keyStore->session->s_ctx,
             &se05x_policy,
@@ -3898,7 +4059,7 @@ sss_status_t sss_se05x_asymmetric_sign_digest(
             signatureLen);
     } break;
     case kSSS_CipherType_EC_BARRETO_NAEHRIG: {
-        if(context->algorithm != kAlgorithm_SSS_ECDAA) {
+        if (context->algorithm != kAlgorithm_SSS_ECDAA) {
             return kStatus_SSS_Fail;
         }
         /* clang-format off */
@@ -4773,8 +4934,7 @@ sss_status_t sss_se05x_aead_context_init(sss_se05x_aead_t *context,
     sss_status_t retval = kStatus_SSS_Fail;
     context->session    = session;
     context->keyObject  = keyObject;
-    if ((algorithm == kAlgorithm_SSS_AES_CCM) ||
-        (algorithm == kAlgorithm_SSS_AES_GCM) ||
+    if ((algorithm == kAlgorithm_SSS_AES_CCM) || (algorithm == kAlgorithm_SSS_AES_GCM) ||
         (algorithm == kAlgorithm_SSS_AES_GCM_INT_IV)) {
         context->algorithm = algorithm;
     }
@@ -4801,11 +4961,10 @@ sss_status_t sss_se05x_aead_one_go(sss_se05x_aead_t *context,
 {
     sss_status_t retval = kStatus_SSS_Fail;
 #if SSS_HAVE_SE05X_VER_GTE_04_04
-    smStatus_t status             = SM_NOT_OK;
-    size_t destDataLen            = size;
+    smStatus_t status  = SM_NOT_OK;
+    size_t destDataLen = size;
     SE05x_CipherMode_t cipherMode =
-        (context->algorithm == kAlgorithm_SSS_AES_GCM) ?
-        kSE05x_CipherMode_AES_GCM : kSE05x_CipherMode_AES_GCM_INT_IV;
+        (context->algorithm == kAlgorithm_SSS_AES_GCM) ? kSE05x_CipherMode_AES_GCM : kSE05x_CipherMode_AES_GCM_INT_IV;
     SE05x_Cipher_Oper_OneShot_t OperType =
         (context->mode == kMode_SSS_Encrypt) ? kSE05x_Cipher_Oper_OneShot_Encrypt : kSE05x_Cipher_Oper_OneShot_Decrypt;
 
@@ -4836,8 +4995,8 @@ sss_status_t sss_se05x_aead_init(
 {
     sss_status_t retval = kStatus_SSS_Fail;
 #if SSS_HAVE_SE05X_VER_GTE_04_04
-    smStatus_t status       = SM_NOT_OK;
-    context->cache_data_len = 0;
+    smStatus_t status             = SM_NOT_OK;
+    context->cache_data_len       = 0;
     SE05x_CipherMode_t cipherMode = kSE05x_CipherMode_NA;
     SE05x_Cipher_Oper_t OperType =
         (context->mode == kMode_SSS_Encrypt) ? kSE05x_Cipher_Oper_Encrypt : kSE05x_Cipher_Oper_Decrypt;
@@ -4856,14 +5015,13 @@ sss_status_t sss_se05x_aead_init(
     }
     else if (context->algorithm == kAlgorithm_SSS_AES_GCM_INT_IV) {
         context->cryptoObjectId = kSE05x_CryptoObject_AES_GCM_INT_IV;
-        subtype.aead = kSE05x_AeadGCM_IVAlgo;
+        subtype.aead            = kSE05x_AeadGCM_IVAlgo;
     }
     else if (context->algorithm == kAlgorithm_SSS_AES_CCM) {
         context->cryptoObjectId = kSE05x_CryptoObject_AES_CCM;
         subtype.aead            = kSE05x_AeadCCMAlgo;
     }
-    else
-    {
+    else {
         goto exit;
     }
     status = Se05x_API_ReadCryptoObjectList(&context->session->s_ctx, list, &listlen);
@@ -4888,16 +5046,16 @@ sss_status_t sss_se05x_aead_init(
     }
 #endif
     memset(context->cache_data, 0x00, sizeof(context->cache_data));
-    if ((context->algorithm == (kAlgorithm_SSS_AES_GCM))||
-        (context->algorithm == (kAlgorithm_SSS_AES_GCM_INT_IV)))
-    {
-         cipherMode =
-            (context->algorithm == kAlgorithm_SSS_AES_GCM) ?
-            kSE05x_CipherMode_AES_GCM : kSE05x_CipherMode_AES_GCM_INT_IV;
-        status = Se05x_API_AeadInit(
-            &context->session->s_ctx, context->keyObject->keyId,
-            cipherMode, context->cryptoObjectId,
-            nonce, nonceLen, OperType);
+    if ((context->algorithm == (kAlgorithm_SSS_AES_GCM)) || (context->algorithm == (kAlgorithm_SSS_AES_GCM_INT_IV))) {
+        cipherMode = (context->algorithm == kAlgorithm_SSS_AES_GCM) ? kSE05x_CipherMode_AES_GCM :
+                                                                      kSE05x_CipherMode_AES_GCM_INT_IV;
+        status = Se05x_API_AeadInit(&context->session->s_ctx,
+            context->keyObject->keyId,
+            cipherMode,
+            context->cryptoObjectId,
+            nonce,
+            nonceLen,
+            OperType);
     }
     else {
         status = Se05x_API_AeadCCMInit(&context->session->s_ctx,
@@ -5057,8 +5215,7 @@ sss_status_t sss_se05x_aead_finish(sss_se05x_aead_t *context,
             srcdata_updated_len += srcLen;
         }
         if (srcdata_updated_len > 0) {
-            if (context->algorithm == kAlgorithm_SSS_AES_GCM)
-            {
+            if (context->algorithm == kAlgorithm_SSS_AES_GCM) {
                 /*Input length if less than CIPHER_BLOCK_SIZE, give lenght as CIPHER_BLOCK_SIZE*/
                 if (srcdata_updated_len > CIPHER_BLOCK_SIZE) {
                     srcdata_updated_len = 2 * CIPHER_BLOCK_SIZE;
@@ -6085,6 +6242,9 @@ static SE05x_RSASignatureAlgo_t se05x_get_rsa_sign_hash_mode(sss_algorithm_t alg
 {
     SE05x_RSASignatureAlgo_t mode;
     switch (algorithm) {
+    case kAlgorithm_SSS_RSASSA_PKCS1_V1_5_SHA1:
+        mode = kSE05x_RSASignatureAlgo_SHA1_PKCS1;
+        break;
     case kAlgorithm_SSS_RSASSA_PKCS1_V1_5_SHA224:
         mode = kSE05x_RSASignatureAlgo_SHA_224_PKCS1;
         break;
@@ -6199,6 +6359,193 @@ SE05x_DigestMode_t se05x_get_sha_algo(sss_algorithm_t algorithm)
 
     return sha_type;
 }
+////////////////////////////////////////////////////////////////////////
+#if SSSFTR_SE05X_ECC && SSSFTR_SE05X_KEY_SET
+static smStatus_t sss_se05x_LL_set_ec_key(pSe05xSession_t session_ctx,
+    pSe05xPolicy_t policy,
+    SE05x_MaxAttemps_t maxAttempt,
+    uint32_t objectID,
+    SE05x_ECCurve_t curveID,
+    const uint8_t *privKey,
+    size_t privKeyLen,
+    const uint8_t *pubKey,
+    size_t pubKeyLen,
+    const SE05x_INS_t ins_type,
+    const SE05x_KeyPart_t key_part,
+    SE05x_Result_t obj_exists)
+{
+    smStatus_t status = SM_NOT_OK;
+#if SSS_HAVE_SE05X_VER_GTE_04_04
+    fp_Ec_KeyWrite_t fpEcKey_Ver = NULL;
+    /* Call APIs For SE051 */
+    if (obj_exists == kSE05x_Result_FAILURE) {
+        fpEcKey_Ver = &Se05x_API_WriteECKey_Ver;
+    }
+    else if (obj_exists == kSE05x_Result_SUCCESS) {
+        fpEcKey_Ver = &Se05x_API_UpdateECKey_Ver;
+    }
+
+    if (fpEcKey_Ver != NULL) {
+        status = fpEcKey_Ver(session_ctx,
+            policy,
+            maxAttempt,
+            objectID,
+            curveID,
+            privKey,
+            privKeyLen,
+            pubKey,
+            pubKeyLen,
+            ins_type,
+            key_part,
+            0);
+    }
+    else {
+        LOG_E("Invalid Object exist status!!!");
+    }
+
+#else
+    /* Call APIs For SE050 */
+    status = Se05x_API_WriteECKey(
+        session_ctx, policy, maxAttempt, objectID, curveID, privKey, privKeyLen, pubKey, pubKeyLen, ins_type, key_part);
+#endif
+    return status;
+}
+#endif //SSSFTR_SE05X_ECC
+
+#if SSSFTR_SE05X_AES && SSSFTR_SE05X_KEY_SET
+static smStatus_t sss_se05x_LL_set_symm_key(pSe05xSession_t session_ctx,
+    pSe05xPolicy_t policy,
+    SE05x_MaxAttemps_t maxAttempt,
+    uint32_t objectID,
+    SE05x_KeyID_t kekID,
+    const uint8_t *keyValue,
+    size_t keyValueLen,
+    const SE05x_INS_t ins_type,
+    const SE05x_SymmKeyType_t type,
+    SE05x_Result_t obj_exists)
+{
+    smStatus_t status = SM_NOT_OK;
+#if SSS_HAVE_SE05X_VER_GTE_04_04
+    fp_Symm_KeyWrite_t fpSymmKey_Ver = NULL;
+    /* Call APIs For SE051 */
+    if (obj_exists == kSE05x_Result_FAILURE) {
+        fpSymmKey_Ver = &Se05x_API_WriteSymmKey_Ver;
+    }
+    else if (obj_exists == kSE05x_Result_SUCCESS) {
+        fpSymmKey_Ver = &Se05x_API_UpdateSymmKey_Ver;
+    }
+
+    if (fpSymmKey_Ver != NULL) {
+        status = (*fpSymmKey_Ver)(
+            session_ctx, policy, maxAttempt, objectID, kekID, keyValue, keyValueLen, ins_type, type, 0);
+    }
+    else {
+        LOG_E("Invalid Object exist status!!!");
+    }
+#else
+    /* Call APIs For SE050 */
+    status =
+        Se05x_API_WriteSymmKey(session_ctx, policy, maxAttempt, objectID, kekID, keyValue, keyValueLen, ins_type, type);
+#endif
+    return status;
+}
+#endif //SSSFTR_SE05X_AES && SSSFTR_SE05X_KEY_SET
+
+#if SSSFTR_SE05X_RSA && SSSFTR_SE05X_KEY_SET
+static smStatus_t sss_se05x_LL_set_RSA_key(pSe05xSession_t session_ctx,
+    pSe05xPolicy_t policy,
+    uint32_t objectID,
+    uint16_t size,
+    const uint8_t *p,
+    size_t pLen,
+    const uint8_t *q,
+    size_t qLen,
+    const uint8_t *dp,
+    size_t dpLen,
+    const uint8_t *dq,
+    size_t dqLen,
+    const uint8_t *qInv,
+    size_t qInvLen,
+    const uint8_t *pubExp,
+    size_t pubExpLen,
+    const uint8_t *priv,
+    size_t privLen,
+    const uint8_t *pubMod,
+    size_t pubModLen,
+    const SE05x_INS_t ins_type,
+    const SE05x_KeyPart_t key_part,
+    const SE05x_RSAKeyFormat_t rsa_format,
+    SE05x_Result_t obj_exists)
+{
+    smStatus_t status = SM_NOT_OK;
+#if SSS_HAVE_SE05X_VER_GTE_04_04
+    fp_RSA_KeyWrite_t fpRSAKey_Ver = NULL;
+    /* Call APIs For SE051 */
+    if (obj_exists == kSE05x_Result_FAILURE) {
+        fpRSAKey_Ver = &Se05x_API_WriteRSAKey_Ver;
+    }
+    else if (obj_exists == kSE05x_Result_SUCCESS) {
+        fpRSAKey_Ver = &Se05x_API_UpdateRSAKey_Ver;
+    }
+
+    if (fpRSAKey_Ver != NULL) {
+        status = (*fpRSAKey_Ver)(session_ctx,
+            policy,
+            objectID,
+            size,
+            p,
+            pLen,
+            q,
+            qLen,
+            dp,
+            dpLen,
+            dq,
+            dqLen,
+            qInv,
+            qInvLen,
+            pubExp,
+            pubExpLen,
+            priv,
+            privLen,
+            pubMod,
+            pubModLen,
+            ins_type,
+            key_part,
+            rsa_format,
+            0);
+    }
+    else {
+        LOG_E("Invalid Object exist status!!!");
+    }
+#else
+    /* Call APIs For SE050 */
+    status = Se05x_API_WriteRSAKey(session_ctx,
+        policy,
+        objectID,
+        size,
+        p,
+        pLen,
+        q,
+        qLen,
+        dp,
+        dpLen,
+        dq,
+        dqLen,
+        qInv,
+        qInvLen,
+        pubExp,
+        pubExpLen,
+        priv,
+        privLen,
+        pubMod,
+        pubModLen,
+        ins_type,
+        key_part,
+        rsa_format);
+#endif
+    return status;
+}
+#endif //SSSFTR_SE05X_RSA && SSSFTR_SE05X_KEY_SET
 
 #ifdef __cplusplus
 }

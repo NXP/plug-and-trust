@@ -57,7 +57,6 @@ add_executable(${PROJECT_NAME} ../sss/ex/ecc/ex_sss_ecc.c ${SOURCES})
 FILE(
     GLOB
     INC_DIR
-    ../../simw-top
     ../sss/inc
     ../sss/port/default
     ../sss/ex/src
@@ -74,6 +73,7 @@ FILE(
 TARGET_INCLUDE_DIRECTORIES(
     ${PROJECT_NAME}
     PUBLIC
+    ../
     ${INC_DIR}
     )
 

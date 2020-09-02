@@ -138,11 +138,11 @@ typedef enum /* _sss_algorithm */
 {
     kAlgorithm_None,
     /* AES */
-    kAlgorithm_SSS_AES_ECB = SSS_ENUM_ALGORITHM(AES, 0x01),
-    kAlgorithm_SSS_AES_CBC = SSS_ENUM_ALGORITHM(AES, 0x02),
-    kAlgorithm_SSS_AES_CTR = SSS_ENUM_ALGORITHM(AES, 0x03),
-    kAlgorithm_SSS_AES_GCM = SSS_ENUM_ALGORITHM(AES, 0x04),
-    kAlgorithm_SSS_AES_CCM = SSS_ENUM_ALGORITHM(AES, 0x05),
+    kAlgorithm_SSS_AES_ECB        = SSS_ENUM_ALGORITHM(AES, 0x01),
+    kAlgorithm_SSS_AES_CBC        = SSS_ENUM_ALGORITHM(AES, 0x02),
+    kAlgorithm_SSS_AES_CTR        = SSS_ENUM_ALGORITHM(AES, 0x03),
+    kAlgorithm_SSS_AES_GCM        = SSS_ENUM_ALGORITHM(AES, 0x04),
+    kAlgorithm_SSS_AES_CCM        = SSS_ENUM_ALGORITHM(AES, 0x05),
     kAlgorithm_SSS_AES_GCM_INT_IV = SSS_ENUM_ALGORITHM(AES, 0x06),
     /* CHACHA_POLY */
     kAlgorithm_SSS_CHACHA_POLY = SSS_ENUM_ALGORITHM(CHACHA, 0x01),
@@ -233,16 +233,11 @@ typedef enum /* _sss_algorithm */
 #define kAlgorithm_SSS_RSASSA_PKCS1_OEAP_SHA512 kAlgorithm_SSS_RSAES_PKCS1_OAEP_SHA512
 
 // Deprecated names for RSAES_PKCS1_V1_5 algorithms
-#define kAlgorithm_SSS_RSAES_PKCS1_V1_5_SHA1 \
-    kAlgorithm_SSS_RSAES_PKCS1_V1_5
-#define kAlgorithm_SSS_RSAES_PKCS1_V1_5_SHA224 \
-    kAlgorithm_SSS_RSAES_PKCS1_V1_5
-#define kAlgorithm_SSS_RSAES_PKCS1_V1_5_SHA256 \
-    kAlgorithm_SSS_RSAES_PKCS1_V1_5
-#define kAlgorithm_SSS_RSAES_PKCS1_V1_5_SHA384 \
-    kAlgorithm_SSS_RSAES_PKCS1_V1_5
-#define kAlgorithm_SSS_RSAES_PKCS1_V1_5_SHA512 \
-    kAlgorithm_SSS_RSAES_PKCS1_V1_5
+#define kAlgorithm_SSS_RSAES_PKCS1_V1_5_SHA1 kAlgorithm_SSS_RSAES_PKCS1_V1_5
+#define kAlgorithm_SSS_RSAES_PKCS1_V1_5_SHA224 kAlgorithm_SSS_RSAES_PKCS1_V1_5
+#define kAlgorithm_SSS_RSAES_PKCS1_V1_5_SHA256 kAlgorithm_SSS_RSAES_PKCS1_V1_5
+#define kAlgorithm_SSS_RSAES_PKCS1_V1_5_SHA384 kAlgorithm_SSS_RSAES_PKCS1_V1_5
+#define kAlgorithm_SSS_RSAES_PKCS1_V1_5_SHA512 kAlgorithm_SSS_RSAES_PKCS1_V1_5
 
 #endif /* __DOXYGEN__ */
 

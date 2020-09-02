@@ -20,6 +20,11 @@ Greengrass, OPCUA and more. More details regarding SE050 and other detailed
 application notes can be found at https://www.nxp.com/products/:SE050.
 
 
+Change Log
+-------------------------------------------------------------
+Refer [ChangeLog](ChangeLog.md)
+
+
 Folder structure of the Mini Pacakge
 -------------------------------------------------------------
 

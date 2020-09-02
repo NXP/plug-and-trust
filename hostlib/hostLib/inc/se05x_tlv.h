@@ -162,7 +162,6 @@ typedef struct
 {
     uint8_t *value;
     size_t value_len;
-    SE05x_Result_t object_exist;
 } Se05xPolicy_t;
 
 typedef struct

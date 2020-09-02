@@ -135,8 +135,9 @@ cleanup:
     return status;
 }
 
-#if ((SSS_HAVE_HOSTCRYPTO_ANY) && ((SSS_HAVE_SE05X_AUTH_USERID_PLATFSCP03) || (SSS_HAVE_SE05X_AUTH_AESKEY_PLATFSCP03) || \
-    (SSS_HAVE_SE05X_AUTH_ECKEY_PLATFSCP03)))
+#if ((SSS_HAVE_HOSTCRYPTO_ANY) &&                                                           \
+     ((SSS_HAVE_SE05X_AUTH_USERID_PLATFSCP03) || (SSS_HAVE_SE05X_AUTH_AESKEY_PLATFSCP03) || \
+         (SSS_HAVE_SE05X_AUTH_ECKEY_PLATFSCP03)))
 static void free_auth_objects(SE_Connect_Ctx_t *pConnectCtx)
 {
     if (pConnectCtx->auth.authType == kSSS_AuthType_ID) {
@@ -175,9 +176,9 @@ void ex_sss_session_close(ex_sss_boot_ctx_t *pCtx)
     }
 
 #if SSS_HAVE_APPLET_SE05X_IOT
-#if ((SSS_HAVE_HOSTCRYPTO_ANY) && ((SSS_HAVE_SE05X_AUTH_USERID_PLATFSCP03) ||\
-     (SSS_HAVE_SE05X_AUTH_AESKEY_PLATFSCP03) || \
-     (SSS_HAVE_SE05X_AUTH_ECKEY_PLATFSCP03)))
+#if ((SSS_HAVE_HOSTCRYPTO_ANY) &&                                                           \
+     ((SSS_HAVE_SE05X_AUTH_USERID_PLATFSCP03) || (SSS_HAVE_SE05X_AUTH_AESKEY_PLATFSCP03) || \
+         (SSS_HAVE_SE05X_AUTH_ECKEY_PLATFSCP03)))
     SE_Connect_Ctx_t *pConnectCtx = &pCtx->se05x_open_ctx;
     free_auth_objects(pConnectCtx);
 #endif /* SSS_HAVE_HOSTCRYPTO_ANY */
@@ -189,8 +190,7 @@ void ex_sss_session_close(ex_sss_boot_ctx_t *pCtx)
     }
 
 #if ((SSS_HAVE_SE05X_AUTH_USERID_PLATFSCP03) || (SSS_HAVE_SE05X_AUTH_AESKEY_PLATFSCP03) || \
-    (SSS_HAVE_SE05X_AUTH_ECKEY_PLATFSCP03) || (SSS_HAVE_SE05X_AUTH_PLATFSCP03) ||         \
-    (SSS_HAVE_SE05X_AUTH_AESKEY))
+     (SSS_HAVE_SE05X_AUTH_ECKEY_PLATFSCP03) || (SSS_HAVE_SE05X_AUTH_PLATFSCP03) || (SSS_HAVE_SE05X_AUTH_AESKEY))
     {
         ex_SE05x_authCtx_t *pauth = &pCtx->ex_se05x_auth;
         sss_host_key_object_free(&pauth->scp03.ex_static.Enc);
