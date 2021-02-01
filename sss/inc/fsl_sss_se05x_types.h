@@ -30,6 +30,13 @@
 #include <pthread.h>
 /* Only for base session with os */
 #endif
+/* FreeRTOS includes. */
+#if AX_EMBEDDED && USE_RTOS
+#include "FreeRTOS.h"
+#include "FreeRTOSIPConfig.h"
+#include "semphr.h"
+#include "task.h"
+#endif
 
 /*!
  * @addtogroup sss_sw_se05x
@@ -95,6 +102,8 @@ typedef struct _sss_se05x_tunnel_context
 #if (__GNUC__ && !AX_EMBEDDED)
     /** For systems where we potentially have multi-threaded operations, have a lock */
     pthread_mutex_t channelLock;
+#elif AX_EMBEDDED && USE_RTOS
+    SemaphoreHandle_t channelLock;
 #endif
 } sss_se05x_tunnel_context_t;
 

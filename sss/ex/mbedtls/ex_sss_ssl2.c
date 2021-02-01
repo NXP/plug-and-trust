@@ -88,7 +88,7 @@ int main(void)
 #include <ex_sss_boot.h>
 #include <nxLog_App.h>
 
-#if defined(SMCOM_JRCP_V2) && SSS_HAVE_SE05X_VER_GTE_04_04
+#if defined(SMCOM_JRCP_V2) && SSS_HAVE_SE05X_VER_GTE_06_00
 #include "smCom.h"
 #include "smComJRCP.h"
 #include "sm_types.h"
@@ -600,7 +600,7 @@ sss_status_t ex_sss_entry(ex_sss_boot_ctx_t *pCtx)
     char *p, *q;
     const int *list;
 
-#if defined(SMCOM_JRCP_V2) && SSS_HAVE_SE05X_VER_GTE_04_04
+#if defined(SMCOM_JRCP_V2) && SSS_HAVE_SE05X_VER_GTE_06_00
     uint32_t start_nvmCount = 0;
     uint32_t end_nvmCount = 0;
 #endif
@@ -622,7 +622,7 @@ sss_status_t ex_sss_entry(ex_sss_boot_ctx_t *pCtx)
     memset( (void * ) alpn_list, 0, sizeof( alpn_list ) );
 #endif
 
-#if defined(SMCOM_JRCP_V2) && SSS_HAVE_SE05X_VER_GTE_04_04
+#if defined(SMCOM_JRCP_V2) && SSS_HAVE_SE05X_VER_GTE_06_00
     {
         uint32_t status = kStatus_SSS_Fail;
         sss_se05x_session_t *pSe05xSession = (sss_se05x_session_t *)&pCtx->session;
@@ -2197,7 +2197,7 @@ reconnect:
     */
 exit:
 
-#if defined(SMCOM_JRCP_V2) && SSS_HAVE_SE05X_VER_GTE_04_04
+#if defined(SMCOM_JRCP_V2) && SSS_HAVE_SE05X_VER_GTE_06_00
     {
         uint32_t status = kStatus_SSS_Fail;
         sss_se05x_session_t *pSe05xSession = (sss_se05x_session_t *)&pCtx->session;

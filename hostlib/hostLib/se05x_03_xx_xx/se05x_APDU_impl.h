@@ -105,11 +105,30 @@ smStatus_t Se05x_API_CloseSession(pSe05xSession_t session_ctx)
     tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_MGMT, kSE05x_P1_DEFAULT, kSE05x_P2_SESSION_CLOSE}};
     uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
     size_t cmdbufLen = 0;
+    uint8_t iCnt = 0;
+
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "CloseSession []");
 #endif /* VERBOSE_APDU_LOGS */
-    retStatus = DoAPDUTx_s_Case3(session_ctx, &hdr, cmdbuf, cmdbufLen);
+    if( ((session_ctx->value[0] || session_ctx->value[1] || session_ctx->value[2] || session_ctx->value[3] ||
+        session_ctx->value[4] || session_ctx->value[5] || session_ctx->value[6] || session_ctx->value[7])) &&
+        (session_ctx->hasSession == 1))
+    {
+        retStatus = DoAPDUTx_s_Case3(session_ctx, &hdr, cmdbuf, cmdbufLen);
+        if (retStatus == SM_OK)
+        {
+            for (iCnt = 0;iCnt < 8; iCnt++)
+            {
+                session_ctx->value[iCnt] = 0;
+            }
+            session_ctx->hasSession = 0;
+        }
+    }
+    else
+    {
+        LOG_D("CloseSession command is sent only if valid Session exists!!!");
+    }
     return retStatus;
 }
 
@@ -825,7 +844,8 @@ smStatus_t Se05x_API_ReadObject_W_Attst(pSe05xSession_t session_ctx,
         size_t rspIndex = 0;
         tlvRet          = tlvGet_u8buf(pRspbuf, &rspIndex, rspbufLen, kSE05x_TAG_1, data, pdataLen); /*  */
         if (0 != tlvRet) {
-            goto cleanup;
+            /* Keys with no read policy will not return TAG1 */
+            //goto cleanup;
         }
         tlvRet = tlvGet_u8buf(pRspbuf, &rspIndex, rspbufLen, kSE05x_TAG_2, attribute, pattributeLen); /*  */
         if (0 != tlvRet) {

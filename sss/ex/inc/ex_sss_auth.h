@@ -8,10 +8,18 @@
 #ifndef SSS_EX_INC_EX_SSS_AUTH_H_
 #define SSS_EX_INC_EX_SSS_AUTH_H_
 
+#if defined(SSS_USE_FTR_FILE)
+#include "fsl_sss_ftr.h"
+#else
+#include "fsl_sss_ftr_default.h"
+#endif
+
 #include "ex_sss_boot.h"
 #include "ex_sss_objid.h"
 #include "ex_sss_scp03_keys.h"
+#if defined(SECURE_WORLD)
 #include "ex_scp03_puf.h"
+#endif /* SECURE_WORLD */
 /* ************************************************************************** */
 /* Includes                                                                   */
 /* ************************************************************************** */
@@ -23,38 +31,55 @@
 /* clang-format off */
 
 /* Used in examples and testing */
+/* doc:start:auth-key-user-id */
 #define EX_SSS_AUTH_SE05X_UserID_AUTH_ID kEX_SSS_ObjID_UserID_Auth
+
 #define EX_SSS_AUTH_SE05X_UserID_VALUE \
     {                                  \
         0xC0, 0x01, 0x02, 0x03, 0x04   \
     } /* COOL 234*/
-
-#define EX_SSS_AUTH_SE05X_ECKEY_ECDSA_AUTH_ID kEX_SSS_objID_ECKEY_Auth
-
-#define EX_SSS_AUTH_SE05X_APPLETSCP_AUTH_ID kEX_SSS_ObjID_APPLETSCP03_Auth
+/* doc:end:auth-key-user-id */
 
 #define EX_SSS_AUTH_SE05X_NONE_AUTH_ID 0x00000000
+
+/* doc:start:auth-key-applet-scp */
+#define EX_SSS_AUTH_SE05X_APPLETSCP_AUTH_ID kEX_SSS_ObjID_APPLETSCP03_Auth
 
 #define EX_SSS_AUTH_SE05X_APPLETSCP_VALUE                                 \
     {                                                                     \
         0x40, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48, 0x49, 0x4A, \
         0x4B, 0x4C, 0x4D, 0x4E, 0x4F                                      \
     }
+/* doc:end:auth-key-applet-scp */
 
 /* Use the Platform SCP03 keys from required OEF
  * See https://www.nxp.com/docs/en/application-note/AN12436.pdf
  */
 
-#if EXTERNAL_CUSTOMER_BUILD_CONFIGURATION
-#ifndef EX_SSS_AUTH_SE05X_KEY_ENC
-#   define EX_SSS_AUTH_SE05X_KEY_ENC SSS_AUTH_SE050_DEVKIT_KEY_ENC
+#if  1 /* Customer facing */
+
+#if SSS_HAVE_SE05X_VER_06_00 // Applet 6.0
+    #ifndef EX_SSS_AUTH_SE05X_KEY_ENC
+    #   define EX_SSS_AUTH_SE05X_KEY_ENC SSS_AUTH_SE051C2_KEY_ENC
+    #endif
+    #ifndef EX_SSS_AUTH_SE05X_KEY_MAC
+    #   define EX_SSS_AUTH_SE05X_KEY_MAC SSS_AUTH_SE051C2_KEY_MAC
+    #endif
+    #ifndef EX_SSS_AUTH_SE05X_KEY_DEK
+    #   define EX_SSS_AUTH_SE05X_KEY_DEK SSS_AUTH_SE051C2_KEY_DEK
+    #endif
+#else
+    #ifndef EX_SSS_AUTH_SE05X_KEY_ENC
+    #   define EX_SSS_AUTH_SE05X_KEY_ENC SSS_AUTH_SE050_DEVKIT_KEY_ENC
+    #endif
+    #ifndef EX_SSS_AUTH_SE05X_KEY_MAC
+    #   define EX_SSS_AUTH_SE05X_KEY_MAC SSS_AUTH_SE050_DEVKIT_KEY_MAC
+    #endif
+    #ifndef EX_SSS_AUTH_SE05X_KEY_DEK
+    #   define EX_SSS_AUTH_SE05X_KEY_DEK SSS_AUTH_SE050_DEVKIT_KEY_DEK
+    #endif
 #endif
-#ifndef EX_SSS_AUTH_SE05X_KEY_MAC
-#   define EX_SSS_AUTH_SE05X_KEY_MAC SSS_AUTH_SE050_DEVKIT_KEY_MAC
-#endif
-#ifndef EX_SSS_AUTH_SE05X_KEY_DEK
-#   define EX_SSS_AUTH_SE05X_KEY_DEK SSS_AUTH_SE050_DEVKIT_KEY_DEK
-#endif
+
 #else
 /* Test / dummy keys */
 
@@ -78,6 +103,9 @@
 
 #define EX_SSS_AUTH_SE05X_KEY_VERSION_NO 0x0B
 
+/* doc:start:auth-key-fast-scp-ecdsa */
+#define EX_SSS_AUTH_SE05X_ECKEY_ECDSA_AUTH_ID kEX_SSS_objID_ECKEY_Auth
+
 #define EX_SSS_AUTH_SE05X_KEY_HOST_ECDSA_KEY                              \
     {                                                                     \
         0x30, 0x81, 0x87, 0x02, 0x01, 0x00, 0x30, 0x13,                   \
@@ -100,6 +128,7 @@
         0x09, 0x44, 0x82, 0xF0, 0x4D, 0x24, 0xB5, 0xBE,                   \
         0xC4                                                              \
     }
+/* doc:end:auth-key-fast-scp-ecdsa */
 
 /* clang-format on */
 

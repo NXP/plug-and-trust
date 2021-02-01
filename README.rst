@@ -2,7 +2,7 @@ Introduction on Plug & Trust Middleware Mini Package
 ====================================================================
 
 Plug and Trust middleware mini package contains the minimum files required to
-connect to se05x using t1oi2c protocol. The package is tested on
+connect to SE05x using t1oi2c protocol. The package is tested on
 *Raspberry-Pi* with ``T=1 overI2C``.
 
 The complete Plug and Trust middleware package can be downloaded from
@@ -15,14 +15,15 @@ platforms.
 - Windows PC(Visual Studio)
 
 It also includes other api usage examples, ssscli (command line tool to use
-se050), cloud connectivity examples, openssl engine, pkcs11 interface, AWS
-Greengrass, OPCUA and more. More details regarding SE050 and other detailed
-application notes can be found at https://www.nxp.com/products/:SE050.
+SE05x), cloud connectivity examples, openssl engine, pkcs11 interface, AWS
+Greengrass, OPCUA and more. More details regarding SE05x and other detailed
+application notes can be found at https://www.nxp.com/products/:SE050 /
+https://www.nxp.com/products/:SE051.
 
 
 Change Log
 -------------------------------------------------------------
-Refer [ChangeLog](ChangeLog.md)
+Refer ChangeLog.md
 
 
 Folder structure of the Mini Pacakge
@@ -79,7 +80,7 @@ Prerequisite
 -------------------------------------------------------------
 - Linux should be running on the Raspberry Pi development board,
   the release was tested with Raspbian Buster (``4.19.75-v7l+``)
-- SE050 connected to i2c-1 port of Raspberry Pi.
+- SE050 or SE051 connected to i2c-1 port of Raspberry Pi.
 
 
 ECC example
@@ -109,7 +110,16 @@ Refer the example `ecc_example`.
 Example File - `/sss/ex/ecc/ex_sss_ecc.c`
 
 
-To enable authenticated session to se050, make the following changes,
+Use the below macros in ``fsl_sss_ftr.h`` file to enable support for either SE050 or SE051. ::
+
+	/** SE050 */
+	#define SSS_HAVE_SE05X_VER_03_XX 1
+
+	/** SE051 */
+	#define SSS_HAVE_SE05X_VER_06_00 0
+
+
+To enable authenticated session to SE05x, make the following changes,
 
 1. Enable any host crypto (Mbedtls or openssl or User crypto) in
    ``fsl_sss_ftr.h`` file. Refer,
@@ -297,10 +307,10 @@ Memory details of ex_ecc example on Raspberry Pi built with,
 
 ::
 
-    Text segment -- 182817 Bytes
+    Text segment -- 184505 Bytes
     Data segment -- 416 Bytes
     Bss segment --- 2808 Bytes
-    Total  -------- 186041 Bytes
+    Total  -------- 187729 Bytes
 
 
 Memory details of ex_ecc example on Raspberry Pi built with
@@ -310,8 +320,8 @@ Memory details of ex_ecc example on Raspberry Pi built with
 
 ::
 
-    Text segment -- 290184 Bytes
+    Text segment -- 292336 Bytes
     Data segment -- 1116 Bytes
     Bss segment --- 3692 Bytes
-    Total  -------- 294992 Bytes
+    Total  -------- 297144 Bytes
 

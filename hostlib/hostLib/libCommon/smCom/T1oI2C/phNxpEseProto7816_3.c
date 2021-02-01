@@ -549,7 +549,7 @@ static bool_t phNxpEseProro7816_SaveRxframeData(uint8_t *p_data, uint32_t data_l
         return TRUE;
     }
     else {
-        LOG_D("Invalid response");
+        LOG_E("Unsolicited response");
         return FALSE;
     }
 }
@@ -1399,8 +1399,11 @@ bool_t phNxpEseProto7816_Open(void* conn_ctx, phNxpEseProto7816InitParam_t initP
 bool_t phNxpEseProto7816_Close(void* conn_ctx)
 {
     sFrameInfo_t *pNextTx_SframeInfo = &phNxpEseProto7816_3_Var.phNxpEseNextTx_Cntx.SframeInfo;
-
     bool_t status = FALSE;
+    /*Explicitly Initilising to NULL as the Application layer does not intend to receive a response*/
+    phNxpEseRx_Cntx_t *pRx_EseCntx = &phNxpEseProto7816_3_Var.phNxpEseRx_Cntx;
+    pRx_EseCntx->pRsp = NULL;
+
     if(phNxpEseProto7816_3_Var.phNxpEseProto7816_CurrentState != PH_NXP_ESE_PROTO_7816_IDLE)
         return status;
     phNxpEseProto7816_3_Var.phNxpEseProto7816_CurrentState = PH_NXP_ESE_PROTO_7816_DEINIT;

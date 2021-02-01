@@ -5790,7 +5790,7 @@ smStatus_t Se05x_API_GetRandom(pSe05xSession_t session_ctx, uint16_t size, uint8
  */
 smStatus_t Se05x_API_DeleteAll(pSe05xSession_t session_ctx);
 
-#if SSS_HAVE_SE05X_VER_GTE_04_04
+#if SSS_HAVE_SE05X_VER_GTE_06_00
 #include "se05x_04_xx_APDU_apis.h"
 #endif
 

@@ -99,7 +99,7 @@ uint32_t se05x_sssKeyTypeLenToCurveId(sss_cipher_type_t cipherType, size_t keyBi
     case kSSS_CipherType_EC_MONTGOMERY: {
         SE05x_ECCurve_t eCurveID;
         switch (keyBits) {
-#if SSS_HAVE_SE05X_VER_GTE_04_04
+#if SSS_HAVE_SE05X_VER_GTE_06_00
         case 448:
             eCurveID = kSE05x_ECCurve_RESERVED_ID_ECC_MONT_DH_448;
             break;

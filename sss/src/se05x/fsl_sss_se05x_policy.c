@@ -107,12 +107,12 @@ static void sss_se05x_update_header_sym_key_policy(sss_policy_sym_key_u key_pol,
     if (key_pol.can_Import_Export) {
         header |= POLICY_OBJ_ALLOW_IMPORT_EXPORT;
     }
-#if SSS_HAVE_SE05X_VER_GTE_04_04
+#if SSS_HAVE_SE05X_VER_GTE_06_00
     if (key_pol.forbid_Derived_Output) {
         header |= POLICY_OBJ_FORBID_DERIVED_OUTPUT;
     }
 #endif
-#if SSS_HAVE_SE05X_VER_GTE_05_04
+#if SSS_HAVE_SE05X_VER_GTE_06_00
     if (key_pol.allow_kdf_ext_rnd) {
         header |= POLICY_OBJ_ALLOW_KDF_EXT_RANDOM;
     }
@@ -159,7 +159,7 @@ static void sss_se05x_update_header_asym_key_policy(sss_policy_asym_key_u key_po
     if (key_pol.can_Attest) {
         header |= POLICY_OBJ_ALLOW_ATTESTATION;
     }
-#if SSS_HAVE_SE05X_VER_GTE_04_04
+#if SSS_HAVE_SE05X_VER_GTE_06_00
     if (key_pol.forbid_Derived_Output) {
         header |= POLICY_OBJ_FORBID_DERIVED_OUTPUT;
     }

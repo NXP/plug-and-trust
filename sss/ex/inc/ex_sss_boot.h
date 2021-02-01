@@ -192,6 +192,9 @@ bool ex_sss_boot_isSocketPortName(const char *portName);
 /** Open an example session */
 sss_status_t ex_sss_boot_open(ex_sss_boot_ctx_t *pCtx, const char *portName);
 
+/** Open an example cc session */
+sss_status_t ex_sss_boot_open_on_id(ex_sss_boot_ctx_t *pCtx, const char *portName, const int32_t authId);
+
 /** Open an example session */
 sss_status_t ex_sss_boot_factory_reset(ex_sss_boot_ctx_t *pCtx);
 
@@ -201,7 +204,9 @@ void ex_sss_session_close(ex_sss_boot_ctx_t *pCtx);
 /** Entry Point for each example */
 sss_status_t ex_sss_entry(ex_sss_boot_ctx_t *pCtx);
 
-sss_status_t ex_sss_kestore_and_object_init(ex_sss_boot_ctx_t *pCtx);
+#define ex_sss_kestore_and_object_init ex_sss_key_store_and_object_init
+
+sss_status_t ex_sss_key_store_and_object_init(ex_sss_boot_ctx_t *pCtx);
 
 int ex_sss_boot_rtos_init(void);
 

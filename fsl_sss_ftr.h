@@ -82,53 +82,21 @@
 
 
 
-/** SE05X_Ver : SE50 Applet version.
+/** SE05X_Ver : SE05X Applet version.
  *
- * 03_XX would only enable features of version 03.XX version of applet.
- * But, this would be compatibility would be added for newer versions of the Applet.
- * When 04_XX is selected, it would expose features available in 04_XX at compile time.
+ * Selection of Applet version 03_XX enables SE050 features.
+ * Selection of Applet version 06_00 enables SE051 features.
+ *
  */
 
 /** SE050 */
 #define SSS_HAVE_SE05X_VER_03_XX 1
 
-/** NXP Internal - 4.4 */
-#define SSS_HAVE_SE05X_VER_04_04 0
-
-/** NXP Internal - 5.00 */
-#define SSS_HAVE_SE05X_VER_05_00 0
-
-/** NXP Internal - 5.02 */
-#define SSS_HAVE_SE05X_VER_05_02 0
-
-/** NXP Internal - 5.04 */
-#define SSS_HAVE_SE05X_VER_05_04 0
-
-/** NXP Internal - 5.06 */
-#define SSS_HAVE_SE05X_VER_05_06 0
-
-/** NXP Internal - 5.08 */
-#define SSS_HAVE_SE05X_VER_05_08 0
-
-/** NXP Internal - 5.10 */
-#define SSS_HAVE_SE05X_VER_05_10 0
-
-/** NXP Internal - 5.12 */
-#define SSS_HAVE_SE05X_VER_05_12 0
-
-/** NXP Internal - 6.00 */
+/** SE051 */
 #define SSS_HAVE_SE05X_VER_06_00 0
 
 #if (( 0                             \
     + SSS_HAVE_SE05X_VER_03_XX       \
-    + SSS_HAVE_SE05X_VER_04_04       \
-    + SSS_HAVE_SE05X_VER_05_00       \
-    + SSS_HAVE_SE05X_VER_05_02       \
-    + SSS_HAVE_SE05X_VER_05_04       \
-    + SSS_HAVE_SE05X_VER_05_06       \
-    + SSS_HAVE_SE05X_VER_05_08       \
-    + SSS_HAVE_SE05X_VER_05_10       \
-    + SSS_HAVE_SE05X_VER_05_12       \
     + SSS_HAVE_SE05X_VER_06_00       \
     ) > 1)
 #        error "Enable only one of 'SE05X_Ver'"
@@ -137,14 +105,6 @@
 
 #if (( 0                             \
     + SSS_HAVE_SE05X_VER_03_XX       \
-    + SSS_HAVE_SE05X_VER_04_04       \
-    + SSS_HAVE_SE05X_VER_05_00       \
-    + SSS_HAVE_SE05X_VER_05_02       \
-    + SSS_HAVE_SE05X_VER_05_04       \
-    + SSS_HAVE_SE05X_VER_05_06       \
-    + SSS_HAVE_SE05X_VER_05_08       \
-    + SSS_HAVE_SE05X_VER_05_10       \
-    + SSS_HAVE_SE05X_VER_05_12       \
     + SSS_HAVE_SE05X_VER_06_00       \
     ) == 0)
 #        error "Enable at-least one of 'SE05X_Ver'"
@@ -489,184 +449,14 @@
 #if SSS_HAVE_APPLET_SE05X_IOT
 #    if SSS_HAVE_SE05X_VER_06_00
 #        define SSS_HAVE_SE05X_VER_GTE_06_00 1
-#        define SSS_HAVE_SE05X_VER_GTE_05_12 1
-#        define SSS_HAVE_SE05X_VER_GTE_05_10 1
-#        define SSS_HAVE_SE05X_VER_GTE_05_08 1
-#        define SSS_HAVE_SE05X_VER_GTE_05_06 1
-#        define SSS_HAVE_SE05X_VER_GTE_05_04 1
-#        define SSS_HAVE_SE05X_VER_GTE_05_02 1
-#        define SSS_HAVE_SE05X_VER_GTE_05_00 1
-#        define SSS_HAVE_SE05X_VER_GTE_04_12 1
-#        define SSS_HAVE_SE05X_VER_GTE_04_08 1
-#        define SSS_HAVE_SE05X_VER_GTE_04_04 1
 #        define SSS_HAVE_SE05X_VER_GTE_03_XX 1
 #    endif /* SSS_HAVE_SE05X_VER_06_00 */
-#    if SSS_HAVE_SE05X_VER_05_12
-#        define SSS_HAVE_SE05X_VER_GTE_06_00 0
-#        define SSS_HAVE_SE05X_VER_GTE_05_12 1
-#        define SSS_HAVE_SE05X_VER_GTE_05_10 1
-#        define SSS_HAVE_SE05X_VER_GTE_05_08 1
-#        define SSS_HAVE_SE05X_VER_GTE_05_06 1
-#        define SSS_HAVE_SE05X_VER_GTE_05_04 1
-#        define SSS_HAVE_SE05X_VER_GTE_05_02 1
-#        define SSS_HAVE_SE05X_VER_GTE_05_00 1
-#        define SSS_HAVE_SE05X_VER_GTE_04_12 1
-#        define SSS_HAVE_SE05X_VER_GTE_04_08 1
-#        define SSS_HAVE_SE05X_VER_GTE_04_04 1
-#        define SSS_HAVE_SE05X_VER_GTE_03_XX 1
-#    endif /* SSS_HAVE_SE05X_VER_05_12 */
-#    if SSS_HAVE_SE05X_VER_05_10
-#        define SSS_HAVE_SE05X_VER_GTE_06_00 0
-#        define SSS_HAVE_SE05X_VER_GTE_05_12 0
-#        define SSS_HAVE_SE05X_VER_GTE_05_10 1
-#        define SSS_HAVE_SE05X_VER_GTE_05_08 1
-#        define SSS_HAVE_SE05X_VER_GTE_05_06 1
-#        define SSS_HAVE_SE05X_VER_GTE_05_04 1
-#        define SSS_HAVE_SE05X_VER_GTE_05_02 1
-#        define SSS_HAVE_SE05X_VER_GTE_05_00 1
-#        define SSS_HAVE_SE05X_VER_GTE_04_12 1
-#        define SSS_HAVE_SE05X_VER_GTE_04_08 1
-#        define SSS_HAVE_SE05X_VER_GTE_04_04 1
-#        define SSS_HAVE_SE05X_VER_GTE_03_XX 1
-#    endif /* SSS_HAVE_SE05X_VER_05_10 */
-#    if SSS_HAVE_SE05X_VER_05_08
-#        define SSS_HAVE_SE05X_VER_GTE_06_00 0
-#        define SSS_HAVE_SE05X_VER_GTE_05_12 0
-#        define SSS_HAVE_SE05X_VER_GTE_05_10 0
-#        define SSS_HAVE_SE05X_VER_GTE_05_08 1
-#        define SSS_HAVE_SE05X_VER_GTE_05_06 1
-#        define SSS_HAVE_SE05X_VER_GTE_05_04 1
-#        define SSS_HAVE_SE05X_VER_GTE_05_02 1
-#        define SSS_HAVE_SE05X_VER_GTE_05_00 1
-#        define SSS_HAVE_SE05X_VER_GTE_04_12 1
-#        define SSS_HAVE_SE05X_VER_GTE_04_08 1
-#        define SSS_HAVE_SE05X_VER_GTE_04_04 1
-#        define SSS_HAVE_SE05X_VER_GTE_03_XX 1
-#    endif /* SSS_HAVE_SE05X_VER_05_08 */
-#    if SSS_HAVE_SE05X_VER_05_06
-#        define SSS_HAVE_SE05X_VER_GTE_06_00 0
-#        define SSS_HAVE_SE05X_VER_GTE_05_12 0
-#        define SSS_HAVE_SE05X_VER_GTE_05_10 0
-#        define SSS_HAVE_SE05X_VER_GTE_05_08 0
-#        define SSS_HAVE_SE05X_VER_GTE_05_06 1
-#        define SSS_HAVE_SE05X_VER_GTE_05_04 1
-#        define SSS_HAVE_SE05X_VER_GTE_05_02 1
-#        define SSS_HAVE_SE05X_VER_GTE_05_00 1
-#        define SSS_HAVE_SE05X_VER_GTE_04_12 1
-#        define SSS_HAVE_SE05X_VER_GTE_04_08 1
-#        define SSS_HAVE_SE05X_VER_GTE_04_04 1
-#        define SSS_HAVE_SE05X_VER_GTE_03_XX 1
-#    endif /* SSS_HAVE_SE05X_VER_05_06 */
-#    if SSS_HAVE_SE05X_VER_05_04
-#        define SSS_HAVE_SE05X_VER_GTE_06_00 0
-#        define SSS_HAVE_SE05X_VER_GTE_05_12 0
-#        define SSS_HAVE_SE05X_VER_GTE_05_10 0
-#        define SSS_HAVE_SE05X_VER_GTE_05_08 0
-#        define SSS_HAVE_SE05X_VER_GTE_05_06 0
-#        define SSS_HAVE_SE05X_VER_GTE_05_04 1
-#        define SSS_HAVE_SE05X_VER_GTE_05_02 1
-#        define SSS_HAVE_SE05X_VER_GTE_05_00 1
-#        define SSS_HAVE_SE05X_VER_GTE_04_12 1
-#        define SSS_HAVE_SE05X_VER_GTE_04_08 1
-#        define SSS_HAVE_SE05X_VER_GTE_04_04 1
-#        define SSS_HAVE_SE05X_VER_GTE_03_XX 1
-#    endif /* SSS_HAVE_SE05X_VER_05_04 */
-#    if SSS_HAVE_SE05X_VER_05_02
-#        define SSS_HAVE_SE05X_VER_GTE_06_00 0
-#        define SSS_HAVE_SE05X_VER_GTE_05_12 0
-#        define SSS_HAVE_SE05X_VER_GTE_05_10 0
-#        define SSS_HAVE_SE05X_VER_GTE_05_08 0
-#        define SSS_HAVE_SE05X_VER_GTE_05_06 0
-#        define SSS_HAVE_SE05X_VER_GTE_05_04 0
-#        define SSS_HAVE_SE05X_VER_GTE_05_02 1
-#        define SSS_HAVE_SE05X_VER_GTE_05_00 1
-#        define SSS_HAVE_SE05X_VER_GTE_04_12 1
-#        define SSS_HAVE_SE05X_VER_GTE_04_08 1
-#        define SSS_HAVE_SE05X_VER_GTE_04_04 1
-#        define SSS_HAVE_SE05X_VER_GTE_03_XX 1
-#    endif /* SSS_HAVE_SE05X_VER_05_02 */
-#    if SSS_HAVE_SE05X_VER_05_00
-#        define SSS_HAVE_SE05X_VER_GTE_06_00 0
-#        define SSS_HAVE_SE05X_VER_GTE_05_12 0
-#        define SSS_HAVE_SE05X_VER_GTE_05_10 0
-#        define SSS_HAVE_SE05X_VER_GTE_05_08 0
-#        define SSS_HAVE_SE05X_VER_GTE_05_06 0
-#        define SSS_HAVE_SE05X_VER_GTE_05_04 0
-#        define SSS_HAVE_SE05X_VER_GTE_05_02 0
-#        define SSS_HAVE_SE05X_VER_GTE_05_00 1
-#        define SSS_HAVE_SE05X_VER_GTE_04_12 1
-#        define SSS_HAVE_SE05X_VER_GTE_04_08 1
-#        define SSS_HAVE_SE05X_VER_GTE_04_04 1
-#        define SSS_HAVE_SE05X_VER_GTE_03_XX 1
-#    endif /* SSS_HAVE_SE05X_VER_05_00 */
-#    if SSS_HAVE_SE05X_VER_04_12
-#        define SSS_HAVE_SE05X_VER_GTE_06_00 0
-#        define SSS_HAVE_SE05X_VER_GTE_05_12 0
-#        define SSS_HAVE_SE05X_VER_GTE_05_10 0
-#        define SSS_HAVE_SE05X_VER_GTE_05_08 0
-#        define SSS_HAVE_SE05X_VER_GTE_05_06 0
-#        define SSS_HAVE_SE05X_VER_GTE_05_04 0
-#        define SSS_HAVE_SE05X_VER_GTE_05_02 0
-#        define SSS_HAVE_SE05X_VER_GTE_05_00 0
-#        define SSS_HAVE_SE05X_VER_GTE_04_12 1
-#        define SSS_HAVE_SE05X_VER_GTE_04_08 1
-#        define SSS_HAVE_SE05X_VER_GTE_04_04 1
-#        define SSS_HAVE_SE05X_VER_GTE_03_XX 1
-#    endif /* SSS_HAVE_SE05X_VER_04_12 */
-#    if SSS_HAVE_SE05X_VER_04_08
-#        define SSS_HAVE_SE05X_VER_GTE_06_00 0
-#        define SSS_HAVE_SE05X_VER_GTE_05_12 0
-#        define SSS_HAVE_SE05X_VER_GTE_05_10 0
-#        define SSS_HAVE_SE05X_VER_GTE_05_08 0
-#        define SSS_HAVE_SE05X_VER_GTE_05_06 0
-#        define SSS_HAVE_SE05X_VER_GTE_05_04 0
-#        define SSS_HAVE_SE05X_VER_GTE_05_02 0
-#        define SSS_HAVE_SE05X_VER_GTE_05_00 0
-#        define SSS_HAVE_SE05X_VER_GTE_04_12 0
-#        define SSS_HAVE_SE05X_VER_GTE_04_08 1
-#        define SSS_HAVE_SE05X_VER_GTE_04_04 1
-#        define SSS_HAVE_SE05X_VER_GTE_03_XX 1
-#    endif /* SSS_HAVE_SE05X_VER_04_08 */
-#    if SSS_HAVE_SE05X_VER_04_04
-#        define SSS_HAVE_SE05X_VER_GTE_06_00 0
-#        define SSS_HAVE_SE05X_VER_GTE_05_12 0
-#        define SSS_HAVE_SE05X_VER_GTE_05_10 0
-#        define SSS_HAVE_SE05X_VER_GTE_05_08 0
-#        define SSS_HAVE_SE05X_VER_GTE_05_06 0
-#        define SSS_HAVE_SE05X_VER_GTE_05_04 0
-#        define SSS_HAVE_SE05X_VER_GTE_05_02 0
-#        define SSS_HAVE_SE05X_VER_GTE_05_00 0
-#        define SSS_HAVE_SE05X_VER_GTE_04_12 0
-#        define SSS_HAVE_SE05X_VER_GTE_04_08 0
-#        define SSS_HAVE_SE05X_VER_GTE_04_04 1
-#        define SSS_HAVE_SE05X_VER_GTE_03_XX 1
-#    endif /* SSS_HAVE_SE05X_VER_04_04 */
 #    if SSS_HAVE_SE05X_VER_03_XX
 #        define SSS_HAVE_SE05X_VER_GTE_06_00 0
-#        define SSS_HAVE_SE05X_VER_GTE_05_12 0
-#        define SSS_HAVE_SE05X_VER_GTE_05_10 0
-#        define SSS_HAVE_SE05X_VER_GTE_05_08 0
-#        define SSS_HAVE_SE05X_VER_GTE_05_06 0
-#        define SSS_HAVE_SE05X_VER_GTE_05_04 0
-#        define SSS_HAVE_SE05X_VER_GTE_05_02 0
-#        define SSS_HAVE_SE05X_VER_GTE_05_00 0
-#        define SSS_HAVE_SE05X_VER_GTE_04_12 0
-#        define SSS_HAVE_SE05X_VER_GTE_04_08 0
-#        define SSS_HAVE_SE05X_VER_GTE_04_04 0
 #        define SSS_HAVE_SE05X_VER_GTE_03_XX 1
 #    endif /* SSS_HAVE_SE05X_VER_03_XX */
 #else //SSS_HAVE_APPLET_SE05X_IOT
 #   define SSS_HAVE_SE05X_VER_GTE_03_XX 0
-#   define SSS_HAVE_SE05X_VER_GTE_04_04 0
-#   define SSS_HAVE_SE05X_VER_GTE_04_08 0
-#   define SSS_HAVE_SE05X_VER_GTE_04_12 0
-#   define SSS_HAVE_SE05X_VER_GTE_05_00 0
-#   define SSS_HAVE_SE05X_VER_GTE_05_02 0
-#   define SSS_HAVE_SE05X_VER_GTE_05_04 0
-#   define SSS_HAVE_SE05X_VER_GTE_05_06 0
-#   define SSS_HAVE_SE05X_VER_GTE_05_08 0
-#   define SSS_HAVE_SE05X_VER_GTE_05_10 0
-#   define SSS_HAVE_SE05X_VER_GTE_05_12 0
 #   define SSS_HAVE_SE05X_VER_GTE_06_00 0
 #endif // SSS_HAVE_APPLET_SE05X_IOT
 /** Deprecated items. Used here for backwards compatibility. */

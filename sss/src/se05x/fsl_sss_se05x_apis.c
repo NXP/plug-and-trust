@@ -42,6 +42,24 @@ extern "C" {
     LOG_D("Trying to Released Lock by thread: %ld", pthread_self()); \
     pthread_mutex_unlock(&lock);                                     \
     LOG_D("LOCK Released by thread: %ld", pthread_self());
+#elif AX_EMBEDDED && USE_RTOS
+    #define LOCK_TXN(lock)                                           \
+        LOG_D("Trying to Acquire Lock");                             \
+        if (xSemaphoreTake(lock, portMAX_DELAY) == pdTRUE) {         \
+            LOG_D("LOCK Acquired"); }                                \
+        else {                                                       \
+            LOG_D("LOCK Acquisition failed"); }
+    #define UNLOCK_TXN(lock)                                         \
+        LOG_D("Trying to Released Lock");                            \
+        if (xSemaphoreGive(lock) == pdTRUE) {                        \
+            LOG_D("LOCK Released");}                                 \
+        else {                                                       \
+            LOG_D("LOCK Releasing failed"); }
+#endif
+#if (__GNUC__ && !AX_EMBEDDED) || (AX_EMBEDDED && USE_RTOS)
+#define USE_LOCK 1
+#else
+#define USE_LOCK 0
 #endif
 
 static SE05x_ECSignatureAlgo_t se05x_get_ec_sign_hash_mode(sss_algorithm_t algorithm);
@@ -127,7 +145,7 @@ static sss_status_t sss_se05x_key_store_set_rsa_key(sss_se05x_key_store_t *keySt
 static sss_status_t se05x_check_input_len(size_t inLen, sss_algorithm_t algorithm);
 #endif
 
-#if SSS_HAVE_SE05X_VER_GTE_04_04
+#if SSS_HAVE_SE05X_VER_GTE_06_00
 static sss_status_t sss_se05x_aead_CCMfinish(sss_se05x_aead_t *context,
     const uint8_t *srcData,
     size_t srcLen,
@@ -151,7 +169,7 @@ static smStatus_t sss_se05x_LL_set_ec_key(pSe05xSession_t session_ctx,
     const SE05x_KeyPart_t key_part,
     SE05x_Result_t obj_exists);
 
-#if SSS_HAVE_SE05X_VER_GTE_04_04
+#if SSS_HAVE_SE05X_VER_GTE_06_00
 typedef smStatus_t (*fp_Ec_KeyWrite_t)(pSe05xSession_t session_ctx,
     pSe05xPolicy_t policy,
     SE05x_MaxAttemps_t maxAttempt,
@@ -164,7 +182,7 @@ typedef smStatus_t (*fp_Ec_KeyWrite_t)(pSe05xSession_t session_ctx,
     const SE05x_INS_t ins_type,
     const SE05x_KeyPart_t key_part,
     uint32_t version);
-#endif //SSS_HAVE_SE05X_VER_GTE_04_04
+#endif //SSS_HAVE_SE05X_VER_GTE_06_00
 #endif //SSSFTR_SE05X_ECC && SSSFTR_SE05X_KEY_SET
 
 #if SSSFTR_SE05X_AES && SSSFTR_SE05X_KEY_SET
@@ -179,7 +197,7 @@ static smStatus_t sss_se05x_LL_set_symm_key(pSe05xSession_t session_ctx,
     const SE05x_SymmKeyType_t type,
     SE05x_Result_t obj_exists);
 
-#if SSS_HAVE_SE05X_VER_GTE_04_04
+#if SSS_HAVE_SE05X_VER_GTE_06_00
 typedef smStatus_t (*fp_Symm_KeyWrite_t)(pSe05xSession_t session_ctx,
     pSe05xPolicy_t policy,
     SE05x_MaxAttemps_t maxAttempt,
@@ -190,7 +208,7 @@ typedef smStatus_t (*fp_Symm_KeyWrite_t)(pSe05xSession_t session_ctx,
     const SE05x_INS_t ins_type,
     const SE05x_SymmKeyType_t type,
     uint32_t version);
-#endif //SSS_HAVE_SE05X_VER_GTE_04_04
+#endif //SSS_HAVE_SE05X_VER_GTE_06_00
 #endif //SSSFTR_SE05X_AES && SSSFTR_SE05X_KEY_SET
 
 #if SSSFTR_SE05X_RSA && SSSFTR_SE05X_KEY_SET
@@ -219,7 +237,7 @@ static smStatus_t sss_se05x_LL_set_RSA_key(pSe05xSession_t session_ctx,
     const SE05x_RSAKeyFormat_t rsa_format,
     SE05x_Result_t obj_exists);
 
-#if SSS_HAVE_SE05X_VER_GTE_04_04
+#if SSS_HAVE_SE05X_VER_GTE_06_00
 typedef smStatus_t (*fp_RSA_KeyWrite_t)(pSe05xSession_t session_ctx,
     pSe05xPolicy_t policy,
     uint32_t objectID,
@@ -244,7 +262,7 @@ typedef smStatus_t (*fp_RSA_KeyWrite_t)(pSe05xSession_t session_ctx,
     const SE05x_KeyPart_t key_part,
     const SE05x_RSAKeyFormat_t rsa_format,
     uint32_t version);
-#endif //SSS_HAVE_SE05X_VER_GTE_04_04
+#endif //SSS_HAVE_SE05X_VER_GTE_06_00
 #endif //SSSFTR_SE05X_RSA && SSSFTR_SE05X_KEY_SET
 /* ************************************************************************** */
 /* Defines                                                                    */
@@ -539,6 +557,7 @@ static sss_status_t sss_session_auth_open(sss_se05x_session_t *session,
         LOG_W("!!!Not recommended for production use.!!!");
         se05xSession->fp_Transform = &se05x_Transform;
         se05xSession->fp_DeCrypt   = &se05x_DeCrypt;
+
         status = se05x_CreateVerifyUserIDSession(se05xSession, auth_id, &pAuthCtx->auth.ctx.idobj, &se05x_policy);
         if (status != SM_OK) {
             se05xSession->hasSession = 1;
@@ -752,10 +771,7 @@ cleanup:
 
 void sss_se05x_session_close(sss_se05x_session_t *session)
 {
-    if (session->s_ctx.value[0] || session->s_ctx.value[1] || session->s_ctx.value[2] || session->s_ctx.value[3] ||
-        session->s_ctx.value[4] || session->s_ctx.value[5] || session->s_ctx.value[6] || session->s_ctx.value[7]) {
-        Se05x_API_CloseSession(&session->s_ctx);
-    }
+    Se05x_API_CloseSession(&session->s_ctx);
     if (session->s_ctx.pChannelCtx == NULL) {
         SM_Close(session->s_ctx.conn_ctx, 0);
     }
@@ -862,7 +878,7 @@ sss_status_t sss_se05x_key_object_get_handle(sss_se05x_object_t *keyObject, uint
                 else if (retCurveId == kSE05x_ECCurve_TPM_ECC_BN_P256) {
                     keyObject->cipherType = kSSS_CipherType_EC_BARRETO_NAEHRIG;
                 }
-#if SSS_HAVE_SE05X_VER_GTE_04_04
+#if SSS_HAVE_SE05X_VER_GTE_06_00
                 else if (retCurveId == kSE05x_ECCurve_RESERVED_ID_ECC_MONT_DH_448) {
                     keyObject->cipherType = kSSS_CipherType_EC_MONTGOMERY;
                 }
@@ -1091,7 +1107,7 @@ sss_status_t sss_se05x_derive_key_one_go(sss_se05x_derive_key_t *context,
     SE05x_HkdfMode_t hkdfMode =
         (context->mode == kMode_SSS_HKDF_ExpandOnly ? kSE05x_HkdfMode_ExpandOnly : kSE05x_HkdfMode_ExtractExpand);
 
-#if SSS_HAVE_SE05X_VER_GTE_04_04
+#if SSS_HAVE_SE05X_VER_GTE_06_00
     if (context->keyObject->keyStore == derivedKeyObject->keyStore) {
         pHkdfKey = NULL;
     }
@@ -1159,7 +1175,7 @@ sss_status_t sss_se05x_derive_key_sobj_one_go(sss_se05x_derive_key_t *context,
         }
     }
 
-#if SSS_HAVE_SE05X_VER_GTE_04_04
+#if SSS_HAVE_SE05X_VER_GTE_06_00
     if (context->keyObject->keyStore == derivedKeyObject->keyStore) {
         pHkdfKey = NULL;
     }
@@ -1246,18 +1262,12 @@ sss_status_t sss_se05x_derive_key_dh(
     }
 
     pPublicKey = &pubkey[publicKeyIndex];
-#if SSS_HAVE_SE05X_VER_GTE_04_04
+#if SSS_HAVE_SE05X_VER_GTE_06_00
     uint8_t invertEndiannes = 0x00;
     if (otherPartyKeyObject->cipherType == kSSS_CipherType_EC_MONTGOMERY) {
-#if SSS_HAVE_SE05X_VER_GTE_04_12
         // In case of Montgomery curves we want to store the
         // shared secret using Little Endian Convention
         invertEndiannes = 0x01;
-#else
-        // Backwardscompatible with behaviour applet before fix.
-        // TODO: Remove this
-        invertEndiannes = 0x00;
-#endif
     }
 
     if (context->keyObject->keyStore == derivedKeyObject->keyStore) {
@@ -1305,7 +1315,7 @@ sss_status_t sss_se05x_derive_key_dh(
             NULL,
             0);
         ENSURE_OR_GO_EXIT(retval == kStatus_SSS_Success);
-#if SSS_HAVE_SE05X_VER_GTE_04_04
+#if SSS_HAVE_SE05X_VER_GTE_06_00
     }
 #endif
 
@@ -2094,7 +2104,7 @@ static size_t getEccPrivPubKeyLen(uint32_t curve_id, size_t *pubKeyLen, size_t *
         *privKeyLen = 32;
         *pubKeyLen  = 32;
     } break;
-#if SSS_HAVE_SE05X_VER_GTE_04_04
+#if SSS_HAVE_SE05X_VER_GTE_06_00
     case kSE05x_ECCurve_RESERVED_ID_ECC_MONT_DH_448: {
         *privKeyLen = 56;
         *pubKeyLen  = 56;
@@ -2129,11 +2139,11 @@ smStatus_t sss_se05x_create_curve_if_needed(Se05xSession_t *pSession, uint32_t c
     }
 
     if (curve_id == kSE05x_ECCurve_RESERVED_ID_ECC_MONT_DH_25519
-#if SSS_HAVE_SE05X_VER_GTE_04_04
+#if SSS_HAVE_SE05X_VER_GTE_06_00
         || curve_id == kSE05x_ECCurve_RESERVED_ID_ECC_MONT_DH_448
 #endif
     ) {
-#if SSS_HAVE_SE05X_VER_GTE_05_02
+#if SSS_HAVE_SE05X_VER_GTE_06_00
         status = Se05x_API_CreateECCurve(pSession, curve_id);
         /* If curve is already created, Se05x_API_CreateECCurve fails. Ignore this error */
         return SM_OK;
@@ -2549,7 +2559,7 @@ static sss_status_t sss_se05x_key_store_set_ecc_key(sss_se05x_key_store_t *keySt
         case kSE05x_ECCurve_TPM_ECC_BN_P256: {
             privateKeyIndex = 0;
         } break;
-#if SSS_HAVE_SE05X_VER_GTE_04_04
+#if SSS_HAVE_SE05X_VER_GTE_06_00
         case kSE05x_ECCurve_RESERVED_ID_ECC_MONT_DH_448: {
             LOG_W(
                 "Private Key injection is not supported for "
@@ -2772,7 +2782,7 @@ static sss_status_t sss_se05x_key_store_set_cert(sss_se05x_key_store_t *keyStore
     uint16_t offset           = 0;
     uint16_t fileSize         = 0;
     uint8_t IdExists          = 0;
-#if SSS_HAVE_SE05X_VER_GTE_04_04
+#if SSS_HAVE_SE05X_VER_GTE_06_00
     SE05x_Result_t obj_exists = kSE05x_Result_NA;
 #endif
 
@@ -2781,6 +2791,9 @@ static sss_status_t sss_se05x_key_store_set_cert(sss_se05x_key_store_t *keyStore
     IdExists = CheckIfKeyIdExists(keyObject->keyId, &keyStore->session->s_ctx);
     fileSize = (IdExists == 1) ? 0 : (uint16_t)keyLen;
     data_rem = (uint16_t)keyLen;
+#if SSS_HAVE_SE05X_VER_GTE_06_00
+    obj_exists = (IdExists == 1) ? kSE05x_Result_SUCCESS : kSE05x_Result_FAILURE;
+#endif
 
     se05x_policy.value     = (uint8_t *)policy_buff;
     se05x_policy.value_len = policy_buff_len;
@@ -2790,7 +2803,7 @@ static sss_status_t sss_se05x_key_store_set_cert(sss_se05x_key_store_t *keyStore
         uint16_t chunk = (data_rem > BINARY_WRITE_MAX_LEN) ? BINARY_WRITE_MAX_LEN : data_rem;
         data_rem       = data_rem - chunk;
 
-#if SSS_HAVE_SE05X_VER_GTE_04_04
+#if SSS_HAVE_SE05X_VER_GTE_06_00
         /* Call APIs For SE051 */
         obj_exists = (IdExists == 1) ? kSE05x_Result_SUCCESS : kSE05x_Result_FAILURE;
         if (obj_exists == kSE05x_Result_FAILURE) {
@@ -3248,7 +3261,7 @@ void add_ecc_header(uint8_t *key, uint8_t **key_buf, size_t *key_buflen, uint32_
         *key_buf    = ADD_DER_ECC_224K_HEADER(key);
         *key_buflen = (uint16_t)ADD_DER_ECC_224K_HEADER(*key_buflen);
     }
-#if SSS_HAVE_SE05X_VER_GTE_04_04
+#if SSS_HAVE_SE05X_VER_GTE_06_00
     else if (curve_id == kSE05x_ECCurve_ECC_MONT_DH_448) {
         memcpy(key, gecc_der_header_mont_dh_448, der_ecc_mont_dh_448_header_len);
         *key_buf    = ADD_DER_ECC_MONT_DH_448_HEADER(key);
@@ -3573,6 +3586,20 @@ sss_status_t sss_se05x_key_store_get_key_attst(sss_se05x_key_store_t *keyStore,
         uint8_t exponent[4];
         size_t modLen = sizeof(modulus);
         size_t expLen = sizeof(exponent);
+        uint16_t key_size_bytes = 0;
+
+        if (attestAlgo == (SE05x_AttestationAlgo_t)kSE05x_RSASignatureAlgo_SHA_512_PKCS1 ||
+            attestAlgo == (SE05x_AttestationAlgo_t)kSE05x_RSASignatureAlgo_SHA512_PKCS1_PSS)
+        {
+            status = Se05x_API_ReadSize(&keyStore->session->s_ctx, keyObject_attst->keyId, &key_size_bytes);
+            if (status != SM_OK) {
+                return kStatus_SSS_Fail;
+            }
+
+            if ((key_size_bytes * 8) == 512) {
+                return kStatus_SSS_Fail;
+            }
+        }
 
         attst_data->data[0].timeStampLen = sizeof(SE05x_TimeStamp_t);
         status                           = Se05x_API_ReadRSA_W_Attst(&keyStore->session->s_ctx,
@@ -3791,7 +3818,9 @@ sss_status_t sss_se05x_key_store_get_key_attst(sss_se05x_key_store_t *keyStore,
         ENSURE_OR_GO_EXIT(status == SM_OK);
         break;
 
-    case kSSS_CipherType_HMAC: {
+    case kSSS_CipherType_HMAC:
+    case kSSS_CipherType_CMAC:
+    case kSSS_CipherType_UserID: {
         attst_data->data[0].timeStampLen = sizeof(SE05x_TimeStamp_t);
         status                           = Se05x_API_ReadObject_W_Attst(&keyStore->session->s_ctx,
             keyObject->keyId,
@@ -4095,7 +4124,7 @@ sss_status_t sss_se05x_asymmetric_sign_digest(
             return kStatus_SSS_Fail;
         }
     } break;
-#if SSS_HAVE_SE05X_VER_GTE_04_04
+#if SSS_HAVE_SE05X_VER_GTE_06_00
     case kSSS_CipherType_EC_MONTGOMERY: {
         LOG_W(
             "Sign operation is not supported for "
@@ -4279,14 +4308,29 @@ sss_status_t sss_se05x_asymmetric_sign(
     case kSSS_CipherType_RSA:
     case kSSS_CipherType_RSA_CRT: {
         SE05x_RSASignatureAlgo_t rsaSigningAlgo = se05x_get_rsa_sign_hash_mode(context->algorithm);
-        status                                  = Se05x_API_RSASign(
+        uint16_t key_size_bytes = 0;
+
+        if (context->algorithm == kAlgorithm_SSS_RSASSA_PKCS1_V1_5_SHA512 ||
+            context->algorithm == kAlgorithm_SSS_RSASSA_PKCS1_PSS_MGF1_SHA512)
+        {
+            status = Se05x_API_ReadSize(&context->session->s_ctx, context->keyObject->keyId, &key_size_bytes);
+            if (status != SM_OK) {
+                return kStatus_SSS_Fail;
+            }
+
+            if ((key_size_bytes * 8) == 512) {
+                return kStatus_SSS_Fail;
+            }
+        }
+
+        status = Se05x_API_RSASign(
             &context->session->s_ctx, context->keyObject->keyId, rsaSigningAlgo, srcData, srcLen, destData, destLen);
     } break;
 #endif // SSSFTR_SE05X_RSA
 #if SSSFTR_SE05X_ECC
     case kSSS_CipherType_EC_TWISTED_ED: {
         if (context->algorithm == kAlgorithm_SSS_SHA512) {
-            SE05x_EDSignatureAlgo_t ecSignAlgo = kSE05x_EDSignatureAlgo_ED25519PH_SHA_512;
+            SE05x_EDSignatureAlgo_t ecSignAlgo = kSE05x_EDSignatureAlgo_ED25519PURE_SHA_512;
             status                             = Se05x_API_EdDSASign(
                 &context->session->s_ctx, context->keyObject->keyId, ecSignAlgo, srcData, srcLen, destData, destLen);
         }
@@ -4375,7 +4419,7 @@ sss_status_t sss_se05x_asymmetric_verify_digest(
         retval = kStatus_SSS_Fail;
         LOG_W("Verify not supported for BN Curve");
     } break;
-#if SSS_HAVE_SE05X_VER_GTE_04_04
+#if SSS_HAVE_SE05X_VER_GTE_06_00
     case kSSS_CipherType_EC_MONTGOMERY: {
         LOG_W(
             "Verify operation is not supported for "
@@ -4528,7 +4572,22 @@ sss_status_t sss_se05x_asymmetric_verify(
     case kSSS_CipherType_RSA:
     case kSSS_CipherType_RSA_CRT: {
         SE05x_RSASignatureAlgo_t rsaSigningAlgo = se05x_get_rsa_sign_hash_mode(context->algorithm);
-        status                                  = Se05x_API_RSAVerify(&context->session->s_ctx,
+        uint16_t key_size_bytes = 0;
+
+        if (context->algorithm == kAlgorithm_SSS_RSASSA_PKCS1_V1_5_SHA512 ||
+            context->algorithm == kAlgorithm_SSS_RSASSA_PKCS1_PSS_MGF1_SHA512)
+        {
+            status = Se05x_API_ReadSize(&context->session->s_ctx, context->keyObject->keyId, &key_size_bytes);
+            if (status != SM_OK) {
+                return kStatus_SSS_Fail;
+            }
+
+            if ((key_size_bytes * 8) == 512) {
+                return kStatus_SSS_Fail;
+            }
+        }
+
+        status = Se05x_API_RSAVerify(&context->session->s_ctx,
             context->keyObject->keyId,
             rsaSigningAlgo,
             srcData,
@@ -4578,7 +4637,7 @@ sss_status_t sss_se05x_asymmetric_verify(
 #endif
 
         if (context->algorithm == kAlgorithm_SSS_SHA512) {
-            SE05x_EDSignatureAlgo_t ecSignAlgo = kSE05x_EDSignatureAlgo_ED25519PH_SHA_512;
+            SE05x_EDSignatureAlgo_t ecSignAlgo = kSE05x_EDSignatureAlgo_ED25519PURE_SHA_512;
             status                             = Se05x_API_EdDSAVerify(&context->session->s_ctx,
                 context->keyObject->keyId,
                 ecSignAlgo,
@@ -4960,7 +5019,7 @@ sss_status_t sss_se05x_aead_one_go(sss_se05x_aead_t *context,
     size_t *tagLen)
 {
     sss_status_t retval = kStatus_SSS_Fail;
-#if SSS_HAVE_SE05X_VER_GTE_04_04
+#if SSS_HAVE_SE05X_VER_GTE_06_00
     smStatus_t status  = SM_NOT_OK;
     size_t destDataLen = size;
     SE05x_CipherMode_t cipherMode =
@@ -4986,7 +5045,7 @@ sss_status_t sss_se05x_aead_one_go(sss_se05x_aead_t *context,
 
     retval = kStatus_SSS_Success;
 exit:
-#endif /* SSS_HAVE_SE05X_VER_GTE_04_04 */
+#endif /* SSS_HAVE_SE05X_VER_GTE_06_00 */
     return retval;
 }
 
@@ -4994,7 +5053,7 @@ sss_status_t sss_se05x_aead_init(
     sss_se05x_aead_t *context, uint8_t *nonce, size_t nonceLen, size_t tagLen, size_t aadLen, size_t payloadLen)
 {
     sss_status_t retval = kStatus_SSS_Fail;
-#if SSS_HAVE_SE05X_VER_GTE_04_04
+#if SSS_HAVE_SE05X_VER_GTE_06_00
     smStatus_t status             = SM_NOT_OK;
     context->cache_data_len       = 0;
     SE05x_CipherMode_t cipherMode = kSE05x_CipherMode_NA;
@@ -5072,14 +5131,14 @@ sss_status_t sss_se05x_aead_init(
 
     retval = kStatus_SSS_Success;
 exit:
-#endif /* SSS_HAVE_SE05X_VER_GTE_04_04 */
+#endif /* SSS_HAVE_SE05X_VER_GTE_06_00 */
     return retval;
 }
 
 sss_status_t sss_se05x_aead_update_aad(sss_se05x_aead_t *context, const uint8_t *aadData, size_t aadDataLen)
 {
     sss_status_t retval = kStatus_SSS_Fail;
-#if SSS_HAVE_SE05X_VER_GTE_04_04
+#if SSS_HAVE_SE05X_VER_GTE_06_00
     smStatus_t status = SM_NOT_OK;
     size_t src_offset = 0;
     if (aadDataLen > AEAD_BLOCK_SIZE) {
@@ -5103,7 +5162,7 @@ sss_status_t sss_se05x_aead_update_aad(sss_se05x_aead_t *context, const uint8_t 
     }
     retval = kStatus_SSS_Success;
 exit:
-#endif /* SSS_HAVE_SE05X_VER_GTE_04_04 */
+#endif /* SSS_HAVE_SE05X_VER_GTE_06_00 */
     return retval;
 }
 
@@ -5111,7 +5170,7 @@ sss_status_t sss_se05x_aead_update(
     sss_se05x_aead_t *context, const uint8_t *srcData, size_t srcLen, uint8_t *destData, size_t *destLen)
 {
     sss_status_t retval = kStatus_SSS_Fail;
-#if SSS_HAVE_SE05X_VER_GTE_04_04
+#if SSS_HAVE_SE05X_VER_GTE_06_00
     smStatus_t status                  = SM_NOT_OK;
     uint8_t inputData[AEAD_BLOCK_SIZE] = {
         0,
@@ -5173,7 +5232,7 @@ exit:
     if (retval == kStatus_SSS_Fail) {
         *destLen = 0;
     }
-#endif /*SSS_HAVE_SE05X_VER_GTE_04_04*/
+#endif /*SSS_HAVE_SE05X_VER_GTE_06_00*/
     return retval;
 }
 
@@ -5186,7 +5245,7 @@ sss_status_t sss_se05x_aead_finish(sss_se05x_aead_t *context,
     size_t *tagLen)
 {
     sss_status_t retval = kStatus_SSS_Fail;
-#if SSS_HAVE_SE05X_VER_GTE_04_04
+#if SSS_HAVE_SE05X_VER_GTE_06_00
     smStatus_t status = SM_NOT_OK;
 
     SE05x_Cipher_Oper_t OperType =
@@ -5242,11 +5301,11 @@ sss_status_t sss_se05x_aead_finish(sss_se05x_aead_t *context,
         retval = kStatus_SSS_Success;
     }
 exit:
-#endif /* SSS_HAVE_SE05X_VER_GTE_04_04 */
+#endif /* SSS_HAVE_SE05X_VER_GTE_06_00 */
     return retval;
 }
 
-#if SSS_HAVE_SE05X_VER_GTE_04_04
+#if SSS_HAVE_SE05X_VER_GTE_06_00
 static sss_status_t sss_se05x_aead_CCMfinish(sss_se05x_aead_t *context,
     const uint8_t *srcData,
     size_t srcLen,
@@ -5330,11 +5389,11 @@ static sss_status_t sss_se05x_aead_CCMfinish(sss_se05x_aead_t *context,
 exit:
     return retval;
 }
-#endif /* SSS_HAVE_SE05X_VER_GTE_04_04 */
+#endif /* SSS_HAVE_SE05X_VER_GTE_06_00 */
 
 void sss_se05x_aead_context_free(sss_se05x_aead_t *context)
 {
-#if SSS_HAVE_SE05X_VER_GTE_04_04
+#if SSS_HAVE_SE05X_VER_GTE_06_00
 #if SSSFTR_SE05X_CREATE_DELETE_CRYPTOOBJ
     smStatus_t status;
     uint8_t list[1024] = {
@@ -5361,7 +5420,7 @@ void sss_se05x_aead_context_free(sss_se05x_aead_t *context)
     }
 #endif /* SSSFTR_SE05X_CREATE_DELETE_CRYPTOOBJ */
     memset(context, 0, sizeof(*context));
-#endif /* SSS_HAVE_SE05X_VER_GTE_04_04 */
+#endif /* SSS_HAVE_SE05X_VER_GTE_06_00 */
 }
 
 /* End: se05x_aead */
@@ -5748,6 +5807,12 @@ sss_status_t sss_se05x_tunnel_context_init(sss_se05x_tunnel_context_t *context, 
     else {
         LOG_D("Mutex Init successfull");
     }
+#elif AX_EMBEDDED && USE_RTOS
+    context->channelLock = xSemaphoreCreateMutex();
+    if (context->channelLock == NULL) {
+        LOG_E("xSemaphoreCreateMutex failed");
+        return kStatus_SSS_Fail;
+    }
 #endif
     return retval;
 }
@@ -5765,10 +5830,12 @@ sss_status_t sss_se05x_tunnel(sss_se05x_tunnel_context_t *context,
 
 void sss_se05x_tunnel_context_free(sss_se05x_tunnel_context_t *context)
 {
-    memset(context, 0, sizeof(*context));
 #if (__GNUC__ && !AX_EMBEDDED)
     pthread_mutex_destroy(&context->channelLock);
+#elif AX_EMBEDDED && USE_RTOS
+    vSemaphoreDelete(context->channelLock);
 #endif
+    memset(context, 0, sizeof(*context));
 }
 
 static smStatus_t sss_se05x_TXn(struct Se05xSession *pSession,
@@ -5862,23 +5929,23 @@ static smStatus_t sss_se05x_channel_txn(void *conn_ctx,
 #if SSSFTR_SE05X_AuthECKey || SSSFTR_SE05X_AuthSession
         struct Se05xSession *se05xCtx = (struct Se05xSession *)&pChannelCtx->se05x_session->s_ctx;
         if (se05xCtx->authType == kSSS_AuthType_SCP03) {
-#if (__GNUC__ && !AX_EMBEDDED)
+#if USE_LOCK
             LOCK_TXN(pChannelCtx->channelLock);
 #endif
             retStatus = se05xCtx->fp_TXn(se05xCtx, hdr, cmdBuf, cmdBufLen, rsp, rspLen, hasle);
 
-#if (__GNUC__ && !AX_EMBEDDED)
+#if USE_LOCK
             UNLOCK_TXN(pChannelCtx->channelLock);
 #endif
             ENSURE_OR_GO_EXIT(retStatus == SM_OK);
         }
         else if (se05xCtx->authType == kSSS_AuthType_None) {
-#if (__GNUC__ && !AX_EMBEDDED)
+#if USE_LOCK
             LOCK_TXN(pChannelCtx->channelLock);
 #endif
             retStatus = se05xCtx->fp_TXn(se05xCtx, hdr, cmdBuf, cmdBufLen, rsp, rspLen, hasle);
 
-#if (__GNUC__ && !AX_EMBEDDED)
+#if USE_LOCK
             UNLOCK_TXN(pChannelCtx->channelLock);
 #endif
             ENSURE_OR_GO_EXIT(retStatus == SM_OK);
@@ -5908,7 +5975,7 @@ exit:
 
 /* End: se05x_tunnel */
 
-#if SSSFTR_SE05X_ECC
+#if SSSFTR_SE05X_ECC && SSSFTR_SE05X_KEY_SET
 sss_status_t sss_se05x_key_store_create_curve(Se05xSession_t *pSession, uint32_t curve_id)
 {
     sss_status_t retval = kStatus_SSS_Fail;
@@ -5933,7 +6000,7 @@ sss_status_t sss_se05x_set_feature(
     if (session == NULL)
         goto exit;
 
-#if SSS_HAVE_SE05X_VER_GTE_04_04
+#if SSS_HAVE_SE05X_VER_GTE_06_00
     SE05x_ExtendedFeatures_t extended = {0};
 
     /** Disable feature ECDH B2b8 */
@@ -6375,7 +6442,7 @@ static smStatus_t sss_se05x_LL_set_ec_key(pSe05xSession_t session_ctx,
     SE05x_Result_t obj_exists)
 {
     smStatus_t status = SM_NOT_OK;
-#if SSS_HAVE_SE05X_VER_GTE_04_04
+#if SSS_HAVE_SE05X_VER_GTE_06_00
     fp_Ec_KeyWrite_t fpEcKey_Ver = NULL;
     /* Call APIs For SE051 */
     if (obj_exists == kSE05x_Result_FAILURE) {
@@ -6425,7 +6492,7 @@ static smStatus_t sss_se05x_LL_set_symm_key(pSe05xSession_t session_ctx,
     SE05x_Result_t obj_exists)
 {
     smStatus_t status = SM_NOT_OK;
-#if SSS_HAVE_SE05X_VER_GTE_04_04
+#if SSS_HAVE_SE05X_VER_GTE_06_00
     fp_Symm_KeyWrite_t fpSymmKey_Ver = NULL;
     /* Call APIs For SE051 */
     if (obj_exists == kSE05x_Result_FAILURE) {
@@ -6478,7 +6545,7 @@ static smStatus_t sss_se05x_LL_set_RSA_key(pSe05xSession_t session_ctx,
     SE05x_Result_t obj_exists)
 {
     smStatus_t status = SM_NOT_OK;
-#if SSS_HAVE_SE05X_VER_GTE_04_04
+#if SSS_HAVE_SE05X_VER_GTE_06_00
     fp_RSA_KeyWrite_t fpRSAKey_Ver = NULL;
     /* Call APIs For SE051 */
     if (obj_exists == kSE05x_Result_FAILURE) {

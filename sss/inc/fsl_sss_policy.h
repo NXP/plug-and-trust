@@ -89,7 +89,7 @@ typedef struct
     uint8_t can_Desfire_Dump : 1;
     /** Allow to imported or exported */
     uint8_t can_Import_Export : 1;
-#if 1 // SSS_HAVE_SE05X_VER_GTE_04_04
+#if 1 // SSS_HAVE_SE05X_VER_GTE_06_00
     /** Forbid derived output */
     uint8_t forbid_Derived_Output : 1;
 #endif
@@ -124,7 +124,7 @@ typedef struct
     uint8_t can_Read : 1;
     /** Allow to attest an object */
     uint8_t can_Attest : 1;
-#if 1 // SSS_HAVE_SE05X_VER_GTE_04_04
+#if 1 // SSS_HAVE_SE05X_VER_GTE_06_00
     /** Forbid derived output */
     uint8_t forbid_Derived_Output : 1;
 #endif

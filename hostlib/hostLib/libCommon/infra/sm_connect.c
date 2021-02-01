@@ -496,9 +496,11 @@ U16 SM_Connect(void *conn_ctx, SmCommState_t *commState, U8 *atr, U16 *atrLen)
         }
         else
         {
+#if SSS_HAVE_A71CH || SSS_HAVE_A71CH_SIM || SSS_HAVE_A71CL
             /* Select card manager */
             GP_Select(conn_ctx, (U8 *)&appletName, 0, selectResponseData, &selectResponseDataLen);
             selectResponseDataLen = sizeof(selectResponseData);
+#endif
             /* Select the applet */
             sw = GP_Select(conn_ctx, (U8 *)&appletName, APPLET_NAME_LEN, selectResponseData, &selectResponseDataLen);
         }

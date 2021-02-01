@@ -196,9 +196,9 @@ int main(int argc, const char *argv[])
          */
     }
     else {
-        status = ex_sss_kestore_and_object_init((PCONTEXT));
+        status = ex_sss_key_store_and_object_init((PCONTEXT));
         if (kStatus_SSS_Success != status) {
-            LOG_E("ex_sss_kestore_and_object_init Failed");
+            LOG_E("ex_sss_key_store_and_object_init Failed");
             goto cleanup;
         }
     }
@@ -291,10 +291,10 @@ static void sss_ex_rtos_task(void *ctx)
         goto exit;
     }
 
-    status = ex_sss_kestore_and_object_init((PCONTEXT));
+    status = ex_sss_key_store_and_object_init((PCONTEXT));
 
     if (kStatus_SSS_Success != status) {
-        LOG_E("ex_sss_kestore_and_object_init Failed");
+        LOG_E("ex_sss_key_store_and_object_init Failed");
         goto exit;
     }
 

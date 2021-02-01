@@ -180,7 +180,13 @@ sss_status_t ex_sss_se05x_prepare_host_keys(sss_session_t *pHostSession,
     sss_status_t status      = kStatus_SSS_Fail;
     sss_type_t hostsubsystem = kType_SSS_SubSystem_NONE;
 
-    hostsubsystem = kType_SSS_Software;
+#if SSS_HAVE_MBEDTLS
+        hostsubsystem = kType_SSS_mbedTLS;
+#elif SSS_HAVE_OPENSSL
+        hostsubsystem = kType_SSS_OpenSSL;
+#elif SSS_HAVE_HOSTCRYPTO_USER
+        hostsubsystem = kType_SSS_Software;
+#endif
 
     status = sss_host_session_open(pHostSession, hostsubsystem, 0, kSSS_ConnectionType_Plain, NULL);
 

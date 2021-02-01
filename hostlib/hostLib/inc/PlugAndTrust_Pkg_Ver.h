@@ -16,18 +16,18 @@
 
 /* clang-format off */
 #define PLUGANDTRUST_PROD_NAME          "PlugAndTrust"
-#define PLUGANDTRUST_VER_STRING_NUM     "v03.00.02_20200826"
-#define PLUGANDTRUST_PROD_NAME_VER_FULL "PlugAndTrust_v03.00.02_20200826"
+#define PLUGANDTRUST_VER_STRING_NUM     "v03.00.06_20201204"
+#define PLUGANDTRUST_PROD_NAME_VER_FULL "PlugAndTrust_v03.00.06_20201204"
 #define PLUGANDTRUST_VER_MAJOR          (3u)
 #define PLUGANDTRUST_VER_MINOR          (0u)
-#define PLUGANDTRUST_VER_DEV            (2u)
+#define PLUGANDTRUST_VER_DEV            (6u)
 
 /* v03.00 = 30000u */
 #define PLUGANDTRUST_VER_MAJOR_MINOR ( 0 \
     | (PLUGANDTRUST_VER_MAJOR * 10000u)    \
     | (PLUGANDTRUST_VER_MINOR))
 
-/* v03.00.02 = 300000002ULL */
+/* v03.00.06 = 300000006ULL */
 #define PLUGANDTRUST_VER_MAJOR_MINOR_DEV ( 0 \
     | (PLUGANDTRUST_VER_MAJOR * 10000*10000u)    \
     | (PLUGANDTRUST_VER_MINOR * 10000u)    \
@@ -55,7 +55,7 @@
  * 
  * v_minor  = "00"
  * 
- * v_dev    = "02"
+ * v_dev    = "06"
  * 
  * # Develop Branch
  * v_meta   = ""

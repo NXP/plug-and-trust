@@ -49,6 +49,7 @@ sss_status_t ex_sss_boot_se_open(ex_sss_boot_ctx_t *pCtx, const char *portName);
 
 #if SSS_HAVE_APPLET_SE05X_IOT
 sss_status_t ex_sss_boot_se05x_open(ex_sss_boot_ctx_t *pCtx, const char *portName);
+sss_status_t ex_sss_boot_se05x_open_on_Id(ex_sss_boot_ctx_t *pCtx, const char *portName, const int32_t authID);
 #endif
 
 #if SSS_HAVE_MBEDTLS

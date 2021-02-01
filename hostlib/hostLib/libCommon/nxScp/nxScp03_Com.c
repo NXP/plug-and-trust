@@ -17,12 +17,17 @@
 #include "nxEnsure.h"
 #include "se05x_const.h"
 
+#if SSS_HAVE_SE05X_VER_GTE_06_00
+#if defined(SE05X_MAX_BUF_SIZE_CMD) && (SE05X_MAX_BUF_SIZE_CMD != 1024)
+#   error "Expect hard coded for SE05X_MAX_BUF_SIZE_CMD = 1024"
+#endif
+#define NX_SCP03_MAX_BUFFER_SIZE 0x400 /* 0x400 = 1024 */
+#else
 #if defined(SE05X_MAX_BUF_SIZE_CMD) && (SE05X_MAX_BUF_SIZE_CMD != 892)
 #   error "Expect hard coded for SE05X_MAX_BUF_SIZE_CMD = 892"
 #endif
-
 #define NX_SCP03_MAX_BUFFER_SIZE 0x380 /* 0x380 = 896 */
-
+#endif
 /* ************************************************************************** */
 /* Functions : Private function declaration                                   */
 /* ************************************************************************** */

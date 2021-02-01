@@ -28,16 +28,21 @@ extern "C" {
 #define SMCOM_NO_ATR          0x7014  //!< No ATR can be retrieved
 #define SMCOM_NO_PRIOR_INIT   0x7015  //!< The callbacks doing the actual transfer have not been installed
 #define SMCOM_COM_ALREADY_OPEN      0x7016  //!< Communication link is already open with device
+#define SMCOM_COM_INIT_FAILED       0x7017  //!< Communication init failed
 
 
 /* ------------------------------------------------------------------------- */
 typedef U32 (*ApduTransceiveFunction_t) (void* conn_ctx, apdu_t * pAdpu);
 typedef U32 (*ApduTransceiveRawFunction_t) (void* conn_ctx, U8 * pTx, U16 txLen, U8 * pRx, U32 * pRxLen);
 
-void smCom_Init(ApduTransceiveFunction_t pTransceive, ApduTransceiveRawFunction_t pTransceiveRaw);
+U16 smCom_Init(ApduTransceiveFunction_t pTransceive, ApduTransceiveRawFunction_t pTransceiveRaw);
 void smCom_DeInit(void);
 U32 smCom_Transceive(void *conn_ctx, apdu_t *pApdu);
 U32 smCom_TransceiveRaw(void *conn_ctx, U8 *pTx, U16 txLen, U8 *pRx, U32 *pRxLen);
+
+#if defined(SMCOM_JRCP_V2)
+void smCom_Echo(void *conn_ctx, const char *comp, const char *level, const char *buffer);
+#endif
 
 #ifdef __cplusplus
 }

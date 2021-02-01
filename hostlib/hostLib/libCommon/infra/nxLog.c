@@ -92,7 +92,7 @@ static const char *szLevel[] = {"DEBUG", "INFO ", "WARN ", "ERROR"};
 #endif
 
 #if defined(SMCOM_JRCP_V2)
-#include "smComJRCP.h"
+#include "smCom.h"
 #endif
 
 /* Used for scenarios other than LPC55S_NS */
@@ -103,13 +103,13 @@ void nLog(const char *comp, int level, const char *format, ...)
     if (format == NULL) {
         /* Nothing */
 #ifdef SMCOM_JRCP_V2
-        smComJRCP_Echo(NULL, comp, szLevel[level], "");
+        smCom_Echo(NULL, comp, szLevel[level], "");
 #endif // SMCOM_JRCP_V2
     }
     else if (format[0] == '\0') {
         /* Nothing */
 #ifdef SMCOM_JRCP_V2
-        smComJRCP_Echo(NULL, comp, szLevel[level], "");
+        smCom_Echo(NULL, comp, szLevel[level], "");
 #endif // SMCOM_JRCP_V2
     }
     else {
@@ -121,7 +121,7 @@ void nLog(const char *comp, int level, const char *format, ...)
         va_end(vArgs);
         PRINTF("%s", buffer);
 #ifdef SMCOM_JRCP_V2
-        smComJRCP_Echo(NULL, comp, szLevel[level], buffer);
+        smCom_Echo(NULL, comp, szLevel[level], buffer);
 #endif // SMCOM_JRCP_V2
     }
     reSetColor();
