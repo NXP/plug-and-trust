@@ -1,8 +1,7 @@
 /*
- * Copyright 2018-2020 NXP
- * All rights reserved.
  *
- * SPDX-License-Identifier: BSD-3-Clause
+ * Copyright 2018-2020 NXP
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 #ifndef SSS_APIS_INC_FSL_SSS_FTR_H_
@@ -43,10 +42,15 @@
 #define SSS_HAVE_APPLET_SE05X_B 0
 
 /** SE050 (Super set of A + B) */
-#define SSS_HAVE_APPLET_SE05X_C 1
+#define SSS_HAVE_APPLET_SE05X_C 0
 
 /** SE050 (Similar to A71CL) */
 #define SSS_HAVE_APPLET_SE05X_L 0
+
+/** SE051UWB (Similar to SE05x) */
+#define SSS_HAVE_APPLET_SE051_UWB 0
+/** SE050 (Support SPAKE ) */
+#define SSS_HAVE_APPLET_SE051_CHIP 1
 
 /** NXP Internal testing Applet */
 #define SSS_HAVE_APPLET_LOOPBACK 0
@@ -60,6 +64,8 @@
     + SSS_HAVE_APPLET_SE05X_B        \
     + SSS_HAVE_APPLET_SE05X_C        \
     + SSS_HAVE_APPLET_SE05X_L        \
+    + SSS_HAVE_APPLET_SE051_UWB      \
+    + SSS_HAVE_APPLET_SE051_CHIP     \
     + SSS_HAVE_APPLET_LOOPBACK       \
     ) > 1)
 #        error "Enable only one of 'Applet'"
@@ -75,6 +81,8 @@
     + SSS_HAVE_APPLET_SE05X_B        \
     + SSS_HAVE_APPLET_SE05X_C        \
     + SSS_HAVE_APPLET_SE05X_L        \
+    + SSS_HAVE_APPLET_SE051_UWB      \
+    + SSS_HAVE_APPLET_SE051_CHIP     \
     + SSS_HAVE_APPLET_LOOPBACK       \
     ) == 0)
 #        error "Enable at-least one of 'Applet'"
@@ -86,18 +94,31 @@
  *
  * Selection of Applet version 03_XX enables SE050 features.
  * Selection of Applet version 06_00 enables SE051 features.
+ * Selection of Applet version 16_01 and above enables SE051_CHIP features.
  *
  */
 
 /** SE050 */
-#define SSS_HAVE_SE05X_VER_03_XX 1
+#define SSS_HAVE_SE05X_VER_03_XX 0
 
 /** SE051 */
 #define SSS_HAVE_SE05X_VER_06_00 0
 
+/** SE051 */
+#define SSS_HAVE_SE05X_VER_16_01 0
+
+/** SE051 */
+#define SSS_HAVE_SE05X_VER_16_02 0
+
+/** SE051 */
+#define SSS_HAVE_SE05X_VER_16_03 1
+
 #if (( 0                             \
     + SSS_HAVE_SE05X_VER_03_XX       \
     + SSS_HAVE_SE05X_VER_06_00       \
+    + SSS_HAVE_SE05X_VER_16_01       \
+    + SSS_HAVE_SE05X_VER_16_02       \
+    + SSS_HAVE_SE05X_VER_16_03       \
     ) > 1)
 #        error "Enable only one of 'SE05X_Ver'"
 #endif
@@ -106,6 +127,9 @@
 #if (( 0                             \
     + SSS_HAVE_SE05X_VER_03_XX       \
     + SSS_HAVE_SE05X_VER_06_00       \
+    + SSS_HAVE_SE05X_VER_16_01       \
+    + SSS_HAVE_SE05X_VER_16_02       \
+    + SSS_HAVE_SE05X_VER_16_03       \
     ) == 0)
 #        error "Enable at-least one of 'SE05X_Ver'"
 #endif
@@ -153,6 +177,18 @@
 #        error "Enable only one of 'HostCrypto'"
 #endif
 
+#if 0
+#if (( 0                             \
+    + SSS_HAVE_HOSTCRYPTO_MBEDTLS    \
+    + SSS_HAVE_HOSTCRYPTO_MBEDCRYPTO \
+    + SSS_HAVE_HOSTCRYPTO_OPENSSL    \
+    + SSS_HAVE_HOSTCRYPTO_USER       \
+    + SSS_HAVE_HOSTCRYPTO_NONE       \
+    ) == 0)
+#        error "Enable at-least one of 'HostCrypto'"
+#endif
+#endif
+
 
 /** mbedTLS_ALT : ALT Engine implementation for mbedTLS
  *
@@ -161,7 +197,7 @@
  */
 
 /** Use SSS Layer ALT implementation */
-#define SSS_HAVE_MBEDTLS_ALT_SSS 1
+#define SSS_HAVE_MBEDTLS_ALT_SSS 0
 
 /** Legacy implementation */
 #define SSS_HAVE_MBEDTLS_ALT_A71CH 0
@@ -169,7 +205,7 @@
 /** Not using any mbedTLS_ALT
  *
  * When this is selected, cloud demos can not work with mbedTLS */
-#define SSS_HAVE_MBEDTLS_ALT_NONE 0
+#define SSS_HAVE_MBEDTLS_ALT_NONE 1
 
 #if (( 0                             \
     + SSS_HAVE_MBEDTLS_ALT_SSS       \
@@ -196,7 +232,7 @@
  */
 
 /**  */
-#define SSS_HAVE_SCP_NONE 0
+#define SSS_HAVE_SCP_NONE 1
 
 /** Use SSS Layer for SCP.  Used for SE050 family. */
 #define SSS_HAVE_SCP_SCP03_SSS 0
@@ -211,6 +247,16 @@
     ) > 1)
 #        error "Enable only one of 'SCP'"
 #endif
+
+
+#if (( 0                             \
+    + SSS_HAVE_SCP_NONE              \
+    + SSS_HAVE_SCP_SCP03_SSS         \
+    + SSS_HAVE_SCP_SCP03_HOSTCRYPTO  \
+    ) == 0)
+#        error "Enable at-least one of 'SCP'"
+#endif
+
 
 
 /** FIPS : Enable or disable FIPS
@@ -247,6 +293,34 @@
     + SSS_HAVE_FIPS_140_3            \
     ) == 0)
 #        error "Enable at-least one of 'FIPS'"
+#endif
+
+
+
+/** SBL : Enable/Disable SBL Bootable support
+ *
+ * This option is to enable/disable SBL Bootable support
+ */
+
+/** Not SBL bootable */
+#define SSS_HAVE_SBL_NONE 1
+
+/** SE050 based LPC55S SBL bootable */
+#define SSS_HAVE_SBL_SBL_LPC55S 0
+
+#if (( 0                             \
+    + SSS_HAVE_SBL_NONE              \
+    + SSS_HAVE_SBL_SBL_LPC55S        \
+    ) > 1)
+#        error "Enable only one of 'SBL'"
+#endif
+
+
+#if (( 0                             \
+    + SSS_HAVE_SBL_NONE              \
+    + SSS_HAVE_SBL_SBL_LPC55S        \
+    ) == 0)
+#        error "Enable at-least one of 'SBL'"
 #endif
 
 
@@ -430,10 +504,10 @@
 
 
 #define SSS_HAVE_APPLET \
- (SSS_HAVE_APPLET_A71CH | SSS_HAVE_APPLET_A71CL | SSS_HAVE_APPLET_A71CH_SIM | SSS_HAVE_APPLET_SE05X_A | SSS_HAVE_APPLET_SE05X_B | SSS_HAVE_APPLET_SE05X_C | SSS_HAVE_APPLET_SE05X_L | SSS_HAVE_APPLET_LOOPBACK)
+ (SSS_HAVE_APPLET_A71CH | SSS_HAVE_APPLET_A71CL | SSS_HAVE_APPLET_A71CH_SIM | SSS_HAVE_APPLET_SE05X_A | SSS_HAVE_APPLET_SE05X_B | SSS_HAVE_APPLET_SE05X_C | SSS_HAVE_APPLET_SE05X_L | SSS_HAVE_APPLET_SE051_CHIP | SSS_HAVE_APPLET_SE051_UWB | SSS_HAVE_APPLET_LOOPBACK)
 
 #define SSS_HAVE_APPLET_SE05X_IOT \
- (SSS_HAVE_APPLET_SE05X_A | SSS_HAVE_APPLET_SE05X_B | SSS_HAVE_APPLET_SE05X_C)
+ (SSS_HAVE_APPLET_SE05X_A | SSS_HAVE_APPLET_SE05X_B | SSS_HAVE_APPLET_SE05X_C | SSS_HAVE_APPLET_SE051_UWB | SSS_HAVE_APPLET_SE051_CHIP)
 
 #define SSS_HAVE_MBEDTLS_ALT \
  (SSS_HAVE_MBEDTLS_ALT_SSS | SSS_HAVE_MBEDTLS_ALT_A71CH)
@@ -447,17 +521,47 @@
 
 /* Version checks GTE - Greater Than Or Equal To */
 #if SSS_HAVE_APPLET_SE05X_IOT
+#    if SSS_HAVE_SE05X_VER_16_03
+#        define SSS_HAVE_SE05X_VER_GTE_16_03 1
+#        define SSS_HAVE_SE05X_VER_GTE_16_02 1
+#        define SSS_HAVE_SE05X_VER_GTE_16_01 1
+#        define SSS_HAVE_SE05X_VER_GTE_06_00 1
+#        define SSS_HAVE_SE05X_VER_GTE_03_XX 1
+#    endif /* SSS_HAVE_SE05X_VER_16_03 */
+#    if SSS_HAVE_SE05X_VER_16_02
+#        define SSS_HAVE_SE05X_VER_GTE_16_03 0
+#        define SSS_HAVE_SE05X_VER_GTE_16_02 1
+#        define SSS_HAVE_SE05X_VER_GTE_16_01 1
+#        define SSS_HAVE_SE05X_VER_GTE_06_00 1
+#        define SSS_HAVE_SE05X_VER_GTE_03_XX 1
+#    endif /* SSS_HAVE_SE05X_VER_16_02 */
+#    if SSS_HAVE_SE05X_VER_16_01
+#        define SSS_HAVE_SE05X_VER_GTE_16_03 0
+#        define SSS_HAVE_SE05X_VER_GTE_16_02 0
+#        define SSS_HAVE_SE05X_VER_GTE_16_01 1
+#        define SSS_HAVE_SE05X_VER_GTE_06_00 1
+#        define SSS_HAVE_SE05X_VER_GTE_03_XX 1
+#    endif /* SSS_HAVE_SE05X_VER_16_01 */
 #    if SSS_HAVE_SE05X_VER_06_00
+#        define SSS_HAVE_SE05X_VER_GTE_16_03 0
+#        define SSS_HAVE_SE05X_VER_GTE_16_02 0
+#        define SSS_HAVE_SE05X_VER_GTE_16_01 0
 #        define SSS_HAVE_SE05X_VER_GTE_06_00 1
 #        define SSS_HAVE_SE05X_VER_GTE_03_XX 1
 #    endif /* SSS_HAVE_SE05X_VER_06_00 */
 #    if SSS_HAVE_SE05X_VER_03_XX
+#        define SSS_HAVE_SE05X_VER_GTE_16_03 0
+#        define SSS_HAVE_SE05X_VER_GTE_16_02 0
+#        define SSS_HAVE_SE05X_VER_GTE_16_01 0
 #        define SSS_HAVE_SE05X_VER_GTE_06_00 0
 #        define SSS_HAVE_SE05X_VER_GTE_03_XX 1
 #    endif /* SSS_HAVE_SE05X_VER_03_XX */
 #else //SSS_HAVE_APPLET_SE05X_IOT
 #   define SSS_HAVE_SE05X_VER_GTE_03_XX 0
 #   define SSS_HAVE_SE05X_VER_GTE_06_00 0
+#   define SSS_HAVE_SE05X_VER_GTE_16_01 0
+#   define SSS_HAVE_SE05X_VER_GTE_16_02 0
+#   define SSS_HAVE_SE05X_VER_GTE_16_03 0
 #endif // SSS_HAVE_APPLET_SE05X_IOT
 /** Deprecated items. Used here for backwards compatibility. */
 
@@ -488,6 +592,10 @@
 #define SSS_HAVE_SE05X_C (SSS_HAVE_APPLET_SE05X_C)
 #define WithApplet_SE05X_L (SSS_HAVE_APPLET_SE05X_L)
 #define SSS_HAVE_SE05X_L (SSS_HAVE_APPLET_SE05X_L)
+#define WithApplet_SE051_UWB (SSS_HAVE_APPLET_SE051_UWB)
+#define SSS_HAVE_SE051_UWB (SSS_HAVE_APPLET_SE051_UWB)
+#define WithApplet_SE051_CHIP (SSS_HAVE_APPLET_SE051_CHIP)
+#define SSS_HAVE_SE051_CHIP (SSS_HAVE_APPLET_SE051_CHIP)
 #define WithApplet_LoopBack (SSS_HAVE_APPLET_LOOPBACK)
 #define SSS_HAVE_LoopBack (SSS_HAVE_APPLET_LOOPBACK)
 #define SSS_HAVE_MBEDTLS (SSS_HAVE_HOSTCRYPTO_MBEDTLS)
@@ -579,6 +687,14 @@
 #if SSS_HAVE_SE05X_VER_03_XX
 #   undef SSS_HAVE_EC_ED
 #   define SSS_HAVE_EC_ED 0
+#endif
+#endif
+
+#if SSS_HAVE_RSA
+#   define SSS_HAVE_RSA_4K 1
+#if (SSS_HAVE_APPLET_SE051_UWB || SSS_HAVE_APPLET_SE051_CHIP)
+#   undef SSS_HAVE_RSA_4K
+#   define SSS_HAVE_RSA_4K 0
 #endif
 #endif
 
