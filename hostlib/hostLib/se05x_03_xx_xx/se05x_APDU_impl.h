@@ -1,8 +1,7 @@
 /*
- * Copyright 2019-2020 NXP
- * All rights reserved.
  *
- * SPDX-License-Identifier: BSD-3-Clause
+ * Copyright 2019-2020 NXP
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 #if defined(NONSECURE_WORLD)
@@ -617,6 +616,7 @@ cleanup:
     return retStatus;
 }
 
+#if ENABLE_DEPRECATED_API_WritePCR
 smStatus_t Se05x_API_WritePCR(pSe05xSession_t session_ctx,
     pSe05xPolicy_t policy,
     uint32_t pcrID,
@@ -625,8 +625,21 @@ smStatus_t Se05x_API_WritePCR(pSe05xSession_t session_ctx,
     const uint8_t *inputData,
     size_t inputDataLen)
 {
+    return Se05x_API_WritePCR_WithType(session_ctx, kSE05x_INS_NA, policy, pcrID, initialValue, initialValueLen, inputData, inputDataLen);
+}
+#endif // ENABLE_DEPRECATED_API_WritePCR
+
+smStatus_t Se05x_API_WritePCR_WithType(pSe05xSession_t session_ctx,
+    const SE05x_INS_t ins_type,
+    pSe05xPolicy_t policy,
+    uint32_t pcrID,
+    const uint8_t *initialValue,
+    size_t initialValueLen,
+    const uint8_t *inputData,
+    size_t inputDataLen)
+{
     smStatus_t retStatus = SM_NOT_OK;
-    tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_WRITE, kSE05x_P1_PCR, kSE05x_P2_DEFAULT}};
+    tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_WRITE | ins_type, kSE05x_P1_PCR, kSE05x_P2_DEFAULT}};
     uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
     size_t cmdbufLen = 0;
     uint8_t *pCmdbuf = &cmdbuf[0];
@@ -776,6 +789,9 @@ smStatus_t Se05x_API_ReadObject(
             retStatus = (pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]);
         }
     }
+
+    if (retStatus == SM_ERR_ACCESS_DENIED_BASED_ON_POLICY)
+        LOG_W("Denied to read object %08X bases on policy.", objectID);
 
 cleanup:
     return retStatus;

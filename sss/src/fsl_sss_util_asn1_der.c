@@ -1,8 +1,7 @@
 /*
-* Copyright 2018-2020 NXP
-* All rights reserved.
 *
-* SPDX-License-Identifier: BSD-3-Clause
+* Copyright 2018-2020 NXP
+* SPDX-License-Identifier: Apache-2.0
 */
 
 #include <fsl_sss_util_asn1_der.h>
@@ -1681,7 +1680,9 @@ sss_status_t sss_util_openssl_write_pkcs12(sss_session_t *session,
         retval = kStatus_SSS_Fail;
     }
 
-    fclose(pkcs12_file);
+    if (pkcs12_file != NULL) {
+        fclose(pkcs12_file);
+    }
 exit:
 #endif
 

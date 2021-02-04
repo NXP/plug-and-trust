@@ -1,8 +1,7 @@
 /*
-* Copyright 2016,2020 NXP
-* All rights reserved.
 *
-* SPDX-License-Identifier: BSD-3-Clause
+* Copyright 2016,2020 NXP
+* SPDX-License-Identifier: Apache-2.0
 */
 
 #ifndef _A71CH_CONST_H_
@@ -75,6 +74,9 @@ extern "C" {
 #endif
 #if SSS_HAVE_SE05X_C
 #   define SE_NAME  "SE050:C"
+#endif
+#if SSS_HAVE_SE051_CHIP
+#   define SE_NAME  "SE051:CHIP"
 #endif
 
 #define A71CH_KEY_PAIR_MAX_A    2 //!< Maximum amount of ECC key pairs that can be stored in A71CH (A device)

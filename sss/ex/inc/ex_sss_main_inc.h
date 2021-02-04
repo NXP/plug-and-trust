@@ -1,8 +1,7 @@
 /*
- * Copyright 2019-2020 NXP
- * All rights reserved.
  *
- * SPDX-License-Identifier: BSD-3-Clause
+ * Copyright 2019-2020 NXP
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 /* Common, Re-Usable main implementation */
@@ -47,7 +46,7 @@
  *
  */
 
-#if defined(FRDM_KW41Z) || defined(FRDM_K64F) || defined(IMX_RT) || defined(LPC_55x)
+#if defined(FRDM_KW41Z) || defined(FRDM_K64F) || defined(IMX_RT) || defined(LPC_55x) || defined(LPC_K32W) || defined(QN9090DK6)
 #define HAVE_KSDK
 #endif
 
@@ -111,6 +110,11 @@ static void sss_ex_rtos_task(void *ctx);
 void sss_ex_rtos_stack_size(const char *when);
 #endif // INCLUDE_uxTaskGetStackHighWaterMark
 #endif /* No RTOS, No Embedded */
+
+#if defined(CPU_JN518X)
+/* Allocate the memory for the heap. */
+uint8_t __attribute__((section(".bss.$SRAM1"))) ucHeap[configTOTAL_HEAP_SIZE];
+#endif
 
 int main(int argc, const char *argv[])
 {
@@ -324,6 +328,8 @@ static void sss_ex_rtos_task(void *ctx)
     if (kStatus_SSS_Success != status) {
         LOG_E("ex_sss_entry Failed");
     }
+
+    ex_sss_session_close(PCONTEXT);
 
 #if INCLUDE_uxTaskGetStackHighWaterMark
     sss_ex_rtos_stack_size("After:ex_sss_entry");

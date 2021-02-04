@@ -47,9 +47,7 @@
 /** SE050 (Similar to A71CL) */
 #define SSS_HAVE_APPLET_SE05X_L 0
 
-/** SE051UWB (Similar to SE05x) */
-#define SSS_HAVE_APPLET_SE051_UWB 0
-/** SE050 (Support SPAKE ) */
+/** SE051CHIP (Support SPAKE ) */
 #define SSS_HAVE_APPLET_SE051_CHIP 1
 
 /** NXP Internal testing Applet */
@@ -64,7 +62,6 @@
     + SSS_HAVE_APPLET_SE05X_B        \
     + SSS_HAVE_APPLET_SE05X_C        \
     + SSS_HAVE_APPLET_SE05X_L        \
-    + SSS_HAVE_APPLET_SE051_UWB      \
     + SSS_HAVE_APPLET_SE051_CHIP     \
     + SSS_HAVE_APPLET_LOOPBACK       \
     ) > 1)
@@ -81,7 +78,6 @@
     + SSS_HAVE_APPLET_SE05X_B        \
     + SSS_HAVE_APPLET_SE05X_C        \
     + SSS_HAVE_APPLET_SE05X_L        \
-    + SSS_HAVE_APPLET_SE051_UWB      \
     + SSS_HAVE_APPLET_SE051_CHIP     \
     + SSS_HAVE_APPLET_LOOPBACK       \
     ) == 0)
@@ -111,7 +107,10 @@
 #define SSS_HAVE_SE05X_VER_16_02 0
 
 /** SE051 */
-#define SSS_HAVE_SE05X_VER_16_03 1
+#define SSS_HAVE_SE05X_VER_16_03 0
+
+/** SE051 */
+#define SSS_HAVE_SE05X_VER_16_04 1
 
 #if (( 0                             \
     + SSS_HAVE_SE05X_VER_03_XX       \
@@ -119,6 +118,7 @@
     + SSS_HAVE_SE05X_VER_16_01       \
     + SSS_HAVE_SE05X_VER_16_02       \
     + SSS_HAVE_SE05X_VER_16_03       \
+    + SSS_HAVE_SE05X_VER_16_04       \
     ) > 1)
 #        error "Enable only one of 'SE05X_Ver'"
 #endif
@@ -130,6 +130,7 @@
     + SSS_HAVE_SE05X_VER_16_01       \
     + SSS_HAVE_SE05X_VER_16_02       \
     + SSS_HAVE_SE05X_VER_16_03       \
+    + SSS_HAVE_SE05X_VER_16_04       \
     ) == 0)
 #        error "Enable at-least one of 'SE05X_Ver'"
 #endif
@@ -299,7 +300,7 @@
 
 /** SBL : Enable/Disable SBL Bootable support
  *
- * This option is to enable/disable SBL Bootable support
+ * This option is to enable/disable boot from SBL by switching linker address
  */
 
 /** Not SBL bootable */
@@ -432,7 +433,7 @@
 #define SSSFTR_SE05X_ECC 1
 
 /** SE05X Secure Element : RSA */
-#define SSSFTR_SE05X_RSA 1
+#define SSSFTR_SE05X_RSA 0
 
 /** SE05X Secure Element : KEY operations : SET Key */
 #define SSSFTR_SE05X_KEY_SET 1
@@ -466,7 +467,7 @@
 #define SSSFTR_SW_ECC 1
 
 /** Software : RSA */
-#define SSSFTR_SW_RSA 1
+#define SSSFTR_SW_RSA 0
 
 /** Software : KEY operations : SET Key */
 #define SSSFTR_SW_KEY_SET 1
@@ -504,10 +505,10 @@
 
 
 #define SSS_HAVE_APPLET \
- (SSS_HAVE_APPLET_A71CH | SSS_HAVE_APPLET_A71CL | SSS_HAVE_APPLET_A71CH_SIM | SSS_HAVE_APPLET_SE05X_A | SSS_HAVE_APPLET_SE05X_B | SSS_HAVE_APPLET_SE05X_C | SSS_HAVE_APPLET_SE05X_L | SSS_HAVE_APPLET_SE051_CHIP | SSS_HAVE_APPLET_SE051_UWB | SSS_HAVE_APPLET_LOOPBACK)
+ (SSS_HAVE_APPLET_A71CH | SSS_HAVE_APPLET_A71CL | SSS_HAVE_APPLET_A71CH_SIM | SSS_HAVE_APPLET_SE05X_A | SSS_HAVE_APPLET_SE05X_B | SSS_HAVE_APPLET_SE05X_C | SSS_HAVE_APPLET_SE05X_L | SSS_HAVE_APPLET_SE051_CHIP | SSS_HAVE_APPLET_LOOPBACK)
 
 #define SSS_HAVE_APPLET_SE05X_IOT \
- (SSS_HAVE_APPLET_SE05X_A | SSS_HAVE_APPLET_SE05X_B | SSS_HAVE_APPLET_SE05X_C | SSS_HAVE_APPLET_SE051_UWB | SSS_HAVE_APPLET_SE051_CHIP)
+ (SSS_HAVE_APPLET_SE05X_A | SSS_HAVE_APPLET_SE05X_B | SSS_HAVE_APPLET_SE05X_C | SSS_HAVE_APPLET_SE051_CHIP)
 
 #define SSS_HAVE_MBEDTLS_ALT \
  (SSS_HAVE_MBEDTLS_ALT_SSS | SSS_HAVE_MBEDTLS_ALT_A71CH)
@@ -521,7 +522,16 @@
 
 /* Version checks GTE - Greater Than Or Equal To */
 #if SSS_HAVE_APPLET_SE05X_IOT
+#    if SSS_HAVE_SE05X_VER_16_04
+#        define SSS_HAVE_SE05X_VER_GTE_16_04 1
+#        define SSS_HAVE_SE05X_VER_GTE_16_03 1
+#        define SSS_HAVE_SE05X_VER_GTE_16_02 1
+#        define SSS_HAVE_SE05X_VER_GTE_16_01 1
+#        define SSS_HAVE_SE05X_VER_GTE_06_00 1
+#        define SSS_HAVE_SE05X_VER_GTE_03_XX 1
+#    endif /* SSS_HAVE_SE05X_VER_16_04 */
 #    if SSS_HAVE_SE05X_VER_16_03
+#        define SSS_HAVE_SE05X_VER_GTE_16_04 0
 #        define SSS_HAVE_SE05X_VER_GTE_16_03 1
 #        define SSS_HAVE_SE05X_VER_GTE_16_02 1
 #        define SSS_HAVE_SE05X_VER_GTE_16_01 1
@@ -529,6 +539,7 @@
 #        define SSS_HAVE_SE05X_VER_GTE_03_XX 1
 #    endif /* SSS_HAVE_SE05X_VER_16_03 */
 #    if SSS_HAVE_SE05X_VER_16_02
+#        define SSS_HAVE_SE05X_VER_GTE_16_04 0
 #        define SSS_HAVE_SE05X_VER_GTE_16_03 0
 #        define SSS_HAVE_SE05X_VER_GTE_16_02 1
 #        define SSS_HAVE_SE05X_VER_GTE_16_01 1
@@ -536,6 +547,7 @@
 #        define SSS_HAVE_SE05X_VER_GTE_03_XX 1
 #    endif /* SSS_HAVE_SE05X_VER_16_02 */
 #    if SSS_HAVE_SE05X_VER_16_01
+#        define SSS_HAVE_SE05X_VER_GTE_16_04 0
 #        define SSS_HAVE_SE05X_VER_GTE_16_03 0
 #        define SSS_HAVE_SE05X_VER_GTE_16_02 0
 #        define SSS_HAVE_SE05X_VER_GTE_16_01 1
@@ -543,6 +555,7 @@
 #        define SSS_HAVE_SE05X_VER_GTE_03_XX 1
 #    endif /* SSS_HAVE_SE05X_VER_16_01 */
 #    if SSS_HAVE_SE05X_VER_06_00
+#        define SSS_HAVE_SE05X_VER_GTE_16_04 0
 #        define SSS_HAVE_SE05X_VER_GTE_16_03 0
 #        define SSS_HAVE_SE05X_VER_GTE_16_02 0
 #        define SSS_HAVE_SE05X_VER_GTE_16_01 0
@@ -550,6 +563,7 @@
 #        define SSS_HAVE_SE05X_VER_GTE_03_XX 1
 #    endif /* SSS_HAVE_SE05X_VER_06_00 */
 #    if SSS_HAVE_SE05X_VER_03_XX
+#        define SSS_HAVE_SE05X_VER_GTE_16_04 0
 #        define SSS_HAVE_SE05X_VER_GTE_16_03 0
 #        define SSS_HAVE_SE05X_VER_GTE_16_02 0
 #        define SSS_HAVE_SE05X_VER_GTE_16_01 0
@@ -562,6 +576,7 @@
 #   define SSS_HAVE_SE05X_VER_GTE_16_01 0
 #   define SSS_HAVE_SE05X_VER_GTE_16_02 0
 #   define SSS_HAVE_SE05X_VER_GTE_16_03 0
+#   define SSS_HAVE_SE05X_VER_GTE_16_04 0
 #endif // SSS_HAVE_APPLET_SE05X_IOT
 /** Deprecated items. Used here for backwards compatibility. */
 
@@ -592,8 +607,6 @@
 #define SSS_HAVE_SE05X_C (SSS_HAVE_APPLET_SE05X_C)
 #define WithApplet_SE05X_L (SSS_HAVE_APPLET_SE05X_L)
 #define SSS_HAVE_SE05X_L (SSS_HAVE_APPLET_SE05X_L)
-#define WithApplet_SE051_UWB (SSS_HAVE_APPLET_SE051_UWB)
-#define SSS_HAVE_SE051_UWB (SSS_HAVE_APPLET_SE051_UWB)
 #define WithApplet_SE051_CHIP (SSS_HAVE_APPLET_SE051_CHIP)
 #define SSS_HAVE_SE051_CHIP (SSS_HAVE_APPLET_SE051_CHIP)
 #define WithApplet_LoopBack (SSS_HAVE_APPLET_LOOPBACK)
@@ -623,7 +636,7 @@
 #define SSS_HAVE_ECC 1
 
 /* RSA is available */
-#define SSS_HAVE_RSA 1
+#define SSS_HAVE_RSA 0
 
 /* TPM BARRETO_NAEHRIG Curve is enabled */
 #define SSS_HAVE_TPM_BN 1
@@ -690,9 +703,10 @@
 #endif
 #endif
 
+
 #if SSS_HAVE_RSA
 #   define SSS_HAVE_RSA_4K 1
-#if (SSS_HAVE_APPLET_SE051_UWB || SSS_HAVE_APPLET_SE051_CHIP)
+#if (SSS_HAVE_APPLET_SE051_CHIP)
 #   undef SSS_HAVE_RSA_4K
 #   define SSS_HAVE_RSA_4K 0
 #endif

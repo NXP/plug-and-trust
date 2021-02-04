@@ -1,8 +1,7 @@
 /*
- * Copyright 2019-2020 NXP
- * All rights reserved.
  *
- * SPDX-License-Identifier: BSD-3-Clause
+ * Copyright 2019-2020 NXP
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 /** @file
@@ -24,6 +23,10 @@
 #include <sm_types.h>
 #include <stdlib.h>
 #include <string.h>
+
+#if defined(_MSC_VER)
+#include <Crtdbg.h>
+#endif
 
 /* *****************************************************************************************************************
  * Internal Definitions

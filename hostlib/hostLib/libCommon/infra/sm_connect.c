@@ -1,8 +1,7 @@
 /*
- * Copyright 2016-2020 NXP
- * All rights reserved.
  *
- * SPDX-License-Identifier: BSD-3-Clause
+ * Copyright 2016-2020 NXP
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 /*
@@ -660,5 +659,17 @@ U16 SM_LockChannel()
 U16 SM_UnlockChannel()
 {
     return smComIpc_UnlockChannel();
+}
+#endif
+
+#if defined(SMCOM_JRCP_V1_AM)
+U16 SM_LockChannel()
+{
+    return smComSocket_LockChannel();
+}
+
+U16 SM_UnlockChannel()
+{
+    return smComSocket_UnlockChannel();
 }
 #endif

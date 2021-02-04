@@ -1,8 +1,7 @@
 /*
- * Copyright 2019-2020 NXP
- * All rights reserved.
  *
- * SPDX-License-Identifier: BSD-3-Clause
+ * Copyright 2019-2020 NXP
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 #include <stdio.h>
@@ -45,6 +44,10 @@ extern "C" {
 
 #if SSS_HAVE_SE05X_VER_GTE_06_00
 #include "se05x_04_xx_APDU_impl.h"
+#endif
+
+#if (SSS_HAVE_APPLET_SE051_CHIP && SSS_HAVE_SE05X_VER_GTE_16_01)
+#include "se05x_spake_APDU_impl.h"
 #endif
 
 smStatus_t Se05x_API_I2CM_Send(

@@ -1,8 +1,7 @@
 /*
- * Copyright 2019-2020 NXP
- * All rights reserved.
  *
- * SPDX-License-Identifier: BSD-3-Clause
+ * Copyright 2019-2020 NXP
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 #include "se05x_tlv.h"
@@ -194,7 +193,7 @@ int tlvSet_u8buf(uint8_t **buf, size_t *bufLen, SE05x_TAG_t tag, const uint8_t *
     else {
         return 1;
     }
-    if (cmdLen) {
+    if ((cmdLen > 0) && (cmd != NULL)) {
         while (cmdLen-- > 0) {
             *pBuf++ = *cmd++;
         }
@@ -307,8 +306,18 @@ int tlvGet_u8buf(uint8_t *buf, size_t *pBufIndex, const size_t bufLen, SE05x_TAG
     size_t extendedLen;
     size_t rspLen;
     //size_t len;
-    if (got_tag != tag)
+
+    if (rsp == NULL) {
         goto cleanup;
+    }
+
+    if (pRspLen == NULL) {
+        goto cleanup;
+    }
+
+    if (got_tag != tag) {
+        goto cleanup;
+    }
     rspLen = *pBuf++;
 
     if (rspLen <= 0x7FU) {
@@ -340,6 +349,11 @@ int tlvGet_u8buf(uint8_t *buf, size_t *pBufIndex, const size_t bufLen, SE05x_TAG
     }
     retVal = 0;
 cleanup:
+    if (retVal != 0){
+        if (pRspLen != NULL) {
+            *pRspLen = 0;
+        }
+    }
     return retVal;
 }
 
@@ -615,7 +629,7 @@ smStatus_t se05x_Transform_scp(struct Se05xSession *pSession,
     sss_status_t sss_status = kStatus_SSS_Fail;
     uint8_t macToAdd[16];
     size_t macLen = 16;
-    int i         = 0;
+    size_t i         = 0;
 
     Se05xApdu_t se05xApdu = {0};
 

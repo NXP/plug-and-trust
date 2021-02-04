@@ -1,8 +1,7 @@
 /*
- * Copyright 2019 NXP
- * All rights reserved.
  *
- * SPDX-License-Identifier: BSD-3-Clause
+ * Copyright 2019 NXP
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 #if SSS_HAVE_SE05X_VER_GTE_06_00

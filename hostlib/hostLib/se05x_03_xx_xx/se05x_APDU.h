@@ -1,8 +1,7 @@
 /*
- * Copyright 2019 NXP
- * All rights reserved.
  *
- * SPDX-License-Identifier: BSD-3-Clause
+ * Copyright 2019 NXP
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 /** @file */
@@ -17,6 +16,10 @@ extern "C" {
 #include "se05x_tlv.h"
 #include "se05x_const.h"
 #include "se05x_APDU_apis.h"
+
+#if (SSS_HAVE_APPLET_SE051_CHIP && SSS_HAVE_SE05X_VER_GTE_16_01)
+#include "se05x_spake_APDU_apis.h"
+#endif
 
 /** Se05x_API_DeleteAll_Iterative
  *

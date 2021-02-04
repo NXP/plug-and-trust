@@ -1,8 +1,7 @@
 /*
  * Copyright 2020 NXP
- * All rights reserved.
  *
- * SPDX-License-Identifier: BSD-3-Clause
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 #include <se05x_tlv.h>
@@ -109,8 +108,10 @@ smStatus_t Se05x_API_AeadOneShot(pSe05xSession_t session_ctx,
         if (operation == kSE05x_Cipher_Oper_OneShot_Decrypt) {
             tlvRet = tlvGet_Result(pRspbuf, &rspIndex, rspbufLen, kSE05x_TAG_2, &result);
             if (0 != tlvRet) {
-                if (result != kSE05x_Result_SUCCESS)
-                    goto cleanup;
+                goto cleanup;
+            }
+            if (result != kSE05x_Result_SUCCESS) {
+                goto cleanup;
             }
         }
         if ((operation == kSE05x_Cipher_Oper_OneShot_Encrypt) && (cipherMode == kSE05x_CipherMode_AES_GCM_INT_IV)) {
@@ -398,10 +399,14 @@ smStatus_t Se05x_API_AeadCCMFinal(pSe05xSession_t session_ctx,
         if (operation == kSE05x_Cipher_Oper_Decrypt) {
             tlvRet = tlvGet_Result(pRspbuf, &rspIndex, rspbufLen, kSE05x_TAG_2, &result);
             if (0 != tlvRet) {
-                if (result != kSE05x_Result_SUCCESS)
-                    goto cleanup;
+                goto cleanup;
+            }
+
+            if (result != kSE05x_Result_SUCCESS) {
+                goto cleanup;
             }
         }
+
         if ((rspIndex + 2) == rspbufLen) {
             retStatus = (pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]);
         }
@@ -455,8 +460,10 @@ smStatus_t Se05x_API_AeadFinal(pSe05xSession_t session_ctx,
         if (operation == kSE05x_Cipher_Oper_Decrypt) {
             tlvRet = tlvGet_Result(pRspbuf, &rspIndex, rspbufLen, kSE05x_TAG_2, &result);
             if (0 != tlvRet) {
-                if (result != kSE05x_Result_SUCCESS)
-                    goto cleanup;
+                goto cleanup;
+            }
+            if (result != kSE05x_Result_SUCCESS) {
+                goto cleanup;
             }
         }
         if ((rspIndex + 2) == rspbufLen) {

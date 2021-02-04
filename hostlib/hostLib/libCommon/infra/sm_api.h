@@ -1,8 +1,7 @@
 /*
- * Copyright 2018-2020 NXP
- * All rights reserved.
  *
- * SPDX-License-Identifier: BSD-3-Clause
+ * Copyright 2018-2020 NXP
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 /**
@@ -98,6 +97,20 @@ U16 SM_RjctConnectWithAID(const char *connectString, SmCommState_t *commState, U
 U16 SM_I2CConnect(void **conn_ctx, SmCommState_t *commState, U8 *atr, U16 *atrLen, const char *pConnString);
 
 U16 SM_SendAPDU(U8 *cmd, U16 cmdLen, U8 *resp, U16 *respLen);
+
+#if defined(SMCOM_JRCP_V1_AM)
+U16 SM_LockChannel();
+U16 SM_UnlockChannel();
+#endif
+
+#if defined(SMCOM_JRCP_V1_AM)
+#define SM_LOCK_CHANNEL() SM_LockChannel()
+#define SM_UNLOCK_CHANNEL() SM_UnlockChannel()
+#else
+#define SM_LOCK_CHANNEL()
+#define SM_UNLOCK_CHANNEL()
+#endif
+
 /** @}*/
 
 #ifdef __cplusplus

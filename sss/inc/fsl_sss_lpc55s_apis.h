@@ -1,8 +1,7 @@
 /*
- * Copyright 2018,2019 NXP
- * All rights reserved.
  *
- * SPDX-License-Identifier: BSD-3-Clause
+ * Copyright 2018,2019 NXP
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 #ifndef __FSL_SSS_LPC55S_APIS_H__

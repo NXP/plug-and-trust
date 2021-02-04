@@ -1,5 +1,13 @@
 # Plug-And-Trust Mini Package Change Log
 
+## Release v03.02.01_Spake
+
+- Updated with v03.01.00 of Plug-and-trust
+
+## Release v03.02.00_Spake
+
+- Pake protocol support in APDU layer
+
 ## Release v03.00.06
 
 - smCom_Init: return type is now *U16* instead of *void*. Return value indicates success/failure to create mutex/semophore.
