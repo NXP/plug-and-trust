@@ -76,6 +76,9 @@ extern "C" {
 #if SSS_HAVE_SE05X_C
 #   define SE_NAME  "SE050:C"
 #endif
+#if SSS_HAVE_SE051_CHIP
+#   define SE_NAME  "SE051:CHIP"
+#endif
 
 #define A71CH_KEY_PAIR_MAX_A    2 //!< Maximum amount of ECC key pairs that can be stored in A71CH (A device)
 #define A71CH_PUBLIC_KEY_MAX_A  2 //!< Maximum amount of ECC public keys that can be stored in A71CH (A device)

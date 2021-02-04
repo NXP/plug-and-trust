@@ -148,6 +148,7 @@ typedef enum
     /** Applet >= 4.4 */
     kSE05x_P1_AEAD_SP800_38D = 0x12,
 #endif /* SSS_HAVE_SE05X_VER_GTE_06_00 */
+    kSE05x_P1_SPAKE = 0x12,
 } SE05x_P1_t;
 
 /** Values for P2 in ISO7816 APDU */
@@ -444,6 +445,14 @@ typedef enum
     kSE05x_AeadCCMAlgo = 0xF4,
 } SE05x_AeadAlgo_t;
 
+/** SPAKE Algorithms */
+typedef enum
+{
+    /** Invalid */
+    kSE05x_SpakeAlgo_NA = 0,
+    kSE05x_SpakeAlgo_P256_SHA256_HKDF_HMAC = 1,
+} SE05x_SpakeAlgo_t;
+
 /** HKDF Mode */
 typedef enum
 {
@@ -625,6 +634,8 @@ typedef enum
     kSE05x_CryptoContext_SIGNATURE = 0x03,
     /** For AEADInit/AEADUpdate/AEADFinal */
     kSE05x_CryptoContext_AEAD = 0x04,
+    /** For SPAKE */
+    kSE05x_CryptoContext_SPAKE = 0x05,
 } SE05x_CryptoContext_t;
 
 /** Result of operations */
@@ -738,10 +749,26 @@ typedef enum
     kSE05x_CryptoObject_AES_GCM,
     kSE05x_CryptoObject_AES_GCM_INT_IV,
     kSE05x_CryptoObject_AES_CCM,
+    kSE05x_CryptoObject_SPAKE_VERIFIER,
+    kSE05x_CryptoObject_SPAKE_PROVER
 } SE05x_CryptoObject_t;
 
 /** @copydoc SE05x_CryptoObject_t */
 #define SE05x_CryptoObjectID_t SE05x_CryptoObject_t
+
+/** SPAKE device type */
+typedef enum
+{
+    /** Invalid */
+    kSE05x_SPAKEDevice_NA = 0,
+    /** Spake device commionsioner */
+    SE05x_SPAKEDevice_A = 1,
+    /** Spake device Node/accessory */
+    SE05x_SPAKEDevice_B = 2,
+}SE05x_SPAKEDeviceType_t;
+
+
+
 
 /** Maximum number of session supported by SE050 */
 #define SE050_MAX_NUMBER_OF_SESSIONS 2
@@ -864,6 +891,8 @@ typedef union {
     SE05x_MACAlgo_t mac;
     /** In case it's aead */
     SE05x_AeadAlgo_t aead;
+    /** In case it's spake */
+    SE05x_SpakeAlgo_t spakeAlgo;
     /** Accessing 8 bit value for APDUs */
     uint8_t union_8bit;
 } SE05x_CryptoModeSubType_t;

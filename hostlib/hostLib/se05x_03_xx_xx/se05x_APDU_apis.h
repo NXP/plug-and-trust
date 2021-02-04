@@ -5794,4 +5794,8 @@ smStatus_t Se05x_API_DeleteAll(pSe05xSession_t session_ctx);
 #include "se05x_04_xx_APDU_apis.h"
 #endif
 
+#if (SSS_HAVE_APPLET_SE051_CHIP && SSS_HAVE_SE05X_VER_GTE_16_01)
+#include "se05x_spake_APDU_apis.h"
+#endif
+
 #endif /* SE050X_APDU_APIS_H_INC */

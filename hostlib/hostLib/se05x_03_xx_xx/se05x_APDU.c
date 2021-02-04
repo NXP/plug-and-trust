@@ -47,6 +47,10 @@ extern "C" {
 #include "se05x_04_xx_APDU_impl.h"
 #endif
 
+#if (SSS_HAVE_APPLET_SE051_CHIP && SSS_HAVE_SE05X_VER_GTE_16_01)
+#include "se05x_spake_APDU_impl.h"
+#endif
+
 smStatus_t Se05x_API_I2CM_Send(
     pSe05xSession_t session_ctx, const uint8_t *buffer, size_t bufferLen, uint8_t *result, size_t *presultLen)
 {
