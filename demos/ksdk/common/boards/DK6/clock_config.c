@@ -29,9 +29,8 @@ mcu_data: ksdk2_0
 processor_version: 0.0.0
  * BE CAREFUL MODIFYING THIS COMMENT - IT IS YAML SETTINGS FOR TOOLS **********/
 /* clang-format on */
-
+#include "fsl_common.h"
 #include "clock_config.h"
-
 /*******************************************************************************
  * Definitions
  ******************************************************************************/
@@ -45,6 +44,10 @@ extern uint32_t SystemCoreClock;
 /*******************************************************************************
  ************************ BOARD_InitBootClocks function ************************
  ******************************************************************************/
+void BOARD_BootClockVLPR(void)
+{
+}
+
 void BOARD_InitBootClocks(void)
 {
     BOARD_BootClockRUN();
@@ -99,35 +102,60 @@ void BOARD_BootClockRUN(void)
     CLOCK_EnableClock(kCLOCK_Fro12M);  /*!< Ensure FRO 12MHz is on */
     CLOCK_EnableClock(kCLOCK_Fro32M);  /*!< Ensure FRO 32MHz is on */
     CLOCK_EnableClock(kCLOCK_Fro48M);  /*!< Ensure FRO 48MHz is on */
+    CLOCK_EnableClock(kCLOCK_Gpio0);
+    CLOCK_EnableClock(kCLOCK_Rtc);
+
+    /* INMUX and IOCON are used by many apps, enable both INMUX and IOCON clock bits here. */
+    CLOCK_AttachClk(kOSC32M_to_FRG_CLK);
+    CLOCK_AttachClk(kMAIN_CLK_to_DMI_CLK);
     CLOCK_EnableAPBBridge();           /*!< The Async_APB clock is enabled. */
+    SYSCON->DMICCLKDIV=0;
+    CLOCK_SetClkDiv(kCLOCK_DivClkout, 1, false);
     CLOCK_EnableClock(kCLOCK_Xtal32M); /*!< Enable XTAL 32 MHz output */
     /*!< Configure RTC OSC */
-    CLOCK_EnableClock(kCLOCK_Fro32k);       /*!< Enable RTC FRO 32 KHz output */
-    CLOCK_AttachClk(kFRO32K_to_OSC32K_CLK); /*!< Switch OSC32K to FRO32K */
+    CLOCK_EnableClock(kCLOCK_Xtal32k);
+    CLOCK_AttachClk(kXTAL32K_to_OSC32K_CLK);
     /*!< Set up dividers */
-    CLOCK_SetClkDiv(kCLOCK_DivRtcClk, 1U, false);     /*!< Set RTCCLKDIV divider to value 1 */
-    CLOCK_SetClkDiv(kCLOCK_DivAhbClk, 1U, false);     /*!< Set AHBCLKDIV divider to value 1 */
-    CLOCK_SetClkDiv(kCLOCK_DivSystickClk, 1U, false); /*!< Set SYSTICKCLKDIV divider to value 1 */
-    CLOCK_SetClkDiv(kCLOCK_DivTraceClk, 1U, false);   /*!< Set TRACECLKDIV divider to value 1 */
-    CLOCK_SetClkDiv(kCLOCK_DivSpifiClk, 2U, false);   /*!< Set SPIFICLKDIV divider to value 2 */
-    CLOCK_SetClkDiv(kCLOCK_DivDmicClk, 1U, false);    /*!< Set DMICCLKDIV divider to value 1 */
-    CLOCK_SetClkDiv(kCLOCK_DivWdtClk, 1U, true);      /*!< Set WDTCLKDIV divider to value 1 */
+    // CLOCK_SetClkDiv(kCLOCK_DivRtcClk, 1U, false);     /*!< Set RTCCLKDIV divider to value 1 */
+    // CLOCK_SetClkDiv(kCLOCK_DivAhbClk, 1U, false);     /*!< Set AHBCLKDIV divider to value 1 */
+    // CLOCK_SetClkDiv(kCLOCK_DivSystickClk, 1U, false); /*!< Set SYSTICKCLKDIV divider to value 1 */
+    // CLOCK_SetClkDiv(kCLOCK_DivTraceClk, 1U, false);   /*!< Set TRACECLKDIV divider to value 1 */
+    // CLOCK_SetClkDiv(kCLOCK_DivSpifiClk, 2U, false);   /*!< Set SPIFICLKDIV divider to value 2 */
+    // CLOCK_SetClkDiv(kCLOCK_DivDmicClk, 1U, false);    /*!< Set DMICCLKDIV divider to value 1 */
+    // CLOCK_SetClkDiv(kCLOCK_DivWdtClk, 1U, true);      /*!< Set WDTCLKDIV divider to value 1 */
 
     /*!< Set up clock selectors - Attach clocks to the peripheries */
     CLOCK_AttachClk(kFRO48M_to_MAIN_CLK);    /*!< Switch MAIN_CLK to FRO48M */
+    CLOCK_AttachClk(kXTAL32M_to_ASYNC_APB);
     CLOCK_AttachClk(kMAIN_CLK_to_ASYNC_APB); /*!< Switch ASYNC_APB to MAIN_CLK */
+    CLOCK_AttachClk(kOSC32K_to_WDT_CLK);
+    CLOCK_SetClkDiv(kCLOCK_DivWdtClk, 1, true);
     CLOCK_AttachClk(kFRO32M_to_OSC32M_CLK);  /*!< Switch OSC32M_CLK to FRO32M */
-    CLOCK_AttachClk(kFRO32K_to_OSC32K_CLK);  /*!< Switch OSC32K_CLK to FRO32K */
-    CLOCK_AttachClk(kOSC32M_to_USART_CLK);   /*!< Switch USART_CLK to OSC32M */
-    CLOCK_AttachClk(kMAIN_CLK_to_SPIFI);     /*!< Switch SPIFI to MAIN_CLK */
-    CLOCK_AttachClk(kMAIN_CLK_to_DMI_CLK);   /*!< Switch DMI_CLK to MAIN_CLK */
-    CLOCK_AttachClk(kOSC32K_to_WDT_CLK);     /*!< Switch WDT_CLK to OSC32K */
-    CLOCK_AttachClk(kOSC32M_to_SPI_CLK);     /*!< Switch SPI_CLK to OSC32M */
+ //   CLOCK_AttachClk(kFRO32K_to_OSC32K_CLK);  /*!< Switch OSC32K_CLK to FRO32K */
+ //   RESET_PeripheralReset(kUSART0_RST_SHIFT_RSTn);
+ //   CLOCK_AttachClk(kOSC32M_to_USART_CLK);   /*!< Switch USART_CLK to OSC32M */
+ //   CLOCK_AttachClk(kMAIN_CLK_to_SPIFI);     /*!< Switch SPIFI to MAIN_CLK */
+ //   CLOCK_AttachClk(kMAIN_CLK_to_DMI_CLK);   /*!< Switch DMI_CLK to MAIN_CLK */
+ //   CLOCK_AttachClk(kOSC32K_to_WDT_CLK);     /*!< Switch WDT_CLK to OSC32K */
+ //   CLOCK_AttachClk(kOSC32M_to_SPI_CLK);     /*!< Switch SPI_CLK to OSC32M */
     CLOCK_AttachClk(kOSC32M_to_I2C_CLK);     /*!< Switch I2C_CLK to OSC32M */
 
     /* enable the clocks for the cryto blocks */
     CLOCK_EnableClock(kCLOCK_Aes);
 
-    /*!< Set SystemCoreClock variable. */
-    SystemCoreClock = BOARD_BOOTCLOCKRUN_CORE_CLOCK;
+    RESET_PeripheralReset(kUSART0_RST_SHIFT_RSTn);
+
+    /* attach clock for USART0 */
+    CLOCK_AttachClk(kOSC32M_to_USART_CLK);
+    /* Hold UART in Reset as clock is started */
+    RESET_SetPeripheralReset(kUSART0_RST_SHIFT_RSTn);
+    CLOCK_EnableClock(kCLOCK_Usart0);
+    RESET_ClearPeripheralReset(kUSART0_RST_SHIFT_RSTn);
+    CLOCK_AttachClk(kOSC32M_to_I2C_CLK);     /*!< Switch I2C_CLK to OSC32M */
+
+    SystemCoreClockUpdate();
+}
+
+void BOARD_BootClockHSRUN(void)
+{
 }
