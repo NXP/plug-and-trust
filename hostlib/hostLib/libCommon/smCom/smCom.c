@@ -52,15 +52,15 @@
 #define LOCK_TXN()                                               \
     LOG_D("Trying to Acquire Lock");                             \
     if (xSemaphoreTake(gSmComlock, portMAX_DELAY) == pdTRUE)     \
-        LOG_D("LOCK Acquired");                                  \
+        { LOG_D("LOCK Acquired"); }                              \
     else                                                         \
-        LOG_D("LOCK Acquisition failed");
+        { LOG_D("LOCK Acquisition failed"); }
 #define UNLOCK_TXN()                                             \
     LOG_D("Trying to Released Lock");                            \
     if (xSemaphoreGive(gSmComlock) == pdTRUE)                    \
-        LOG_D("LOCK Released");                                  \
+        { LOG_D("LOCK Released"); }                              \
     else                                                         \
-        LOG_D("LOCK Releasing failed");
+        { LOG_D("LOCK Releasing failed"); }
 #else
 #define LOCK_TXN() LOG_D("no lock mode");
 #define UNLOCK_TXN() LOG_D("no lock mode");
