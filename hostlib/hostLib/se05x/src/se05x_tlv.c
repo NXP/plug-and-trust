@@ -173,6 +173,10 @@ int tlvSet_u8buf(uint8_t **buf, size_t *bufLen, SE05x_TAG_t tag, const uint8_t *
     const size_t size_of_length = (cmdLen <= 0x7f ? 1 : (cmdLen <= 0xFf ? 2 : 3));
     const size_t size_of_tlv    = 1 + size_of_length + cmdLen;
 
+    if (cmd == NULL) {
+        return 1;
+    }
+
     if (((*bufLen) + size_of_tlv) > SE05X_TLV_BUF_SIZE_CMD) {
         LOG_E("Not enough buffer");
         return 1;
@@ -307,8 +311,14 @@ int tlvGet_u8buf(uint8_t *buf, size_t *pBufIndex, const size_t bufLen, SE05x_TAG
     size_t extendedLen;
     size_t rspLen;
     //size_t len;
-    if (got_tag != tag)
+
+    if (rsp == NULL) {
         goto cleanup;
+    }
+
+    if (got_tag != tag) {
+        goto cleanup;
+    }
     rspLen = *pBuf++;
 
     if (rspLen <= 0x7FU) {
@@ -615,7 +625,7 @@ smStatus_t se05x_Transform_scp(struct Se05xSession *pSession,
     sss_status_t sss_status = kStatus_SSS_Fail;
     uint8_t macToAdd[16];
     size_t macLen = 16;
-    int i         = 0;
+    size_t i         = 0;
 
     Se05xApdu_t se05xApdu = {0};
 

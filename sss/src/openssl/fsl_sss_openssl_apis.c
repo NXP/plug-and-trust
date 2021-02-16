@@ -3097,7 +3097,7 @@ static sss_status_t sss_openssl_generate_ecp_key(sss_openssl_object_t *keyObject
         }
     }
     else {
-        LOG_E("No support for keyBitLen 0x%X", keyBitLen);
+        LOG_E("No support for keyBitLen.");
     }
 
 exit:
@@ -3160,7 +3160,7 @@ static sss_status_t sss_openssl_generate_rsa_key(sss_openssl_object_t *keyObject
         }
     }
     else {
-        LOG_E("No support for keyBitLen", keyBitLen);
+        LOG_E("No support for keyBitLen.");
         retval = kStatus_SSS_Fail;
     }
 
@@ -3266,7 +3266,7 @@ static sss_status_t sss_openssl_set_key(
 
     if (keyObject->objectType == kSSS_KeyPart_Default) {
         if (keyBufLen > keyObject->contents_max_size) {
-            LOG_E("Not enough memory for key_size ", keyObject->contents_max_size);
+            LOG_E("Not enough memory for key_size.");
             goto exit;
         }
         else {

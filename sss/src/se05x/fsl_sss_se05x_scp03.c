@@ -169,7 +169,7 @@ exit:
 static sss_status_t nxScp03_GP_ExternalAuthenticate(
     pSe05xSession_t se05xSession, sss_object_t *keyObj, uint8_t *updateMCV, uint8_t *hostCryptogram)
 {
-    smStatus_t st = 0;
+    smStatus_t st = SM_NOT_OK;
     uint8_t txBuf[64];
     uint8_t macToAdd[AES_KEY_LEN_nBYTE];
 

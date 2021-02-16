@@ -88,7 +88,12 @@ sss_status_t ks_openssl_load_key(sss_openssl_object_t *sss_key, keyStoreTable_t 
             }
             size = (size_t)signed_size;
             fseek(fp, 0, SEEK_SET);
-            fread(keyBuf, size, 1, fp);
+            if (size != fread(keyBuf, size, 1, fp))
+            {
+                retval = kStatus_SSS_Fail;
+                fclose(fp);
+                return retval;
+            }
             fclose(fp);
             retval = sss_openssl_key_object_allocate(sss_key,
                 shadowEntry->extKeyId,

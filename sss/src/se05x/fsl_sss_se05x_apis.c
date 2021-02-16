@@ -1108,8 +1108,10 @@ sss_status_t sss_se05x_derive_key_one_go(sss_se05x_derive_key_t *context,
         (context->mode == kMode_SSS_HKDF_ExpandOnly ? kSE05x_HkdfMode_ExpandOnly : kSE05x_HkdfMode_ExtractExpand);
 
 #if SSS_HAVE_SE05X_VER_GTE_06_00
-    if (context->keyObject->keyStore == derivedKeyObject->keyStore) {
-        pHkdfKey = NULL;
+    if (derivedKeyObject != NULL) {
+        if (context->keyObject->keyStore == derivedKeyObject->keyStore) {
+            pHkdfKey = NULL;
+        }
     }
 #endif
 
@@ -1129,14 +1131,16 @@ sss_status_t sss_se05x_derive_key_one_go(sss_se05x_derive_key_t *context,
     ENSURE_OR_GO_EXIT(status == SM_OK);
 
     if (pHkdfKey != NULL) {
-        retval = sss_key_store_set_key((sss_key_store_t *)derivedKeyObject->keyStore,
-            sss_derived_keyObject,
-            hkdfKey,
-            hkdfKeyLen,
-            hkdfKeyLen * 8,
-            NULL,
-            0);
-        ENSURE_OR_GO_EXIT(retval == kStatus_SSS_Success);
+        if (derivedKeyObject != NULL) {
+            retval = sss_key_store_set_key((sss_key_store_t *)derivedKeyObject->keyStore,
+                sss_derived_keyObject,
+                hkdfKey,
+                hkdfKeyLen,
+                hkdfKeyLen * 8,
+                NULL,
+                0);
+            ENSURE_OR_GO_EXIT(retval == kStatus_SSS_Success);
+        }
     }
 
     retval = kStatus_SSS_Success;
@@ -1176,8 +1180,10 @@ sss_status_t sss_se05x_derive_key_sobj_one_go(sss_se05x_derive_key_t *context,
     }
 
 #if SSS_HAVE_SE05X_VER_GTE_06_00
-    if (context->keyObject->keyStore == derivedKeyObject->keyStore) {
-        pHkdfKey = NULL;
+    if (derivedKeyObject != NULL) {
+        if (context->keyObject->keyStore == derivedKeyObject->keyStore) {
+            pHkdfKey = NULL;
+        }
     }
 #endif
 
@@ -1197,14 +1203,16 @@ sss_status_t sss_se05x_derive_key_sobj_one_go(sss_se05x_derive_key_t *context,
     ENSURE_OR_GO_EXIT(status == SM_OK);
 
     if (pHkdfKey != NULL) {
-        retval = sss_key_store_set_key((sss_key_store_t *)derivedKeyObject->keyStore,
-            sss_derived_keyObject,
-            hkdfKey,
-            hkdfKeyLen,
-            hkdfKeyLen * 8,
-            NULL,
-            0);
-        ENSURE_OR_GO_EXIT(retval == kStatus_SSS_Success);
+        if (derivedKeyObject != NULL) {
+            retval = sss_key_store_set_key((sss_key_store_t *)derivedKeyObject->keyStore,
+                sss_derived_keyObject,
+                hkdfKey,
+                hkdfKeyLen,
+                hkdfKeyLen * 8,
+                NULL,
+                0);
+            ENSURE_OR_GO_EXIT(retval == kStatus_SSS_Success);
+        }
     }
 
     retval = kStatus_SSS_Success;
@@ -1226,6 +1234,9 @@ sss_status_t sss_se05x_derive_key_dh(
     uint8_t *pPublicKey     = NULL;
     size_t publicKeyLen     = 0;
     uint16_t publicKeyIndex = 0;
+#if SSS_HAVE_SE05X_VER_GTE_06_00
+    uint8_t invertEndiannes = 0x00;
+#endif
 
     sss_object_t *sss_other_keyObject   = (sss_object_t *)otherPartyKeyObject;
     sss_object_t *sss_derived_keyObject = (sss_object_t *)derivedKeyObject;
@@ -1263,7 +1274,6 @@ sss_status_t sss_se05x_derive_key_dh(
 
     pPublicKey = &pubkey[publicKeyIndex];
 #if SSS_HAVE_SE05X_VER_GTE_06_00
-    uint8_t invertEndiannes = 0x00;
     if (otherPartyKeyObject->cipherType == kSSS_CipherType_EC_MONTGOMERY) {
         // In case of Montgomery curves we want to store the
         // shared secret using Little Endian Convention
@@ -5997,11 +6007,14 @@ sss_status_t sss_se05x_set_feature(
     smStatus_t status                      = SM_NOT_OK;
     Se05x_AppletFeatures_t applet_features = {0};
     applet_features.extended_features      = NULL;
+#if SSS_HAVE_SE05X_VER_GTE_06_00
+    SE05x_ExtendedFeatures_t extended = {0};
+#endif
+
     if (session == NULL)
         goto exit;
 
 #if SSS_HAVE_SE05X_VER_GTE_06_00
-    SE05x_ExtendedFeatures_t extended = {0};
 
     /** Disable feature ECDH B2b8 */
     if (disable_features.EXTCFG_FORBID_ECDH == 1)
