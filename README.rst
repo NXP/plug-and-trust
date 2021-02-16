@@ -25,6 +25,8 @@ Change Log
 -------------------------------------------------------------
 Refer ChangeLog.md
 
+THIS BRANCH CONTAINS ADDITIONAL FILES TO SUPPORT PAKE PROTOCOL APIs.
+
 
 Folder structure of the Mini Pacakge
 -------------------------------------------------------------
