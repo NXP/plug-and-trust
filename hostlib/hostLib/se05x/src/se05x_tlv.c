@@ -173,10 +173,6 @@ int tlvSet_u8buf(uint8_t **buf, size_t *bufLen, SE05x_TAG_t tag, const uint8_t *
     const size_t size_of_length = (cmdLen <= 0x7f ? 1 : (cmdLen <= 0xFf ? 2 : 3));
     const size_t size_of_tlv    = 1 + size_of_length + cmdLen;
 
-    if (cmd == NULL) {
-        return 1;
-    }
-
     if (((*bufLen) + size_of_tlv) > SE05X_TLV_BUF_SIZE_CMD) {
         LOG_E("Not enough buffer");
         return 1;
@@ -198,7 +194,7 @@ int tlvSet_u8buf(uint8_t **buf, size_t *bufLen, SE05x_TAG_t tag, const uint8_t *
     else {
         return 1;
     }
-    if (cmdLen) {
+    if ((cmdLen > 0) && (cmd != NULL)) {
         while (cmdLen-- > 0) {
             *pBuf++ = *cmd++;
         }
@@ -313,6 +309,10 @@ int tlvGet_u8buf(uint8_t *buf, size_t *pBufIndex, const size_t bufLen, SE05x_TAG
     //size_t len;
 
     if (rsp == NULL) {
+        goto cleanup;
+    }
+
+    if (pRspLen == NULL) {
         goto cleanup;
     }
 
