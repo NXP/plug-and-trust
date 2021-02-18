@@ -1,6 +1,6 @@
 # Plug-And-Trust Mini Package Change Log
 
-## Release v03.00.06_Spake
+## Release v03.02.00_Spake
 
 - Pake protocol support in APDU layer
 
