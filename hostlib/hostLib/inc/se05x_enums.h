@@ -750,7 +750,8 @@ typedef enum
     kSE05x_CryptoObject_AES_GCM_INT_IV,
     kSE05x_CryptoObject_AES_CCM,
     kSE05x_CryptoObject_SPAKE_VERIFIER,
-    kSE05x_CryptoObject_SPAKE_PROVER
+    kSE05x_CryptoObject_SPAKE_PROVER,
+    kSE05x_CryptoObject_End,
 } SE05x_CryptoObject_t;
 
 /** @copydoc SE05x_CryptoObject_t */
