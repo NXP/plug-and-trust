@@ -1,12 +1,5 @@
 /* Copyright 2019,2020 NXP
- *
- * This software is owned or controlled by NXP and may only be used
- * strictly in accordance with the applicable license terms.  By expressly
- * accepting such terms or by downloading, installing, activating and/or
- * otherwise using the software, you are agreeing that you have read, and
- * that you agree to comply with and are bound by, such license terms.  If
- * you do not agree to be bound by the applicable license terms, then you
- * may not retain, install, activate or otherwise use the software.
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 /** @file */
@@ -83,7 +76,7 @@ sss_status_t nxECKey_AuthenticateChannel(pSe05xSession_t se05xSession, SE05x_Aut
     size_t receiptLen = sizeof(receipt);
     uint8_t shsSecret[32];
     size_t shsSecretLen                = sizeof(shsSecret);
-    int offset                         = 0;
+    size_t offset                      = 0;
     NXECKey03_StaticCtx_t *pStatic_ctx = pAuthFScp->pStatic_ctx;
     NXSCP03_DynCtx_t *pDyn_ctx         = pAuthFScp->pDyn_ctx;
     uint8_t sePubkey[150]              = {
@@ -314,6 +307,7 @@ sss_status_t nxECKey_InternalAuthenticate(pSe05xSession_t se05xSession,
     uint8_t rspbuf[256];
     uint8_t *pRspbuf = &rspbuf[0];
     size_t rspbufLen = ARRAY_SIZE(rspbuf);
+    size_t rspIndex  = 0;
     sss_digest_t md;
     uint8_t md_host5F37[32];
     size_t md_host5F37Len              = sizeof(md_host5F37);
@@ -389,19 +383,18 @@ sss_status_t nxECKey_InternalAuthenticate(pSe05xSession_t se05xSession,
     cmdbufLen += sig_host5F37Len;
     status    = kStatus_SSS_Fail;
     retStatus = DoAPDUTxRx_s_Case4(se05xSession, &hdr, cmdbuf, cmdbufLen, rspbuf, &rspbufLen);
-    if (retStatus == SM_OK) {
-        size_t rspIndex = 0;
-        tlvRet          = tlvGet_u8buf(
-            pRspbuf, &rspIndex, rspbufLen, kSE05x_GP_TAG_DR_SE, rndData, rndDataLen); /* Get the Random No */
-        ENSURE_OR_GO_CLEANUP(tlvRet == 0);
-        tlvRet = tlvGet_u8buf(
-            pRspbuf, &rspIndex, rspbufLen, kSE05x_GP_TAG_RECEIPT, receipt, receiptLen); /* Get the Receipt */
-        ENSURE_OR_GO_CLEANUP(tlvRet == 0);
-        ENSURE_OR_GO_CLEANUP((rspIndex + 2) == rspbufLen);
-        retStatus = (pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]);
-        ENSURE_OR_GO_CLEANUP(retStatus == SM_OK);
-        status = kStatus_SSS_Success;
-    }
+    ENSURE_OR_GO_CLEANUP(retStatus == SM_OK);
+    tlvRet =
+        tlvGet_u8buf(pRspbuf, &rspIndex, rspbufLen, kSE05x_GP_TAG_DR_SE, rndData, rndDataLen); /* Get the Random No */
+    ENSURE_OR_GO_CLEANUP(tlvRet == 0);
+    tlvRet =
+        tlvGet_u8buf(pRspbuf, &rspIndex, rspbufLen, kSE05x_GP_TAG_RECEIPT, receipt, receiptLen); /* Get the Receipt */
+    ENSURE_OR_GO_CLEANUP(tlvRet == 0);
+    ENSURE_OR_GO_CLEANUP((rspIndex + 2) == rspbufLen);
+    retStatus = (pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]);
+    ENSURE_OR_GO_CLEANUP(retStatus == SM_OK);
+    status = kStatus_SSS_Success;
+
 cleanup:
     return status;
 }

@@ -1,8 +1,7 @@
 /*
- * Copyright 2018,2019 NXP
- * All rights reserved.
  *
- * SPDX-License-Identifier: BSD-3-Clause
+ * Copyright 2018,2019 NXP
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 #ifndef SSS_EX_INC_EX_SSS_SCP03_KEYS_H_

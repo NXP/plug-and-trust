@@ -1,8 +1,7 @@
 /*
- * Copyright 2018-2020 NXP
- * All rights reserved.
  *
- * SPDX-License-Identifier: BSD-3-Clause
+ * Copyright 2018-2020 NXP
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 #include <fsl_sss_mbedtls_apis.h>
@@ -1917,6 +1916,7 @@ sss_status_t sss_mbedtls_aead_finish(sss_mbedtls_aead_t *context,
         0,
     };
     size_t srcdata_updated_len = 0;
+    uint8_t *pTag              = NULL;
     if (context->algorithm == kAlgorithm_SSS_AES_CCM) { /* Check if finish has got source data */
         if ((srcData != NULL) && (srcLen > 0)) {
             retval = sss_mbedtls_aead_ccm_update(context, srcData, srcLen);
@@ -1942,24 +1942,34 @@ sss_status_t sss_mbedtls_aead_finish(sss_mbedtls_aead_t *context,
             srcdata_updated_len += srcLen;
         }
 
-        if (srcdata_updated_len % CIPHER_BLOCK_SIZE != 0) {
-            srcdata_updated_len = srcdata_updated_len + (CIPHER_BLOCK_SIZE - (srcdata_updated_len % 16));
-        }
-
         /* Add Source Data */
         ret      = mbedtls_gcm_update(context->gcm_ctx, srcdata_updated_len, srcdata_updated, destData);
         *destLen = srcdata_updated_len;
         ENSURE_OR_GO_EXIT(ret == 0);
 
+        pTag = (uint8_t *)SSS_MALLOC(*tagLen);
+        memset(pTag, 0, *tagLen);
+
         /* Get Tag for Enc*/
-        ret = mbedtls_gcm_finish(context->gcm_ctx, tag, stagLen);
+        ret = mbedtls_gcm_finish(context->gcm_ctx, pTag, stagLen);
         ENSURE_OR_GO_EXIT(ret == 0);
+        if (context->mode == kMode_SSS_Encrypt) {
+            memcpy(tag, pTag, stagLen);
+        }
+        else {
+            if (0 != memcmp(pTag, tag, stagLen)) {
+                goto exit;
+            }
+        }
 
         *tagLen = stagLen;
     }
     retval = kStatus_SSS_Success;
 
 exit:
+    if (pTag) {
+        SSS_FREE(pTag);
+    }
 #endif
     return retval;
 }
@@ -2360,6 +2370,13 @@ void sss_mbedtls_mac_context_free(sss_mbedtls_mac_t *context)
             mbedtls_cipher_free(context->cipher_ctx);
             SSS_FREE(context->cipher_ctx);
         }
+#if SSSFTR_SW_TESTCOUNTERPART
+        if (context->algorithm == kAlgorithm_SSS_HMAC_SHA1 || context->algorithm == kAlgorithm_SSS_HMAC_SHA224 ||
+            context->algorithm == kAlgorithm_SSS_HMAC_SHA256 || context->algorithm == kAlgorithm_SSS_HMAC_SHA384 ||
+            context->algorithm == kAlgorithm_SSS_HMAC_SHA512) {
+            SSS_FREE(context->HmacCtx);
+        }
+#endif
         memset(context, 0, sizeof(*context));
     }
 }
@@ -2472,7 +2489,8 @@ sss_status_t sss_mbedtls_digest_init(sss_mbedtls_digest_t *context)
     ret = mbedtls_md_init_ctx(&context->md_ctx, mdinfo);
     ENSURE_OR_GO_EXIT(ret == 0);
 
-    mbedtls_md_starts(&context->md_ctx);
+    ret = mbedtls_md_starts(&context->md_ctx);
+    ENSURE_OR_GO_EXIT(ret == 0);
 
     retval = kStatus_SSS_Success;
 exit:
@@ -2725,7 +2743,9 @@ static sss_status_t sss_mbedtls_set_key(
         }
     } break;
     case kSSS_KeyPart_Public: {
-        uint8_t base64_format[2048];
+        // Sizeof base64_format should be limited to sizeof(pem_format) minus BEGIN_PUBLIC and END_PUBLIC
+        // SIMW-2696.
+        uint8_t base64_format[1996];
         mbedtls_pk_context *pk = (mbedtls_pk_context *)keyObject->contents;
         if (keyObject->cipherType == kSSS_CipherType_EC_MONTGOMERY) {
             mbedtls_ecp_keypair *pEcpPub = NULL;
@@ -2796,7 +2816,8 @@ static sss_status_t sss_mbedtls_set_key(
             (ret == 0) ? (retval = kStatus_SSS_Success) : (retval = kStatus_SSS_Fail);
 
             if (retval == kStatus_SSS_Success) {
-                mbedtls_mpi_lset(&pEcpPub->Q.Z, 1);
+                ret = mbedtls_mpi_lset(&pEcpPub->Q.Z, 1);
+                (ret == 0) ? (retval = kStatus_SSS_Success) : (retval = kStatus_SSS_Fail);
             }
         }
         else {
@@ -2997,6 +3018,11 @@ static sss_status_t sss_mbedtls_hkdf_expand(const mbedtls_md_info_t *md,
     }
 
     hash_len = mbedtls_md_get_size(md);
+
+    if (hash_len == 0) {
+        retval = kStatus_SSS_Fail;
+        goto exit;
+    }
 
     if (info == NULL) {
         info = (const unsigned char *)"";

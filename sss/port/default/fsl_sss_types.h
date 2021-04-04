@@ -1,8 +1,6 @@
 /*
  * Copyright 2018,2019 NXP
- * All rights reserved.
- *
- * SPDX-License-Identifier: BSD-3-Clause
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 #ifndef FSL_SSS_TYPES_H
@@ -49,7 +47,6 @@
 #define STRNICMP strncasecmp
 #endif /*_MSC_VER*/
 
-/* doc:start:sss-heap_mgmt */
 #ifndef SSS_MALLOC
 #define SSS_MALLOC malloc
 #endif // SSS_MALLOC
@@ -61,6 +58,5 @@
 #ifndef SSS_CALLOC
 #define SSS_CALLOC calloc
 #endif // SSS_CALLOC
-/* doc:end:sss-heap_mgmt */
 
 #endif /* FSL_SSS_TYPES_H */

@@ -82,6 +82,9 @@ int main(void)
 
 #if SSS_HAVE_ALT_SSS
 #include "sss_mbedtls.h"
+#if defined(MBEDTLS_ECDSA_VERIFY_ALT)
+#include "ecdsa_verify_alt.h"
+#endif
 #endif
 
 #include <ex_sss.h>
@@ -600,9 +603,11 @@ sss_status_t ex_sss_entry(ex_sss_boot_ctx_t *pCtx)
     char *p, *q;
     const int *list;
 
+#if !defined(MBEDTLS_ECDSA_VERIFY_ALT) /* Set public key is causing NVM writes */
 #if defined(SMCOM_JRCP_V2) && SSS_HAVE_SE05X_VER_GTE_06_00
     uint32_t start_nvmCount = 0;
     uint32_t end_nvmCount = 0;
+#endif
 #endif
 
     /*
@@ -622,6 +627,7 @@ sss_status_t ex_sss_entry(ex_sss_boot_ctx_t *pCtx)
     memset( (void * ) alpn_list, 0, sizeof( alpn_list ) );
 #endif
 
+#if !defined(MBEDTLS_ECDSA_VERIFY_ALT) /* Set public key is causing NVM writes */
 #if defined(SMCOM_JRCP_V2) && SSS_HAVE_SE05X_VER_GTE_06_00
     {
         uint32_t status = kStatus_SSS_Fail;
@@ -632,7 +638,7 @@ sss_status_t ex_sss_entry(ex_sss_boot_ctx_t *pCtx)
         }
     }
 #endif
-
+#endif
     if(gex_sss_argc == 0 )
     {
     usage:
@@ -1051,6 +1057,10 @@ sss_status_t ex_sss_entry(ex_sss_boot_ctx_t *pCtx)
             return kStatus_SSS_Fail;
         }
 
+        /*
+        * All ecdsa verification is done using the esdsa_alt file. No need to associate the root ca pub key.
+        */
+#if !defined(MBEDTLS_ECDSA_VERIFY_ALT)
         /* pex_sss_demo_tls_ctx->pub_obj will have the root CA public key */
         status = sss_key_object_init(&pex_sss_demo_tls_ctx->pub_obj, &pCtx->ks);
         if (status != kStatus_SSS_Success) {
@@ -1063,6 +1073,7 @@ sss_status_t ex_sss_entry(ex_sss_boot_ctx_t *pCtx)
             printf(" sss_key_object_get_handle  for extPubkey Failed...\n");
             return kStatus_SSS_Fail;
         }
+#endif
 
         /* pex_sss_demo_tls_ctx->dev_cert will have the our device certificate */
         status = sss_key_object_init(&pex_sss_demo_tls_ctx->dev_cert, &pCtx->ks);
@@ -1070,7 +1081,6 @@ sss_status_t ex_sss_entry(ex_sss_boot_ctx_t *pCtx)
             printf(" sss_key_object_init for Pub key Failed...\n");
             return kStatus_SSS_Fail;
         }
-
         status = sss_key_object_get_handle(&pex_sss_demo_tls_ctx->dev_cert, SSS_CERTIFICATE_INDEX);
         if (status != kStatus_SSS_Success) {
             printf(" sss_key_object_get_handle  for client Cert Failed...\n");
@@ -1328,10 +1338,17 @@ sss_status_t ex_sss_entry(ex_sss_boot_ctx_t *pCtx)
     }
 #endif
     if (useKeysFromSM) {
+
+#if !defined(MBEDTLS_ECDSA_VERIFY_ALT)
         /* doc+:use-public-key-from-se */
         mbedtls_pk_free(&cacert.pk);
         ret = sss_mbedtls_associate_pubkey(&cacert.pk, &pex_sss_demo_tls_ctx->pub_obj);
         /* doc-:use-public-key-from-se */
+#else
+        /* doc+:ecdsa-verify-alt-set-keystore */
+        sss_mbedtls_set_sss_keystore(&pCtx->ks);
+        /* doc-:ecdsa-verify-alt-set-keystore */
+#endif
     }
     if( ret < 0 )
     {
@@ -2197,6 +2214,7 @@ reconnect:
     */
 exit:
 
+#if !defined(MBEDTLS_ECDSA_VERIFY_ALT) /* Set public key is causing NVM writes */
 #if defined(SMCOM_JRCP_V2) && SSS_HAVE_SE05X_VER_GTE_06_00
     {
         uint32_t status = kStatus_SSS_Fail;
@@ -2211,6 +2229,7 @@ exit:
             mbedtls_printf("NVM write not expected\n");
         }
     }
+#endif
 #endif
 
 #ifdef MBEDTLS_ERROR_C

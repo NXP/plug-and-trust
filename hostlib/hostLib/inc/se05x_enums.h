@@ -1,8 +1,7 @@
 /*
-* Copyright 2019,2020 NXP
-* All rights reserved.
 *
-* SPDX-License-Identifier: BSD-3-Clause
+* Copyright 2019,2020 NXP
+* SPDX-License-Identifier: Apache-2.0
 */
 
 /** @file */
@@ -645,7 +644,7 @@ typedef enum
     kSE05x_TransientIndicator_TRANSIENT = 0x02,
 } SE05x_TransientIndicator_t;
 
-/** TODO */
+/** Whether object attribute is set */
 typedef enum
 {
     /** Invalid */

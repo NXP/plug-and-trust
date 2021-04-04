@@ -1,8 +1,7 @@
 /*
-* Copyright 2018 NXP
-* All rights reserved.
 *
-* SPDX-License-Identifier: BSD-3-Clause
+* Copyright 2018 NXP
+* SPDX-License-Identifier: Apache-2.0
 */
 
 #ifndef NX_LOG_H
@@ -79,10 +78,10 @@ extern "C" {
 #include <stddef.h>
 #include <stdint.h>
 
-#define NX_LEVEL_DEBUG 0
-#define NX_LEVEL_INFO 1
+#define NX_LEVEL_DEBUG 4
+#define NX_LEVEL_INFO 3
 #define NX_LEVEL_WARN 2
-#define NX_LEVEL_ERROR 3
+#define NX_LEVEL_ERROR 1
 
 #define NX_LOG_D
 #define NX_LOG_I
