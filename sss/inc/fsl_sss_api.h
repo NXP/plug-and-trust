@@ -1,8 +1,7 @@
 /*
- * Copyright 2018-2020 NXP
- * All rights reserved.
  *
- * SPDX-License-Identifier: BSD-3-Clause
+ * Copyright 2018-2020 NXP
+ * SPDX-License-Identifier: Apache-2.0
  */
 /** @file */
 #ifndef _FSL_SSS_H_
@@ -303,8 +302,8 @@ typedef enum
 typedef enum
 {
     kSSS_KeyPart_NONE,
-    /** Applicable where we have UserID, PIN, Binary Files,
-     * Certificates, Symmetric Keys, PCR */
+    /** Applicable where we have UserID, Binary Files,
+     * Certificates, Symmetric Keys, PCR, HMAC-key, counter */
     kSSS_KeyPart_Default = 1,
     /** Public part of asymmetric key */
     kSSS_KeyPart_Public = 2,
@@ -346,8 +345,11 @@ typedef enum
     kSSS_CipherType_EC_BARRETO_NAEHRIG = 53,
 
     kSSS_CipherType_UserID      = 70,
+
+    /** Use kSSS_CipherType_Binary to store Certificate */
     kSSS_CipherType_Certificate = 71,
     kSSS_CipherType_Binary      = 72,
+
     kSSS_CipherType_Count       = 73,
     kSSS_CipherType_PCR         = 74,
     kSSS_CipherType_ReservedPin = 75,
@@ -580,9 +582,9 @@ typedef struct
     sss_session_t *session;
     /** Key to be used for asymmetric */
     sss_object_t *keyObject;
-    /** TODO : Algorithm to be applied */
+    /** Algorithm to be used */
     sss_algorithm_t algorithm;
-    /** TODO : High level operation */
+    /** High level operation (encrypt/decrypt) */
     sss_mode_t mode;
 
     /** Reserved memory for implementation specific extension */
@@ -623,8 +625,7 @@ typedef struct
     sss_object_t *keyObject;
     /** Algorithm to be applied, e.g. MAC/CMAC */
     sss_algorithm_t algorithm;
-    /** Mode of operation for MAC e.g. ...
-     * @todo : May be we don ot this mode here. */
+    /** Mode of operation for MAC (kMode_SSS_Mac) */
     sss_mode_t mode;
 
     /** Reserved memory for implementation specific extension */
@@ -679,7 +680,7 @@ typedef struct
 {
     /** Pointer to the session */
     sss_session_t *session;
-    /** TODO: More documentation */
+    /** Tunnel to which Applet (Currently unused) */
     uint32_t tunnelType;
 
     /** Reserved memory for implementation specific extension */
@@ -1665,9 +1666,9 @@ sss_status_t sss_derive_key_context_init(sss_derive_key_t *context,
  * @param info Input data buffer, typically with some fixed info.
  * @param infoLen Length of info buffer in bytes.
  * @param[in,out] derivedKeyObject Reference to a derived key
- * @param deriveDataLen <b>TODO</b> Document this
- * @param hkdfOutput <b>TODO</b> Document this
- * @param hkdfOutputLen <b>TODO</b> Document this
+ * @param deriveDataLen Requested length of output
+ * @param hkdfOutput Output buffer containing key derivation output
+ * @param hkdfOutputLen Output containing length of hkdfOutput
  *
  * @returns Status of the operation
  * @retval #kStatus_SSS_Success The operation has completed successfully.

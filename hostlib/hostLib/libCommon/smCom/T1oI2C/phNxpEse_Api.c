@@ -18,6 +18,7 @@
 #include <phNxpEsePal_i2c.h>
 #include "sm_types.h"
 #include "sm_timer.h"
+#include <fsl_sss_types.h>
 
 #ifdef FLOW_VERBOSE
 #define NX_LOG_ENABLE_SMCOM_DEBUG 1
@@ -694,11 +695,7 @@ void* phNxpEse_memcpy(void *dest, const void *src, size_t len)
  ******************************************************************************/
 void *phNxpEse_memalloc(uint32_t size)
 {
-#if defined(USE_RTOS) && USE_RTOS == 1
-    return pvPortMalloc(size);
-#else
-    return malloc(size);
-#endif
+    return SSS_MALLOC(size);
 }
 
 
@@ -715,11 +712,7 @@ void *phNxpEse_memalloc(uint32_t size)
 void phNxpEse_free(void* ptr)
 {
     ENSURE_OR_GO_EXIT(ptr != NULL);
-#if defined(USE_RTOS) && USE_RTOS == 1
-    vPortFree(ptr);
-#else
-    free(ptr);
-#endif
+    SSS_FREE(ptr);
 exit:
     return;
 }

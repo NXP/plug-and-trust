@@ -1,8 +1,7 @@
 /*
- * Copyright 2019-2020 NXP
- * All rights reserved.
  *
- * SPDX-License-Identifier: BSD-3-Clause
+ * Copyright 2019-2020 NXP
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 /** @file */
@@ -12,6 +11,12 @@
 
 #include "se05x_enums.h"
 #include "se05x_tlv.h"
+
+/* Enable compilation of deprecated API Se05x_API_WritePCR 
+ * Deprecated from Q1 2021.
+ * Support will be removed by Q1 2022
+ */
+#define ENABLE_DEPRECATED_API_WritePCR 1
 
 /** Se05x_API_CreateSession
  *
@@ -1018,7 +1023,17 @@ smStatus_t Se05x_API_IncCounter(pSe05xSession_t session_ctx, uint32_t objectID);
  * @param[in] inputData inputData [4:kSE05x_TAG_3]
  * @param[in] inputDataLen Length of inputData
  */
+#if ENABLE_DEPRECATED_API_WritePCR
 smStatus_t Se05x_API_WritePCR(pSe05xSession_t session_ctx,
+    pSe05xPolicy_t policy,
+    uint32_t pcrID,
+    const uint8_t *initialValue,
+    size_t initialValueLen,
+    const uint8_t *inputData,
+    size_t inputDataLen);
+#endif // ENABLE_DEPRECATED_API_WritePCR
+smStatus_t Se05x_API_WritePCR_WithType(pSe05xSession_t session_ctx,
+	const SE05x_INS_t ins_type,
     pSe05xPolicy_t policy,
     uint32_t pcrID,
     const uint8_t *initialValue,

@@ -1,8 +1,7 @@
 /*
- * Copyright 2016-2020 NXP
- * All rights reserved.
  *
- * SPDX-License-Identifier: BSD-3-Clause
+ * Copyright 2016-2020 NXP
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 /**
@@ -66,7 +65,7 @@ typedef unsigned char bool; // C++ and GCC has bool.
 #endif
 
 /** @define AX_EMBEDDED Plaform is embedded like Kinetis / LPC / i.MX RT / Freedom Series */
-#if defined(FREEDOM) || defined(IMX_RT) || defined(CPU_LPC54018) || defined(LPC_55x)
+#if defined(FREEDOM) || defined(IMX_RT) || defined(CPU_LPC54018) || defined(LPC_55x) || defined(QN9090DK6)
 #define AX_EMBEDDED 1
 #elif defined(AX_EMBEDDED)
 /* OK */

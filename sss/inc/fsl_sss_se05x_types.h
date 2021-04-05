@@ -1,8 +1,7 @@
 /*
- * Copyright 2018-2020 NXP
- * All rights reserved.
  *
- * SPDX-License-Identifier: BSD-3-Clause
+ * Copyright 2018-2020 NXP
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 #ifndef SSS_APIS_INC_FSL_SSS_SE05X_TYPES_H_
@@ -31,7 +30,7 @@
 /* Only for base session with os */
 #endif
 /* FreeRTOS includes. */
-#if AX_EMBEDDED && USE_RTOS
+#if USE_RTOS
 #include "FreeRTOS.h"
 #include "FreeRTOSIPConfig.h"
 #include "semphr.h"
@@ -97,13 +96,13 @@ typedef struct _sss_se05x_tunnel_context
 {
     /** Pointer to the base SE050 SEssion */
     struct _sss_se05x_session *se05x_session;
-    /** Where exectly this tunner terminate to */
+    /** Where exactly this tunnel terminates to */
     sss_tunnel_dest_t tunnelDest;
-#if (__GNUC__ && !AX_EMBEDDED)
-    /** For systems where we potentially have multi-threaded operations, have a lock */
-    pthread_mutex_t channelLock;
-#elif AX_EMBEDDED && USE_RTOS
+/** For systems where we potentially have multi-threaded operations, have a lock */
+#if USE_RTOS
     SemaphoreHandle_t channelLock;
+#elif (__GNUC__ && !AX_EMBEDDED)
+    pthread_mutex_t channelLock;
 #endif
 } sss_se05x_tunnel_context_t;
 

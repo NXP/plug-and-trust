@@ -1,5 +1,45 @@
 # Plug-And-Trust Mini Package Change Log
 
+## Release v03.01.00
+
+- Extended kSSS_KeyPart_Default for other objectType.
+
+  - Earlier: Object type ``kSSS_KeyPart_Default`` is used for Binary Files,
+    Certificates, Symmetric Keys, PCR and HMAC-key.
+
+  - Now: UserID and Counter are added for ``kSSS_KeyPart_Default``.
+    This means objectType of UserID and Counter will be ``kSSS_KeyPart_Default`` after
+    calling :cpp:type:`sss_key_object_get_handle`.
+    Comment for enum ``sss_key_part_t`` is updated accordingly.
+
+- Added new API :cpp:func:`Se05x_API_WritePCR_WithType` with support to
+  write transient PCR objects also.
+
+- Deprecated API :cpp:func:`Se05x_API_WritePCR`. Added macro :c:macro:`ENABLE_DEPRECATED_API_WritePCR`
+  to enable compilation of deprecated API :cpp:func:`Se05x_API_WritePCR`.
+  Support will be removed by Q1 2022.
+
+- Bugfix - Handling of result tag in case of failure in :cpp:func:`Se05x_API_AeadOneShot`,
+  :cpp:func:`Se05x_API_AeadFinal` and
+  :cpp:func:`Se05x_API_AeadCCMFinal`
+
+- Bugfix - KVN12 key can be used for PlatformSCP authentication now in SE051.
+
+- SE05x APDU - Response length set to 0 in error condition - :cpp:func:`tlvGet_u8buf`.
+
+- Created separate library (``mwlog``) for logging framework. See :numref:`stack-logging`
+  :ref:`stack-logging`
+
+- Order of log level reversed. Current log level is - ``{"ERROR", "WARN ", "INFO ", "DEBUG"}``.
+
+- Mbedtls ALT is extended with ECDSA verify operation using ``MBEDTLS_ECDSA_VERIFY_ALT`` define. (Disabled by default).
+  Using this all EC public key verify operations can be performed using SE05x.
+
+- Changed files under BSD3 License with NXP Copyright to Apache2 License.
+
+- Changed files under Proprietary license to Apache 2 License.
+
+
 ## Release v03.00.06
 
 - smCom_Init: return type is now *U16* instead of *void*. Return value indicates success/failure to create mutex/semophore.

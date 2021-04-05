@@ -17,6 +17,8 @@ FILE(
 
     ../hostlib/hostLib/libCommon/infra/*.c
 
+    ../hostlib/hostLib/libCommon/log/nxLog.c
+
     ../hostlib/hostLib/libCommon/smCom/smCom.c
     ../hostlib/hostLib/platform/rsp/se05x_reset.c
     ../hostlib/hostLib/platform/generic/sm_timer.c
@@ -64,6 +66,7 @@ FILE(
     ../hostlib/hostLib/inc
     ../hostlib/hostLib/libCommon/infra
     ../hostlib/hostLib/libCommon/smCom
+    ../hostlib/hostLib/libCommon/log
     ../hostlib/hostLib/libCommon/smCom/T1oI2C
     ../hostlib/hostLib/se05x_03_xx_xx
     ../hostlib/hostLib/platform/inc

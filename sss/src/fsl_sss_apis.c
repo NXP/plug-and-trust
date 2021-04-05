@@ -1,8 +1,7 @@
 /*
- * Copyright 2018-2020 NXP
- * All rights reserved.
  *
- * SPDX-License-Identifier: BSD-3-Clause
+ * Copyright 2018-2020 NXP
+ * SPDX-License-Identifier: Apache-2.0
  */
 #include <fsl_sss_api.h>
 
@@ -2537,7 +2536,7 @@ void sss_tunnel_context_free(sss_tunnel_t *context)
     /* NA */
 #endif /* SSS_HAVE_SSCP */
 #if SSS_HAVE_APPLET_SE05X_IOT
-    if (SSS_TUNNEL_TYPE_IS_SE05X(context)) {
+    if (/*SSS_TUNNEL_TYPE_IS_SE05X*/ (context)) {
         sss_se05x_tunnel_context_t *se05x_context = (sss_se05x_tunnel_context_t *)context;
         sss_se05x_tunnel_context_free(se05x_context);
     }

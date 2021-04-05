@@ -1,8 +1,7 @@
 /*
-* Copyright 2018 NXP
-* All rights reserved.
 *
-* SPDX-License-Identifier: BSD-3-Clause
+* Copyright 2018 NXP
+* SPDX-License-Identifier: Apache-2.0
 */
 
 #ifndef NXSCP03_CONST_H_
