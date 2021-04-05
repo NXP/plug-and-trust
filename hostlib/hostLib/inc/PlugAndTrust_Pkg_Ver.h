@@ -1,9 +1,9 @@
-/*
-* Copyright 2019,2020 NXP
-* All rights reserved.
-*
-* SPDX-License-Identifier: BSD-3-Clause
-*/
+/* Copyright 2019-2021 NXP
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ *
+ */
 
 #ifndef PLUGANDTRUST_VERSION_INFO_H_INCLUDED
 #define PLUGANDTRUST_VERSION_INFO_H_INCLUDED
@@ -11,11 +11,11 @@
 
 /* clang-format off */
 #define PLUGANDTRUST_PROD_NAME          "PlugAndTrust"
-#define PLUGANDTRUST_VER_STRING_NUM     "v03.02.00_20210218"
-#define PLUGANDTRUST_PROD_NAME_VER_FULL "PlugAndTrust_v03.02.00_20210218"
+#define PLUGANDTRUST_VER_STRING_NUM     "v03.02.01_20210405"
+#define PLUGANDTRUST_PROD_NAME_VER_FULL "PlugAndTrust_v03.02.01_20210405"
 #define PLUGANDTRUST_VER_MAJOR          (3u)
 #define PLUGANDTRUST_VER_MINOR          (2u)
-#define PLUGANDTRUST_VER_DEV            (0u)
+#define PLUGANDTRUST_VER_DEV            (1u)
 
 /* v03.00 = 30000u */
 #define PLUGANDTRUST_VER_MAJOR_MINOR ( 0 \
@@ -48,9 +48,9 @@
  *
  * v_major  = "03"
  *
- * v_minor  = "00"
+ * v_minor  = "02"
  *
- * v_dev    = "06"
+ * v_dev    = "01"
  *
  * # Develop Branch
  * v_meta   = ""

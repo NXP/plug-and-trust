@@ -1,8 +1,7 @@
 /*
- * Copyright 2018-2020 NXP
- * All rights reserved.
  *
- * SPDX-License-Identifier: BSD-3-Clause
+ * Copyright 2018-2020 NXP
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 /** @file */
@@ -32,7 +31,24 @@ extern "C" {
 #include "se05x_tlv.h"
 #include "smCom.h"
 
-#if (__GNUC__ && !AX_EMBEDDED)
+#if (USE_RTOS)
+#define LOCK_TXN(lock)                                   \
+    LOG_D("Trying to Acquire Lock");                     \
+    if (xSemaphoreTake(lock, portMAX_DELAY) == pdTRUE) { \
+        LOG_D("LOCK Acquired");                          \
+    }                                                    \
+    else {                                               \
+        LOG_D("LOCK Acquisition failed");                \
+    }
+#define UNLOCK_TXN(lock)                  \
+    LOG_D("Trying to Released Lock");     \
+    if (xSemaphoreGive(lock) == pdTRUE) { \
+        LOG_D("LOCK Released");           \
+    }                                     \
+    else {                                \
+        LOG_D("LOCK Releasing failed");   \
+    }
+#elif (__GNUC__ && !AX_EMBEDDED)
 #define LOCK_TXN(lock)                                           \
     LOG_D("Trying to Acquire Lock thread: %ld", pthread_self()); \
     pthread_mutex_lock(&lock);                                   \
@@ -42,21 +58,9 @@ extern "C" {
     LOG_D("Trying to Released Lock by thread: %ld", pthread_self()); \
     pthread_mutex_unlock(&lock);                                     \
     LOG_D("LOCK Released by thread: %ld", pthread_self());
-#elif AX_EMBEDDED && USE_RTOS
-    #define LOCK_TXN(lock)                                           \
-        LOG_D("Trying to Acquire Lock");                             \
-        if (xSemaphoreTake(lock, portMAX_DELAY) == pdTRUE) {         \
-            LOG_D("LOCK Acquired"); }                                \
-        else {                                                       \
-            LOG_D("LOCK Acquisition failed"); }
-    #define UNLOCK_TXN(lock)                                         \
-        LOG_D("Trying to Released Lock");                            \
-        if (xSemaphoreGive(lock) == pdTRUE) {                        \
-            LOG_D("LOCK Released");}                                 \
-        else {                                                       \
-            LOG_D("LOCK Releasing failed"); }
 #endif
-#if (__GNUC__ && !AX_EMBEDDED) || (AX_EMBEDDED && USE_RTOS)
+
+#if (__GNUC__ && !AX_EMBEDDED) || (USE_RTOS)
 #define USE_LOCK 1
 #else
 #define USE_LOCK 0
@@ -428,6 +432,7 @@ sss_status_t sss_se05x_session_open(sss_se05x_session_t *session,
     if ((pAuthCtx->auth.authType == kSSS_AuthType_SCP03) && (connection_type == kSSS_ConnectionType_Encrypted)) {
         se05xSession->fp_Transform = &se05x_Transform;
         se05xSession->fp_DeCrypt   = &se05x_DeCrypt;
+        se05xSession->authType     = kSSS_AuthType_SCP03;
         retval                     = nxScp03_AuthenticateChannel(se05xSession, &pAuthCtx->auth.ctx.scp03);
         if (retval == kStatus_SSS_Success) {
             /* There is a differnet behaviour of Platform SCP between SE050 and future applet.
@@ -465,7 +470,10 @@ sss_status_t sss_se05x_session_open(sss_se05x_session_t *session,
 
     if ((application_id != 0) &&
         ((connection_type == kSSS_ConnectionType_Password) || (connection_type == kSSS_ConnectionType_Encrypted))) {
+        SM_LOCK_CHANNEL();
         retval = sss_session_auth_open(session, subsystem, application_id, connection_type, connectionData);
+        SM_UNLOCK_CHANNEL();
+
         if (retval == kStatus_SSS_Success) {
             status = SM_OK;
         }
@@ -940,6 +948,8 @@ sss_status_t sss_se05x_key_object_get_handle(sss_se05x_object_t *keyObject, uint
         case kSE05x_SecObjTyp_AES_KEY:
         case kSE05x_SecObjTyp_DES_KEY:
         case kSE05x_SecObjTyp_HMAC_KEY:
+        case kSE05x_SecObjTyp_COUNTER:
+        case kSE05x_SecObjTyp_UserID:
             keyObject->objectType = kSSS_KeyPart_Default;
             break;
         default:
@@ -2789,9 +2799,9 @@ static sss_status_t sss_se05x_key_store_set_cert(sss_se05x_key_store_t *keyStore
     smStatus_t status   = SM_NOT_OK;
     Se05xPolicy_t se05x_policy;
     uint16_t data_rem;
-    uint16_t offset           = 0;
-    uint16_t fileSize         = 0;
-    uint8_t IdExists          = 0;
+    uint16_t offset   = 0;
+    uint16_t fileSize = 0;
+    uint8_t IdExists  = 0;
 #if SSS_HAVE_SE05X_VER_GTE_06_00
     SE05x_Result_t obj_exists = kSE05x_Result_NA;
 #endif
@@ -2807,7 +2817,6 @@ static sss_status_t sss_se05x_key_store_set_cert(sss_se05x_key_store_t *keyStore
 
     se05x_policy.value     = (uint8_t *)policy_buff;
     se05x_policy.value_len = policy_buff_len;
-
 
     while (data_rem > 0) {
         uint16_t chunk = (data_rem > BINARY_WRITE_MAX_LEN) ? BINARY_WRITE_MAX_LEN : data_rem;
@@ -2877,7 +2886,8 @@ static sss_status_t sss_se05x_key_store_set_pcr(
     se05x_policy.value_len = policy_buff_len;
 
     if (keyObject->cipherType == kSSS_CipherType_PCR) {
-        status = Se05x_API_WritePCR(&keyStore->session->s_ctx,
+        status = Se05x_API_WritePCR_WithType(&keyStore->session->s_ctx,
+            kSE05x_INS_NA,
             &se05x_policy,
             keyObject->keyId,
             key,
@@ -2886,7 +2896,8 @@ static sss_status_t sss_se05x_key_store_set_pcr(
             0);
     }
     else if (keyObject->cipherType == kSSS_CipherType_Update_PCR) {
-        status = Se05x_API_WritePCR(&keyStore->session->s_ctx,
+        status = Se05x_API_WritePCR_WithType(&keyStore->session->s_ctx,
+            kSE05x_INS_NA,
             &se05x_policy,
             keyObject->keyId,
             NULL,
@@ -2896,7 +2907,8 @@ static sss_status_t sss_se05x_key_store_set_pcr(
         );
     }
     else if (keyObject->cipherType == kSSS_CipherType_Reset_PCR) {
-        status = Se05x_API_WritePCR(&keyStore->session->s_ctx,
+        status = Se05x_API_WritePCR_WithType(&keyStore->session->s_ctx,
+            kSE05x_INS_NA,
             &se05x_policy,
             keyObject->keyId,
             NULL,
@@ -2994,12 +3006,13 @@ sss_status_t sss_se05x_key_store_set_key(sss_se05x_key_store_t *keyStore,
         }
         break;
     case kSSS_CipherType_Binary:
+    case kSSS_CipherType_Certificate: {
         if (kStatus_SSS_Success !=
             sss_se05x_key_store_set_cert(
                 keyStore, keyObject, key, keyLen, keyBitLen, ppolicySet, valid_policy_buff_len)) {
             goto exit;
         }
-        break;
+    } break;
     default:
         goto exit;
     }
@@ -3446,7 +3459,8 @@ sss_status_t sss_se05x_key_store_get_key(
         status = Se05x_API_ReadObject(&keyStore->session->s_ctx, keyObject->keyId, 0, 0, key, keylen);
         ENSURE_OR_GO_EXIT(status == SM_OK);
         break;
-    case kSSS_CipherType_Binary: {
+    case kSSS_CipherType_Binary:
+    case kSSS_CipherType_Certificate: {
         uint16_t rem_data = 0;
         uint16_t offset   = 0;
         size_t max_buffer = 0;
@@ -3594,13 +3608,12 @@ sss_status_t sss_se05x_key_store_get_key_attst(sss_se05x_key_store_t *keyStore,
     case kSSS_CipherType_RSA_CRT: {
         uint8_t modulus[1024];
         uint8_t exponent[4];
-        size_t modLen = sizeof(modulus);
-        size_t expLen = sizeof(exponent);
+        size_t modLen           = sizeof(modulus);
+        size_t expLen           = sizeof(exponent);
         uint16_t key_size_bytes = 0;
 
         if (attestAlgo == (SE05x_AttestationAlgo_t)kSE05x_RSASignatureAlgo_SHA_512_PKCS1 ||
-            attestAlgo == (SE05x_AttestationAlgo_t)kSE05x_RSASignatureAlgo_SHA512_PKCS1_PSS)
-        {
+            attestAlgo == (SE05x_AttestationAlgo_t)kSE05x_RSASignatureAlgo_SHA512_PKCS1_PSS) {
             status = Se05x_API_ReadSize(&keyStore->session->s_ctx, keyObject_attst->keyId, &key_size_bytes);
             if (status != SM_OK) {
                 return kStatus_SSS_Fail;
@@ -3691,7 +3704,8 @@ sss_status_t sss_se05x_key_store_get_key_attst(sss_se05x_key_store_t *keyStore,
 
         ENSURE_OR_GO_EXIT(status == SM_OK);
         break;
-    case kSSS_CipherType_Binary: {
+    case kSSS_CipherType_Binary:
+    case kSSS_CipherType_Certificate: {
         uint16_t rem_data = 0;
         uint16_t offset   = 0;
         size_t dataLen    = 0;
@@ -4318,11 +4332,10 @@ sss_status_t sss_se05x_asymmetric_sign(
     case kSSS_CipherType_RSA:
     case kSSS_CipherType_RSA_CRT: {
         SE05x_RSASignatureAlgo_t rsaSigningAlgo = se05x_get_rsa_sign_hash_mode(context->algorithm);
-        uint16_t key_size_bytes = 0;
+        uint16_t key_size_bytes                 = 0;
 
         if (context->algorithm == kAlgorithm_SSS_RSASSA_PKCS1_V1_5_SHA512 ||
-            context->algorithm == kAlgorithm_SSS_RSASSA_PKCS1_PSS_MGF1_SHA512)
-        {
+            context->algorithm == kAlgorithm_SSS_RSASSA_PKCS1_PSS_MGF1_SHA512) {
             status = Se05x_API_ReadSize(&context->session->s_ctx, context->keyObject->keyId, &key_size_bytes);
             if (status != SM_OK) {
                 return kStatus_SSS_Fail;
@@ -4582,11 +4595,10 @@ sss_status_t sss_se05x_asymmetric_verify(
     case kSSS_CipherType_RSA:
     case kSSS_CipherType_RSA_CRT: {
         SE05x_RSASignatureAlgo_t rsaSigningAlgo = se05x_get_rsa_sign_hash_mode(context->algorithm);
-        uint16_t key_size_bytes = 0;
+        uint16_t key_size_bytes                 = 0;
 
         if (context->algorithm == kAlgorithm_SSS_RSASSA_PKCS1_V1_5_SHA512 ||
-            context->algorithm == kAlgorithm_SSS_RSASSA_PKCS1_PSS_MGF1_SHA512)
-        {
+            context->algorithm == kAlgorithm_SSS_RSASSA_PKCS1_PSS_MGF1_SHA512) {
             status = Se05x_API_ReadSize(&context->session->s_ctx, context->keyObject->keyId, &key_size_bytes);
             if (status != SM_OK) {
                 return kStatus_SSS_Fail;
@@ -5284,15 +5296,6 @@ sss_status_t sss_se05x_aead_finish(sss_se05x_aead_t *context,
             srcdata_updated_len += srcLen;
         }
         if (srcdata_updated_len > 0) {
-            if (context->algorithm == kAlgorithm_SSS_AES_GCM) {
-                /*Input length if less than CIPHER_BLOCK_SIZE, give lenght as CIPHER_BLOCK_SIZE*/
-                if (srcdata_updated_len > CIPHER_BLOCK_SIZE) {
-                    srcdata_updated_len = 2 * CIPHER_BLOCK_SIZE;
-                }
-                else {
-                    srcdata_updated_len = CIPHER_BLOCK_SIZE;
-                }
-            }
             status = Se05x_API_AeadUpdate(&context->session->s_ctx,
                 context->cryptoObjectId,
                 srcdata_updated,
@@ -5809,19 +5812,19 @@ sss_status_t sss_se05x_tunnel_context_init(sss_se05x_tunnel_context_t *context, 
 {
     context->se05x_session = session;
     sss_status_t retval    = kStatus_SSS_Success;
-#if (__GNUC__ && !AX_EMBEDDED)
+#if USE_RTOS
+    context->channelLock = xSemaphoreCreateMutex();
+    if (context->channelLock == NULL) {
+        LOG_E("xSemaphoreCreateMutex failed");
+        return kStatus_SSS_Fail;
+    }
+#elif (__GNUC__ && !AX_EMBEDDED)
     if (pthread_mutex_init(&context->channelLock, NULL) != 0) {
         LOG_E("\n mutex init has failed");
         return kStatus_SSS_Fail;
     }
     else {
         LOG_D("Mutex Init successfull");
-    }
-#elif AX_EMBEDDED && USE_RTOS
-    context->channelLock = xSemaphoreCreateMutex();
-    if (context->channelLock == NULL) {
-        LOG_E("xSemaphoreCreateMutex failed");
-        return kStatus_SSS_Fail;
     }
 #endif
     return retval;
@@ -5840,10 +5843,10 @@ sss_status_t sss_se05x_tunnel(sss_se05x_tunnel_context_t *context,
 
 void sss_se05x_tunnel_context_free(sss_se05x_tunnel_context_t *context)
 {
-#if (__GNUC__ && !AX_EMBEDDED)
-    pthread_mutex_destroy(&context->channelLock);
-#elif AX_EMBEDDED && USE_RTOS
+#if USE_RTOS
     vSemaphoreDelete(context->channelLock);
+#elif (__GNUC__ && !AX_EMBEDDED)
+    pthread_mutex_destroy(&context->channelLock);
 #endif
     memset(context, 0, sizeof(*context));
 }

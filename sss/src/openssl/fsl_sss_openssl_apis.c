@@ -1,8 +1,7 @@
 /*
- * Copyright 2018-2020 NXP
- * All rights reserved.
  *
- * SPDX-License-Identifier: BSD-3-Clause
+ * Copyright 2018-2020 NXP
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 #include <fsl_sss_openssl_apis.h>
@@ -2194,10 +2193,6 @@ sss_status_t sss_openssl_aead_finish(sss_openssl_aead_t *context,
             srcdata_updated_len += srcLen;
         }
 
-        if (srcdata_updated_len % CIPHER_BLOCK_SIZE != 0) {
-            srcdata_updated_len = srcdata_updated_len + (CIPHER_BLOCK_SIZE - (srcdata_updated_len % 16));
-        }
-
         /* Add Source Data */
         ret = aead_update(context, context->mode, srcdata_updated, srcdata_updated_len, destData, destLen);
         ENSURE_OR_GO_EXIT(ret == 1);
@@ -2205,17 +2200,18 @@ sss_status_t sss_openssl_aead_finish(sss_openssl_aead_t *context,
         if (context->mode == kMode_SSS_Encrypt) {
             ret = EVP_EncryptFinal_ex(context->aead_ctx, destData, &len);
             ENSURE_OR_GO_EXIT(ret == 1);
-            *destLen = len;
-            ret      = EVP_CIPHER_CTX_ctrl(context->aead_ctx, EVP_CTRL_GCM_GET_TAG, 16, tag);
-            *tagLen  = EVP_CTRL_GCM_GET_TAG;
+            (*destLen) += len;
+            ret = EVP_CIPHER_CTX_ctrl(context->aead_ctx, EVP_CTRL_GCM_GET_TAG, *tagLen, tag);
+            // *tagLen  = EVP_CTRL_GCM_GET_TAG;
         }
         else if (context->mode == kMode_SSS_Decrypt) {
-            ret = EVP_CIPHER_CTX_ctrl(context->aead_ctx, EVP_CTRL_CCM_SET_TAG, *tagLen, tag);
+            ret = EVP_CIPHER_CTX_ctrl(context->aead_ctx, EVP_CTRL_GCM_SET_TAG, *tagLen, tag);
             ENSURE_OR_GO_EXIT(ret == 1);
-            /* Finalise decrypt */
-            //ret = EVP_DecryptFinal_ex(context->aead_ctx, destData, &context->len);
+
+            ret = EVP_DecryptFinal_ex(context->aead_ctx, destData + (*destLen), &len);
+            ENSURE_OR_GO_EXIT(ret == 1);
+            (*destLen) += len;
         }
-        //ENSURE_OR_GO_EXIT(ret == 1);
         retval = kStatus_SSS_Success;
     }
 exit:

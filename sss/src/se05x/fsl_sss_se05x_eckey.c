@@ -1,6 +1,4 @@
-/*
- * Copyright 2019, 2020 NXP
- *
+/* Copyright 2019,2020 NXP
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -78,7 +76,7 @@ sss_status_t nxECKey_AuthenticateChannel(pSe05xSession_t se05xSession, SE05x_Aut
     size_t receiptLen = sizeof(receipt);
     uint8_t shsSecret[32];
     size_t shsSecretLen                = sizeof(shsSecret);
-    size_t offset                         = 0;
+    size_t offset                      = 0;
     NXECKey03_StaticCtx_t *pStatic_ctx = pAuthFScp->pStatic_ctx;
     NXSCP03_DynCtx_t *pDyn_ctx         = pAuthFScp->pDyn_ctx;
     uint8_t sePubkey[150]              = {
@@ -309,7 +307,7 @@ sss_status_t nxECKey_InternalAuthenticate(pSe05xSession_t se05xSession,
     uint8_t rspbuf[256];
     uint8_t *pRspbuf = &rspbuf[0];
     size_t rspbufLen = ARRAY_SIZE(rspbuf);
-    size_t rspIndex = 0;
+    size_t rspIndex  = 0;
     sss_digest_t md;
     uint8_t md_host5F37[32];
     size_t md_host5F37Len              = sizeof(md_host5F37);
@@ -334,8 +332,8 @@ sss_status_t nxECKey_InternalAuthenticate(pSe05xSession_t se05xSession,
     cmdbuf[0] = kSE05x_TAG_GP_CONTRL_REF_PARM; // Tag Control reference template
     cmdbuf[1] = (uint8_t)cntrlRefTemp_Len;
     cmdbufLen = 2;
-    pCmdbuf = &cmdbuf[2];
-    tlvRet = TLVSET_u8buf("SE05x AID", &pCmdbuf, &cmdbufLen, kSE05x_GP_TAG_AID, appletName, APPLET_NAME_LEN);
+    pCmdbuf   = &cmdbuf[2];
+    tlvRet    = TLVSET_u8buf("SE05x AID", &pCmdbuf, &cmdbufLen, kSE05x_GP_TAG_AID, appletName, APPLET_NAME_LEN);
     ENSURE_OR_GO_CLEANUP(tlvRet == 0);
     tlvRet = TLVSET_u8buf("SCP parameters", &pCmdbuf, &cmdbufLen, kSE05x_GP_TAG_SCP_PARMS, scpParms, sizeof(scpParms));
     ENSURE_OR_GO_CLEANUP(tlvRet == 0);
@@ -383,14 +381,14 @@ sss_status_t nxECKey_InternalAuthenticate(pSe05xSession_t se05xSession,
     cmdbufLen++;
     memcpy(pCmdbuf, sig_host5F37, sig_host5F37Len);
     cmdbufLen += sig_host5F37Len;
-    status = kStatus_SSS_Fail;
+    status    = kStatus_SSS_Fail;
     retStatus = DoAPDUTxRx_s_Case4(se05xSession, &hdr, cmdbuf, cmdbufLen, rspbuf, &rspbufLen);
     ENSURE_OR_GO_CLEANUP(retStatus == SM_OK);
-    tlvRet = tlvGet_u8buf(
-        pRspbuf, &rspIndex, rspbufLen, kSE05x_GP_TAG_DR_SE, rndData, rndDataLen); /* Get the Random No */
+    tlvRet =
+        tlvGet_u8buf(pRspbuf, &rspIndex, rspbufLen, kSE05x_GP_TAG_DR_SE, rndData, rndDataLen); /* Get the Random No */
     ENSURE_OR_GO_CLEANUP(tlvRet == 0);
-    tlvRet = tlvGet_u8buf(
-        pRspbuf, &rspIndex, rspbufLen, kSE05x_GP_TAG_RECEIPT, receipt, receiptLen); /* Get the Receipt */
+    tlvRet =
+        tlvGet_u8buf(pRspbuf, &rspIndex, rspbufLen, kSE05x_GP_TAG_RECEIPT, receipt, receiptLen); /* Get the Receipt */
     ENSURE_OR_GO_CLEANUP(tlvRet == 0);
     ENSURE_OR_GO_CLEANUP((rspIndex + 2) == rspbufLen);
     retStatus = (pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]);

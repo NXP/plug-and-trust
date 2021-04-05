@@ -1,8 +1,7 @@
 /*
-* Copyright 2018,2020 NXP
-* All rights reserved.
 *
-* SPDX-License-Identifier: BSD-3-Clause
+* Copyright 2018,2020 NXP
+* SPDX-License-Identifier: Apache-2.0
 */
 
 #ifdef __cplusplus
@@ -80,9 +79,9 @@ static void ansi_reSetColor(void);
 #define USE_COLORED_LOGS 1
 
 #if NX_LOG_SHORT_PREFIX
-static const char *szLevel[] = {"D", "I", "W", "E"};
+static const char *szLevel[] = {"E", "W", "I", "D"};
 #else
-static const char *szLevel[] = {"DEBUG", "INFO ", "WARN ", "ERROR"};
+static const char *szLevel[] = {"ERROR", "WARN ", "INFO ", "DEBUG"};
 #endif
 
 #if AX_EMBEDDED
@@ -99,17 +98,17 @@ static const char *szLevel[] = {"DEBUG", "INFO ", "WARN ", "ERROR"};
 void nLog(const char *comp, int level, const char *format, ...)
 {
     setColor(level);
-    PRINTF("%-6s:%s:", comp, szLevel[level]);
+    PRINTF("%-6s:%s:", comp, szLevel[level-1]);
     if (format == NULL) {
         /* Nothing */
 #ifdef SMCOM_JRCP_V2
-        smCom_Echo(NULL, comp, szLevel[level], "");
+        smCom_Echo(NULL, comp, szLevel[level-1], "");
 #endif // SMCOM_JRCP_V2
     }
     else if (format[0] == '\0') {
         /* Nothing */
 #ifdef SMCOM_JRCP_V2
-        smCom_Echo(NULL, comp, szLevel[level], "");
+        smCom_Echo(NULL, comp, szLevel[level-1], "");
 #endif // SMCOM_JRCP_V2
     }
     else {
@@ -121,7 +120,7 @@ void nLog(const char *comp, int level, const char *format, ...)
         va_end(vArgs);
         PRINTF("%s", buffer);
 #ifdef SMCOM_JRCP_V2
-        smCom_Echo(NULL, comp, szLevel[level], buffer);
+        smCom_Echo(NULL, comp, szLevel[level-1], buffer);
 #endif // SMCOM_JRCP_V2
     }
     reSetColor();
@@ -132,7 +131,7 @@ void nLog_au8(const char *comp, int level, const char *message, const unsigned c
 {
     size_t i;
     setColor(level);
-    PRINTF("%-6s:%s:%s (Len=%" PRId32 ")", comp, szLevel[level], message, (int32_t)array_len);
+    PRINTF("%-6s:%s:%s (Len=%" PRId32 ")", comp, szLevel[level-1], message, (int32_t)array_len);
     for (i = 0; i < array_len; i++) {
         if (0 == (i % 16)) {
             PRINTF(szEOL);
@@ -220,9 +219,11 @@ static void msvc_reSetColor()
 static void ansi_setColor(int level)
 {
 #if USE_COLORED_LOGS
+#if !AX_EMBEDDED
     if (!isatty(fileno(stdout))) {
         return;
     }
+#endif
 
     switch (level) {
     case NX_LEVEL_ERROR:
@@ -249,9 +250,11 @@ static void ansi_setColor(int level)
 static void ansi_reSetColor()
 {
 #if USE_COLORED_LOGS
+#if !AX_EMBEDDED
     if (!isatty(fileno(stdout))) {
         return;
     }
+#endif
     PRINTF(COLOR_RESET);
 #endif // USE_COLORED_LOGS
 }

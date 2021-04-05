@@ -149,3 +149,15 @@ smStatus_t  Se05x_API_PAKEVerifySessionKeys(
     uint8_t *pKeyConfMessage,
     size_t keyConfMessageLen,
     uint8_t *presult);
+
+/** Se05x_API_PAKEReadState
+*
+* See @ref Se05x_API_PAKEReadState.
+* Used to Get Pake State
+*/
+#if SSS_HAVE_SE05X_VER_GTE_16_03
+smStatus_t  Se05x_API_PAKEReadState(
+    pSe05xSession_t session_ctx,
+    SE05x_CryptoObjectID_t cryptoObjectID,
+    SE05x_PAKEState_t *pakeState);
+#endif

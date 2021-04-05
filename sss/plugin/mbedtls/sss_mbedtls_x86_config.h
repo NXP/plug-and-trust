@@ -421,10 +421,16 @@ void * tstDoTraceAndCalloc(
 //#define MBEDTLS_ECP_ALT
 
 
+/**
+ * - MBEDTLS_ECDSA_VERIFY_ALT
+ * To use SE for all public key ecdsa verify operation, enable MBEDTLS_ECDSA_VERIFY_ALT
+ */
+
 #if defined(SSS_HAVE_ALT) && (SSS_HAVE_ALT)
 #   define MBEDTLS_ECDH_ALT
 #   define MBEDTLS_ECDH_GEN_PUBLIC_ALT
 #   define MBEDTLS_ECDH_COMPUTE_SHARED_ALT
+//#   define MBEDTLS_ECDSA_VERIFY_ALT
 #endif /*  SSS_HAVE_ALT */
 //#define MBEDTLS_ECDH_ALT
 

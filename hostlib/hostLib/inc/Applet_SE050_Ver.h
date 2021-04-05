@@ -1,8 +1,7 @@
 /*
-* Copyright 2019,2020 NXP
-* All rights reserved.
 *
-* SPDX-License-Identifier: BSD-3-Clause
+* Copyright 2019,2020 NXP
+* SPDX-License-Identifier: Apache-2.0
 */
 
 #ifndef APPLET_SE050_VERSION_INFO_H_INCLUDED
@@ -19,43 +18,7 @@
 //#define APPLET_SE050_VER_STRING_NUM     "v03.01.00"
 //#define APPLET_SE050_PROD_NAME_VER_FULL "Applet_SE050_v03.01.00"
 
-#if SSS_HAVE_SE05X_VER_04_04 == 1
-#    define APPLET_SE050_VER_MAJOR          (4u)
-#    define APPLET_SE050_VER_MINOR          (4u)
-#    define APPLET_SE050_VER_DEV            (0u)
-#elif SSS_HAVE_SE05X_VER_04_08 == 1
-#    define APPLET_SE050_VER_MAJOR          (4u)
-#    define APPLET_SE050_VER_MINOR          (8u)
-#    define APPLET_SE050_VER_DEV            (0u)
-#elif SSS_HAVE_SE05X_VER_04_12 == 1
-#    define APPLET_SE050_VER_MAJOR          (4u)
-#    define APPLET_SE050_VER_MINOR          (12u)
-#    define APPLET_SE050_VER_DEV            (0u)
-#elif SSS_HAVE_SE05X_VER_05_00 == 1
-#    define APPLET_SE050_VER_MAJOR          (5u)
-#    define APPLET_SE050_VER_MINOR          (0u)
-#    define APPLET_SE050_VER_DEV            (0u)
-#elif SSS_HAVE_SE05X_VER_05_02 == 1
-#    define APPLET_SE050_VER_MAJOR          (5u)
-#    define APPLET_SE050_VER_MINOR          (2u)
-#    define APPLET_SE050_VER_DEV            (0u)
-#elif SSS_HAVE_SE05X_VER_05_04 == 1
-#    define APPLET_SE050_VER_MAJOR          (5u)
-#    define APPLET_SE050_VER_MINOR          (4u)
-#    define APPLET_SE050_VER_DEV            (0u)
-#elif SSS_HAVE_SE05X_VER_05_08 == 1
-#    define APPLET_SE050_VER_MAJOR          (5u)
-#    define APPLET_SE050_VER_MINOR          (8u)
-#    define APPLET_SE050_VER_DEV            (0u)
-#elif SSS_HAVE_SE05X_VER_05_10 == 1
-#    define APPLET_SE050_VER_MAJOR          (5u)
-#    define APPLET_SE050_VER_MINOR          (10u)
-#    define APPLET_SE050_VER_DEV            (0u)
-#elif SSS_HAVE_SE05X_VER_05_12 == 1
-#    define APPLET_SE050_VER_MAJOR          (5u)
-#    define APPLET_SE050_VER_MINOR          (12u)
-#    define APPLET_SE050_VER_DEV            (0u)
-#elif SSS_HAVE_SE05X_VER_06_00 == 1
+#if SSS_HAVE_SE05X_VER_06_00 == 1
 #    define APPLET_SE050_VER_MAJOR          (6u)
 #    define APPLET_SE050_VER_MINOR          (0u)
 #    define APPLET_SE050_VER_DEV            (0u)
@@ -70,6 +33,10 @@
 #elif SSS_HAVE_SE05X_VER_16_03 == 1
 #    define APPLET_SE050_VER_MAJOR          (16u)
 #    define APPLET_SE050_VER_MINOR          (03u)
+#    define APPLET_SE050_VER_DEV            (0u)
+#elif SSS_HAVE_SE05X_VER_16_04 == 1
+#    define APPLET_SE050_VER_MAJOR          (16u)
+#    define APPLET_SE050_VER_MINOR          (04u)
 #    define APPLET_SE050_VER_DEV            (0u)
 #elif SSS_HAVE_FIPS
 #    define APPLET_SE050_VER_MAJOR          (3u)

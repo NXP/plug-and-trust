@@ -1,8 +1,7 @@
 /*
-* Copyright 2019,2020 NXP
-* All rights reserved.
 *
-* SPDX-License-Identifier: BSD-3-Clause
+* Copyright 2019,2020 NXP
+* SPDX-License-Identifier: Apache-2.0
 */
 
 /** @file */
@@ -462,6 +461,17 @@ typedef enum
     kSE05x_HkdfMode_ExpandOnly = 0x02,
 } SE05x_HkdfMode_t;
 
+/** PBKDF2 algorithms */
+typedef enum
+{
+    /** Invalid */
+    kSE05x_Pbkdf2_HMAC_NA = 0,
+    kSE05x_Pbkdf2_HMAC_SHA1 = 0x01,
+    kSE05x_Pbkdf2_HMAC_SHA256 = 0x03,
+    kSE05x_Pbkdf2_HMAC_SHA384 = 0x04,
+    kSE05x_Pbkdf2_HMAC_SHA512 = 0x05,
+} SE05x_Pbkdf2Algo_t;
+
 /** ECC Curve Identifiers */
 typedef enum
 {
@@ -656,7 +666,7 @@ typedef enum
     kSE05x_TransientIndicator_TRANSIENT = 0x02,
 } SE05x_TransientIndicator_t;
 
-/** TODO */
+/** Whether object attribute is set */
 typedef enum
 {
     /** Invalid */
@@ -769,6 +779,26 @@ typedef enum
 }SE05x_SPAKEDeviceType_t;
 
 
+/** PAKE state */
+typedef enum
+{
+    /** Invalid */
+    kSE05x_PAKE_STATE_NA = 0,
+    /** Pake State Uninitialized */
+    SE05x_PAKE_STATE_UNINITIALIZED = 1,
+    /** Pake State Protocol Initialized */
+    SE05x_PAKE_STATE_PROTOCOL_INITIALIZED = 2,
+    /** Pake State Device Configured */
+    SE05x_PAKE_STATE_DEVICE_CONFIGURED = 3,
+    /** Pake State Device Initialized */
+    SE05x_PAKE_STATE_DEVICE_INITIALIZED = 4,
+    /** Pake State Credentials Initialized */
+    SE05x_PAKE_STATE_CREDENTIALS_INITIALIZED = 5,
+    /** Pake State Key Share Generated */
+    SE05x_PAKE_STATE_KEY_SHARE_GENERATED = 6,
+    /** Pake State Session Keys Generated */
+    SE05x_PAKE_STATE_SESSION_KEYS_GENERATED = 7,
+}SE05x_PAKEState_t;
 
 
 /** Maximum number of session supported by SE050 */

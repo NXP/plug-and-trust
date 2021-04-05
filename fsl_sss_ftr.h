@@ -49,7 +49,8 @@
 
 /** SE051UWB (Similar to SE05x) */
 #define SSS_HAVE_APPLET_SE051_UWB 0
-/** SE050 (Support SPAKE ) */
+
+/** SE051CHIP (Support SPAKE ) */
 #define SSS_HAVE_APPLET_SE051_CHIP 1
 
 /** NXP Internal testing Applet */
@@ -111,7 +112,10 @@
 #define SSS_HAVE_SE05X_VER_16_02 0
 
 /** SE051 */
-#define SSS_HAVE_SE05X_VER_16_03 1
+#define SSS_HAVE_SE05X_VER_16_03 0
+
+/** SE051 */
+#define SSS_HAVE_SE05X_VER_16_04 1
 
 #if (( 0                             \
     + SSS_HAVE_SE05X_VER_03_XX       \
@@ -119,6 +123,7 @@
     + SSS_HAVE_SE05X_VER_16_01       \
     + SSS_HAVE_SE05X_VER_16_02       \
     + SSS_HAVE_SE05X_VER_16_03       \
+    + SSS_HAVE_SE05X_VER_16_04       \
     ) > 1)
 #        error "Enable only one of 'SE05X_Ver'"
 #endif
@@ -130,6 +135,7 @@
     + SSS_HAVE_SE05X_VER_16_01       \
     + SSS_HAVE_SE05X_VER_16_02       \
     + SSS_HAVE_SE05X_VER_16_03       \
+    + SSS_HAVE_SE05X_VER_16_04       \
     ) == 0)
 #        error "Enable at-least one of 'SE05X_Ver'"
 #endif
@@ -299,7 +305,7 @@
 
 /** SBL : Enable/Disable SBL Bootable support
  *
- * This option is to enable/disable SBL Bootable support
+ * This option is to enable/disable boot from SBL by switching linker address
  */
 
 /** Not SBL bootable */
@@ -521,7 +527,16 @@
 
 /* Version checks GTE - Greater Than Or Equal To */
 #if SSS_HAVE_APPLET_SE05X_IOT
+#    if SSS_HAVE_SE05X_VER_16_04
+#        define SSS_HAVE_SE05X_VER_GTE_16_04 1
+#        define SSS_HAVE_SE05X_VER_GTE_16_03 1
+#        define SSS_HAVE_SE05X_VER_GTE_16_02 1
+#        define SSS_HAVE_SE05X_VER_GTE_16_01 1
+#        define SSS_HAVE_SE05X_VER_GTE_06_00 1
+#        define SSS_HAVE_SE05X_VER_GTE_03_XX 1
+#    endif /* SSS_HAVE_SE05X_VER_16_04 */
 #    if SSS_HAVE_SE05X_VER_16_03
+#        define SSS_HAVE_SE05X_VER_GTE_16_04 0
 #        define SSS_HAVE_SE05X_VER_GTE_16_03 1
 #        define SSS_HAVE_SE05X_VER_GTE_16_02 1
 #        define SSS_HAVE_SE05X_VER_GTE_16_01 1
@@ -529,6 +544,7 @@
 #        define SSS_HAVE_SE05X_VER_GTE_03_XX 1
 #    endif /* SSS_HAVE_SE05X_VER_16_03 */
 #    if SSS_HAVE_SE05X_VER_16_02
+#        define SSS_HAVE_SE05X_VER_GTE_16_04 0
 #        define SSS_HAVE_SE05X_VER_GTE_16_03 0
 #        define SSS_HAVE_SE05X_VER_GTE_16_02 1
 #        define SSS_HAVE_SE05X_VER_GTE_16_01 1
@@ -536,6 +552,7 @@
 #        define SSS_HAVE_SE05X_VER_GTE_03_XX 1
 #    endif /* SSS_HAVE_SE05X_VER_16_02 */
 #    if SSS_HAVE_SE05X_VER_16_01
+#        define SSS_HAVE_SE05X_VER_GTE_16_04 0
 #        define SSS_HAVE_SE05X_VER_GTE_16_03 0
 #        define SSS_HAVE_SE05X_VER_GTE_16_02 0
 #        define SSS_HAVE_SE05X_VER_GTE_16_01 1
@@ -543,6 +560,7 @@
 #        define SSS_HAVE_SE05X_VER_GTE_03_XX 1
 #    endif /* SSS_HAVE_SE05X_VER_16_01 */
 #    if SSS_HAVE_SE05X_VER_06_00
+#        define SSS_HAVE_SE05X_VER_GTE_16_04 0
 #        define SSS_HAVE_SE05X_VER_GTE_16_03 0
 #        define SSS_HAVE_SE05X_VER_GTE_16_02 0
 #        define SSS_HAVE_SE05X_VER_GTE_16_01 0
@@ -550,6 +568,7 @@
 #        define SSS_HAVE_SE05X_VER_GTE_03_XX 1
 #    endif /* SSS_HAVE_SE05X_VER_06_00 */
 #    if SSS_HAVE_SE05X_VER_03_XX
+#        define SSS_HAVE_SE05X_VER_GTE_16_04 0
 #        define SSS_HAVE_SE05X_VER_GTE_16_03 0
 #        define SSS_HAVE_SE05X_VER_GTE_16_02 0
 #        define SSS_HAVE_SE05X_VER_GTE_16_01 0
@@ -562,6 +581,7 @@
 #   define SSS_HAVE_SE05X_VER_GTE_16_01 0
 #   define SSS_HAVE_SE05X_VER_GTE_16_02 0
 #   define SSS_HAVE_SE05X_VER_GTE_16_03 0
+#   define SSS_HAVE_SE05X_VER_GTE_16_04 0
 #endif // SSS_HAVE_APPLET_SE05X_IOT
 /** Deprecated items. Used here for backwards compatibility. */
 
@@ -689,6 +709,7 @@
 #   define SSS_HAVE_EC_ED 0
 #endif
 #endif
+
 
 #if SSS_HAVE_RSA
 #   define SSS_HAVE_RSA_4K 1

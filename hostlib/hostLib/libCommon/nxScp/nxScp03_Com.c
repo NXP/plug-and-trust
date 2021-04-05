@@ -1,8 +1,7 @@
 /*
-* Copyright 2018,2020 NXP
-* All rights reserved.
 *
-* SPDX-License-Identifier: BSD-3-Clause
+* Copyright 2018,2020 NXP
+* SPDX-License-Identifier: Apache-2.0
 */
 
 #if defined(FLOW_VERBOSE)
@@ -296,9 +295,9 @@ static sss_status_t nxpSCP03_Get_ResponseICV(NXSCP03_DynCtx_t *pdySCP03SessCtx, 
     ENSURE_OR_GO_EXIT(status == kStatus_SSS_Success);
     dataLen = SCP_KEY_SIZE;
     status = sss_host_cipher_one_go(&symm, ivZero, SCP_KEY_SIZE, paddedCounterBlock, pIcv, dataLen);
+    sss_host_symmetric_context_free(&symm);
     ENSURE_OR_GO_EXIT(status == kStatus_SSS_Success);
     LOG_MAU8_D(" Output:RespICV", pIcv, dataLen);
-    sss_host_symmetric_context_free(&symm);
 exit:
     return status;
 }

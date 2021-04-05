@@ -196,7 +196,6 @@ smStatus_t  Se05x_API_PAKEReadDeviceType(
         retStatus = SM_NOT_OK;
 cleanup:
     return retStatus;
-
 }
 
 #if SSS_HAVE_SE05X_VER_GTE_16_02
@@ -535,5 +534,50 @@ cleanup:
     return retStatus;
 }
 
+#if SSS_HAVE_SE05X_VER_GTE_16_03
+smStatus_t  Se05x_API_PAKEReadState(
+    pSe05xSession_t session_ctx,
+    SE05x_CryptoObjectID_t cryptoObjectID,
+    SE05x_PAKEState_t *pakeState)
+{
+    smStatus_t retStatus = SM_NOT_OK;
+    tlvHeader_t hdr = { { kSE05x_CLA, kSE05x_INS_READ, kSE05x_P1_SPAKE, kSE05x_P2_READ_STATE } };
+    uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
+    size_t cmdbufLen = 0;
+    uint8_t *pCmdbuf = &cmdbuf[0];
+    int tlvRet = 0;
+    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP];
+    uint8_t *pRspbuf = &rspbuf[0];
+    size_t rspbufLen = ARRAY_SIZE(rspbuf);
+    uint8_t devType = 0;
+#if VERBOSE_APDU_LOGS
+    NEWLINE();
+    nLog("APDU", NX_LEVEL_DEBUG, "PAKEReadDeviceType []");
+#endif /* VERBOSE_APDU_LOGS */
+    tlvRet = TLVSET_CryptoObjectID("cryptoObjectID", &pCmdbuf, &cmdbufLen, kSE05x_TAG_2, cryptoObjectID);
+    if (0 != tlvRet) {
+        goto cleanup;
+    }
 
+    retStatus = DoAPDUTxRx_s_Case4(session_ctx, &hdr, cmdbuf, cmdbufLen, rspbuf, &rspbufLen);
+    if (retStatus == SM_OK) {
+        retStatus = SM_NOT_OK;
+        size_t rspIndex = 0;
+        tlvRet = tlvGet_U8(pRspbuf, &rspIndex, rspbufLen, kSE05x_TAG_1, &devType);
+        if (0 != tlvRet) {
+            goto cleanup;
+        }
+
+        if ((rspIndex + 2) == rspbufLen) {
+            retStatus = (pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]);
+        }
+    }
+    if (pakeState != NULL)
+        *pakeState = devType;
+    else
+        retStatus = SM_NOT_OK;
+cleanup:
+    return retStatus;
+}
+#endif
 

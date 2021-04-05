@@ -1,8 +1,7 @@
 /*
- * Copyright 2019-2020 NXP
- * All rights reserved.
  *
- * SPDX-License-Identifier: BSD-3-Clause
+ * Copyright 2019-2020 NXP
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 /* Common, Re-Usable main implementation */
@@ -329,6 +328,8 @@ static void sss_ex_rtos_task(void *ctx)
     if (kStatus_SSS_Success != status) {
         LOG_E("ex_sss_entry Failed");
     }
+
+    ex_sss_session_close(PCONTEXT);
 
 #if INCLUDE_uxTaskGetStackHighWaterMark
     sss_ex_rtos_stack_size("After:ex_sss_entry");

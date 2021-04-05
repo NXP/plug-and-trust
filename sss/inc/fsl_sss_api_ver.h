@@ -1,9 +1,9 @@
-/*
-* Copyright 2019,2020 NXP
-* All rights reserved.
-*
-* SPDX-License-Identifier: BSD-3-Clause
-*/
+/* Copyright 2019-2021 NXP
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ *
+ */
 
 #ifndef SSS_APIS_VERSION_INFO_H_INCLUDED
 #define SSS_APIS_VERSION_INFO_H_INCLUDED
@@ -11,18 +11,18 @@
 
 /* clang-format off */
 #define SSS_APIS_PROD_NAME          "SSS_APIs"
-#define SSS_APIS_VER_STRING_NUM     "v03.04.00_20200916"
-#define SSS_APIS_PROD_NAME_VER_FULL "SSS_APIs_v03.04.00_20200916"
+#define SSS_APIS_VER_STRING_NUM     "v03.05.00_20210329"
+#define SSS_APIS_PROD_NAME_VER_FULL "SSS_APIs_v03.05.00_20210329"
 #define SSS_APIS_VER_MAJOR          (3u)
-#define SSS_APIS_VER_MINOR          (4u)
+#define SSS_APIS_VER_MINOR          (5u)
 #define SSS_APIS_VER_DEV            (0u)
 
-/* v03.04 = 30004u */
+/* v03.05 = 30005u */
 #define SSS_APIS_VER_MAJOR_MINOR ( 0 \
     | (SSS_APIS_VER_MAJOR * 10000u)    \
     | (SSS_APIS_VER_MINOR))
 
-/* v03.04.00 = 300040000ULL */
+/* v03.05.00 = 300050000ULL */
 #define SSS_APIS_VER_MAJOR_MINOR_DEV ( 0 \
     | (SSS_APIS_VER_MAJOR * 10000*10000u)    \
     | (SSS_APIS_VER_MINOR * 10000u)    \
@@ -48,7 +48,7 @@
  *
  * v_major  = "03"
  *
- * v_minor  = "04"
+ * v_minor  = "05"
  *
  * v_dev    = "00"
  *

@@ -1,8 +1,7 @@
 /*
- * Copyright 2019-2020 NXP
- * All rights reserved.
  *
- * SPDX-License-Identifier: BSD-3-Clause
+ * Copyright 2019-2020 NXP
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 #include "se05x_tlv.h"
@@ -350,6 +349,11 @@ int tlvGet_u8buf(uint8_t *buf, size_t *pBufIndex, const size_t bufLen, SE05x_TAG
     }
     retVal = 0;
 cleanup:
+    if (retVal != 0){
+        if (pRspLen != NULL) {
+            *pRspLen = 0;
+        }
+    }
     return retVal;
 }
 

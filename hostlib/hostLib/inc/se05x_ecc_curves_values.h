@@ -1,3 +1,9 @@
+/*
+*
+* Copyright 2018 NXP
+* SPDX-License-Identifier: Apache-2.0
+*/
+
 #ifndef SE05X_ECC_CURVES_LIST_H_INC
 #define SE05X_ECC_CURVES_LIST_H_INC
 
