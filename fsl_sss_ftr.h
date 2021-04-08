@@ -433,7 +433,7 @@
 #define SSSFTR_SE05X_ECC 1
 
 /** SE05X Secure Element : RSA */
-#define SSSFTR_SE05X_RSA 1
+#define SSSFTR_SE05X_RSA 0
 
 /** SE05X Secure Element : KEY operations : SET Key */
 #define SSSFTR_SE05X_KEY_SET 1
@@ -467,7 +467,7 @@
 #define SSSFTR_SW_ECC 1
 
 /** Software : RSA */
-#define SSSFTR_SW_RSA 1
+#define SSSFTR_SW_RSA 0
 
 /** Software : KEY operations : SET Key */
 #define SSSFTR_SW_KEY_SET 1
@@ -636,7 +636,7 @@
 #define SSS_HAVE_ECC 1
 
 /* RSA is available */
-#define SSS_HAVE_RSA 1
+#define SSS_HAVE_RSA 0
 
 /* TPM BARRETO_NAEHRIG Curve is enabled */
 #define SSS_HAVE_TPM_BN 1
