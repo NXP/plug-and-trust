@@ -16,9 +16,7 @@
 #include <stdio.h>
 
 #include "ex_sss_boot_int.h"
-#if AX_EMBEDDED
-#include <app_boot.h>
-#endif
+
 
 #include "ex_sss_auth.h"
 
@@ -276,7 +274,6 @@ sss_status_t ex_sss_boot_se05x_open_on_Id(ex_sss_boot_ctx_t *pCtx, const char *p
     (SSS_HAVE_SE05X_AUTH_ECKEY_PLATFSCP03)
     sss_connection_type_t connectType = kSSS_ConnectionType_Plain;
 #endif
-    const uint32_t auth_id = authID;
 
 #if (SSS_HAVE_SE05X_AUTH_USERID_PLATFSCP03) || (SSS_HAVE_SE05X_AUTH_AESKEY_PLATFSCP03) || \
     (SSS_HAVE_SE05X_AUTH_ECKEY_PLATFSCP03)
