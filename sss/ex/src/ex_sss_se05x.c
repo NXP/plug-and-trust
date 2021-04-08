@@ -275,6 +275,10 @@ sss_status_t ex_sss_boot_se05x_open_on_Id(ex_sss_boot_ctx_t *pCtx, const char *p
     sss_connection_type_t connectType = kSSS_ConnectionType_Plain;
 #endif
 
+#if 0
+    const uint32_t auth_id = authID;
+#endif
+
 #if (SSS_HAVE_SE05X_AUTH_USERID_PLATFSCP03) || (SSS_HAVE_SE05X_AUTH_AESKEY_PLATFSCP03) || \
     (SSS_HAVE_SE05X_AUTH_ECKEY_PLATFSCP03)
     ex_sss_platf_ctx_t *pPlatfCtx = &gPlatfCtx;
