@@ -89,6 +89,9 @@ sss_status_t ks_openssl_load_key(sss_openssl_object_t *sss_key, keyStoreTable_t 
             fseek(fp, 0, SEEK_SET);
             if (!fread(keyBuf, size, 1, fp)) {
                 LOG_E("Error in fread");
+                retval = kStatus_SSS_Fail;
+                fclose(fp);
+                return retval;
             }
             fclose(fp);
             retval = sss_openssl_key_object_allocate(sss_key,
