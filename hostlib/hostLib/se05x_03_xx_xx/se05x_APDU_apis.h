@@ -4303,6 +4303,7 @@ smStatus_t Se05x_API_HKDF_Extended(pSe05xSession_t session_ctx,
  *
  * @param[in] session_ctx Session Context [0:kSE05x_pSession]
  * @param[in] objectID 4-byte password identifier (object type must be HMACKey) [1:kSE05x_TAG_1]
+ * @param[in] Pbkdf2 Algorithm [kSE05x_TAG_5]
  * @param[in] salt salt [2:kSE05x_TAG_2]
  * @param[in] saltLen Length of salt
  * @param[in] count count [3:kSE05x_TAG_3]
@@ -4312,6 +4313,9 @@ smStatus_t Se05x_API_HKDF_Extended(pSe05xSession_t session_ctx,
  */
 smStatus_t Se05x_API_PBKDF2(pSe05xSession_t session_ctx,
     uint32_t objectID,
+#if SSS_HAVE_SE05X_VER_GTE_16_03
+    SE05x_Pbkdf2Algo_t algorithm,
+#endif
     const uint8_t *salt,
     size_t saltLen,
     uint16_t count,
