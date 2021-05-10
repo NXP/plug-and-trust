@@ -2582,6 +2582,9 @@ cleanup:
 
 smStatus_t Se05x_API_PBKDF2(pSe05xSession_t session_ctx,
     uint32_t objectID,
+#if SSS_HAVE_SE05X_VER_GTE_16_03
+    SE05x_Pbkdf2Algo_t algorithm,
+#endif
     const uint8_t *salt,
     size_t saltLen,
     uint16_t count,
@@ -2619,6 +2622,12 @@ smStatus_t Se05x_API_PBKDF2(pSe05xSession_t session_ctx,
     if (0 != tlvRet) {
         goto cleanup;
     }
+#if SSS_HAVE_SE05X_VER_GTE_16_03
+    tlvRet = TLVSET_U8("1-byte PBKDF Algorithm", &pCmdbuf, &cmdbufLen, kSE05x_TAG_5, algorithm);
+    if (0 != tlvRet) {
+        goto cleanup;
+    }
+#endif
     retStatus = DoAPDUTxRx_s_Case4(session_ctx, &hdr, cmdbuf, cmdbufLen, rspbuf, &rspbufLen);
     if (retStatus == SM_OK) {
         retStatus       = SM_NOT_OK;
