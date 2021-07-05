@@ -128,8 +128,10 @@ sss_status_t sss_util_asn1_rsa_parse_public(
 sss_status_t sss_util_asn1_rsa_get_public(
     uint8_t *key, size_t *keylen, uint8_t *modulus, size_t modlen, uint8_t *pubExp, size_t pubExplen);
 
+#if SSS_HAVE_ECDAA
 sss_status_t sss_util_asn1_ecdaa_get_signature(
     uint8_t *signature, size_t *signatureLen, uint8_t *rawSignature, size_t rawSignatureLen);
+#endif
 
 sss_status_t sss_util_asn1_get_oid_from_header(uint8_t *input, size_t inLen, uint32_t *output, uint8_t *outLen);
 
@@ -163,21 +165,11 @@ sss_status_t sss_util_asn1_rsa_parse_public_nomalloc_complete_modulus(
 sss_status_t sss_util_openssl_read_pkcs12(
     const char *pkcs12_cert, const char *password, uint8_t *private_key, uint8_t *cert);
 
-sss_status_t sss_util_openssl_write_pkcs12(sss_session_t *session,
-    sss_key_store_t *ks,
-    sss_object_t *obj,
-    const char *pkcs12_cert,
+sss_status_t sss_util_openssl_write_pkcs12(const char *pkcs12_cert,
     const char *password,
     const char *ref_key,
     long ref_key_length,
-    const char *cert_bytes,
-    const char *cert_subject);
-
-sss_status_t sss_util_openssl_generate_cert_pkcs12(sss_session_t *session,
-    sss_key_store_t *ks,
-    sss_object_t *obj,
-    void *certificate_in,
-    const char *cert_bytes,
-    const char *cert_subject);
+    const char *cert,
+    long cert_length);
 
 #endif

@@ -32,7 +32,9 @@
 #include "nxEnsure.h"
 #include "nxScp03_Apis.h"
 #include "smCom.h"
+#if defined(SECURE_WORLD)
 #include "fsl_sss_lpc55s_apis.h"
+#endif
 
 /* ************************************************************************** */
 /* Functions : Private function declaration                                   */
@@ -170,7 +172,7 @@ static sss_status_t nxScp03_GP_ExternalAuthenticate(
 {
     smStatus_t st = SM_NOT_OK;
     uint8_t txBuf[64];
-    uint8_t macToAdd[AES_KEY_LEN_nBYTE];
+    uint8_t macToAdd[AES_KEY_LEN_nBYTE] = {0};
 
     sss_mac_t macCtx;
     sss_algorithm_t algorithm = kAlgorithm_SSS_CMAC_AES;
@@ -226,7 +228,7 @@ static sss_status_t nxScp03_GP_ExternalAuthenticate(
     LOG_D("Sending GP External Authenticate Command !!!");
     st = DoAPDUTx_s_Case3(se05xSession, &hdr, &txBuf[5], 16);
     if (st != SM_OK) {
-        LOG_E("GP_ExternalAuthenticate returns %lX", st);
+        LOG_E("GP_ExternalAuthenticate transmit failed");
         status = kStatus_SSS_Fail;
     }
     else {
@@ -243,10 +245,10 @@ sss_status_t nxScp03_HostLocal_CalculateHostCryptogram(
     uint8_t ddA[128];
     uint16_t ddALen = sizeof(ddA);
     uint8_t context[128];
-    uint16_t contextLen = 0;
-    uint8_t hostCryptogramFullLength[AES_KEY_LEN_nBYTE];
-    uint32_t signatureLen = sizeof(hostCryptogramFullLength);
-    sss_status_t status   = kStatus_SSS_Fail;
+    uint16_t contextLen                                 = 0;
+    uint8_t hostCryptogramFullLength[AES_KEY_LEN_nBYTE] = {0};
+    uint32_t signatureLen                               = sizeof(hostCryptogramFullLength);
+    sss_status_t status                                 = kStatus_SSS_Fail;
 
     LOG_D("FN: %s", __FUNCTION__);
     LOG_MAU8_D(" Input:hostChallenge", hostChallenge, SCP_GP_HOST_CHALLENGE_LEN);
@@ -276,10 +278,10 @@ sss_status_t nxScp03_HostLocal_VerifyCardCryptogram(
     uint8_t ddA[128];
     uint16_t ddALen = sizeof(ddA);
     uint8_t context[128];
-    uint16_t contextLen = 0;
-    uint8_t cardCryptogramFullLength[AES_KEY_LEN_nBYTE];
-    uint32_t signatureLen = sizeof(cardCryptogramFullLength);
-    sss_status_t status   = kStatus_SSS_Fail;
+    uint16_t contextLen                                 = 0;
+    uint8_t cardCryptogramFullLength[AES_KEY_LEN_nBYTE] = {0};
+    uint32_t signatureLen                               = sizeof(cardCryptogramFullLength);
+    sss_status_t status                                 = kStatus_SSS_Fail;
 
     LOG_D("FN: %s", __FUNCTION__);
     LOG_MAU8_D(" Input:hostChallenge", hostChallenge, SCP_GP_HOST_CHALLENGE_LEN);
@@ -416,7 +418,7 @@ static sss_status_t nxScp03_GP_InitializeUpdate(pSe05xSession_t se05xSession,
     uint16_t *pSeqCounterLen,
     uint8_t keyVerNo)
 {
-    smStatus_t st = 0;
+    smStatus_t st = SM_NOT_OK;
     uint8_t response[64];
     size_t responseLen          = 64;
     uint16_t parsePos           = 0;
@@ -461,7 +463,7 @@ static sss_status_t nxScp03_GP_InitializeUpdate(pSe05xSession_t se05xSession,
     // The pseudo-random challenge case also includes a 3 byte sequence counter
     if ((responseLen != iuResponseLenSmall) && (responseLen != iuResponseLenBig)) {
         // Note: A response of length 2 (a proper SW) is also collapsed into return code SCP_FAIL
-        LOG_E("GP_InitializeUpdate Unexpected amount of data returned: %04X", responseLen);
+        LOG_E("GP_InitializeUpdate Unexpected amount of data returned");
         return status;
     }
 

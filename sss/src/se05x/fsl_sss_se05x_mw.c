@@ -23,27 +23,34 @@ uint32_t se05x_sssKeyTypeLenToCurveId(sss_cipher_type_t cipherType, size_t keyBi
     case kSSS_CipherType_EC_NIST_P: {
         SE05x_ECCurve_t eCurveID;
         switch (keyBits) {
+#if SSS_HAVE_EC_NIST_192
         case 192:
             eCurveID = kSE05x_ECCurve_NIST_P192;
             break;
+#endif
+#if SSS_HAVE_EC_NIST_224
         case 224:
             eCurveID = kSE05x_ECCurve_NIST_P224;
             break;
+#endif
         case 256:
             eCurveID = kSE05x_ECCurve_NIST_P256;
             break;
         case 384:
             eCurveID = kSE05x_ECCurve_NIST_P384;
             break;
+#if SSS_HAVE_EC_NIST_192
         case 521:
             eCurveID = kSE05x_ECCurve_NIST_P521;
             break;
+#endif
         default:
-            eCurveID = 0;
+            eCurveID = kSE05x_ECCurve_NA;
         }
         u32_curve_id = (uint32_t)eCurveID;
         break;
     }
+#if SSS_HAVE_EC_BP
     case kSSS_CipherType_EC_BRAINPOOL: {
         SE05x_ECCurve_t eCurveID;
         switch (keyBits) {
@@ -69,11 +76,13 @@ uint32_t se05x_sssKeyTypeLenToCurveId(sss_cipher_type_t cipherType, size_t keyBi
             eCurveID = kSE05x_ECCurve_Brainpool512;
             break;
         default:
-            eCurveID = 0;
+            eCurveID = kSE05x_ECCurve_NA;
         }
         u32_curve_id = (uint32_t)eCurveID;
         break;
     }
+#endif
+#if SSS_HAVE_EC_NIST_K
     case kSSS_CipherType_EC_NIST_K: {
         SE05x_ECCurve_t eCurveID;
         switch (keyBits) {
@@ -90,11 +99,13 @@ uint32_t se05x_sssKeyTypeLenToCurveId(sss_cipher_type_t cipherType, size_t keyBi
             eCurveID = kSE05x_ECCurve_Secp256k1;
             break;
         default:
-            eCurveID = 0;
+            eCurveID = kSE05x_ECCurve_NA;
         }
         u32_curve_id = (uint32_t)eCurveID;
         break;
     }
+#endif
+#if SSS_HAVE_EC_MONT
     case kSSS_CipherType_EC_MONTGOMERY: {
         SE05x_ECCurve_t eCurveID;
         switch (keyBits) {
@@ -107,11 +118,13 @@ uint32_t se05x_sssKeyTypeLenToCurveId(sss_cipher_type_t cipherType, size_t keyBi
             eCurveID = kSE05x_ECCurve_RESERVED_ID_ECC_MONT_DH_25519;
             break;
         default:
-            eCurveID = 0;
+            eCurveID = kSE05x_ECCurve_NA;
         }
         u32_curve_id = (uint32_t)eCurveID;
         break;
     }
+#endif
+#if SSS_HAVE_EC_ED
     case kSSS_CipherType_EC_TWISTED_ED: {
         SE05x_ECCurve_t eCurveID;
         switch (keyBits) {
@@ -119,11 +132,13 @@ uint32_t se05x_sssKeyTypeLenToCurveId(sss_cipher_type_t cipherType, size_t keyBi
             eCurveID = kSE05x_ECCurve_RESERVED_ID_ECC_ED_25519;
             break;
         default:
-            eCurveID = 0;
+            eCurveID = kSE05x_ECCurve_NA;
         }
         u32_curve_id = (uint32_t)eCurveID;
         break;
     }
+#endif
+#if SSS_HAVE_TPM_BN
     case kSSS_CipherType_EC_BARRETO_NAEHRIG: {
         SE05x_ECCurve_t eCurveID;
         switch (keyBits) {
@@ -131,11 +146,12 @@ uint32_t se05x_sssKeyTypeLenToCurveId(sss_cipher_type_t cipherType, size_t keyBi
             eCurveID = kSE05x_ECCurve_TPM_ECC_BN_P256;
             break;
         default:
-            eCurveID = 0;
+            eCurveID = kSE05x_ECCurve_NA;
         }
         u32_curve_id = (uint32_t)eCurveID;
         break;
     }
+#endif
     default:
         break;
     }

@@ -147,11 +147,7 @@ typedef struct _sss_se05x_object
     uint32_t keyId;
 
     /** If this is an ECC Key, the Curve ID of the key */
-#if APPLET_SE050_VER_MAJOR_MINOR >= 20000u
     SE05x_ECCurve_t curve_id;
-#else
-    uint32_t curve_id;
-#endif
 
     /** Whether this is a persistant or tansient object */
     uint8_t isPersistant : 1;

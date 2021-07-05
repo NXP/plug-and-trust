@@ -104,28 +104,24 @@ smStatus_t Se05x_API_CloseSession(pSe05xSession_t session_ctx)
     tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_MGMT, kSE05x_P1_DEFAULT, kSE05x_P2_SESSION_CLOSE}};
     uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
     size_t cmdbufLen = 0;
-    uint8_t iCnt = 0;
+    uint8_t iCnt     = 0;
 
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "CloseSession []");
 #endif /* VERBOSE_APDU_LOGS */
-    if( ((session_ctx->value[0] || session_ctx->value[1] || session_ctx->value[2] || session_ctx->value[3] ||
-        session_ctx->value[4] || session_ctx->value[5] || session_ctx->value[6] || session_ctx->value[7])) &&
-        (session_ctx->hasSession == 1))
-    {
+    if (((session_ctx->value[0] || session_ctx->value[1] || session_ctx->value[2] || session_ctx->value[3] ||
+            session_ctx->value[4] || session_ctx->value[5] || session_ctx->value[6] || session_ctx->value[7])) &&
+        (session_ctx->hasSession == 1)) {
         retStatus = DoAPDUTx_s_Case3(session_ctx, &hdr, cmdbuf, cmdbufLen);
-        if (retStatus == SM_OK)
-        {
-            for (iCnt = 0;iCnt < 8; iCnt++)
-            {
+        if (retStatus == SM_OK) {
+            for (iCnt = 0; iCnt < 8; iCnt++) {
                 session_ctx->value[iCnt] = 0;
             }
             session_ctx->hasSession = 0;
         }
     }
-    else
-    {
+    else {
         LOG_D("CloseSession command is sent only if valid Session exists!!!");
     }
     return retStatus;
@@ -625,7 +621,8 @@ smStatus_t Se05x_API_WritePCR(pSe05xSession_t session_ctx,
     const uint8_t *inputData,
     size_t inputDataLen)
 {
-    return Se05x_API_WritePCR_WithType(session_ctx, kSE05x_INS_NA, policy, pcrID, initialValue, initialValueLen, inputData, inputDataLen);
+    return Se05x_API_WritePCR_WithType(
+        session_ctx, kSE05x_INS_NA, policy, pcrID, initialValue, initialValueLen, inputData, inputDataLen);
 }
 #endif // ENABLE_DEPRECATED_API_WritePCR
 
@@ -1213,7 +1210,7 @@ smStatus_t Se05x_API_ReadIDList(pSe05xSession_t session_ctx,
             goto cleanup;
         }
         if ((rspIndex + 2) == rspbufLen) {
-            retStatus = (pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]);
+            retStatus = (smStatus_t)((pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]));
         }
     }
 

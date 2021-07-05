@@ -212,6 +212,11 @@ i2c_error_t axI2CWrite(void* conn_ctx, unsigned char bus, unsigned char addr, un
     int i = 0;
 #endif
 
+    if(pTx == NULL || txLen > MAX_DATA_LEN)
+    {
+        return I2C_FAILED;
+    }
+
     if (bus != I2C_BUS_0)
     {
         LOG_E("axI2CWrite on wrong bus %x (addr %x)\n", bus, addr);
@@ -249,6 +254,16 @@ i2c_error_t axI2CWriteRead(void* conn_ctx, unsigned char bus, unsigned char addr
     int r = 0;
     int i = 0;
     int axSmDevice = *(int*)conn_ctx;
+
+    if(pTx == NULL || txLen > MAX_DATA_LEN)
+    {
+        return I2C_FAILED;
+    }
+
+    if(pRx == NULL || *pRxLen > MAX_DATA_LEN)
+    {
+        return I2C_FAILED;
+    }
 
     if (bus != I2C_BUS_0) // change if bus 0 is not the correct bus
     {
@@ -335,6 +350,11 @@ i2c_error_t axI2CRead(void* conn_ctx, unsigned char bus, unsigned char addr, uns
     int nrRead = -1;
     i2c_error_t rv;
     int axSmDevice = *(int*)conn_ctx;
+
+    if(pRx == NULL || rxLen > MAX_DATA_LEN)
+    {
+        return I2C_FAILED;
+    }
 
     if (bus != I2C_BUS_0)
     {

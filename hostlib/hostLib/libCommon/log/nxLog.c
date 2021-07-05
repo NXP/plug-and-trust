@@ -14,6 +14,17 @@ extern "C" {
 #include <inttypes.h>
 
 #include "sm_printf.h"
+
+#if USE_RTOS
+#include "FreeRTOS.h"
+#include "semphr.h"
+#endif
+
+#if (__GNUC__ && !AX_EMBEDDED) || (USE_RTOS)
+#define USE_LOCK 1
+#else
+#define USE_LOCK 0
+#endif
 #if defined(_MSC_VER)
 #include <windows.h>
 #endif
@@ -94,9 +105,91 @@ static const char *szLevel[] = {"ERROR", "WARN ", "INFO ", "DEBUG"};
 #include "smCom.h"
 #endif
 
+#if USE_RTOS
+static SemaphoreHandle_t gLogginglock;
+#elif (__GNUC__ && !AX_EMBEDDED)
+#include<pthread.h>
+/* Only for base session with os */
+static pthread_mutex_t gLogginglock;
+#endif
+static void nLog_AcquireLock();
+static void nLog_ReleaseLock();
+#if USE_LOCK
+static uint8_t lockInitialised = false;
+#endif
+static void nLog_AcquireLock()
+{
+#if USE_LOCK
+    if (lockInitialised) {
+#if USE_RTOS
+        if (xSemaphoreTake(gLogginglock, portMAX_DELAY) != pdTRUE) {
+            PRINTF("Acquiring logging semaphore failed");
+        }
+#elif (__GNUC__ && !AX_EMBEDDED)
+        if (pthread_mutex_lock(&gLogginglock) != 0) {
+            PRINTF("Acquiring logging mutext failed");
+        }
+#endif
+    }
+#endif
+}
+
+static void nLog_ReleaseLock()
+{
+#if USE_LOCK
+    if (lockInitialised) {
+#if USE_RTOS
+        if (xSemaphoreGive(gLogginglock) != pdTRUE) {
+            PRINTF("Releasing logging semaphore failed");
+        }
+#elif (__GNUC__ && !AX_EMBEDDED)
+        if (pthread_mutex_unlock(&gLogginglock) != 0) {
+            PRINTF("Releasing logging semaphore failed");
+        }
+#endif
+    }
+#endif
+}
+
+uint8_t nLog_Init()
+{
+#if USE_LOCK
+#if USE_RTOS
+    gLogginglock = xSemaphoreCreateMutex();
+    if (gLogginglock == NULL) {
+        PRINTF("xSemaphoreCreateMutex failed");
+        return 1;
+    }
+#elif (__GNUC__ && !AX_EMBEDDED)
+    if (pthread_mutex_init(&gLogginglock, NULL) != 0) {
+        PRINTF("pthread_mutex_init failed");
+        return 1;
+    }
+#endif
+    lockInitialised = true;
+#endif
+    return 0;
+}
+
+void nLog_DeInit()
+{
+#if USE_LOCK
+#if USE_RTOS
+    if (gLogginglock != NULL) {
+    	vSemaphoreDelete(gLogginglock);
+        gLogginglock = NULL;
+    }
+#elif (__GNUC__ && !AX_EMBEDDED)
+    pthread_mutex_destroy(&gLogginglock);
+#endif
+    lockInitialised = false;
+#endif
+}
+
 /* Used for scenarios other than LPC55S_NS */
 void nLog(const char *comp, int level, const char *format, ...)
 {
+    nLog_AcquireLock();
     setColor(level);
     PRINTF("%-6s:%s:", comp, szLevel[level-1]);
     if (format == NULL) {
@@ -125,11 +218,13 @@ void nLog(const char *comp, int level, const char *format, ...)
     }
     reSetColor();
     PRINTF(szEOL);
+    nLog_ReleaseLock();
 }
 
 void nLog_au8(const char *comp, int level, const char *message, const unsigned char *array, size_t array_len)
 {
     size_t i;
+    nLog_AcquireLock();
     setColor(level);
     PRINTF("%-6s:%s:%s (Len=%" PRId32 ")", comp, szLevel[level-1], message, (int32_t)array_len);
     for (i = 0; i < array_len; i++) {
@@ -154,6 +249,7 @@ void nLog_au8(const char *comp, int level, const char *message, const unsigned c
     }
     reSetColor();
     PRINTF(szEOL);
+    nLog_ReleaseLock();
 }
 
 static void setColor(int level)

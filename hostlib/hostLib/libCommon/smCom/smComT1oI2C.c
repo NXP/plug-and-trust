@@ -44,7 +44,12 @@ U16 smComT1oI2C_Close(void *conn_ctx, U8 mode)
         //status=phNxpEse_chipReset();
         if(status ==ESESTATUS_SUCCESS)
         {
-            status=phNxpEse_close(conn_ctx);
+            status = phNxpEse_close(conn_ctx);
+            if(status != ESESTATUS_SUCCESS)
+            {
+                LOG_E("Failed to close ESE interface and free all resources ");
+                return SMCOM_COM_FAILED;
+            }
         }
         else
         {

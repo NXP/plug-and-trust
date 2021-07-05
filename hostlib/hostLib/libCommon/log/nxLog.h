@@ -88,6 +88,14 @@ extern "C" {
 #define NX_LOG_W
 #define NX_LOG_E
 
+/*
+ * Initialised the multithreading locks if running on Native or FreeRtos.
+ * If running on system where mutex or semaphore is not available, return
+ * success without doing anything.
+ */
+uint8_t nLog_Init();
+void nLog_DeInit();
+
 void nLog(const char *comp, int level, const char *format, ...);
 
 void nLog_au8(const char *comp, int level, const char *message, const unsigned char *array, size_t array_len);

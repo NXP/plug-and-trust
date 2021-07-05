@@ -111,7 +111,7 @@ uint16_t nxpSCP03_Decrypt_ResponseAPDU(
     sss_mode_t mode = kMode_SSS_Mac;
     sss_mac_t macCtx;
     uint8_t sw[SCP_GP_SW_LEN];
-    uint8_t respMac[SCP_CMAC_SIZE];
+    uint8_t respMac[SCP_CMAC_SIZE] = {0};
     size_t signatureLen = sizeof(respMac);
     size_t compareoffset = 0;
     size_t macSize = SCP_CMAC_SIZE;

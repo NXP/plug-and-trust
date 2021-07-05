@@ -457,7 +457,7 @@ int mbedtls_ecdsa_verify(mbedtls_ecp_group *grp,
             signature[sigLen++] = (unsigned char)rs_buf_len;
         }
 
-        if ( (sizeof(signature) - sigLen) < rs_buf_len) {
+        if ((sizeof(signature) - sigLen) < rs_buf_len) {
             return -1;
         }
         memcpy(&signature[sigLen], rs_buf, rs_buf_len);
@@ -481,7 +481,7 @@ int mbedtls_ecdsa_verify(mbedtls_ecp_group *grp,
             signature[sigLen++] = (unsigned char)rs_buf_len;
         }
 
-        if ( (sizeof(signature) - sigLen) < rs_buf_len) {
+        if ((sizeof(signature) - sigLen) < rs_buf_len) {
             return -1;
         }
         memcpy(&signature[sigLen], rs_buf, rs_buf_len);

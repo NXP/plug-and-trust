@@ -81,6 +81,12 @@ void ks_sw_fat_allocate(keyStoreTable_t **keystore_shadow)
         return;
     }
     keyIdAndTypeIndexLookup_t *ppLookupEntires = SSS_MALLOC(KS_N_ENTIRES * sizeof(keyIdAndTypeIndexLookup_t));
+    if (ppLookupEntires == NULL) {
+        LOG_E("Error in ppLookupEntires mem allocation");
+        SSS_FREE(pKeyStoreShadow);
+        return;
+    }
+
     //for (int i = 0; i < KS_N_ENTIRES; i++) {
     //    ppLookupEntires[i] = calloc(1, sizeof(keyIdAndTypeIndexLookup_t));
     //}
@@ -222,7 +228,7 @@ sss_status_t ks_mbedtls_load_key(sss_mbedtls_object_t *sss_key, keyStoreTable_t 
         }
         else {
             /* Buffer to hold max RSA Key*/
-            uint8_t keyBuf[3000];
+            uint8_t *keyBuf = NULL;
             int signed_val = 0;
             fseek(fp, 0, SEEK_END);
             signed_val = ftell(fp);
@@ -234,11 +240,15 @@ sss_status_t ks_mbedtls_load_key(sss_mbedtls_object_t *sss_key, keyStoreTable_t 
             }
             size = (size_t)signed_val;
             fseek(fp, 0, SEEK_SET);
+            keyBuf = SSS_CALLOC(1, size);
             signed_val = (int)fread(keyBuf, size, 1, fp);
             if (signed_val < 0) {
                 LOG_E("fread faild");
                 retval = kStatus_SSS_Fail;
                 fclose(fp);
+                if (keyBuf != NULL) {
+                    SSS_FREE(keyBuf);
+                }
                 return retval;
             }
             fclose(fp);
@@ -248,9 +258,13 @@ sss_status_t ks_mbedtls_load_key(sss_mbedtls_object_t *sss_key, keyStoreTable_t 
                 shadowEntry->cipherType,
                 size,
                 kKeyObject_Mode_Persistent);
-            if (retval == kStatus_SSS_Success)
+            if (retval == kStatus_SSS_Success) {
                 retval = sss_mbedtls_key_store_set_key(
                     sss_key->keyStore, sss_key, keyBuf, size, size * 8 /* FIXME */, NULL, 0);
+            }
+            if (keyBuf != NULL) {
+                SSS_FREE(keyBuf);
+            }
         }
     }
     return retval;

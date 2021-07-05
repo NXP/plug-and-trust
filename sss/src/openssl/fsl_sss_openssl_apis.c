@@ -51,6 +51,8 @@
 
 #define CIPHER_BLOCK_SIZE 16
 
+#define SSS_OPENSSL_USE_EVP_FOR_CIPHER_ONE_GO 1
+
 #ifndef RSA_PSS_SALTLEN_DIGEST
 #define RSA_PSS_SALTLEN_DIGEST -1
 #endif
@@ -239,7 +241,8 @@ sss_status_t sss_openssl_key_object_allocate(sss_openssl_object_t *keyObject,
     keyObject->contents_max_size  = keyByteLenMax;
     keyObject->contents_must_free = 1;
     keyObject->keyMode            = keyMode;
-    keyObject->accessRights       = 0x1F; /* Bitwise OR of all sss_access_permission. */
+    /* Bitwise OR of all sss_access_permission. */
+    keyObject->accessRights = kAccessPermission_SSS_All_Permission;
     switch (keyPart) {
     case kSSS_KeyPart_Default:
         size = keyByteLenMax;
@@ -508,6 +511,10 @@ sss_status_t sss_openssl_derive_key_sobj_one_go(sss_openssl_derive_key_t *contex
     size_t dummySize;
     sss_status_t status;
 
+    if (context == NULL) {
+        return kStatus_SSS_Fail;
+    }
+
     if (context->mode != kMode_SSS_HKDF_ExpandOnly) {
         status = sss_openssl_key_store_get_key(saltKeyObject->keyStore, saltKeyObject, saltData, &saltLen, &dummySize);
         if (status != kStatus_SSS_Success) {
@@ -608,6 +615,10 @@ sss_status_t sss_openssl_derive_key_dh(sss_openssl_derive_key_t *context,
     int sharedSecretLen_Derived;
     EC_GROUP *pEC_Group = NULL;
     uint8_t *secret     = NULL;
+
+    if (otherPartyKeyObject == NULL || derivedKeyObject == NULL) {
+        return kStatus_SSS_Fail;
+    }
 
     pKeyPrv = (EVP_PKEY *)context->keyObject->contents;
     pKeyExt = (EVP_PKEY *)otherPartyKeyObject->contents;
@@ -1415,11 +1426,36 @@ sss_status_t sss_openssl_cipher_one_go(sss_openssl_symmetric_t *context,
     size_t dataLen)
 {
     sss_status_t retval = kStatus_SSS_Fail;
+#if !SSS_OPENSSL_USE_EVP_FOR_CIPHER_ONE_GO
     AES_KEY AESKey;
+#endif
     DES_key_schedule schedule;
     DES_cblock DESKey;
 
+#if SSS_OPENSSL_USE_EVP_FOR_CIPHER_ONE_GO
+    if (context->algorithm == kAlgorithm_SSS_AES_ECB ||
+        context->algorithm == kAlgorithm_SSS_AES_CBC ||
+        context->algorithm == kAlgorithm_SSS_AES_CTR) {
+
+        sss_status_t status = kStatus_SSS_Fail;
+        size_t destLen = dataLen;
+
+        status = sss_openssl_cipher_init(context, iv, ivLen);
+        ENSURE_OR_GO_EXIT(status == kStatus_SSS_Success);
+
+        status = sss_openssl_cipher_update(context, srcData, dataLen, destData, &destLen);
+        ENSURE_OR_GO_EXIT(status == kStatus_SSS_Success);
+
+        destLen = dataLen - destLen;
+        status = sss_openssl_cipher_finish(context, NULL, 0, (destData + destLen), &destLen);
+        ENSURE_OR_GO_EXIT(status == kStatus_SSS_Success);
+
+        return kStatus_SSS_Success;
+    }
+#endif
+
     switch (context->algorithm) {
+#if !SSS_OPENSSL_USE_EVP_FOR_CIPHER_ONE_GO
     case kAlgorithm_SSS_AES_ECB:
     case kAlgorithm_SSS_AES_CBC: {
         if (context->mode == kMode_SSS_Encrypt) {
@@ -1449,6 +1485,7 @@ sss_status_t sss_openssl_cipher_one_go(sss_openssl_symmetric_t *context,
             goto exit;
         }
     } break;
+#endif
     case kAlgorithm_SSS_DES_CBC:
     case kAlgorithm_SSS_DES_ECB:
     case kAlgorithm_SSS_DES3_CBC:
@@ -1463,6 +1500,7 @@ sss_status_t sss_openssl_cipher_one_go(sss_openssl_symmetric_t *context,
 
     if (context->mode == kMode_SSS_Encrypt) {
         switch (context->algorithm) {
+#if !SSS_OPENSSL_USE_EVP_FOR_CIPHER_ONE_GO
         case kAlgorithm_SSS_AES_ECB:
             AES_ecb_encrypt(srcData, destData, &AESKey, AES_ENCRYPT);
             break;
@@ -1480,6 +1518,7 @@ sss_status_t sss_openssl_cipher_one_go(sss_openssl_symmetric_t *context,
             CRYPTO_ctr128_encrypt(srcData, destData, dataLen, &AESKey, iv, ecount_buf, &num, (block128_f)AES_encrypt);
 #endif
         } break;
+#endif
         case kAlgorithm_SSS_DES_ECB: {
 #if (OPENSSL_VERSION_NUMBER < 0x10100000L)
             DES_ecb_encrypt((const_DES_cblock *)srcData, (DES_cblock *)destData, &schedule, DES_ENCRYPT);
@@ -1508,6 +1547,7 @@ sss_status_t sss_openssl_cipher_one_go(sss_openssl_symmetric_t *context,
     }
     else if (context->mode == kMode_SSS_Decrypt) {
         switch (context->algorithm) {
+#if !SSS_OPENSSL_USE_EVP_FOR_CIPHER_ONE_GO
         case kAlgorithm_SSS_AES_ECB:
             AES_ecb_encrypt(srcData, destData, &AESKey, AES_DECRYPT);
             break;
@@ -1525,6 +1565,7 @@ sss_status_t sss_openssl_cipher_one_go(sss_openssl_symmetric_t *context,
             CRYPTO_ctr128_encrypt(srcData, destData, dataLen, &AESKey, iv, ecount_buf, &num, (block128_f)AES_encrypt);
 #endif
         } break;
+#endif
         case kAlgorithm_SSS_DES_ECB: {
 #if (OPENSSL_VERSION_NUMBER < 0x10100000L)
             DES_ecb_encrypt((const_DES_cblock *)srcData, (DES_cblock *)destData, &schedule, DES_DECRYPT);
@@ -1555,14 +1596,20 @@ sss_status_t sss_openssl_cipher_one_go(sss_openssl_symmetric_t *context,
         return retval;
     }
 
+    retval = kStatus_SSS_Success;
 exit:
-    return kStatus_SSS_Success;
+    return retval;
 }
 
 sss_status_t sss_openssl_cipher_init(sss_openssl_symmetric_t *context, uint8_t *iv, size_t ivLen)
 {
     sss_status_t retval           = kStatus_SSS_Success;
     const EVP_CIPHER *cipher_info = NULL;
+
+    ENSURE_OR_GO_EXIT(context != NULL);
+    if (ivLen > 0){
+        ENSURE_OR_GO_EXIT(iv != NULL);
+    }
 
     if (context->algorithm == kAlgorithm_SSS_AES_ECB) {
         switch (context->keyObject->keyBitLen) {
@@ -1664,6 +1711,15 @@ sss_status_t sss_openssl_cipher_update(
     size_t outBuffSize   = *destLen;
     size_t blockoutLen   = 0;
 
+    ENSURE_OR_GO_EXIT(context != NULL);
+    if (srcLen > 0) {
+        ENSURE_OR_GO_EXIT(srcData != NULL);
+    }
+    ENSURE_OR_GO_EXIT(destLen != NULL);
+    if (*destLen > 0) {
+        ENSURE_OR_GO_EXIT(destData != NULL);
+    }
+
     if ((context->cache_data_len + srcLen) < CIPHER_BLOCK_SIZE) {
         /* Insufficinet data to process . Cache the data */
         memcpy((context->cache_data + context->cache_data_len), srcData, srcLen);
@@ -1691,7 +1747,7 @@ sss_status_t sss_openssl_cipher_update(
         output_offset += blockoutLen;
 
         while (srcLen - src_offset >= CIPHER_BLOCK_SIZE) {
-            memcpy(inputData, (srcData + src_offset), 16);
+            memcpy(inputData, (srcData + src_offset), CIPHER_BLOCK_SIZE);
             src_offset += CIPHER_BLOCK_SIZE;
 
             blockoutLen   = outBuffSize;
@@ -1740,6 +1796,15 @@ sss_status_t sss_openssl_cipher_finish(
     };
     int dummyBufLen = sizeof(dummyBuf);
 
+    ENSURE_OR_GO_EXIT(context != NULL);
+    if (srcLen > 0) {
+        ENSURE_OR_GO_EXIT(srcData != NULL);
+    }
+    ENSURE_OR_GO_EXIT(destLen != NULL);
+    if (*destLen > 0) {
+        ENSURE_OR_GO_EXIT(destData != NULL);
+    }
+
     if (srcLen > CIPHER_BLOCK_SIZE) {
         LOG_E("srcLen cannot be grater than 16 bytes. Call update function ");
         *destLen = 0;
@@ -1756,7 +1821,9 @@ sss_status_t sss_openssl_cipher_finish(
         srcdata_updated_len += srcLen;
     }
 
-    srcdata_updated_len = srcdata_updated_len + (CIPHER_BLOCK_SIZE - (srcdata_updated_len % 16));
+    if (srcdata_updated_len > 0) {
+        srcdata_updated_len = srcdata_updated_len + (CIPHER_BLOCK_SIZE - (srcdata_updated_len % CIPHER_BLOCK_SIZE));
+    }
 
     if (*destLen < srcdata_updated_len) {
         LOG_E("Output buffer not sufficient");
@@ -1809,6 +1876,12 @@ sss_status_t sss_openssl_cipher_crypt_ctr(sss_openssl_symmetric_t *context,
 {
     sss_status_t retval = kStatus_SSS_Fail;
     AES_KEY key;
+
+    ENSURE_OR_GO_EXIT(context != NULL);
+    if (size > 0) {
+        ENSURE_OR_GO_EXIT(srcData != NULL);
+        ENSURE_OR_GO_EXIT(destData != NULL);
+    }
 
     if (AES_set_encrypt_key(
             (uint8_t *)context->keyObject->contents, (int)(context->keyObject->contents_size * 8), &key) < 0) {
@@ -1863,6 +1936,11 @@ sss_status_t sss_openssl_aead_context_init(sss_openssl_aead_t *context,
     context->session    = session;
     context->keyObject  = keyObject;
     context->mode       = mode;
+
+    ENSURE_OR_GO_EXIT(context != NULL);
+    ENSURE_OR_GO_EXIT(session != NULL);
+    ENSURE_OR_GO_EXIT(keyObject != NULL);
+
     if (algorithm == kAlgorithm_SSS_AES_GCM || algorithm == kAlgorithm_SSS_AES_CCM) {
         context->algorithm = algorithm;
     }
@@ -1888,6 +1966,9 @@ static sss_status_t sss_openssl_aead_init_ctx(sss_openssl_aead_t *context)
     sss_status_t retval         = kStatus_SSS_Fail;
     const EVP_CIPHER *aead_info = NULL;
     int ret                     = 0;
+
+    ENSURE_OR_GO_EXIT(context != NULL);
+
     if (context->algorithm == kAlgorithm_SSS_AES_GCM) {
         switch (context->keyObject->keyBitLen) {
         case 128:
@@ -1949,6 +2030,18 @@ sss_status_t sss_openssl_aead_one_go(sss_openssl_aead_t *context,
     sss_status_t retval = kStatus_SSS_Fail;
     int ret             = 0;
 
+    ENSURE_OR_GO_EXIT(context != NULL);
+    if (size > 0) {
+        ENSURE_OR_GO_EXIT(srcData != NULL);
+        ENSURE_OR_GO_EXIT(destData != NULL);
+    }
+    if(nonceLen > 0){
+        ENSURE_OR_GO_EXIT(nonce != NULL);
+    }
+    if(aadLen > 0){
+        ENSURE_OR_GO_EXIT(aad != NULL);
+    }
+
     /* Set IV length if default 96 bits is not appropriate */
     ret = EVP_CIPHER_CTX_ctrl(context->aead_ctx, EVP_CTRL_GCM_SET_IVLEN, nonceLen, NULL);
     ENSURE_OR_GO_EXIT(ret == 1);
@@ -1973,6 +2066,11 @@ sss_status_t sss_openssl_aead_init(
 {
     sss_status_t retval = kStatus_SSS_Fail;
     int ret             = 0;
+
+    ENSURE_OR_GO_EXIT(context != NULL);
+    if (nonceLen > 0){
+        ENSURE_OR_GO_EXIT(nonce != NULL);
+    }
 
     if (context->algorithm == kAlgorithm_SSS_AES_GCM) {
         ret = EVP_CIPHER_CTX_ctrl(context->aead_ctx, EVP_CTRL_GCM_SET_IVLEN, nonceLen, NULL);
@@ -2019,6 +2117,11 @@ sss_status_t sss_openssl_aead_update_aad(sss_openssl_aead_t *context, const uint
     int ret             = 0;
     int len             = 0;
 
+    ENSURE_OR_GO_EXIT(context != NULL);
+    if (aadDataLen > 0){
+        ENSURE_OR_GO_EXIT(aadData != NULL);
+    }
+
     /* Provide AAD data */
     if (context->algorithm == kAlgorithm_SSS_AES_GCM) {
         if (context->mode == kMode_SSS_Decrypt) {
@@ -2052,6 +2155,15 @@ sss_status_t sss_openssl_aead_update(
     size_t outBuffSize   = *destLen;
     size_t blockoutLen   = 0;
     int ret              = 0;
+
+    ENSURE_OR_GO_CLEANUP(context != NULL);
+    if (srcLen > 0) {
+        ENSURE_OR_GO_CLEANUP(srcData != NULL);
+    }
+    ENSURE_OR_GO_CLEANUP(destLen != NULL);
+    if (*destLen > 0) {
+        ENSURE_OR_GO_CLEANUP(destData != NULL);
+    }
 
     /*Note for OpenSSL AES_CCM Update data is called only once*/
     if (context->algorithm == kAlgorithm_SSS_AES_CCM) {
@@ -2116,6 +2228,7 @@ cleanup:
 static sss_status_t sss_openssl_aead_ccm_update(sss_openssl_aead_t *context, const uint8_t *srcData, size_t srcLen)
 {
     sss_status_t retval = kStatus_SSS_Fail;
+
     if ((context->ccm_dataoffset + srcLen) <= (context->ccm_dataTotalLen)) {
         memcpy(context->pCcm_data + context->ccm_dataoffset, srcData, srcLen);
         context->ccm_dataoffset = context->ccm_dataoffset + srcLen;
@@ -2138,8 +2251,8 @@ static int aead_update(sss_openssl_aead_t *context,
     uint8_t *destData,
     size_t *destLen)
 {
-#if SSS_HAVE_TESTCOUNTERPART
     int ret = 0;
+#if SSS_HAVE_TESTCOUNTERPART
     int len = 0;
     if (context->mode == kMode_SSS_Encrypt) {
         ret = EVP_EncryptUpdate(context->aead_ctx, destData, &len, srcData, srcLen);
@@ -2163,6 +2276,11 @@ sss_status_t sss_openssl_aead_finish(sss_openssl_aead_t *context,
     sss_status_t retval = kStatus_SSS_Fail;
 #if SSS_HAVE_TESTCOUNTERPART
     int ret = 0;
+
+    ENSURE_OR_GO_EXIT(context != NULL);
+    if (srcLen > 0){
+        ENSURE_OR_GO_EXIT(srcData != NULL);
+    }
 
     uint8_t srcdata_updated[2 * CIPHER_BLOCK_SIZE] = {
         0,
@@ -2249,6 +2367,9 @@ static sss_status_t sss_openssl_aead_ccm_Encryptfinal(sss_openssl_aead_t *contex
 #if SSS_HAVE_TESTCOUNTERPART
     int ret = 0;
     int len = 0;
+
+    ENSURE_OR_GO_EXIT(context != NULL);
+
     /*Set IV len */
     ret = EVP_CIPHER_CTX_ctrl(context->aead_ctx, EVP_CTRL_CCM_SET_IVLEN, context->ccm_ivLen, NULL);
     ENSURE_OR_GO_EXIT(ret == 1)
@@ -2291,6 +2412,8 @@ static sss_status_t sss_openssl_aead_ccm_Decryptfinal(sss_openssl_aead_t *contex
     int ret        = 0;
     int len        = 0;
     int payloadlen = context->ccm_dataTotalLen;
+
+    ENSURE_OR_GO_EXIT(context != NULL);
 
     /*Set IV len */
     ret = EVP_CIPHER_CTX_ctrl(context->aead_ctx, EVP_CTRL_CCM_SET_IVLEN, context->ccm_ivLen, NULL);
@@ -2482,6 +2605,8 @@ sss_status_t sss_openssl_mac_init(sss_openssl_mac_t *context)
     uint8_t *key;
     size_t keylen;
 
+    ENSURE_OR_GO_CLEANUP(context != NULL)
+
     if (context->keyObject->contents) {
         key    = context->keyObject->contents;
         keylen = context->keyObject->contents_size;
@@ -2568,7 +2693,7 @@ sss_status_t sss_openssl_mac_update(sss_openssl_mac_t *context, const uint8_t *m
 {
     sss_status_t retval = kStatus_SSS_Fail;
     int ret;
-    if (message == NULL) {
+    if (message == NULL || context == NULL) {
         return kStatus_SSS_InvalidArgument;
     }
     if (context->algorithm == kAlgorithm_SSS_CMAC_AES) {
@@ -2598,7 +2723,7 @@ sss_status_t sss_openssl_mac_finish(sss_openssl_mac_t *context, uint8_t *mac, si
 {
     int ret;
     sss_status_t retval = kStatus_SSS_Fail;
-    if (mac == NULL || macLen == NULL) {
+    if (mac == NULL || macLen == NULL || context == NULL) {
         return kStatus_SSS_InvalidArgument;
     }
     if (context->algorithm == kAlgorithm_SSS_CMAC_AES) {
@@ -2680,6 +2805,11 @@ sss_status_t sss_openssl_digest_one_go(
 
     const EVP_MD *md;
 
+    ENSURE_OR_GO_EXIT(context != NULL);
+    if (messageLen > 0){
+        ENSURE_OR_GO_EXIT(message != NULL);
+    }
+
     context->mdctx = EVP_MD_CTX_create();
     if (context->mdctx == NULL) {
         LOG_E("EVP_MD_CTX_create failed");
@@ -2749,6 +2879,8 @@ sss_status_t sss_openssl_digest_init(sss_openssl_digest_t *context)
     const EVP_MD *md;
     int ret = 0;
 
+    ENSURE_OR_GO_EXIT(context != NULL);
+
     OpenSSL_add_all_algorithms();
 
     context->mdctx = EVP_MD_CTX_create();
@@ -2794,6 +2926,11 @@ sss_status_t sss_openssl_digest_update(sss_openssl_digest_t *context, const uint
     sss_status_t retval = kStatus_SSS_Fail;
     int ret             = 0;
 
+    ENSURE_OR_GO_EXIT(context != NULL);
+    if (messageLen > 0){
+        ENSURE_OR_GO_EXIT(message != NULL);
+    }
+
     ret = EVP_DigestUpdate(context->mdctx, message, messageLen);
     if (ret != 1) {
         LOG_E("EVP_DigestUpdate failed ");
@@ -2809,7 +2946,13 @@ sss_status_t sss_openssl_digest_finish(sss_openssl_digest_t *context, uint8_t *d
 {
     sss_status_t retval     = kStatus_SSS_Fail;
     int ret                 = 0;
-    unsigned int iDigestLen = (unsigned int)*digestLen;
+    unsigned int iDigestLen = 0;
+
+    ENSURE_OR_GO_EXIT(context != NULL);
+    ENSURE_OR_GO_EXIT(digestLen != NULL);
+    ENSURE_OR_GO_EXIT(digest != NULL);
+
+    iDigestLen = (unsigned int)*digestLen;
 
     ret = EVP_DigestFinal_ex(context->mdctx, digest, &iDigestLen);
     if (ret != 1) {
