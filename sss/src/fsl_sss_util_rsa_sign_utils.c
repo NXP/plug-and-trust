@@ -308,7 +308,7 @@ uint8_t emsa_encode(sss_se05x_asymmetric_t *context, const uint8_t *hash, size_t
     size_t msb;
     sss_rng_context_t rng;
     sss_digest_t digest;
-    sss_algorithm_t sha_algorithm = -1;
+    sss_algorithm_t sha_algorithm = kAlgorithm_None;
     size_t digestLen              = 512; /* MAX - SHA512*/
     sss_status_t status           = kStatus_SSS_Fail;
     uint16_t key_size_bytes       = 0;
@@ -445,7 +445,7 @@ uint8_t emsa_decode_and_compare(
     uint8_t zeros[8];
     uint32_t observed_salt_len, msb;
     uint8_t buf[1024];
-    sss_algorithm_t sha_algorithm = -1;
+    sss_algorithm_t sha_algorithm = kAlgorithm_None;
     sss_digest_t digest;
     size_t digestLen    = 512; /* MAX - SHA512*/
     sss_status_t status = kStatus_SSS_Fail;

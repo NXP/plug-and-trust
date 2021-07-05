@@ -30,6 +30,9 @@ extern "C" {
 #include "se05x_APDU.h"
 #include "se05x_tlv.h"
 #include "smCom.h"
+#if defined(SMCOM_JRCP_V1_AM)
+#include "sm_timer.h"
+#endif
 
 #if (USE_RTOS)
 #define LOCK_TXN(lock)                                   \
@@ -69,7 +72,7 @@ extern "C" {
 static SE05x_ECSignatureAlgo_t se05x_get_ec_sign_hash_mode(sss_algorithm_t algorithm);
 
 /* Used during testing as well */
-void get_ecc_raw_data(uint8_t *key, uint8_t **key_buf, size_t *key_buflen, uint32_t curve_id);
+void get_ecc_raw_data(uint8_t *key, size_t keylen, uint8_t **key_buf, size_t *key_buflen, uint32_t curve_id);
 
 #if SSSFTR_SE05X_AuthSession
 static smStatus_t se05x_CreateVerifyUserIDSession(
@@ -100,7 +103,7 @@ static SE05x_RSASignatureAlgo_t se05x_get_rsa_sign_mode(
     sss_algorithm_t algorithm);
 #endif
 
-#if SSSFTR_SE05X_RSA
+#if SSSFTR_SE05X_RSA && SSS_HAVE_RSA
 static SE05x_RSAEncryptionAlgo_t se05x_get_rsa_encrypt_mode(sss_algorithm_t algorithm);
 static SE05x_RSASignatureAlgo_t se05x_get_rsa_sign_hash_mode(sss_algorithm_t algorithm);
 #endif
@@ -135,7 +138,7 @@ static sss_status_t sss_session_auth_open(sss_se05x_session_t *session,
     void *connectionData);
 #endif
 
-#if SSSFTR_SE05X_RSA && SSSFTR_SE05X_KEY_SET
+#if SSSFTR_SE05X_RSA && SSSFTR_SE05X_KEY_SET && SSS_HAVE_RSA
 static sss_status_t sss_se05x_key_store_set_rsa_key(sss_se05x_key_store_t *keyStore,
     sss_se05x_object_t *keyObject,
     const uint8_t *key,
@@ -189,7 +192,7 @@ typedef smStatus_t (*fp_Ec_KeyWrite_t)(pSe05xSession_t session_ctx,
 #endif //SSS_HAVE_SE05X_VER_GTE_06_00
 #endif //SSSFTR_SE05X_ECC && SSSFTR_SE05X_KEY_SET
 
-#if SSSFTR_SE05X_AES && SSSFTR_SE05X_KEY_SET
+#if SSSFTR_SE05X_KEY_SET
 static smStatus_t sss_se05x_LL_set_symm_key(pSe05xSession_t session_ctx,
     pSe05xPolicy_t policy,
     SE05x_MaxAttemps_t maxAttempt,
@@ -215,7 +218,7 @@ typedef smStatus_t (*fp_Symm_KeyWrite_t)(pSe05xSession_t session_ctx,
 #endif //SSS_HAVE_SE05X_VER_GTE_06_00
 #endif //SSSFTR_SE05X_AES && SSSFTR_SE05X_KEY_SET
 
-#if SSSFTR_SE05X_RSA && SSSFTR_SE05X_KEY_SET
+#if SSSFTR_SE05X_RSA && SSSFTR_SE05X_KEY_SET && SSS_HAVE_RSA
 static smStatus_t sss_se05x_LL_set_RSA_key(pSe05xSession_t session_ctx,
     pSe05xPolicy_t policy,
     uint32_t objectID,
@@ -267,7 +270,7 @@ typedef smStatus_t (*fp_RSA_KeyWrite_t)(pSe05xSession_t session_ctx,
     const SE05x_RSAKeyFormat_t rsa_format,
     uint32_t version);
 #endif //SSS_HAVE_SE05X_VER_GTE_06_00
-#endif //SSSFTR_SE05X_RSA && SSSFTR_SE05X_KEY_SET
+#endif //SSSFTR_SE05X_RSA && SSSFTR_SE05X_KEY_SET && SSS_HAVE_RSA
 /* ************************************************************************** */
 /* Defines                                                                    */
 /* ************************************************************************** */
@@ -308,6 +311,12 @@ sss_status_t sss_se05x_session_open(sss_se05x_session_t *session,
     smStatus_t status             = SM_NOT_OK;
     U16 lReturn;
     pSe05xSession_t se05xSession;
+#if defined(SMCOM_JRCP_V1_AM)
+    int session_open_retry_cnt = 1;
+    int session_open_retry_dly = 1; //seconds
+    int session_open_retry_cnt_max = 50;
+    int session_open_retry_dly_max = 10; //seconds
+#endif
 
     ENSURE_OR_GO_EXIT(session);
     se05xSession = &session->s_ctx;
@@ -353,7 +362,7 @@ sss_status_t sss_se05x_session_open(sss_se05x_session_t *session,
         }
 #endif
         if (1 == pAuthCtx->skip_select_applet) {
-            status = lReturn;
+            status = (smStatus_t)lReturn;
             /* Not selecting the applet, so we don't know whether it's old or new */
         }
         else {
@@ -470,15 +479,64 @@ sss_status_t sss_se05x_session_open(sss_se05x_session_t *session,
 
     if ((application_id != 0) &&
         ((connection_type == kSSS_ConnectionType_Password) || (connection_type == kSSS_ConnectionType_Encrypted))) {
+
+#if defined(SMCOM_JRCP_V1_AM)
+            {
+                // Overwrite session_open_retry_cnt and session_open_retry_dly from env variables
+                const char *retry_cnt = NULL;
+                const char *retry_dly = NULL;
+
+                retry_cnt = getenv("EX_SSS_SESSION_OPEN_RETRY_CNT");
+                if (retry_cnt != NULL) {
+                    session_open_retry_cnt = atoi(retry_cnt);
+                    if (session_open_retry_cnt > session_open_retry_cnt_max) {
+                        session_open_retry_cnt = session_open_retry_cnt_max;
+                    }
+                    LOG_I("Session Open Retry Count ='%d' ", session_open_retry_cnt);
+                }
+
+                retry_dly = getenv("EX_SSS_SESSION_OPEN_RETRY_DLY");
+                if (retry_dly != NULL) {
+                    session_open_retry_dly = atoi(retry_dly);
+                    if (session_open_retry_dly < 1) {
+                        session_open_retry_dly = 1;
+                    }
+                    if (session_open_retry_dly > session_open_retry_dly_max) {
+                        session_open_retry_dly = session_open_retry_dly_max;
+                    }
+                    LOG_I("Session Open Retry Delay ='%d' ", session_open_retry_dly);
+                }
+            }
+
+        do {
+            if (session_open_retry_cnt > 0) {
+                session_open_retry_cnt--;
+            }
+            SM_LOCK_CHANNEL();
+            retval = sss_session_auth_open(session, subsystem, application_id, connection_type, connectionData);
+            SM_UNLOCK_CHANNEL();
+            if (retval == kStatus_SSS_Success) {
+                break;
+            }
+
+            sm_sleep(session_open_retry_dly * 1000);
+
+        } while (session_open_retry_cnt > 0);
+#else
         SM_LOCK_CHANNEL();
         retval = sss_session_auth_open(session, subsystem, application_id, connection_type, connectionData);
         SM_UNLOCK_CHANNEL();
+#endif
+
 
         if (retval == kStatus_SSS_Success) {
             status = SM_OK;
         }
         else {
-            SM_Close(se05xSession->conn_ctx, 0);
+            /* Check if this is not tunnel session to avoid multiple close */
+            if (pAuthCtx->connType != kType_SE_Conn_Type_Channel) {
+                SM_Close(se05xSession->conn_ctx, 0);
+            }
             status = SM_NOT_OK;
         }
     }
@@ -580,7 +638,7 @@ static sss_status_t sss_session_auth_open(sss_se05x_session_t *session,
 #if SSS_HAVE_SCP_SCP03_SSS
     /* Auth type is ECKey */
     if ((pAuthCtx->auth.authType == kSSS_AuthType_ECKey) && (auth_id != 0)) {
-#if SSSFTR_SE05X_AuthECKey
+#if SSSFTR_SE05X_AuthECKey && SSSFTR_SE05X_AuthSession
         se05xSession->fp_Transform = &se05x_Transform;
         se05xSession->fp_DeCrypt   = &se05x_DeCrypt;
         status                     = se05x_CreateECKeySession(se05xSession, auth_id, &pAuthCtx->auth.ctx.eckey);
@@ -670,8 +728,8 @@ exit:
 sss_status_t sss_se05x_session_prop_get_u32(sss_se05x_session_t *session, uint32_t property, uint32_t *pValue)
 {
     sss_status_t retval                   = kStatus_SSS_Success;
-    sss_session_prop_u32_t prop           = property;
-    sss_s05x_sesion_prop_u32_t se050xprop = property;
+    sss_session_prop_u32_t prop           = (sss_session_prop_u32_t)property;
+    sss_s05x_sesion_prop_u32_t se050xprop = (sss_s05x_sesion_prop_u32_t)property;
 
     if (pValue == NULL) {
         retval = kStatus_SSS_Fail;
@@ -718,8 +776,8 @@ sss_status_t sss_se05x_session_prop_get_au8(
     sss_se05x_session_t *session, uint32_t property, uint8_t *pValue, size_t *pValueLen)
 {
     sss_status_t retval                   = kStatus_SSS_Fail;
-    sss_session_prop_au8_t prop           = property;
-    sss_s05x_sesion_prop_au8_t se050xprop = property;
+    sss_session_prop_au8_t prop           = (sss_session_prop_au8_t) property;
+    sss_s05x_sesion_prop_au8_t se050xprop = (sss_s05x_sesion_prop_au8_t)property;
     smStatus_t sm_status                  = SM_NOT_OK;
 
     if (pValue == NULL || pValueLen == NULL) {
@@ -868,30 +926,51 @@ sss_status_t sss_se05x_key_object_get_handle(sss_se05x_object_t *keyObject, uint
             apiRetval = Se05x_API_EC_CurveGetId(&keyObject->keyStore->session->s_ctx, keyId, &retCurveId);
             if (apiRetval == SM_OK) {
                 keyObject->curve_id = retCurveId;
-                if ((retCurveId >= kSE05x_ECCurve_NIST_P192) && (retCurveId <= kSE05x_ECCurve_NIST_P521)) {
+                if ((retCurveId == kSE05x_ECCurve_NIST_P256)
+#if SSS_HAVE_EC_NIST_192
+                    || (retCurveId == kSE05x_ECCurve_NIST_P192)
+#endif
+#if SSS_HAVE_EC_NIST_224
+                    || (retCurveId == kSE05x_ECCurve_NIST_P224)
+#endif
+#if SSS_HAVE_EC_NIST_521
+                    || (retCurveId == kSE05x_ECCurve_NIST_P521)
+#endif
+                    || (retCurveId == kSE05x_ECCurve_NIST_P384)) {
                     keyObject->cipherType = kSSS_CipherType_EC_NIST_P;
                 }
+#if SSS_HAVE_EC_BP
                 else if ((retCurveId >= kSE05x_ECCurve_Brainpool160) && (retCurveId <= kSE05x_ECCurve_Brainpool512)) {
                     keyObject->cipherType = kSSS_CipherType_EC_BRAINPOOL;
                 }
+#endif
+#if SSS_HAVE_EC_NIST_K
                 else if ((retCurveId >= kSE05x_ECCurve_Secp160k1) && (retCurveId <= kSE05x_ECCurve_Secp256k1)) {
                     keyObject->cipherType = kSSS_CipherType_EC_NIST_K;
                 }
+#endif
+#if SSS_HAVE_EC_ED
                 else if (retCurveId == kSE05x_ECCurve_RESERVED_ID_ECC_ED_25519) {
                     keyObject->cipherType = kSSS_CipherType_EC_TWISTED_ED;
                 }
+#endif
+#if SSS_HAVE_EC_MONT
                 else if (retCurveId == kSE05x_ECCurve_RESERVED_ID_ECC_MONT_DH_25519) {
                     keyObject->cipherType = kSSS_CipherType_EC_MONTGOMERY;
                 }
+#endif
+#if SSS_HAVE_TPM_BN
                 else if (retCurveId == kSE05x_ECCurve_TPM_ECC_BN_P256) {
                     keyObject->cipherType = kSSS_CipherType_EC_BARRETO_NAEHRIG;
                 }
-#if SSS_HAVE_SE05X_VER_GTE_06_00
+#endif
+#if SSS_HAVE_SE05X_VER_GTE_06_00 && SSS_HAVE_EC_MONT
                 else if (retCurveId == kSE05x_ECCurve_RESERVED_ID_ECC_MONT_DH_448) {
                     keyObject->cipherType = kSSS_CipherType_EC_MONTGOMERY;
                 }
 #endif
                 else {
+                    keyObject->cipherType = kSSS_CipherType_NONE;
                     return retval;
                 }
             }
@@ -900,7 +979,7 @@ sss_status_t sss_se05x_key_object_get_handle(sss_se05x_object_t *keyObject, uint
                 return retval;
             }
         }
-#if SSSFTR_RSA
+#if SSSFTR_RSA && SSS_HAVE_RSA
         else if (retObjectType == kSE05x_SecObjTyp_RSA_KEY_PAIR_CRT) {
             keyObject->cipherType = kSSS_CipherType_RSA_CRT;
         }
@@ -932,11 +1011,16 @@ sss_status_t sss_se05x_key_object_get_handle(sss_se05x_object_t *keyObject, uint
         else if (retObjectType == kSE05x_SecObjTyp_HMAC_KEY) {
             keyObject->cipherType = kSSS_CipherType_HMAC;
         }
+        else {
+            keyObject->cipherType = kSSS_CipherType_NONE;
+        }
 
         switch (retObjectType) {
         case kSE05x_SecObjTyp_EC_KEY_PAIR:
+#if SSS_HAVE_RSA
         case kSE05x_SecObjTyp_RSA_KEY_PAIR:
         case kSE05x_SecObjTyp_RSA_KEY_PAIR_CRT:
+#endif
             keyObject->objectType = kSSS_KeyPart_Pair;
             break;
         case kSE05x_SecObjTyp_EC_PUB_KEY:
@@ -1066,7 +1150,15 @@ sss_status_t sss_se05x_derive_key_go(sss_se05x_derive_key_t *context,
     size_t hkdfKeyLen                   = sizeof(hkdfKey);
     sss_object_t *sss_derived_keyObject = (sss_object_t *)derivedKeyObject;
     SE05x_DigestMode_t digestMode;
+    ENSURE_OR_GO_EXIT(context);
+    ENSURE_OR_GO_EXIT(info);
+    ENSURE_OR_GO_EXIT(derivedKeyObject);
+    if (saltLen) {
+        ENSURE_OR_GO_EXIT(saltData);
+    }
+
     digestMode = se05x_get_sha_algo(context->algorithm);
+    ENSURE_OR_GO_EXIT(digestMode != kSE05x_DigestMode_NA);
 
     status = Se05x_API_HKDF(&context->session->s_ctx,
         context->keyObject->keyId,
@@ -1124,6 +1216,8 @@ sss_status_t sss_se05x_derive_key_one_go(sss_se05x_derive_key_t *context,
         }
     }
 #endif
+
+    ENSURE_OR_GO_EXIT(digestMode != kSE05x_DigestMode_NA);
 
     status = Se05x_API_HKDF_Extended(&context->session->s_ctx,
         context->keyObject->keyId,
@@ -1197,6 +1291,8 @@ sss_status_t sss_se05x_derive_key_sobj_one_go(sss_se05x_derive_key_t *context,
     }
 #endif
 
+    ENSURE_OR_GO_EXIT(digestMode != kSE05x_DigestMode_NA);
+
     status = Se05x_API_HKDF_Extended(&context->session->s_ctx,
         context->keyObject->keyId,
         digestMode,
@@ -1248,19 +1344,25 @@ sss_status_t sss_se05x_derive_key_dh(
     uint8_t invertEndiannes = 0x00;
 #endif
 
-    sss_object_t *sss_other_keyObject   = (sss_object_t *)otherPartyKeyObject;
-    sss_object_t *sss_derived_keyObject = (sss_object_t *)derivedKeyObject;
-
-    retval = sss_key_store_get_key(
+    sss_object_t *sss_other_keyObject   = NULL;
+    sss_object_t *sss_derived_keyObject = NULL;
+    ENSURE_OR_GO_EXIT(context);
+    ENSURE_OR_GO_EXIT(otherPartyKeyObject);
+    ENSURE_OR_GO_EXIT(derivedKeyObject);
+    sss_other_keyObject   = (sss_object_t *)otherPartyKeyObject;
+    sss_derived_keyObject = (sss_object_t *)derivedKeyObject;
+    retval                = sss_key_store_get_key(
         (sss_key_store_t *)sss_other_keyObject->keyStore, sss_other_keyObject, pubkey, &pubkeylen, &pbKeyBitLen);
     ENSURE_OR_GO_EXIT(retval == kStatus_SSS_Success);
 
     switch (otherPartyKeyObject->cipherType) {
+#if SSS_HAVE_TPM_BN
     case kSSS_CipherType_EC_BARRETO_NAEHRIG:
         /* TODO: Implement asn parser */
         publicKeyLen   = pubkeylen;
         publicKeyIndex = 0;
         break;
+#endif
     default: {
         retval = sss_util_pkcs8_asn1_get_ec_public_key_index(
             (const uint8_t *)pubkey, pubkeylen, &publicKeyIndex, &publicKeyLen);
@@ -1271,6 +1373,7 @@ sss_status_t sss_se05x_derive_key_dh(
     }
     }
 
+#if SSS_HAVE_EC_MONT
     // Change Endianness Public Key in case of Montgomery Curve
     {
         if (otherPartyKeyObject->cipherType == kSSS_CipherType_EC_MONTGOMERY) {
@@ -1281,14 +1384,17 @@ sss_status_t sss_se05x_derive_key_dh(
             }
         }
     }
+#endif
 
     pPublicKey = &pubkey[publicKeyIndex];
 #if SSS_HAVE_SE05X_VER_GTE_06_00
+#if SSS_HAVE_EC_MONT
     if (otherPartyKeyObject->cipherType == kSSS_CipherType_EC_MONTGOMERY) {
         // In case of Montgomery curves we want to store the
         // shared secret using Little Endian Convention
         invertEndiannes = 0x01;
     }
+#endif
 
     if (context->keyObject->keyStore == derivedKeyObject->keyStore) {
         status = Se05x_API_ECDHGenerateSharedSecret_InObject(&context->session->s_ctx,
@@ -1316,6 +1422,7 @@ sss_status_t sss_se05x_derive_key_dh(
             goto exit;
         }
 
+#if SSS_HAVE_EC_MONT
         // Change Endianness Shared Secret in case of Montgomery Curve
         {
             if (otherPartyKeyObject->cipherType == kSSS_CipherType_EC_MONTGOMERY) {
@@ -1326,6 +1433,7 @@ sss_status_t sss_se05x_derive_key_dh(
                 }
             }
         }
+#endif
 
         retval = sss_key_store_set_key((sss_key_store_t *)derivedKeyObject->keyStore,
             sss_derived_keyObject,
@@ -1378,7 +1486,7 @@ sss_status_t sss_se05x_key_store_load(sss_se05x_key_store_t *keyStore)
     return kStatus_SSS_Success;
 }
 
-#if SSSFTR_SE05X_RSA && SSSFTR_SE05X_KEY_SET
+#if SSSFTR_SE05X_RSA && SSSFTR_SE05X_KEY_SET && SSS_HAVE_RSA
 static sss_status_t sss_se05x_key_store_set_rsa_key(sss_se05x_key_store_t *keyStore,
     sss_se05x_object_t *keyObject,
     const uint8_t *key,
@@ -1512,7 +1620,7 @@ static sss_status_t sss_se05x_key_store_set_rsa_key(sss_se05x_key_store_t *keySt
         if (keyObject->cipherType == kSSS_CipherType_RSA) {
             retval = sss_util_asn1_rsa_parse_private(key,
                 keyLen,
-                keyObject->cipherType,
+                (sss_cipher_type_t)keyObject->cipherType,
                 &rsaN,
                 &rsaNlen,
                 NULL,
@@ -1593,7 +1701,7 @@ static sss_status_t sss_se05x_key_store_set_rsa_key(sss_se05x_key_store_t *keySt
         else if (keyObject->cipherType == kSSS_CipherType_RSA_CRT) {
             retval = sss_util_asn1_rsa_parse_private(key,
                 keyLen,
-                keyObject->cipherType,
+                (sss_cipher_type_t)keyObject->cipherType,
                 NULL,
                 NULL,
                 NULL,
@@ -1748,7 +1856,7 @@ static sss_status_t sss_se05x_key_store_set_rsa_key(sss_se05x_key_store_t *keySt
         if (keyObject->cipherType == kSSS_CipherType_RSA) {
             retval = sss_util_asn1_rsa_parse_private(key,
                 keyLen,
-                keyObject->cipherType,
+                (sss_cipher_type_t)keyObject->cipherType,
                 &rsaN,
                 &rsaNlen,
                 &rsaE,
@@ -1849,7 +1957,7 @@ static sss_status_t sss_se05x_key_store_set_rsa_key(sss_se05x_key_store_t *keySt
         else if (keyObject->cipherType == kSSS_CipherType_RSA_CRT) {
             retval = sss_util_asn1_rsa_parse_private(key,
                 keyLen,
-                keyObject->cipherType,
+                (sss_cipher_type_t)keyObject->cipherType,
                 &rsaN,
                 &rsaNlen,
                 &rsaE,
@@ -2067,10 +2175,10 @@ exit:
 
     return retval;
 }
-#endif // SSSFTR_SE05X_RSA && SSSFTR_SE05X_KEY_SET
+#endif // SSSFTR_SE05X_RSA && SSSFTR_SE05X_KEY_SET && SSS_HAVE_RSA
 
 #if SSSFTR_SE05X_ECC && SSSFTR_SE05X_KEY_SET
-static size_t getEccPrivPubKeyLen(uint32_t curve_id, size_t *pubKeyLen, size_t *privKeyLen)
+static sss_status_t getEccPrivPubKeyLen(uint32_t curve_id, size_t *pubKeyLen, size_t *privKeyLen)
 {
     sss_status_t retval = kStatus_SSS_Success;
 
@@ -2079,52 +2187,106 @@ static size_t getEccPrivPubKeyLen(uint32_t curve_id, size_t *pubKeyLen, size_t *
     }
 
     switch (curve_id) {
+#if SSS_HAVE_EC_NIST_K || SSS_HAVE_EC_BP
+#if SSS_HAVE_EC_NIST_K
     case kSE05x_ECCurve_Secp160k1:
-    case kSE05x_ECCurve_Brainpool160: {
+#endif
+#if SSS_HAVE_EC_BP
+    case kSE05x_ECCurve_Brainpool160:
+#endif
+    {
         *privKeyLen = 20;
         *pubKeyLen  = 41;
     } break;
+#endif // SSS_HAVE_EC_NIST_K || SSS_HAVE_EC_BP
+
+#if SSS_HAVE_EC_NIST_192 || SSS_HAVE_EC_NIST_K || SSS_HAVE_EC_BP
+#if SSS_HAVE_EC_NIST_192
     case kSE05x_ECCurve_NIST_P192:
+#endif
+#if SSS_HAVE_EC_BP
     case kSE05x_ECCurve_Brainpool192:
-    case kSE05x_ECCurve_Secp192k1: {
+#endif
+#if SSS_HAVE_EC_NIST_K
+    case kSE05x_ECCurve_Secp192k1:
+#endif
+    {
         *privKeyLen = 24;
         *pubKeyLen  = 49;
     } break;
+#endif // SSS_HAVE_EC_NIST_192 || SSS_HAVE_EC_NIST_K || SSS_HAVE_EC_BP
+
+#if SSS_HAVE_EC_NIST_224| SSS_HAVE_EC_NIST_K || SSS_HAVE_EC_BP
+#if SSS_HAVE_EC_NIST_224
     case kSE05x_ECCurve_NIST_P224:
+#endif
+#if SSS_HAVE_EC_BP
     case kSE05x_ECCurve_Brainpool224:
-    case kSE05x_ECCurve_Secp224k1: {
+#endif
+#if SSS_HAVE_EC_NIST_K
+    case kSE05x_ECCurve_Secp224k1:
+#endif
+    {
         *privKeyLen = 28;
         *pubKeyLen  = 57;
     } break;
+#endif // SSS_HAVE_EC_NIST_224| SSS_HAVE_EC_NIST_K || SSS_HAVE_EC_BP
+
     case kSE05x_ECCurve_NIST_P256:
+#if SSS_HAVE_EC_BP
     case kSE05x_ECCurve_Brainpool256:
-    case kSE05x_ECCurve_Secp256k1: {
+#endif
+#if SSS_HAVE_EC_NIST_K
+    case kSE05x_ECCurve_Secp256k1:
+#endif
+    {
         *privKeyLen = 32;
         *pubKeyLen  = 65;
     } break;
+
+#if SSS_HAVE_EC_BP
     case kSE05x_ECCurve_Brainpool320: {
         *privKeyLen = 40;
         *pubKeyLen  = 81;
     } break;
+#endif
     case kSE05x_ECCurve_NIST_P384:
-    case kSE05x_ECCurve_Brainpool384: {
+#if SSS_HAVE_EC_BP
+    case kSE05x_ECCurve_Brainpool384:
+#endif
+    {
         *privKeyLen = 48;
         *pubKeyLen  = 97;
     } break;
+
+#if SSS_HAVE_EC_NIST_521
     case kSE05x_ECCurve_NIST_P521: {
         *privKeyLen = 66;
         *pubKeyLen  = 133;
     } break;
+#endif
+
+#if SSS_HAVE_EC_BP
     case kSE05x_ECCurve_Brainpool512: {
         *privKeyLen = 64;
         *pubKeyLen  = 129;
     } break;
+#endif
+
+#if SSS_HAVE_EC_MONT || SSS_HAVE_EC_ED
+#if SSS_HAVE_EC_MONT
     case kSE05x_ECCurve_ECC_MONT_DH_25519:
-    case kSE05x_ECCurve_ECC_ED_25519: {
+#endif
+#if SSS_HAVE_EC_ED
+    case kSE05x_ECCurve_ECC_ED_25519:
+#endif
+    {
         *privKeyLen = 32;
         *pubKeyLen  = 32;
     } break;
-#if SSS_HAVE_SE05X_VER_GTE_06_00
+#endif // SSS_HAVE_EC_MONT || SSS_HAVE_EC_ED
+
+#if SSS_HAVE_SE05X_VER_GTE_06_00 && SSS_HAVE_EC_MONT
     case kSE05x_ECCurve_RESERVED_ID_ECC_MONT_DH_448: {
         *privKeyLen = 56;
         *pubKeyLen  = 56;
@@ -2153,11 +2315,14 @@ smStatus_t sss_se05x_create_curve_if_needed(Se05xSession_t *pSession, uint32_t c
     size_t curveListLen = sizeof(curveList);
     //int i = 0;
 
+#if SSS_HAVE_EC_ED
     if (curve_id == kSE05x_ECCurve_RESERVED_ID_ECC_ED_25519) {
         /* ECC_ED_25519 is always preset */
         return SM_OK;
     }
+#endif
 
+#if SSS_HAVE_EC_MONT
     if (curve_id == kSE05x_ECCurve_RESERVED_ID_ECC_MONT_DH_25519
 #if SSS_HAVE_SE05X_VER_GTE_06_00
         || curve_id == kSE05x_ECCurve_RESERVED_ID_ECC_MONT_DH_448
@@ -2172,6 +2337,7 @@ smStatus_t sss_se05x_create_curve_if_needed(Se05xSession_t *pSession, uint32_t c
         /* ECC_MONT_DH_25519 and ECC_MONT_DH_448 are always present */
 #endif
     }
+#endif // SSS_HAVE_EC_MONT
 
     status = Se05x_API_ReadECCurveList(pSession, curveList, &curveListLen);
     if (status == SM_OK) {
@@ -2183,22 +2349,31 @@ smStatus_t sss_se05x_create_curve_if_needed(Se05xSession_t *pSession, uint32_t c
         return SM_NOT_OK;
     }
 
+    status = SM_NOT_OK;
+
     switch (curve_id) {
+#if SSS_HAVE_EC_NIST_192
     case kSE05x_ECCurve_NIST_P192:
         status = Se05x_API_CreateCurve_prime192v1(pSession, curve_id);
         break;
+#endif
+#if SSS_HAVE_EC_NIST_224
     case kSE05x_ECCurve_NIST_P224:
         status = Se05x_API_CreateCurve_secp224r1(pSession, curve_id);
         break;
+#endif
     case kSE05x_ECCurve_NIST_P256:
         status = Se05x_API_CreateCurve_prime256v1(pSession, curve_id);
         break;
     case kSE05x_ECCurve_NIST_P384:
         status = Se05x_API_CreateCurve_secp384r1(pSession, curve_id);
         break;
+#if SSS_HAVE_EC_NIST_521
     case kSE05x_ECCurve_NIST_P521:
         status = Se05x_API_CreateCurve_secp521r1(pSession, curve_id);
         break;
+#endif
+#if SSS_HAVE_EC_BP
     case kSE05x_ECCurve_Brainpool160:
         status = Se05x_API_CreateCurve_brainpoolP160r1(pSession, curve_id);
         break;
@@ -2220,6 +2395,8 @@ smStatus_t sss_se05x_create_curve_if_needed(Se05xSession_t *pSession, uint32_t c
     case kSE05x_ECCurve_Brainpool512:
         status = Se05x_API_CreateCurve_brainpoolP512r1(pSession, curve_id);
         break;
+#endif
+#if SSS_HAVE_EC_NIST_K
     case kSE05x_ECCurve_Secp160k1:
         status = Se05x_API_CreateCurve_secp160k1(pSession, curve_id);
         break;
@@ -2232,9 +2409,12 @@ smStatus_t sss_se05x_create_curve_if_needed(Se05xSession_t *pSession, uint32_t c
     case kSE05x_ECCurve_Secp256k1:
         status = Se05x_API_CreateCurve_secp256k1(pSession, curve_id);
         break;
+#endif
+#if SSS_HAVE_TPM_BN
     case kSE05x_ECCurve_TPM_ECC_BN_P256:
         status = Se05x_API_CreateCurve_tpm_bm_p256(pSession, curve_id);
         break;
+#endif
     default:
         break;
     }
@@ -2252,7 +2432,7 @@ exit:
 static uint8_t CheckIfKeyIdExists(uint32_t keyId, pSe05xSession_t session_ctx)
 {
     smStatus_t retStatus    = SM_NOT_OK;
-    SE05x_Result_t IdExists = 0;
+    SE05x_Result_t IdExists = kSE05x_Result_NA;
 
     retStatus = Se05x_API_CheckObjectExists(session_ctx, keyId, &IdExists);
     if (retStatus == SM_OK) {
@@ -2291,12 +2471,14 @@ static sss_status_t sss_se05x_key_store_set_ecc_key(sss_se05x_key_store_t *keySt
     SE05x_ECCurve_t retCurveId  = keyObject->curve_id;
     size_t std_pubKey_len       = 0;
     size_t std_privKey_len      = 0;
+#if SSS_HAVE_EC_MONT || SSS_HAVE_EC_ED
     uint8_t privKeyReversed[64] = {
         0,
     };
     uint8_t pubKeyReversed[64] = {
         0,
     };
+#endif
 
     /* Assign proper instruction type based on keyObject->isPersistant  */
     (keyObject->isPersistant) ? (transient_type = kSE05x_INS_NA) : (transient_type = kSE05x_INS_TRANSIENT);
@@ -2305,7 +2487,7 @@ static sss_status_t sss_se05x_key_store_set_ecc_key(sss_se05x_key_store_t *keySt
     se05x_policy.value_len = policy_buff_len;
 
     if (keyObject->curve_id == 0) {
-        keyObject->curve_id = se05x_sssKeyTypeLenToCurveId(keyObject->cipherType, keyBitLen);
+        keyObject->curve_id = (SE05x_ECCurve_t)se05x_sssKeyTypeLenToCurveId((sss_cipher_type_t)keyObject->cipherType, keyBitLen);
     }
 
     if (keyObject->curve_id == 0) {
@@ -2355,6 +2537,7 @@ static sss_status_t sss_se05x_key_store_set_ecc_key(sss_se05x_key_store_t *keySt
             key_part = kSE05x_KeyPart_Pair;
 
         switch (keyObject->curve_id) {
+#if SSS_HAVE_TPM_BN
         case kSE05x_ECCurve_TPM_ECC_BN_P256: {
             LOG_I("Key pair should be paased without header");
             /* No header included in ED and BN curve keys */
@@ -2363,8 +2546,10 @@ static sss_status_t sss_se05x_key_store_set_ecc_key(sss_se05x_key_store_t *keySt
             privateKeyLen   = 32;
             publicKeyLen    = 32;
         } break;
+#endif
 
         default: {
+#if SSS_HAVE_EC_MONT || SSS_HAVE_EC_ED
             if ((keyObject->curve_id == kSE05x_ECCurve_ECC_MONT_DH_25519) ||
                 (keyObject->curve_id == kSE05x_ECCurve_ECC_MONT_DH_448) ||
                 (keyObject->curve_id == kSE05x_ECCurve_ECC_ED_25519)) {
@@ -2375,7 +2560,9 @@ static sss_status_t sss_se05x_key_store_set_ecc_key(sss_se05x_key_store_t *keySt
                     goto exit;
                 }
             }
-            else {
+            else
+#endif // SSS_HAVE_EC_MONT || SSS_HAVE_EC_ED
+            {
                 asn_retval = sss_util_pkcs8_asn1_get_ec_pair_key_index(
                     key, keyLen, &publicKeyIndex, &publicKeyLen, &privateKeyIndex, &privateKeyLen);
                 if (asn_retval != kStatus_SSS_Success) {
@@ -2384,7 +2571,7 @@ static sss_status_t sss_se05x_key_store_set_ecc_key(sss_se05x_key_store_t *keySt
                 }
             }
 
-            asn_retval = getEccPrivPubKeyLen(keyObject->curve_id, &std_pubKey_len, &std_privKey_len);
+            asn_retval = getEccPrivPubKeyLen((uint32_t)keyObject->curve_id, &std_pubKey_len, &std_privKey_len);
             if (asn_retval != kStatus_SSS_Success) {
                 LOG_W("error in getEccPrivPubKeyLen");
                 goto exit;
@@ -2415,6 +2602,7 @@ static sss_status_t sss_se05x_key_store_set_ecc_key(sss_se05x_key_store_t *keySt
         }
 
         // Conditionally Reverse Endianness
+#if SSS_HAVE_EC_MONT || SSS_HAVE_EC_ED
         if ((keyObject->curve_id == kSE05x_ECCurve_ECC_MONT_DH_25519) ||
             (keyObject->curve_id == kSE05x_ECCurve_ECC_MONT_DH_448) ||
             (keyObject->curve_id == kSE05x_ECCurve_ECC_ED_25519)) {
@@ -2443,7 +2631,9 @@ static sss_status_t sss_se05x_key_store_set_ecc_key(sss_se05x_key_store_t *keySt
             }
             pPublicKey = &pubKeyReversed[0];
         }
-        else {
+        else
+#endif // SSS_HAVE_EC_MONT || SSS_HAVE_EC_ED
+        {
             pPrivateKey = &key[privateKeyIndex];
             pPublicKey  = &key[publicKeyIndex];
         }
@@ -2480,10 +2670,12 @@ static sss_status_t sss_se05x_key_store_set_ecc_key(sss_se05x_key_store_t *keySt
             key_part = kSE05x_KeyPart_Public;
 
         switch (keyObject->curve_id) {
+#if SSS_HAVE_TPM_BN
         case kSE05x_ECCurve_TPM_ECC_BN_P256: {
             LOG_I("Public key should be paased without header");
             publicKeyLen = keyLen;
         } break;
+#endif
         default: {
             asn_retval = sss_util_pkcs8_asn1_get_ec_public_key_index(key, keyLen, &publicKeyIndex, &publicKeyLen);
             if (asn_retval != kStatus_SSS_Success) {
@@ -2491,7 +2683,7 @@ static sss_status_t sss_se05x_key_store_set_ecc_key(sss_se05x_key_store_t *keySt
                 goto exit;
             }
 
-            asn_retval = getEccPrivPubKeyLen(keyObject->curve_id, &std_pubKey_len, &std_privKey_len);
+            asn_retval = getEccPrivPubKeyLen((uint32_t)keyObject->curve_id, &std_pubKey_len, &std_privKey_len);
             if (asn_retval != kStatus_SSS_Success) {
                 LOG_W("error in getEccPrivPubKeyLen");
                 goto exit;
@@ -2521,6 +2713,7 @@ static sss_status_t sss_se05x_key_store_set_ecc_key(sss_se05x_key_store_t *keySt
 #endif
 
         // Conditionally Reverse Endianness
+#if SSS_HAVE_EC_MONT || SSS_HAVE_EC_ED
         if ((keyObject->curve_id == kSE05x_ECCurve_ECC_MONT_DH_25519) ||
             (keyObject->curve_id == kSE05x_ECCurve_ECC_MONT_DH_448) ||
             (keyObject->curve_id == kSE05x_ECCurve_ECC_ED_25519)) {
@@ -2537,7 +2730,9 @@ static sss_status_t sss_se05x_key_store_set_ecc_key(sss_se05x_key_store_t *keySt
             }
             pPublicKey = &pubKeyReversed[0];
         }
-        else {
+        else
+#endif // SSS_HAVE_EC_MONT || SSS_HAVE_EC_ED
+        {
             pPublicKey = &key[publicKeyIndex];
         }
 
@@ -2576,10 +2771,12 @@ static sss_status_t sss_se05x_key_store_set_ecc_key(sss_se05x_key_store_t *keySt
         LOG_I("Private key should be passed without header");
 
         switch (keyObject->curve_id) {
+#if SSS_HAVE_TPM_BN
         case kSE05x_ECCurve_TPM_ECC_BN_P256: {
             privateKeyIndex = 0;
         } break;
-#if SSS_HAVE_SE05X_VER_GTE_06_00
+#endif
+#if SSS_HAVE_SE05X_VER_GTE_06_00 && SSS_HAVE_EC_MONT
         case kSE05x_ECCurve_RESERVED_ID_ECC_MONT_DH_448: {
             LOG_W(
                 "Private Key injection is not supported for "
@@ -2588,7 +2785,7 @@ static sss_status_t sss_se05x_key_store_set_ecc_key(sss_se05x_key_store_t *keySt
         }
 #endif
         default: {
-            asn_retval = getEccPrivPubKeyLen(keyObject->curve_id, &std_pubKey_len, &std_privKey_len);
+            asn_retval = getEccPrivPubKeyLen((uint32_t)keyObject->curve_id, &std_pubKey_len, &std_privKey_len);
             if (asn_retval != kStatus_SSS_Success) {
                 LOG_W("error in getEccPrivPubKeyLen");
                 goto exit;
@@ -2646,7 +2843,7 @@ static sss_status_t sss_se05x_key_store_set_aes_key(sss_se05x_key_store_t *keySt
     smStatus_t status   = SM_NOT_OK;
     Se05xPolicy_t se05x_policy;
     SE05x_INS_t transient_type;
-    SE05x_SymmKeyType_t type = 0;
+    SE05x_SymmKeyType_t type = kSE05x_SymmKeyType_NA;
     SE05x_KeyID_t kekID      = SE05x_KeyID_KEK_NONE;
     uint8_t IdExists         = 0;
     SE05x_Result_t objExists = kSE05x_Result_NA;
@@ -2938,12 +3135,21 @@ sss_status_t sss_se05x_key_store_set_key(sss_se05x_key_store_t *keyStore,
     size_t optionsLen)
 {
     sss_status_t retval = kStatus_SSS_Fail;
+
 #if SSSFTR_SE05X_KEY_SET
-    sss_cipher_type_t cipher_type = (sss_cipher_type_t)keyObject->cipherType;
+
+    sss_cipher_type_t cipher_type = kSSS_CipherType_NONE;
     sss_policy_t *policies        = (sss_policy_t *)options;
     uint8_t *ppolicySet;
     size_t valid_policy_buff_len = 0;
-    uint8_t policies_buff[MAX_POLICY_BUFFER_SIZE];
+    uint8_t policies_buff[MAX_POLICY_BUFFER_SIZE]= { 0,};
+
+    ENSURE_OR_GO_EXIT(keyStore);
+    ENSURE_OR_GO_EXIT(keyObject);
+    if (keyBitLen) {
+        ENSURE_OR_GO_EXIT(key);
+    }
+    cipher_type = (sss_cipher_type_t)keyObject->cipherType;
 
     if (policies) {
         if (kStatus_SSS_Success !=
@@ -2957,7 +3163,7 @@ sss_status_t sss_se05x_key_store_set_key(sss_se05x_key_store_t *keyStore,
     }
 
     switch (cipher_type) {
-#if SSSFTR_SE05X_RSA
+#if SSSFTR_SE05X_RSA && SSS_HAVE_RSA
     case kSSS_CipherType_RSA:
     case kSSS_CipherType_RSA_CRT:
         if (kStatus_SSS_Success !=
@@ -2969,11 +3175,21 @@ sss_status_t sss_se05x_key_store_set_key(sss_se05x_key_store_t *keyStore,
 #endif
 #if SSSFTR_SE05X_ECC
     case kSSS_CipherType_EC_NIST_P:
+#if SSS_HAVE_EC_NIST_K
     case kSSS_CipherType_EC_NIST_K:
+#endif
+#if SSS_HAVE_EC_BP
     case kSSS_CipherType_EC_BRAINPOOL:
+#endif
+#if SSS_HAVE_EC_MONT
     case kSSS_CipherType_EC_MONTGOMERY:
+#endif
+#if SSS_HAVE_EC_ED
     case kSSS_CipherType_EC_TWISTED_ED:
+#endif
+#if SSS_HAVE_TPM_BN
     case kSSS_CipherType_EC_BARRETO_NAEHRIG:
+#endif
         if (kStatus_SSS_Success !=
             sss_se05x_key_store_set_ecc_key(
                 keyStore, keyObject, key, keyLen, keyBitLen, ppolicySet, valid_policy_buff_len)) {
@@ -3026,6 +3242,7 @@ sss_status_t sss_se05x_key_store_generate_key(
     sss_se05x_key_store_t *keyStore, sss_se05x_object_t *keyObject, size_t keyBitLen, void *options)
 {
     sss_status_t retval = kStatus_SSS_Fail;
+
 #if SSSFTR_SE05X_KEY_SET
     smStatus_t status      = SM_NOT_OK;
     sss_policy_t *policies = (sss_policy_t *)options;
@@ -3035,6 +3252,8 @@ sss_status_t sss_se05x_key_store_generate_key(
     SE05x_INS_t transient_type;
     uint8_t IdExists = 0;
     uint8_t policies_buff[MAX_POLICY_BUFFER_SIZE];
+    ENSURE_OR_GO_EXIT(keyStore);
+    ENSURE_OR_GO_EXIT(keyObject);
 
     if (policies) {
         if (kStatus_SSS_Success !=
@@ -3057,24 +3276,35 @@ sss_status_t sss_se05x_key_store_generate_key(
     switch (keyObject->cipherType) {
 #if SSSFTR_SE05X_ECC
     case kSSS_CipherType_EC_NIST_P:
+#if SSS_HAVE_EC_NIST_K
     case kSSS_CipherType_EC_NIST_K:
+#endif
+#if SSS_HAVE_EC_BP
     case kSSS_CipherType_EC_BRAINPOOL:
+#endif
+#if SSS_HAVE_EC_MONT
     case kSSS_CipherType_EC_MONTGOMERY:
+#endif
+#if SSS_HAVE_TPM_BN
     case kSSS_CipherType_EC_BARRETO_NAEHRIG:
-    case kSSS_CipherType_EC_TWISTED_ED: {
+#endif
+#if SSS_HAVE_EC_ED
+    case kSSS_CipherType_EC_TWISTED_ED:
+#endif
+    {
         SE05x_ECCurve_t curve_id;
-        if (keyObject->curve_id == 0) {
-            keyObject->curve_id = se05x_sssKeyTypeLenToCurveId(keyObject->cipherType, keyBitLen);
+        if (keyObject->curve_id == kSE05x_ECCurve_NA) {
+            keyObject->curve_id = (SE05x_ECCurve_t)se05x_sssKeyTypeLenToCurveId((sss_cipher_type_t)keyObject->cipherType, keyBitLen);
         }
 
-        if (keyObject->curve_id == 0) {
+        if (keyObject->curve_id == kSE05x_ECCurve_NA) {
             goto exit;
         }
 
         status = sss_se05x_create_curve_if_needed(&keyObject->keyStore->session->s_ctx, keyObject->curve_id);
 
         IdExists = CheckIfKeyIdExists(keyObject->keyId, &keyStore->session->s_ctx);
-        curve_id = (IdExists == 1) ? 0 : keyObject->curve_id;
+        curve_id = (IdExists == 1) ? kSE05x_ECCurve_NA : (SE05x_ECCurve_t)keyObject->curve_id;
 
         status = Se05x_API_WriteECKey(&keyStore->session->s_ctx,
             &se05x_policy,
@@ -3091,7 +3321,7 @@ sss_status_t sss_se05x_key_store_generate_key(
         break;
     }
 #endif // < SSSFTR_SE05X_ECC
-#if SSSFTR_SE05X_RSA
+#if SSSFTR_SE05X_RSA && SSS_HAVE_RSA
     case kSSS_CipherType_RSA:
     case kSSS_CipherType_RSA_CRT: {
         /* Hard Coded Public exponent to be 65537 */
@@ -3130,7 +3360,7 @@ sss_status_t sss_se05x_key_store_generate_key(
         ENSURE_OR_GO_EXIT(status == SM_OK);
         break;
     }
-#endif // SSSFTR_SE05X_RSA
+#endif // SSSFTR_SE05X_RSA && SSS_HAVE_RSA
     default: {
         goto exit;
     }
@@ -3201,189 +3431,250 @@ exit:
 #define CONVERT_BYTE(x) ((x) / 8)
 #define CONVERT_BIT(x) ((x)*8)
 
-void add_ecc_header(uint8_t *key, uint8_t **key_buf, size_t *key_buflen, uint32_t curve_id)
+void add_ecc_header(uint8_t *key, size_t *keylen, uint8_t **key_buf, size_t *key_buflen, uint32_t curve_id)
 {
+    if (key == NULL || key_buf == NULL || key_buflen == NULL){
+        goto exit;
+    }
 #if SSSFTR_SE05X_KEY_SET
-    if (curve_id == kSE05x_ECCurve_NIST_P192) {
-        memcpy(key, gecc_der_header_nist192, der_ecc_nistp192_header_len);
-        *key_buf    = ADD_DER_ECC_NISTP192_HEADER(key);
-        *key_buflen = (uint16_t)ADD_DER_ECC_NISTP192_HEADER(*key_buflen);
-    }
-    else if (curve_id == kSE05x_ECCurve_NIST_P224) {
-        memcpy(key, gecc_der_header_nist224, der_ecc_nistp224_header_len);
-        *key_buf    = ADD_DER_ECC_NISTP224_HEADER(key);
-        *key_buflen = (uint16_t)ADD_DER_ECC_NISTP224_HEADER(*key_buflen);
-    }
-    else if (curve_id == kSE05x_ECCurve_NIST_P256) {
+    if (curve_id == kSE05x_ECCurve_NIST_P256) {
+        ENSURE_OR_GO_EXIT((*keylen) > der_ecc_nistp256_header_len);
         memcpy(key, gecc_der_header_nist256, der_ecc_nistp256_header_len);
         *key_buf    = ADD_DER_ECC_NISTP256_HEADER(key);
         *key_buflen = (uint16_t)ADD_DER_ECC_NISTP256_HEADER(*key_buflen);
     }
     else if (curve_id == kSE05x_ECCurve_NIST_P384) {
+        ENSURE_OR_GO_EXIT((*keylen) > der_ecc_nistp384_header_len);
         memcpy(key, gecc_der_header_nist384, der_ecc_nistp384_header_len);
         *key_buf    = ADD_DER_ECC_NISTP384_HEADER(key);
         *key_buflen = (uint16_t)ADD_DER_ECC_NISTP384_HEADER(*key_buflen);
     }
+#if SSS_HAVE_EC_NIST_192
+    else if (curve_id == kSE05x_ECCurve_NIST_P192) {
+        ENSURE_OR_GO_EXIT((*keylen) > der_ecc_nistp192_header_len);
+        memcpy(key, gecc_der_header_nist192, der_ecc_nistp192_header_len);
+        *key_buf    = ADD_DER_ECC_NISTP192_HEADER(key);
+        *key_buflen = (uint16_t)ADD_DER_ECC_NISTP192_HEADER(*key_buflen);
+    }
+#endif
+#if SSS_HAVE_EC_NIST_224
+    else if (curve_id == kSE05x_ECCurve_NIST_P224) {
+        ENSURE_OR_GO_EXIT((*keylen) > der_ecc_nistp224_header_len);
+        memcpy(key, gecc_der_header_nist224, der_ecc_nistp224_header_len);
+        *key_buf    = ADD_DER_ECC_NISTP224_HEADER(key);
+        *key_buflen = (uint16_t)ADD_DER_ECC_NISTP224_HEADER(*key_buflen);
+    }
+#endif
+#if SSS_HAVE_EC_NIST_521
     else if (curve_id == kSE05x_ECCurve_NIST_P521) {
+        ENSURE_OR_GO_EXIT((*keylen) > der_ecc_nistp521_header_len);
         memcpy(key, gecc_der_header_nist521, der_ecc_nistp521_header_len);
         *key_buf    = ADD_DER_ECC_NISTP521_HEADER(key);
         *key_buflen = (uint16_t)ADD_DER_ECC_NISTP521_HEADER(*key_buflen);
     }
+#endif
+#if SSS_HAVE_EC_BP
     else if (curve_id == kSE05x_ECCurve_Brainpool160) {
+        ENSURE_OR_GO_EXIT((*keylen) > der_ecc_bp160_header_len);
         memcpy(key, gecc_der_header_bp160, der_ecc_bp160_header_len);
         *key_buf    = ADD_DER_ECC_BP160_HEADER(key);
         *key_buflen = (uint16_t)ADD_DER_ECC_BP160_HEADER(*key_buflen);
     }
     else if (curve_id == kSE05x_ECCurve_Brainpool192) {
+        ENSURE_OR_GO_EXIT((*keylen) > der_ecc_bp192_header_len);
         memcpy(key, gecc_der_header_bp192, der_ecc_bp192_header_len);
         *key_buf    = ADD_DER_ECC_BP192_HEADER(key);
         *key_buflen = (uint16_t)ADD_DER_ECC_BP192_HEADER(*key_buflen);
     }
     else if (curve_id == kSE05x_ECCurve_Brainpool224) {
+        ENSURE_OR_GO_EXIT((*keylen) > der_ecc_bp224_header_len);
         memcpy(key, gecc_der_header_bp224, der_ecc_bp224_header_len);
         *key_buf    = ADD_DER_ECC_BP224_HEADER(key);
         *key_buflen = (uint16_t)ADD_DER_ECC_BP224_HEADER(*key_buflen);
     }
     else if (curve_id == kSE05x_ECCurve_Brainpool320) {
+        ENSURE_OR_GO_EXIT((*keylen) > der_ecc_bp320_header_len);
         memcpy(key, gecc_der_header_bp320, der_ecc_bp320_header_len);
         *key_buf    = ADD_DER_ECC_BP320_HEADER(key);
         *key_buflen = (uint16_t)ADD_DER_ECC_BP320_HEADER(*key_buflen);
     }
     else if (curve_id == kSE05x_ECCurve_Brainpool384) {
+        ENSURE_OR_GO_EXIT((*keylen) > der_ecc_bp384_header_len);
         memcpy(key, gecc_der_header_bp384, der_ecc_bp384_header_len);
         *key_buf    = ADD_DER_ECC_BP384_HEADER(key);
         *key_buflen = (uint16_t)ADD_DER_ECC_BP384_HEADER(*key_buflen);
     }
     else if (curve_id == kSE05x_ECCurve_Brainpool256) {
+        ENSURE_OR_GO_EXIT((*keylen) > der_ecc_bp256_header_len);
         memcpy(key, gecc_der_header_bp256, der_ecc_bp256_header_len);
         *key_buf    = ADD_DER_ECC_BP256_HEADER(key);
         *key_buflen = (uint16_t)ADD_DER_ECC_BP256_HEADER(*key_buflen);
     }
     else if (curve_id == kSE05x_ECCurve_Brainpool512) {
+        ENSURE_OR_GO_EXIT((*keylen) > der_ecc_bp512_header_len);
         memcpy(key, gecc_der_header_bp512, der_ecc_bp512_header_len);
         *key_buf    = ADD_DER_ECC_BP512_HEADER(key);
         *key_buflen = (uint16_t)ADD_DER_ECC_BP512_HEADER(*key_buflen);
     }
+#endif
+#if SSS_HAVE_EC_NIST_K
     else if (curve_id == kSE05x_ECCurve_Secp256k1) {
+        ENSURE_OR_GO_EXIT((*keylen) > der_ecc_256k_header_len);
         memcpy(key, gecc_der_header_256k, der_ecc_256k_header_len);
         *key_buf    = ADD_DER_ECC_256K_HEADER(key);
         *key_buflen = (uint16_t)ADD_DER_ECC_256K_HEADER(*key_buflen);
     }
     else if (curve_id == kSE05x_ECCurve_Secp160k1) {
+        ENSURE_OR_GO_EXIT((*keylen) > der_ecc_160k_header_len);
         memcpy(key, gecc_der_header_160k, der_ecc_160k_header_len);
         *key_buf    = ADD_DER_ECC_160K_HEADER(key);
         *key_buflen = (uint16_t)ADD_DER_ECC_160K_HEADER(*key_buflen);
     }
     else if (curve_id == kSE05x_ECCurve_Secp192k1) {
+        ENSURE_OR_GO_EXIT((*keylen) > der_ecc_192k_header_len);
         memcpy(key, gecc_der_header_192k, der_ecc_192k_header_len);
         *key_buf    = ADD_DER_ECC_192K_HEADER(key);
         *key_buflen = (uint16_t)ADD_DER_ECC_192K_HEADER(*key_buflen);
     }
     else if (curve_id == kSE05x_ECCurve_Secp224k1) {
+        ENSURE_OR_GO_EXIT((*keylen) > der_ecc_224k_header_len);
         memcpy(key, gecc_der_header_224k, der_ecc_224k_header_len);
         *key_buf    = ADD_DER_ECC_224K_HEADER(key);
         *key_buflen = (uint16_t)ADD_DER_ECC_224K_HEADER(*key_buflen);
     }
+#endif
+#if SSS_HAVE_EC_MONT
 #if SSS_HAVE_SE05X_VER_GTE_06_00
     else if (curve_id == kSE05x_ECCurve_ECC_MONT_DH_448) {
+        ENSURE_OR_GO_EXIT((*keylen) > der_ecc_mont_dh_448_header_len);
         memcpy(key, gecc_der_header_mont_dh_448, der_ecc_mont_dh_448_header_len);
         *key_buf    = ADD_DER_ECC_MONT_DH_448_HEADER(key);
         *key_buflen = (uint16_t)ADD_DER_ECC_MONT_DH_448_HEADER(*key_buflen);
     }
 #endif
     else if (curve_id == kSE05x_ECCurve_ECC_MONT_DH_25519) {
+        ENSURE_OR_GO_EXIT((*keylen) > der_ecc_mont_dh_25519_header_len);
         memcpy(key, gecc_der_header_mont_dh_25519, der_ecc_mont_dh_25519_header_len);
         *key_buf    = ADD_DER_ECC_MONT_DH_25519_HEADER(key);
         *key_buflen = (uint16_t)ADD_DER_ECC_MONT_DH_25519_HEADER(*key_buflen);
     }
+#endif // SSS_HAVE_EC_MONT
+#if SSS_HAVE_EC_ED
     else if (curve_id == kSE05x_ECCurve_ECC_ED_25519) {
+        ENSURE_OR_GO_EXIT((*keylen) > der_ecc_twisted_ed_25519_header_len);
         memcpy(key, gecc_der_header_twisted_ed_25519, der_ecc_twisted_ed_25519_header_len);
         *key_buf    = ADD_DER_ECC_TWISTED_ED_25519_HEADER(key);
         *key_buflen = (uint16_t)ADD_DER_ECC_TWISTED_ED_25519_HEADER(*key_buflen);
     }
+#endif
     else {
         LOG_W("Returned is not in DER Format");
         *key_buf    = key;
         *key_buflen = 0;
     }
 #endif
+exit:
+    return;
 }
 
-void get_ecc_raw_data(uint8_t *key, uint8_t **key_buf, size_t *key_buflen, uint32_t curve_id)
+void get_ecc_raw_data(uint8_t *key, size_t keylen, uint8_t **key_buf, size_t *key_buflen, uint32_t curve_id)
 {
-    if (curve_id == kSE05x_ECCurve_NIST_P192) {
-        *key_buf    = ADD_DER_ECC_NISTP192_HEADER(key);
-        *key_buflen = (uint16_t)REMOVE_DER_ECC_NISTP192_HEADER(*key_buflen);
+    if (key == NULL || key_buf == NULL || key_buflen == NULL){
+        goto exit;
     }
-    else if (curve_id == kSE05x_ECCurve_NIST_P224) {
-        *key_buf    = ADD_DER_ECC_NISTP224_HEADER(key);
-        *key_buflen = (uint16_t)REMOVE_DER_ECC_NISTP224_HEADER(*key_buflen);
-    }
-    else if (curve_id == kSE05x_ECCurve_NIST_P256) {
+
+    if (curve_id == kSE05x_ECCurve_NIST_P256) {
+        ENSURE_OR_GO_EXIT(keylen > der_ecc_nistp256_header_len);
         *key_buf    = ADD_DER_ECC_NISTP256_HEADER(key);
         *key_buflen = (uint16_t)REMOVE_DER_ECC_NISTP256_HEADER(*key_buflen);
     }
     else if (curve_id == kSE05x_ECCurve_NIST_P384) {
+        ENSURE_OR_GO_EXIT(keylen > der_ecc_nistp384_header_len);
         *key_buf    = ADD_DER_ECC_NISTP384_HEADER(key);
         *key_buflen = (uint16_t)REMOVE_DER_ECC_NISTP384_HEADER(*key_buflen);
     }
+    else if (curve_id == kSE05x_ECCurve_NIST_P192) {
+        ENSURE_OR_GO_EXIT(keylen > der_ecc_nistp192_header_len);
+        *key_buf    = ADD_DER_ECC_NISTP192_HEADER(key);
+        *key_buflen = (uint16_t)REMOVE_DER_ECC_NISTP192_HEADER(*key_buflen);
+    }
+    else if (curve_id == kSE05x_ECCurve_NIST_P224) {
+        ENSURE_OR_GO_EXIT(keylen > der_ecc_nistp224_header_len);
+        *key_buf    = ADD_DER_ECC_NISTP224_HEADER(key);
+        *key_buflen = (uint16_t)REMOVE_DER_ECC_NISTP224_HEADER(*key_buflen);
+    }
     else if (curve_id == kSE05x_ECCurve_NIST_P521) {
+        ENSURE_OR_GO_EXIT(keylen > der_ecc_nistp521_header_len);
         *key_buf    = ADD_DER_ECC_NISTP521_HEADER(key);
         *key_buflen = (uint16_t)REMOVE_DER_ECC_NISTP521_HEADER(*key_buflen);
     }
     else if (curve_id == kSE05x_ECCurve_Brainpool160) {
+        ENSURE_OR_GO_EXIT(keylen > der_ecc_bp160_header_len);
         *key_buf    = ADD_DER_ECC_BP160_HEADER(key);
         *key_buflen = (uint16_t)REMOVE_DER_ECC_BP160_HEADER(*key_buflen);
     }
     else if (curve_id == kSE05x_ECCurve_Brainpool192) {
+        ENSURE_OR_GO_EXIT(keylen > der_ecc_bp192_header_len);
         *key_buf    = ADD_DER_ECC_BP192_HEADER(key);
         *key_buflen = (uint16_t)REMOVE_DER_ECC_BP192_HEADER(*key_buflen);
     }
     else if (curve_id == kSE05x_ECCurve_Brainpool224) {
+        ENSURE_OR_GO_EXIT(keylen > der_ecc_bp224_header_len);
         *key_buf    = REMOVE_DER_ECC_BP224_HEADER(key);
         *key_buflen = (uint16_t)REMOVE_DER_ECC_BP224_HEADER(*key_buflen);
     }
     else if (curve_id == kSE05x_ECCurve_Brainpool320) {
+        ENSURE_OR_GO_EXIT(keylen > der_ecc_bp320_header_len);
         *key_buf    = ADD_DER_ECC_BP320_HEADER(key);
         *key_buflen = (uint16_t)REMOVE_DER_ECC_BP320_HEADER(*key_buflen);
     }
     else if (curve_id == kSE05x_ECCurve_Brainpool384) {
+        ENSURE_OR_GO_EXIT(keylen > der_ecc_bp384_header_len);
         *key_buf    = ADD_DER_ECC_BP384_HEADER(key);
         *key_buflen = (uint16_t)REMOVE_DER_ECC_BP384_HEADER(*key_buflen);
     }
     else if (curve_id == kSE05x_ECCurve_Brainpool256) {
+        ENSURE_OR_GO_EXIT(keylen > der_ecc_bp256_header_len);
         *key_buf    = ADD_DER_ECC_BP256_HEADER(key);
         *key_buflen = (uint16_t)REMOVE_DER_ECC_BP256_HEADER(*key_buflen);
     }
     else if (curve_id == kSE05x_ECCurve_Brainpool512) {
+        ENSURE_OR_GO_EXIT(keylen > der_ecc_bp512_header_len);
         *key_buf    = ADD_DER_ECC_BP512_HEADER(key);
         *key_buflen = (uint16_t)REMOVE_DER_ECC_BP512_HEADER(*key_buflen);
     }
     else if (curve_id == kSE05x_ECCurve_Secp256k1) {
+        ENSURE_OR_GO_EXIT(keylen > der_ecc_256k_header_len);
         *key_buf    = ADD_DER_ECC_256K_HEADER(key);
         *key_buflen = (uint16_t)REMOVE_DER_ECC_256K_HEADER(*key_buflen);
     }
     else if (curve_id == kSE05x_ECCurve_Secp160k1) {
+        ENSURE_OR_GO_EXIT(keylen > der_ecc_160k_header_len);
         *key_buf    = ADD_DER_ECC_160K_HEADER(key);
         *key_buflen = (uint16_t)REMOVE_DER_ECC_160K_HEADER(*key_buflen);
     }
     else if (curve_id == kSE05x_ECCurve_Secp192k1) {
+        ENSURE_OR_GO_EXIT(keylen > der_ecc_192k_header_len);
         *key_buf    = ADD_DER_ECC_192K_HEADER(key);
         *key_buflen = (uint16_t)REMOVE_DER_ECC_192K_HEADER(*key_buflen);
     }
     else if (curve_id == kSE05x_ECCurve_Secp224k1) {
+        ENSURE_OR_GO_EXIT(keylen > der_ecc_224k_header_len);
         *key_buf    = ADD_DER_ECC_224K_HEADER(key);
         *key_buflen = (uint16_t)REMOVE_DER_ECC_224K_HEADER(*key_buflen);
     }
     else if (curve_id == kSE05x_ECCurve_ECC_ED_25519) {
+        ENSURE_OR_GO_EXIT(keylen > der_ecc_twisted_ed_25519_header_len);
         *key_buf    = ADD_DER_ECC_TWISTED_ED_25519_HEADER(key);
         *key_buflen = (uint16_t)REMOVE_DER_ECC_TWISTED_ED_25519_HEADER(*key_buflen);
     }
     else if (curve_id == kSE05x_ECCurve_ECC_MONT_DH_25519) {
+        ENSURE_OR_GO_EXIT(keylen > der_ecc_mont_dh_25519_header_len);
         *key_buf    = ADD_DER_ECC_MONT_DH_25519_HEADER(key);
         *key_buflen = (uint16_t)REMOVE_DER_ECC_MONT_DH_25519_HEADER(*key_buflen);
     }
     else if (curve_id == kSE05x_ECCurve_ECC_MONT_DH_448) {
+        ENSURE_OR_GO_EXIT(keylen > der_ecc_mont_dh_448_header_len);
         *key_buf    = ADD_DER_ECC_MONT_DH_448_HEADER(key);
         *key_buflen = (uint16_t)REMOVE_DER_ECC_MONT_DH_448_HEADER(*key_buflen);
     }
@@ -3392,33 +3683,55 @@ void get_ecc_raw_data(uint8_t *key, uint8_t **key_buf, size_t *key_buflen, uint3
         *key_buf    = key;
         *key_buflen = 0;
     }
+
+exit:
+    return;
 }
 
 sss_status_t sss_se05x_key_store_get_key(
     sss_se05x_key_store_t *keyStore, sss_se05x_object_t *keyObject, uint8_t *key, size_t *keylen, size_t *pKeyBitLen)
 {
     sss_status_t retval           = kStatus_SSS_Fail;
-    sss_cipher_type_t cipher_type = keyObject->cipherType;
+    sss_cipher_type_t cipher_type = kSSS_CipherType_NONE;
     smStatus_t status             = SM_NOT_OK;
     uint16_t size;
+    ENSURE_OR_GO_EXIT(keyObject);
+    ENSURE_OR_GO_EXIT(key);
+    ENSURE_OR_GO_EXIT(keylen);
+    ENSURE_OR_GO_EXIT(pKeyBitLen);
+
+    cipher_type = (sss_cipher_type_t)keyObject->cipherType;
 
     switch (cipher_type) {
     case kSSS_CipherType_EC_NIST_P:
+#if SSS_HAVE_EC_NIST_K
     case kSSS_CipherType_EC_NIST_K:
+#endif
+#if SSS_HAVE_EC_BP
     case kSSS_CipherType_EC_BRAINPOOL:
+#endif
+#if SSS_HAVE_TPM_BN
     case kSSS_CipherType_EC_BARRETO_NAEHRIG:
+#endif
+#if SSS_HAVE_EC_MONT
     case kSSS_CipherType_EC_MONTGOMERY:
-    case kSSS_CipherType_EC_TWISTED_ED: {
+#endif
+#if SSS_HAVE_EC_ED
+    case kSSS_CipherType_EC_TWISTED_ED:
+#endif
+    {
         uint8_t *key_buf  = NULL;
         size_t key_buflen = 0;
 
         /* Return the Key length including the ECC DER Header */
-        add_ecc_header(key, &key_buf, &key_buflen, keyObject->curve_id);
+        add_ecc_header(key, keylen, &key_buf, &key_buflen, keyObject->curve_id);
+        (*keylen) = (*keylen) - key_buflen;
 
         status = Se05x_API_ReadObject(&keyStore->session->s_ctx, keyObject->keyId, 0, 0, key_buf, keylen);
         ENSURE_OR_GO_EXIT(status == SM_OK);
 
         /* Change Endiannes. */
+#if SSS_HAVE_TPM_BN || SSS_HAVE_EC_ED
         if ((keyObject->curve_id == kSE05x_ECCurve_ECC_MONT_DH_25519) ||
             (keyObject->curve_id == kSE05x_ECCurve_ECC_MONT_DH_448) ||
             (keyObject->curve_id == kSE05x_ECCurve_ECC_ED_25519)) {
@@ -3428,19 +3741,20 @@ sss_status_t sss_se05x_key_store_get_key(
                 key_buf[*keylen - 1 - keyValueIdx] = swapByte;
             }
         }
+#endif
 
         /* Return the Key length with header length */
         *keylen += key_buflen;
 
         break;
     }
-#if SSSFTR_SE05X_RSA
+#if SSSFTR_SE05X_RSA && SSS_HAVE_RSA
     case kSSS_CipherType_RSA:
     case kSSS_CipherType_RSA_CRT: {
-        uint8_t modulus[1024];
-        uint8_t exponent[4];
-        size_t modLen = sizeof(modulus);
-        size_t expLen = sizeof(exponent);
+        uint8_t modulus[1024] = {0};
+        uint8_t exponent[4]   = {0};
+        size_t modLen         = sizeof(modulus);
+        size_t expLen         = sizeof(exponent);
 
         status = Se05x_API_ReadRSA(
             &keyStore->session->s_ctx, keyObject->keyId, 0, 0, kSE05x_RSAPubKeyComp_MOD, modulus, &modLen);
@@ -3454,7 +3768,7 @@ sss_status_t sss_se05x_key_store_get_key(
             goto exit;
         }
     } break;
-#endif // SSSFTR_SE05X_RSA
+#endif // SSSFTR_SE05X_RSA && && SSS_HAVE_RSA
     case kSSS_CipherType_AES:
         status = Se05x_API_ReadObject(&keyStore->session->s_ctx, keyObject->keyId, 0, 0, key, keylen);
         ENSURE_OR_GO_EXIT(status == SM_OK);
@@ -3517,7 +3831,7 @@ sss_status_t sss_se05x_key_store_get_key_attst(sss_se05x_key_store_t *keyStore,
     sss_se05x_attst_data_t *attst_data)
 {
     sss_status_t retval           = kStatus_SSS_Fail;
-    sss_cipher_type_t cipher_type = keyObject->cipherType;
+    sss_cipher_type_t cipher_type = (sss_cipher_type_t)keyObject->cipherType;
     smStatus_t status             = SM_NOT_OK;
     uint16_t size;
 
@@ -3528,19 +3842,26 @@ sss_status_t sss_se05x_key_store_get_key_attst(sss_se05x_key_store_t *keyStore,
 
     switch (keyObject_attst->cipherType) {
     case kSSS_CipherType_EC_NIST_P:
+#if SSS_HAVE_EC_NIST_K
     case kSSS_CipherType_EC_NIST_K:
-    case kSSS_CipherType_EC_BRAINPOOL: {
-        SE05x_ECSignatureAlgo_t ecSignAlgo = se05x_get_ec_sign_hash_mode(algorithm_attst);
+#endif
+#if SSS_HAVE_EC_BP
+    case kSSS_CipherType_EC_BRAINPOOL:
+#endif
+    {
+        SE05x_ECSignatureAlgo_t ecSignAlgo = (SE05x_ECSignatureAlgo_t)se05x_get_ec_sign_hash_mode(algorithm_attst);
         attestAlgo                         = (SE05x_AttestationAlgo_t)ecSignAlgo;
     } break;
 
+#if SSS_HAVE_EC_ED || SSS_HAVE_TPM_BN
     case kSSS_CipherType_EC_TWISTED_ED:
     case kSSS_CipherType_EC_BARRETO_NAEHRIG: {
         LOG_E("Attestation not supported");
         return retval;
     } break;
+#endif
 
-#if SSSFTR_SE05X_RSA
+#if SSSFTR_SE05X_RSA && SSS_HAVE_RSA
     case kSSS_CipherType_RSA:
     case kSSS_CipherType_RSA_CRT: {
         SE05x_RSASignatureAlgo_t rsaSigningAlgo = se05x_get_rsa_sign_hash_mode(algorithm_attst);
@@ -3553,16 +3874,28 @@ sss_status_t sss_se05x_key_store_get_key_attst(sss_se05x_key_store_t *keyStore,
 
     switch (cipher_type) {
     case kSSS_CipherType_EC_NIST_P:
+#if SSS_HAVE_EC_NIST_K
     case kSSS_CipherType_EC_NIST_K:
+#endif
+#if SSS_HAVE_EC_BP
     case kSSS_CipherType_EC_BRAINPOOL:
+#endif
+#if SSS_HAVE_TPM_BN
     case kSSS_CipherType_EC_BARRETO_NAEHRIG:
+#endif
+#if SSS_HAVE_EC_MONT
     case kSSS_CipherType_EC_MONTGOMERY:
-    case kSSS_CipherType_EC_TWISTED_ED: {
+#endif
+#if SSS_HAVE_EC_ED
+    case kSSS_CipherType_EC_TWISTED_ED:
+#endif
+    {
         uint8_t *key_buf  = NULL;
         size_t key_buflen = 0;
 
         /* Return the Key length including the ECC DER Header */
-        add_ecc_header(key, &key_buf, &key_buflen, keyObject->curve_id);
+        add_ecc_header(key, keylen, &key_buf, &key_buflen, keyObject->curve_id);
+        (*keylen) = (*keylen) - key_buflen;
 
         attst_data->data[0].timeStampLen = sizeof(SE05x_TimeStamp_t);
         status                           = Se05x_API_ReadObject_W_Attst(&keyStore->session->s_ctx,
@@ -3586,6 +3919,7 @@ sss_status_t sss_se05x_key_store_get_key_attst(sss_se05x_key_store_t *keyStore,
             &(attst_data->data[0].signatureLen));
         ENSURE_OR_GO_EXIT(status == SM_OK);
 
+#if SSS_HAVE_EC_MONT || SSS_HAVE_EC_ED
         /* Change Endiannes. */
         if ((keyObject->curve_id == kSE05x_ECCurve_ECC_MONT_DH_25519) ||
             (keyObject->curve_id == kSE05x_ECCurve_ECC_MONT_DH_448) ||
@@ -3596,6 +3930,7 @@ sss_status_t sss_se05x_key_store_get_key_attst(sss_se05x_key_store_t *keyStore,
                 key_buf[*keylen - 1 - keyValueIdx] = swapByte;
             }
         }
+#endif
 
         attst_data->valid_number = 1;
         /* Return the Key length with header length */
@@ -3603,7 +3938,7 @@ sss_status_t sss_se05x_key_store_get_key_attst(sss_se05x_key_store_t *keyStore,
 
         break;
     }
-#if SSSFTR_SE05X_RSA
+#if SSSFTR_SE05X_RSA && SSS_HAVE_RSA
     case kSSS_CipherType_RSA:
     case kSSS_CipherType_RSA_CRT: {
         uint8_t modulus[1024];
@@ -3612,8 +3947,8 @@ sss_status_t sss_se05x_key_store_get_key_attst(sss_se05x_key_store_t *keyStore,
         size_t expLen           = sizeof(exponent);
         uint16_t key_size_bytes = 0;
 
-        if (attestAlgo == (SE05x_AttestationAlgo_t)kSE05x_RSASignatureAlgo_SHA_512_PKCS1 ||
-            attestAlgo == (SE05x_AttestationAlgo_t)kSE05x_RSASignatureAlgo_SHA512_PKCS1_PSS) {
+        if (attestAlgo == kSE05x_AttestationAlgo_RSA_SHA_512_PKCS1 ||
+            attestAlgo == kSE05x_AttestationAlgo_RSA_SHA512_PKCS1_PSS) {
             status = Se05x_API_ReadSize(&keyStore->session->s_ctx, keyObject_attst->keyId, &key_size_bytes);
             if (status != SM_OK) {
                 return kStatus_SSS_Fail;
@@ -3677,7 +4012,7 @@ sss_status_t sss_se05x_key_store_get_key_attst(sss_se05x_key_store_t *keyStore,
             goto exit;
         }
     } break;
-#endif // SSSFTR_SE05X_RSA
+#endif // SSSFTR_SE05X_RSA && SSS_HAVE_RSA
     case kSSS_CipherType_AES:
         attst_data->data[0].timeStampLen = sizeof(SE05x_TimeStamp_t);
         status                           = Se05x_API_ReadObject_W_Attst(&keyStore->session->s_ctx,
@@ -3944,7 +4279,9 @@ sss_status_t sss_se05x_key_store_freeze_key(sss_se05x_key_store_t *keyStore, sss
 sss_status_t sss_se05x_key_store_erase_key(sss_se05x_key_store_t *keyStore, sss_se05x_object_t *keyObject)
 {
     sss_status_t retval = kStatus_SSS_Fail;
-    smStatus_t status;
+    smStatus_t status   = SM_NOT_OK;
+    ENSURE_OR_GO_EXIT(keyStore);
+    ENSURE_OR_GO_EXIT(keyObject);
 
     status = Se05x_API_DeleteSecureObject(&keyStore->session->s_ctx, keyObject->keyId);
     if (SM_OK == status) {
@@ -3954,7 +4291,7 @@ sss_status_t sss_se05x_key_store_erase_key(sss_se05x_key_store_t *keyStore, sss_
     else {
         LOG_W("Could not delete Key id %X", keyObject->keyId);
     }
-
+exit:
     return retval;
 }
 
@@ -3967,16 +4304,26 @@ sss_status_t sss_se05x_key_store_export_key(
     sss_se05x_key_store_t *keyStore, sss_se05x_object_t *keyObject, uint8_t *key, size_t *keylen)
 {
     sss_status_t retval           = kStatus_SSS_Fail;
-    sss_cipher_type_t cipher_type = keyObject->cipherType;
+    sss_cipher_type_t cipher_type = (sss_cipher_type_t)keyObject->cipherType;
     smStatus_t status             = SM_NOT_OK;
 
     switch (cipher_type) {
     case kSSS_CipherType_EC_NIST_P:
+#if SSS_HAVE_EC_NIST_K
     case kSSS_CipherType_EC_NIST_K:
+#endif
+#if SSS_HAVE_EC_BP
     case kSSS_CipherType_EC_BRAINPOOL:
+#endif
+#if SSS_HAVE_TPM_BN
     case kSSS_CipherType_EC_BARRETO_NAEHRIG:
+#endif
+#if SSS_HAVE_EC_MONT
     case kSSS_CipherType_EC_MONTGOMERY:
+#endif
+#if SSS_HAVE_EC_ED
     case kSSS_CipherType_EC_TWISTED_ED:
+#endif
     case kSSS_CipherType_AES:
     case kSSS_CipherType_DES: {
         status =
@@ -4001,16 +4348,26 @@ sss_status_t sss_se05x_key_store_import_key(
     sss_se05x_key_store_t *keyStore, sss_se05x_object_t *keyObject, uint8_t *key, size_t keylen)
 {
     sss_status_t retval           = kStatus_SSS_Fail;
-    sss_cipher_type_t cipher_type = keyObject->cipherType;
+    sss_cipher_type_t cipher_type = (sss_cipher_type_t)keyObject->cipherType;
     smStatus_t status             = SM_NOT_OK;
 
     switch (cipher_type) {
     case kSSS_CipherType_EC_NIST_P:
+#if SSS_HAVE_EC_NIST_K
     case kSSS_CipherType_EC_NIST_K:
+#endif
+#if SSS_HAVE_EC_BP
     case kSSS_CipherType_EC_BRAINPOOL:
+#endif
+#if SSS_HAVE_TPM_BN
     case kSSS_CipherType_EC_BARRETO_NAEHRIG:
+#endif
+#if SSS_HAVE_EC_MONT
     case kSSS_CipherType_EC_MONTGOMERY:
+#endif
+#if SSS_HAVE_EC_ED
     case kSSS_CipherType_EC_TWISTED_ED:
+#endif
     case kSSS_CipherType_AES:
     case kSSS_CipherType_DES: {
         status =
@@ -4057,7 +4414,7 @@ sss_status_t sss_se05x_asymmetric_encrypt(
     sss_se05x_asymmetric_t *context, const uint8_t *srcData, size_t srcLen, uint8_t *destData, size_t *destLen)
 {
     sss_status_t retval = kStatus_SSS_Fail;
-#if SSSFTR_SE05X_RSA
+#if SSSFTR_SE05X_RSA && SSS_HAVE_RSA
     smStatus_t status                           = SM_NOT_OK;
     SE05x_RSAEncryptionAlgo_t rsaEncryptionAlgo = se05x_get_rsa_encrypt_mode(context->algorithm);
     status                                      = Se05x_API_RSAEncrypt(
@@ -4072,7 +4429,7 @@ sss_status_t sss_se05x_asymmetric_decrypt(
     sss_se05x_asymmetric_t *context, const uint8_t *srcData, size_t srcLen, uint8_t *destData, size_t *destLen)
 {
     sss_status_t retval = kStatus_SSS_Fail;
-#if SSSFTR_SE05X_RSA
+#if SSSFTR_SE05X_RSA && SSS_HAVE_RSA
     smStatus_t status = SM_NOT_OK;
 
     SE05x_RSAEncryptionAlgo_t rsaEncryptionAlgo = se05x_get_rsa_encrypt_mode(context->algorithm);
@@ -4100,8 +4457,13 @@ sss_status_t sss_se05x_asymmetric_sign_digest(
     switch (context->keyObject->cipherType) {
 #if SSSFTR_SE05X_ECC
     case kSSS_CipherType_EC_NIST_P:
+#if SSS_HAVE_EC_NIST_K
     case kSSS_CipherType_EC_NIST_K:
-    case kSSS_CipherType_EC_BRAINPOOL: {
+#endif
+#if SSS_HAVE_EC_BP
+    case kSSS_CipherType_EC_BRAINPOOL:
+#endif
+    {
         SE05x_ECSignatureAlgo_t ecSignAlgo = se05x_get_ec_sign_hash_mode(context->algorithm);
         status                             = Se05x_API_ECDSASign(&context->session->s_ctx,
             context->keyObject->keyId,
@@ -4111,6 +4473,7 @@ sss_status_t sss_se05x_asymmetric_sign_digest(
             signature,
             signatureLen);
     } break;
+#if SSS_HAVE_TPM_BN && SSS_HAVE_ECDAA
     case kSSS_CipherType_EC_BARRETO_NAEHRIG: {
         if (context->algorithm != kAlgorithm_SSS_ECDAA) {
             return kStatus_SSS_Fail;
@@ -4148,16 +4511,17 @@ sss_status_t sss_se05x_asymmetric_sign_digest(
             return kStatus_SSS_Fail;
         }
     } break;
-#if SSS_HAVE_SE05X_VER_GTE_06_00
+#endif // SSS_HAVE_TPM_BN && SSS_HAVE_ECDAA
+#if SSS_HAVE_SE05X_VER_GTE_06_00 && SSS_HAVE_EC_MONT
     case kSSS_CipherType_EC_MONTGOMERY: {
         LOG_W(
             "Sign operation is not supported for "
             "kSSS_CipherType_EC_MONTGOMERY curve");
         return kStatus_SSS_Fail;
     } break;
-#endif
+#endif // SSS_HAVE_SE05X_VER_GTE_06_00 && SSS_HAVE_EC_MONT
 #endif //SSSFTR_SE05X_ECC
-#if SSSFTR_SE05X_RSA
+#if SSSFTR_SE05X_RSA && SSS_HAVE_RSA
     case kSSS_CipherType_RSA:
     case kSSS_CipherType_RSA_CRT: {
         if ((context->algorithm <= kAlgorithm_SSS_RSASSA_PKCS1_PSS_MGF1_SHA512) &&
@@ -4249,7 +4613,7 @@ sss_status_t sss_se05x_asymmetric_sign_digest(
             return kStatus_SSS_Fail;
         }
     } break;
-#endif // SSSFTR_SE05X_RSA
+#endif // SSSFTR_SE05X_RSA && SSS_HAVE_RSA
     default:
         break;
     }
@@ -4325,10 +4689,12 @@ sss_status_t sss_se05x_asymmetric_sign(
     sss_se05x_asymmetric_t *context, uint8_t *srcData, size_t srcLen, uint8_t *destData, size_t *destLen)
 {
     sss_status_t retval = kStatus_SSS_Fail;
+#if (SSSFTR_SE05X_RSA && SSS_HAVE_RSA) || (SSSFTR_SE05X_ECC && SSS_HAVE_EC_ED)
     smStatus_t status   = SM_NOT_OK;
+#endif
 
     switch (context->keyObject->cipherType) {
-#if SSSFTR_SE05X_RSA
+#if SSSFTR_SE05X_RSA && SSS_HAVE_RSA
     case kSSS_CipherType_RSA:
     case kSSS_CipherType_RSA_CRT: {
         SE05x_RSASignatureAlgo_t rsaSigningAlgo = se05x_get_rsa_sign_hash_mode(context->algorithm);
@@ -4349,8 +4715,8 @@ sss_status_t sss_se05x_asymmetric_sign(
         status = Se05x_API_RSASign(
             &context->session->s_ctx, context->keyObject->keyId, rsaSigningAlgo, srcData, srcLen, destData, destLen);
     } break;
-#endif // SSSFTR_SE05X_RSA
-#if SSSFTR_SE05X_ECC
+#endif // SSSFTR_SE05X_RSA && SSS_HAVE_RSA
+#if SSSFTR_SE05X_ECC && SSS_HAVE_EC_ED
     case kSSS_CipherType_EC_TWISTED_ED: {
         if (context->algorithm == kAlgorithm_SSS_SHA512) {
             SE05x_EDSignatureAlgo_t ecSignAlgo = kSE05x_EDSignatureAlgo_ED25519PURE_SHA_512;
@@ -4396,14 +4762,17 @@ sss_status_t sss_se05x_asymmetric_sign(
 #endif
 
     } break;
-#endif // SSSFTR_SE05X_ECC
+#endif // SSSFTR_SE05X_ECC && SSS_HAVE_EC_ED
     default:
         break;
     }
 
+#if (SSSFTR_SE05X_RSA && SSS_HAVE_RSA) || (SSSFTR_SE05X_ECC && SSS_HAVE_EC_ED)
+    // status is set only in case of RSA or ED.
     if (status == SM_OK) {
         retval = kStatus_SSS_Success;
     }
+#endif
 
     return retval;
 }
@@ -4426,8 +4795,13 @@ sss_status_t sss_se05x_asymmetric_verify_digest(
     switch (context->keyObject->cipherType) {
 #if SSSFTR_SE05X_ECC
     case kSSS_CipherType_EC_NIST_P:
+#if SSS_HAVE_EC_NIST_K
     case kSSS_CipherType_EC_NIST_K:
-    case kSSS_CipherType_EC_BRAINPOOL: {
+#endif
+#if SSS_HAVE_EC_BP
+    case kSSS_CipherType_EC_BRAINPOOL:
+#endif
+    {
         SE05x_ECSignatureAlgo_t ecSignAlgo = se05x_get_ec_sign_hash_mode(context->algorithm);
         status                             = Se05x_API_ECDSAVerify(&context->session->s_ctx,
             context->keyObject->keyId,
@@ -4438,20 +4812,22 @@ sss_status_t sss_se05x_asymmetric_verify_digest(
             signatureLen,
             &result);
     } break;
+#if SSS_HAVE_TPM_BN
     case kSSS_CipherType_EC_BARRETO_NAEHRIG: {
         retval = kStatus_SSS_Fail;
         LOG_W("Verify not supported for BN Curve");
     } break;
-#if SSS_HAVE_SE05X_VER_GTE_06_00
+#endif
+#if SSS_HAVE_SE05X_VER_GTE_06_00 && SSS_HAVE_EC_MONT
     case kSSS_CipherType_EC_MONTGOMERY: {
         LOG_W(
             "Verify operation is not supported for "
             "kSSS_CipherType_EC_MONTGOMERY curve");
         return kStatus_SSS_Fail;
     } break;
-#endif
+#endif // SSS_HAVE_SE05X_VER_GTE_06_00 && SSS_HAVE_EC_MONT
 #endif // SSSFTR_SE05X_ECC
-#if SSSFTR_SE05X_RSA
+#if SSSFTR_SE05X_RSA && SSS_HAVE_RSA
     case kSSS_CipherType_RSA:
     case kSSS_CipherType_RSA_CRT: {
         if ((context->algorithm <= kAlgorithm_SSS_RSASSA_PKCS1_PSS_MGF1_SHA512) &&
@@ -4567,7 +4943,7 @@ sss_status_t sss_se05x_asymmetric_verify_digest(
         }
 
     } break;
-#endif // SSSFTR_SE05X_RSA
+#endif // SSSFTR_SE05X_RSA && SSS_HAVE_RSA
     default:
         break;
     }
@@ -4588,10 +4964,13 @@ sss_status_t sss_se05x_asymmetric_verify(
     sss_se05x_asymmetric_t *context, uint8_t *srcData, size_t srcLen, uint8_t *signature, size_t signatureLen)
 {
     sss_status_t retval   = kStatus_SSS_Fail;
+#if (SSSFTR_SE05X_RSA && SSS_HAVE_RSA) || (SSSFTR_SE05X_ECC && SSS_HAVE_EC_ED)
     smStatus_t status     = SM_NOT_OK;
     SE05x_Result_t result = kSE05x_Result_FAILURE;
+#endif
+
     switch (context->keyObject->cipherType) {
-#if SSSFTR_SE05X_RSA
+#if SSSFTR_SE05X_RSA && SSS_HAVE_RSA
     case kSSS_CipherType_RSA:
     case kSSS_CipherType_RSA_CRT: {
         SE05x_RSASignatureAlgo_t rsaSigningAlgo = se05x_get_rsa_sign_hash_mode(context->algorithm);
@@ -4618,8 +4997,8 @@ sss_status_t sss_se05x_asymmetric_verify(
             signatureLen,
             &result);
     } break;
-#endif // SSSFTR_SE05X_RSA
-#if SSSFTR_SE05X_ECC
+#endif // SSSFTR_SE05X_RSA && SSS_HAVE_RSA
+#if SSSFTR_SE05X_ECC && SSS_HAVE_EC_ED
     case kSSS_CipherType_EC_TWISTED_ED: {
 #ifdef TMP_ENDIAN_VERBOSE
         {
@@ -4670,16 +5049,19 @@ sss_status_t sss_se05x_asymmetric_verify(
                 &result);
         }
     } break;
-#endif // SSSFTR_SE05X_ECC
+#endif // SSSFTR_SE05X_ECC && SSS_HAVE_EC_ED
     default:
         break;
     }
 
+#if ((SSSFTR_SE05X_RSA && SSS_HAVE_RSA) || (SSSFTR_SE05X_ECC && SSS_HAVE_EC_ED))
+    // status is set only in case of RSA or ED.
     if (status == SM_OK) {
         if (result == kSE05x_Result_SUCCESS) {
             retval = kStatus_SSS_Success;
         }
     }
+#endif
 
     return retval;
 }
@@ -4751,7 +5133,7 @@ sss_status_t sss_se05x_cipher_init(sss_se05x_symmetric_t *context, uint8_t *iv, 
     SE05x_CipherMode_t cipherMode = se05x_get_cipher_mode(context->algorithm);
 
 #if SSSFTR_SE05X_CREATE_DELETE_CRYPTOOBJ
-    SE05x_CryptoModeSubType_t subtype = {0};
+    SE05x_CryptoModeSubType_t subtype;
     uint8_t list[1024]                = {
         0,
     };
@@ -4816,9 +5198,9 @@ exit:
 sss_status_t sss_se05x_cipher_update(
     sss_se05x_symmetric_t *context, const uint8_t *srcData, size_t srcLen, uint8_t *destData, size_t *destLen)
 {
-    sss_status_t retval                  = kStatus_SSS_Fail;
-    smStatus_t status                    = SM_NOT_OK;
-    uint8_t inputData[CIPHER_BLOCK_SIZE] = {
+    sss_status_t retval                         = kStatus_SSS_Fail;
+    smStatus_t status                           = SM_NOT_OK;
+    uint8_t inputData[CIPHER_UPDATE_DATA_SIZE]  = {
         0,
     };
     size_t inputData_len = 0;
@@ -4826,6 +5208,14 @@ sss_status_t sss_se05x_cipher_update(
     size_t output_offset = 0;
     size_t outBuffSize   = *destLen;
     size_t blockoutLen   = 0;
+
+    ENSURE_OR_GO_EXIT(srcData != NULL);
+    ENSURE_OR_GO_EXIT(destData != NULL);
+    ENSURE_OR_GO_EXIT(destLen != NULL);
+    ENSURE_OR_GO_EXIT(srcLen > 0);
+
+    /* Check overflow */
+    ENSURE_OR_GO_EXIT((context->cache_data_len + srcLen) >= context->cache_data_len);
 
     if ((context->cache_data_len + srcLen) < CIPHER_BLOCK_SIZE) {
         /* Insufficinet data to process . Cache the data */
@@ -4836,44 +5226,49 @@ sss_status_t sss_se05x_cipher_update(
     }
     else {
         /* Concatenate the unprocessed and current input data*/
-        memcpy(inputData, context->cache_data, context->cache_data_len);
-        inputData_len = context->cache_data_len;
-        memcpy((inputData + inputData_len), srcData, (CIPHER_BLOCK_SIZE - context->cache_data_len));
-        inputData_len += (CIPHER_BLOCK_SIZE - context->cache_data_len);
-        src_offset += (CIPHER_BLOCK_SIZE - context->cache_data_len);
-        context->cache_data_len = 0;
+        size_t total_data = srcLen + context->cache_data_len;
+        const uint8_t *pSrcData = NULL;
 
-        blockoutLen = outBuffSize;
-        ENSURE_OR_GO_EXIT(blockoutLen >= inputData_len);
-        status = Se05x_API_CipherUpdate(&context->session->s_ctx,
-            context->cryptoObjectId,
-            inputData,
-            inputData_len,
-            (destData + output_offset),
-            &blockoutLen);
-        ENSURE_OR_GO_EXIT(status == SM_OK);
-        outBuffSize -= blockoutLen;
-        output_offset += blockoutLen;
+        do {
+            size_t data_to_copy = (total_data > CIPHER_UPDATE_DATA_SIZE) ? (CIPHER_UPDATE_DATA_SIZE) : (total_data);
+            data_to_copy = data_to_copy - (data_to_copy % CIPHER_BLOCK_SIZE);
+            inputData_len = 0;
 
-        while (srcLen - src_offset >= CIPHER_BLOCK_SIZE) {
-            memcpy(inputData, (srcData + src_offset), 16);
-            src_offset += CIPHER_BLOCK_SIZE;
+            if (context->cache_data_len > 0) {
+                memcpy(inputData, context->cache_data, context->cache_data_len);
+                inputData_len = context->cache_data_len;
+                data_to_copy = data_to_copy - context->cache_data_len;
+                context->cache_data_len = 0;
+            }
 
-            blockoutLen   = outBuffSize;
-            inputData_len = CIPHER_BLOCK_SIZE;
+            if (inputData_len == 0) {
+                //if cache data is 0, directly assign the address of srcData. This will avoid the memcpy on srcData
+                pSrcData = (srcData + src_offset);
+            }
+            else {
+                memcpy((inputData + inputData_len), (srcData + src_offset), data_to_copy);
+                pSrcData = inputData;
+            }
+
+            inputData_len = inputData_len + data_to_copy;
+            src_offset = src_offset + data_to_copy;
+            total_data = total_data - inputData_len;
+
+            blockoutLen = outBuffSize;
             ENSURE_OR_GO_EXIT(blockoutLen >= inputData_len);
             status = Se05x_API_CipherUpdate(&context->session->s_ctx,
                 context->cryptoObjectId,
-                inputData,
+                pSrcData,
                 inputData_len,
                 (destData + output_offset),
                 &blockoutLen);
             ENSURE_OR_GO_EXIT(status == SM_OK);
+
             outBuffSize -= blockoutLen;
             output_offset += blockoutLen;
-        }
+            *destLen = output_offset;
 
-        *destLen = output_offset;
+        } while (srcLen - src_offset >= CIPHER_BLOCK_SIZE);
 
         /* Copy unprocessed data to cache */
         if ((srcLen - src_offset) > 0) {
@@ -4917,8 +5312,10 @@ sss_status_t sss_se05x_cipher_finish(
     }
 
     if (context->algorithm == kAlgorithm_SSS_AES_ECB || context->algorithm == kAlgorithm_SSS_AES_CBC) {
-        if (srcdata_updated_len % CIPHER_BLOCK_SIZE != 0) {
-            srcdata_updated_len = srcdata_updated_len + (CIPHER_BLOCK_SIZE - (srcdata_updated_len % 16));
+        if (srcdata_updated_len > 0) {
+            if (srcdata_updated_len % CIPHER_BLOCK_SIZE != 0) {
+                srcdata_updated_len = srcdata_updated_len + (CIPHER_BLOCK_SIZE - (srcdata_updated_len % 16));
+            }
         }
     }
 
@@ -5082,7 +5479,7 @@ sss_status_t sss_se05x_aead_init(
     SE05x_Cipher_Oper_t OperType =
         (context->mode == kMode_SSS_Encrypt) ? kSE05x_Cipher_Oper_Encrypt : kSE05x_Cipher_Oper_Decrypt;
 #if SSSFTR_SE05X_CREATE_DELETE_CRYPTOOBJ
-    SE05x_CryptoModeSubType_t subtype = {0};
+    SE05x_CryptoModeSubType_t subtype;
     uint8_t list[1024]                = {
         0,
     };
@@ -5465,6 +5862,8 @@ sss_status_t sss_se05x_mac_one_go(
 
     SE05x_MACAlgo_t macOperation = se05x_get_mac_algo(context->algorithm);
 
+    ENSURE_OR_GO_EXIT(macOperation != kSE05x_MACAlgo_NA);
+
     status = Se05x_API_MACOneShot_G(
         &context->session->s_ctx, context->keyObject->keyId, macOperation, message, messageLen, mac, macLen);
     ENSURE_OR_GO_EXIT(status == SM_OK);
@@ -5488,6 +5887,8 @@ sss_status_t sss_se05x_mac_validate_one_go(
     }
 
     macOperation = se05x_get_mac_algo(context->algorithm);
+
+    ENSURE_OR_GO_EXIT(macOperation != kSE05x_MACAlgo_NA);
 
     status = Se05x_API_MACOneShot_V(&context->session->s_ctx,
         context->keyObject->keyId,
@@ -5514,7 +5915,7 @@ sss_status_t sss_se05x_mac_init(sss_se05x_mac_t *context)
     sss_status_t retval = kStatus_SSS_Fail;
     smStatus_t status   = SM_NOT_OK;
 #if SSSFTR_SE05X_CREATE_DELETE_CRYPTOOBJ
-    SE05x_CryptoModeSubType_t subtype = {0};
+    SE05x_CryptoModeSubType_t subtype;
 
     uint8_t list[1024] = {
         0,
@@ -5531,11 +5932,13 @@ sss_status_t sss_se05x_mac_init(sss_se05x_mac_t *context)
         cryptoContext           = kSE05x_CryptoContext_SIGNATURE;
         context->cryptoObjectId = kSE05x_CryptoObject_CMAC_128;
         break;
+#if SSS_HAVE_HASH_1
     case kAlgorithm_SSS_HMAC_SHA1:
         subtype.mac             = kSE05x_MACAlgo_HMAC_SHA1;
         cryptoContext           = kSE05x_CryptoContext_SIGNATURE;
         context->cryptoObjectId = kSE05x_CryptoObject_HMAC_SHA1;
         break;
+#endif
     case kAlgorithm_SSS_HMAC_SHA256:
         subtype.mac             = kSE05x_MACAlgo_HMAC_SHA256;
         cryptoContext           = kSE05x_CryptoContext_SIGNATURE;
@@ -5546,11 +5949,13 @@ sss_status_t sss_se05x_mac_init(sss_se05x_mac_t *context)
         cryptoContext           = kSE05x_CryptoContext_SIGNATURE;
         context->cryptoObjectId = kSE05x_CryptoObject_HMAC_SHA384;
         break;
+#if SSS_HAVE_HASH_512
     case kAlgorithm_SSS_HMAC_SHA512:
         subtype.mac             = kSE05x_MACAlgo_HMAC_SHA512;
         cryptoContext           = kSE05x_CryptoContext_SIGNATURE;
         context->cryptoObjectId = kSE05x_CryptoObject_HMAC_SHA512;
         break;
+#endif
     default:
         return kStatus_SSS_Fail;
     }
@@ -5647,6 +6052,8 @@ sss_status_t sss_se05x_digest_one_go(
     smStatus_t status   = SM_NOT_OK;
     uint8_t sha_type    = se05x_get_sha_algo(context->algorithm);
 
+    ENSURE_OR_GO_EXIT(sha_type != kSE05x_DigestMode_NA);
+
     status = Se05x_API_SHAOneShot(&context->session->s_ctx, sha_type, message, messageLen, digest, digestLen);
     if (status != SM_OK) {
         *digestLen = 0;
@@ -5663,7 +6070,7 @@ sss_status_t sss_se05x_digest_init(sss_se05x_digest_t *context)
     sss_status_t retval = kStatus_SSS_Fail;
     smStatus_t status   = SM_NOT_OK;
 #if SSSFTR_SE05X_CREATE_DELETE_CRYPTOOBJ
-    SE05x_CryptoModeSubType_t subtype = {0};
+    SE05x_CryptoModeSubType_t subtype;
     uint8_t list[1024]                = {
         0,
     };
@@ -5672,14 +6079,18 @@ sss_status_t sss_se05x_digest_init(sss_se05x_digest_t *context)
     uint8_t create_crypto_obj = 1;
 
     switch (context->algorithm) {
+#if SSS_HAVE_HASH_1
     case kAlgorithm_SSS_SHA1:
         subtype.digest          = kSE05x_DigestMode_SHA;
         context->cryptoObjectId = kSE05x_CryptoObject_DIGEST_SHA;
         break;
+#endif
+#if SSS_HAVE_HASH_224
     case kAlgorithm_SSS_SHA224:
         subtype.digest          = kSE05x_DigestMode_SHA224;
         context->cryptoObjectId = kSE05x_CryptoObject_DIGEST_SHA224;
         break;
+#endif
     case kAlgorithm_SSS_SHA256:
         subtype.digest          = kSE05x_DigestMode_SHA256;
         context->cryptoObjectId = kSE05x_CryptoObject_DIGEST_SHA256;
@@ -5688,10 +6099,12 @@ sss_status_t sss_se05x_digest_init(sss_se05x_digest_t *context)
         subtype.digest          = kSE05x_DigestMode_SHA384;
         context->cryptoObjectId = kSE05x_CryptoObject_DIGEST_SHA384;
         break;
+#if SSS_HAVE_HASH_512
     case kAlgorithm_SSS_SHA512:
         subtype.digest          = kSE05x_DigestMode_SHA512;
         context->cryptoObjectId = kSE05x_CryptoObject_DIGEST_SHA512;
         break;
+#endif
     default:
         return kStatus_SSS_Fail;
     }
@@ -6008,7 +6421,7 @@ sss_status_t sss_se05x_set_feature(
 {
     sss_status_t retval                    = kStatus_SSS_Fail;
     smStatus_t status                      = SM_NOT_OK;
-    Se05x_AppletFeatures_t applet_features = {0};
+    Se05x_AppletFeatures_t applet_features = { kSE05x_AppletConfig_NA,NULL };
     applet_features.extended_features      = NULL;
 #if SSS_HAVE_SE05X_VER_GTE_06_00
     SE05x_ExtendedFeatures_t extended = {0};
@@ -6225,39 +6638,53 @@ static sss_status_t se05x_check_input_len(size_t inLen, sss_algorithm_t algorith
     switch (algorithm) {
     case kAlgorithm_SSS_SHA1:
     case kAlgorithm_SSS_ECDSA_SHA1:
+#if SSS_HAVE_RSA
     case kAlgorithm_SSS_RSASSA_PKCS1_V1_5_SHA1:
     case kAlgorithm_SSS_RSASSA_PKCS1_PSS_MGF1_SHA1:
+#endif
         retval = (inLen == 20) ? kStatus_SSS_Success : kStatus_SSS_Fail;
         break;
     case kAlgorithm_SSS_SHA224:
     case kAlgorithm_SSS_ECDSA_SHA224:
+#if SSS_HAVE_RSA
     case kAlgorithm_SSS_RSASSA_PKCS1_V1_5_SHA224:
     case kAlgorithm_SSS_RSASSA_PKCS1_PSS_MGF1_SHA224:
+#endif
         retval = (inLen == 28) ? kStatus_SSS_Success : kStatus_SSS_Fail;
         break;
     case kAlgorithm_SSS_SHA256:
+#if SSS_HAVE_ECDAA
     case kAlgorithm_SSS_ECDAA:
+#endif
     case kAlgorithm_SSS_ECDSA_SHA256:
+#if SSS_HAVE_RSA
     case kAlgorithm_SSS_RSASSA_PKCS1_V1_5_SHA256:
     case kAlgorithm_SSS_RSASSA_PKCS1_PSS_MGF1_SHA256:
+#endif
         retval = (inLen == 32) ? kStatus_SSS_Success : kStatus_SSS_Fail;
         break;
     case kAlgorithm_SSS_SHA384:
     case kAlgorithm_SSS_ECDSA_SHA384:
+#if SSS_HAVE_RSA
     case kAlgorithm_SSS_RSASSA_PKCS1_V1_5_SHA384:
     case kAlgorithm_SSS_RSASSA_PKCS1_PSS_MGF1_SHA384:
+#endif
         retval = (inLen == 48) ? kStatus_SSS_Success : kStatus_SSS_Fail;
         break;
     case kAlgorithm_SSS_SHA512:
     case kAlgorithm_SSS_ECDSA_SHA512:
+#if SSS_HAVE_RSA
     case kAlgorithm_SSS_RSASSA_PKCS1_V1_5_SHA512:
     case kAlgorithm_SSS_RSASSA_PKCS1_PSS_MGF1_SHA512:
+#endif
         retval = (inLen == 64) ? kStatus_SSS_Success : kStatus_SSS_Fail;
         break;
+#if SSS_HAVE_RSA
     case kAlgorithm_SSS_RSASSA_PKCS1_V1_5_NO_HASH:
     case kAlgorithm_SSS_RSASSA_NO_PADDING:
         retval = kStatus_SSS_Success;
         break;
+#endif
     default:
         LOG_E("Unkown algorithm");
         retval = kStatus_SSS_Fail;
@@ -6268,7 +6695,7 @@ static sss_status_t se05x_check_input_len(size_t inLen, sss_algorithm_t algorith
 
 static SE05x_ECSignatureAlgo_t se05x_get_ec_sign_hash_mode(sss_algorithm_t algorithm)
 {
-    uint8_t mode;
+    SE05x_ECSignatureAlgo_t mode;
     switch (algorithm) {
     case kAlgorithm_SSS_SHA1:
     case kAlgorithm_SSS_ECDSA_SHA1:
@@ -6297,7 +6724,7 @@ static SE05x_ECSignatureAlgo_t se05x_get_ec_sign_hash_mode(sss_algorithm_t algor
     return mode;
 }
 
-#if SSSFTR_SE05X_RSA
+#if SSSFTR_SE05X_RSA && SSS_HAVE_RSA
 static SE05x_RSAEncryptionAlgo_t se05x_get_rsa_encrypt_mode(sss_algorithm_t algorithm)
 {
     SE05x_RSAEncryptionAlgo_t mode;
@@ -6394,20 +6821,24 @@ SE05x_MACAlgo_t se05x_get_mac_algo(sss_algorithm_t algorithm)
     case kAlgorithm_SSS_CMAC_AES:
         mode = kSE05x_MACAlgo_CMAC_128;
         break;
+#if SSS_HAVE_HASH_1
     case kAlgorithm_SSS_HMAC_SHA1:
         mode = kSE05x_MACAlgo_HMAC_SHA1;
         break;
+#endif
     case kAlgorithm_SSS_HMAC_SHA256:
         mode = kSE05x_MACAlgo_HMAC_SHA256;
         break;
     case kAlgorithm_SSS_HMAC_SHA384:
         mode = kSE05x_MACAlgo_HMAC_SHA384;
         break;
+#if SSS_HAVE_HASH_512
     case kAlgorithm_SSS_HMAC_SHA512:
         mode = kSE05x_MACAlgo_HMAC_SHA512;
         break;
+#endif
     default:
-        mode = 0;
+        mode = kSE05x_MACAlgo_NA;
     }
     return mode;
 }
@@ -6417,13 +6848,17 @@ SE05x_DigestMode_t se05x_get_sha_algo(sss_algorithm_t algorithm)
     SE05x_DigestMode_t sha_type;
 
     switch (algorithm) {
+#if SSS_HAVE_HASH_1
     case kAlgorithm_SSS_SHA1:
     case kAlgorithm_SSS_HMAC_SHA1:
         sha_type = kSE05x_DigestMode_SHA;
         break;
+#endif
+#if SSS_HAVE_HASH_224
     case kAlgorithm_SSS_SHA224:
         sha_type = kSE05x_DigestMode_SHA224;
         break;
+#endif
     case kAlgorithm_SSS_SHA256:
     case kAlgorithm_SSS_HMAC_SHA256:
         sha_type = kSE05x_DigestMode_SHA256;
@@ -6432,10 +6867,12 @@ SE05x_DigestMode_t se05x_get_sha_algo(sss_algorithm_t algorithm)
     case kAlgorithm_SSS_HMAC_SHA384:
         sha_type = kSE05x_DigestMode_SHA384;
         break;
+#if SSS_HAVE_HASH_512
     case kAlgorithm_SSS_SHA512:
     case kAlgorithm_SSS_HMAC_SHA512:
         sha_type = kSE05x_DigestMode_SHA512;
         break;
+#endif
     default:
         sha_type = 0x00;
     }
@@ -6495,7 +6932,7 @@ static smStatus_t sss_se05x_LL_set_ec_key(pSe05xSession_t session_ctx,
 }
 #endif //SSSFTR_SE05X_ECC
 
-#if SSSFTR_SE05X_AES && SSSFTR_SE05X_KEY_SET
+#if SSSFTR_SE05X_KEY_SET
 static smStatus_t sss_se05x_LL_set_symm_key(pSe05xSession_t session_ctx,
     pSe05xPolicy_t policy,
     SE05x_MaxAttemps_t maxAttempt,
@@ -6534,7 +6971,7 @@ static smStatus_t sss_se05x_LL_set_symm_key(pSe05xSession_t session_ctx,
 }
 #endif //SSSFTR_SE05X_AES && SSSFTR_SE05X_KEY_SET
 
-#if SSSFTR_SE05X_RSA && SSSFTR_SE05X_KEY_SET
+#if SSSFTR_SE05X_RSA && SSSFTR_SE05X_KEY_SET && SSS_HAVE_RSA
 static smStatus_t sss_se05x_LL_set_RSA_key(pSe05xSession_t session_ctx,
     pSe05xPolicy_t policy,
     uint32_t objectID,

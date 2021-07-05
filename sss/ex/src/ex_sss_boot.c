@@ -37,9 +37,9 @@ extern "C" {
 #include "ex_sss_boot_int.h"
 #include "nxLog_App.h"
 #include "stdio.h"
-
+#if defined(SECURE_WORLD)
 #include "fsl_sss_lpc55s_apis.h"
-
+#endif
 #if SSS_HAVE_APPLET_SE05X_IOT
 #include "se05x_APDU.h"
 #endif

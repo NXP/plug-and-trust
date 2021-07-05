@@ -740,7 +740,7 @@ smStatus_t Se05x_API_ECDHGenerateSharedSecret_InObject(pSe05xSession_t session_c
     uint8_t invertEndianness)
 {
     smStatus_t retStatus = SM_NOT_OK;
-    tlvHeader_t hdr = {
+    tlvHeader_t hdr      = {
         {kSE05x_CLA, kSE05x_INS_CRYPTO, kSE05x_P1_EC, invertEndianness == 0x01 ? kSE05x_P2_DH_REVERSE : kSE05x_P2_DH}};
     uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
     size_t cmdbufLen = 0;
@@ -1116,7 +1116,6 @@ cleanup:
     return retStatus;
 }
 
-
 smStatus_t Se05x_API_GetExtVersion(pSe05xSession_t session_ctx, uint8_t *pappletVersion, size_t *appletVersionLen)
 {
     smStatus_t retStatus = SM_NOT_OK;
@@ -1184,7 +1183,6 @@ smStatus_t Se05x_API_SendCardManagerCmd(
 cleanup:
     return retStatus;
 }
-
 
 smStatus_t Se05x_API_UpdateRSAKey_Ver(pSe05xSession_t session_ctx,
     pSe05xPolicy_t policy,
@@ -1535,4 +1533,3 @@ smStatus_t Se05x_API_UpdateCounter(
 cleanup:
     return retStatus;
 }
-

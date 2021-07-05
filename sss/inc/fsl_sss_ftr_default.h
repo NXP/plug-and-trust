@@ -274,7 +274,7 @@
 
 /** SBL : Enable/Disable SBL Bootable support
  *
- * This option is to enable/disable SBL Bootable support
+ * This option is to enable/disable boot from SBL by switching linker address
  */
 
 /** Not SBL bootable */
@@ -575,6 +575,12 @@
 /* Montgomery Curve is enabled */
 #define SSS_HAVE_EC_MONT 1
 
+/* MIFARE DESFire is enabled */
+#define SSS_HAVE_MIFARE_DESFIRE 1
+
+/* PBKDF2 is enabled */
+#define SSS_HAVE_PBKDF2 1
+
 /* TLS handshake support on SE is enabled */
 #define SSS_HAVE_TLS_HANDSHAKE 1
 
@@ -634,6 +640,31 @@
 #if SSS_HAVE_RSA
 #   define SSS_HAVE_RSA_4K 1
 #endif
+
+#if SSS_HAVE_ECC
+#   define SSS_HAVE_EC_NIST_192 1
+#   define SSS_HAVE_EC_NIST_224 1
+#   define SSS_HAVE_EC_NIST_256 1
+#   define SSS_HAVE_EC_NIST_384 1
+#   define SSS_HAVE_EC_NIST_521 1
+#   define SSS_HAVE_EC_BP 1
+#   define SSS_HAVE_EC_NIST_K 1
+#   define SSS_HAVE_ECDAA 1
+#   define SSS_HAVE_EDDSA 1
+#if SSS_HAVE_APPLET_SE05X_A
+#   undef SSS_HAVE_ECDAA
+#   undef SSS_HAVE_EDDSA
+#   define SSS_HAVE_ECDAA 0
+#   define SSS_HAVE_EDDSA 0
+#endif
+#endif
+
+#if SSS_HAVE_APPLET
+#define SSS_HAVE_HASH_1 1
+#define SSS_HAVE_HASH_224 1
+#define SSS_HAVE_HASH_512 1
+#endif
+
 
 /* ========= Calculated values : END ======================== */
 

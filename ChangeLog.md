@@ -1,5 +1,12 @@
 # Plug-And-Trust Mini Package Change Log
 
+## Release v03.03.00
+
+- sss_openssl_cipher_one_go() api modified to use EVP calls for AES (ECB, CBC, CTR)
+
+- sss_se05x_cipher_update() api modified to use block size of 256 to enhance performance.
+
+
 ## Release v03.01.00
 
 - Extended kSSS_KeyPart_Default for other objectType.

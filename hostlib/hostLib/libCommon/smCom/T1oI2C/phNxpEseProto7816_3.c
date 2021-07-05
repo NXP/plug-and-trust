@@ -123,7 +123,8 @@ static bool_t phNxpEseProto7816_GetRawFrame(void* conn_ctx, uint32_t *data_len, 
 static uint16_t phNxpEseProto7816_ComputeCRC(unsigned char *p_buff, uint32_t offset,
         uint32_t length)
 {
-    uint16_t CAL_CRC = 0xFFFF, CRC = 0x0000, i = 0;
+    uint16_t CAL_CRC = 0xFFFF, CRC = 0x0000;
+    uint32_t i = 0;
 
     ENSURE_OR_GO_EXIT(p_buff != NULL);
     for (i = offset; i < length; i++)
@@ -366,15 +367,34 @@ static  bool_t phNxpEseProto7816_sendRframe(void* conn_ctx, rFrameTypes_t rFrame
 #endif
     uint16_t calc_crc=0;
     iFrameInfo_t *pRx_lastRcvdIframeInfo = &phNxpEseProto7816_3_Var.phNxpEseRx_Cntx.lastRcvdIframeInfo;
+    rFrameInfo_t *pNextTx_RframeInfo = &phNxpEseProto7816_3_Var.phNxpEseNextTx_Cntx.RframeInfo;
     if(RNACK == rFrameType) /* R-NACK */
     {
-        recv_ack[PH_PROPTO_7816_PCB_OFFSET] = 0x82;
+        switch(pNextTx_RframeInfo->errCode)
+        {
+        case PARITY_ERROR:
+            recv_ack[PH_PROPTO_7816_PCB_OFFSET] |= (0x01 & 0xFF);
+        break;
+
+        case OTHER_ERROR:
+            recv_ack[PH_PROPTO_7816_PCB_OFFSET] |= (0x02 & 0xFF);
+        break;
+
+        case SOF_MISSED_ERROR:
+        case UNDEFINED_ERROR:
+            recv_ack[PH_PROPTO_7816_PCB_OFFSET] |= (0x03 & 0xFF);
+        break;
+
+        default:
+        break;
+        }
     }
     else /* R-ACK*/
     {
         /* This update is helpful in-case a R-NACK is transmitted from the MW */
         phNxpEseProto7816_3_Var.lastSentNonErrorframeType = RFRAME;
     }
+
     recv_ack[PH_PROPTO_7816_PCB_OFFSET] |= ((pRx_lastRcvdIframeInfo->seqNo ^ 1) << 4);
     LOG_D("%s recv_ack[PH_PROPTO_7816_PCB_OFFSET]:0x%x ", __FUNCTION__, recv_ack[PH_PROPTO_7816_PCB_OFFSET]);
     calc_crc = phNxpEseProto7816_ComputeCRC(recv_ack, 0x00, (sizeof(recv_ack) -2));
@@ -1049,11 +1069,12 @@ static bool_t phNxpEseProto7816_ProcessResponse(void* conn_ctx)
     }
     else
     {
-        LOG_E("%s phNxpEseProto7816_GetRawFrame failed ", __FUNCTION__);
+        LOG_E("%s phNxpEseProto7816_GetRawFrame failed starting recovery", __FUNCTION__);
         if ((SFRAME == phNxpEseProto7816_3_Var.phNxpEseLastTx_Cntx.FrameType) &&
             ((WTX_RSP == pLastTx_SframeInfo->sFrameType) || (RESYNCH_RSP == pLastTx_SframeInfo->sFrameType))) {
             if(phNxpEseProto7816_3_Var.rnack_retry_counter < phNxpEseProto7816_3_Var.rnack_retry_limit)
             {
+                phNxpEse_clearReadBuffer(conn_ctx);
                 phNxpEseProto7816_3_Var.phNxpEseRx_Cntx.lastRcvdFrameType = INVALID ;
                 phNxpEseProto7816_3_Var.phNxpEseNextTx_Cntx.FrameType= RFRAME;
                 pNextTx_RframeInfo->errCode = OTHER_ERROR;
@@ -1063,8 +1084,31 @@ static bool_t phNxpEseProto7816_ProcessResponse(void* conn_ctx)
             }
             else
             {
+                LOG_E("%s Recovery failed completely, Going to exit ", __FUNCTION__);
                 phNxpEseProto7816_3_Var.rnack_retry_counter = PH_PROTO_7816_VALUE_ZERO;
-                /* Re-transmission failed completely, Going to exit */
+                /* Recovery failed completely, Going to exit */
+                phNxpEseProto7816_3_Var.phNxpEseProto7816_nextTransceiveState = IDLE_STATE;
+                phNxpEseProto7816_3_Var.timeoutCounter = PH_PROTO_7816_VALUE_ZERO;
+            }
+        }
+        /*ISO7816-3 Rule 7.1 Implementation*/
+        else if (IFRAME == phNxpEseProto7816_3_Var.phNxpEseLastTx_Cntx.FrameType)
+        {
+            if(phNxpEseProto7816_3_Var.rnack_retry_counter < phNxpEseProto7816_3_Var.rnack_retry_limit)
+            {
+                phNxpEse_clearReadBuffer(conn_ctx);
+                phNxpEseProto7816_3_Var.phNxpEseRx_Cntx.lastRcvdFrameType = INVALID ;
+                phNxpEseProto7816_3_Var.phNxpEseNextTx_Cntx.FrameType= RFRAME;
+                pNextTx_RframeInfo->errCode = PARITY_ERROR;
+                pNextTx_RframeInfo->seqNo = (!pRx_lastRcvdIframeInfo->seqNo) << 4;
+                phNxpEseProto7816_3_Var.phNxpEseProto7816_nextTransceiveState = SEND_R_NACK ;
+                phNxpEseProto7816_3_Var.rnack_retry_counter++;
+            }
+            else
+            {
+                LOG_E("%s Recovery failed completely, Going to exit ", __FUNCTION__);
+                phNxpEseProto7816_3_Var.rnack_retry_counter = PH_PROTO_7816_VALUE_ZERO;
+                /* Recovery failed completely, Going to exit */
                 phNxpEseProto7816_3_Var.phNxpEseProto7816_nextTransceiveState = IDLE_STATE;
                 phNxpEseProto7816_3_Var.timeoutCounter = PH_PROTO_7816_VALUE_ZERO;
             }
@@ -1081,7 +1125,8 @@ static bool_t phNxpEseProto7816_ProcessResponse(void* conn_ctx)
             }
             else
             {
-                /* Re-transmission failed completely, Going to exit */
+                /* Recovery failed completely, Going to exit */
+                LOG_E("%s Recovery failed completely, Going to exit ", __FUNCTION__);
                 phNxpEseProto7816_3_Var.phNxpEseProto7816_nextTransceiveState = IDLE_STATE;
                 phNxpEseProto7816_3_Var.timeoutCounter = PH_PROTO_7816_VALUE_ZERO;
             }

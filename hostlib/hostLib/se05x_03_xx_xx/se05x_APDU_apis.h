@@ -1033,7 +1033,7 @@ smStatus_t Se05x_API_WritePCR(pSe05xSession_t session_ctx,
     size_t inputDataLen);
 #endif // ENABLE_DEPRECATED_API_WritePCR
 smStatus_t Se05x_API_WritePCR_WithType(pSe05xSession_t session_ctx,
-	const SE05x_INS_t ins_type,
+    const SE05x_INS_t ins_type,
     pSe05xPolicy_t policy,
     uint32_t pcrID,
     const uint8_t *initialValue,

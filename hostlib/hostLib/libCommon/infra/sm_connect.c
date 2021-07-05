@@ -57,9 +57,6 @@
 #if defined(PCSC)
 #include "smComPCSC.h"
 #endif
-#if defined(IPC)
-#include "smComIpc.h"
-#endif
 #if defined(SMCOM_JRCP_V1)
 #include "smComSocket.h"
 #endif
@@ -454,8 +451,6 @@ U16 SM_Connect(void *conn_ctx, SmCommState_t *commState, U8 *atr, U16 *atrLen)
     sw = smComSCI2C_Open(conn_ctx, ESTABLISH_SCI2C, 0x00, atr, atrLen);
 #elif defined(SPI)
     smComSCSPI_Init(ESTABLISH_SCI2C, 0x00, atr, atrLen);
-#elif defined(IPC)
-    sw = smComIpc_Open(atr, atrLen, &(commState->hostLibVersion), &(commState->appletVersion), &(commState->sbVersion));
 #elif defined(T1oI2C)
     sw = smComT1oI2C_Open(conn_ctx, ESE_MODE_NORMAL, 0x00, atr, atrLen);
 #elif defined(SMCOM_JRCP_V1) || defined(SMCOM_JRCP_V2) || defined(PCSC) || defined(SMCOM_PCSC)
@@ -586,10 +581,6 @@ U16 SM_Close(void *conn_ctx, U8 mode)
 #if defined(PCSC)
     sw = smComPCSC_Close(mode);
 #endif
-#if defined(IPC)
-    AX_UNUSED_ARG(mode);
-    sw = smComIpc_Close();
-#endif
 #if defined(T1oI2C)
     sw = smComT1oI2C_Close(conn_ctx, mode);
 #endif
@@ -650,17 +641,6 @@ U16 SM_SendAPDU(U8 *cmd, U16 cmdLen, U8 *resp, U16 *respLen)
     return (U16)status;
 }
 
-#if defined(IPC)
-U16 SM_LockChannel()
-{
-    return smComIpc_LockChannel();
-}
-
-U16 SM_UnlockChannel()
-{
-    return smComIpc_UnlockChannel();
-}
-#endif
 
 #if defined(SMCOM_JRCP_V1_AM)
 U16 SM_LockChannel()

@@ -295,6 +295,7 @@ sss_status_t sss_util_asn1_rsa_parse_private(const uint8_t *key,
         }
         else
             *modlen = taglen;
+        ENSURE_OR_GO_EXIT(modulus != NULL);
         *modulus = SSS_MALLOC(*modlen);
         if ((*modulus != NULL) && ((*modlen) > 0)) {
             ENSURE_OR_GO_EXIT(bufIndex < keylen);
@@ -315,6 +316,7 @@ sss_status_t sss_util_asn1_rsa_parse_private(const uint8_t *key,
         goto exit;
     if (pubExplen != NULL) {
         *pubExplen = taglen;
+        ENSURE_OR_GO_EXIT(pubExp != NULL);
         *pubExp    = SSS_MALLOC(*pubExplen);
         if ((*pubExp != NULL) && ((*pubExplen) > 0)) {
             ENSURE_OR_GO_EXIT(bufIndex < keylen);
@@ -346,6 +348,7 @@ sss_status_t sss_util_asn1_rsa_parse_private(const uint8_t *key,
         }
         else
             *priExplen = taglen;
+        ENSURE_OR_GO_EXIT(priExp != NULL);
         *priExp = SSS_MALLOC(*priExplen);
         if ((*priExp != NULL) && ((*priExplen) > 0)) {
             ENSURE_OR_GO_EXIT(bufIndex < keylen);
@@ -376,6 +379,7 @@ sss_status_t sss_util_asn1_rsa_parse_private(const uint8_t *key,
         }
         else
             *prime1len = taglen;
+        ENSURE_OR_GO_EXIT(prime1 != NULL);
         *prime1 = SSS_MALLOC(*prime1len);
         if ((*prime1 != NULL) && ((*prime1len) > 0)) {
             ENSURE_OR_GO_EXIT(bufIndex < keylen);
@@ -407,6 +411,7 @@ sss_status_t sss_util_asn1_rsa_parse_private(const uint8_t *key,
         }
         else
             *prime2len = taglen;
+        ENSURE_OR_GO_EXIT(prime2 != NULL);
         *prime2 = SSS_MALLOC(*prime2len);
         if (*prime2 == NULL) {
             LOG_E("malloc failed");
@@ -442,6 +447,7 @@ sss_status_t sss_util_asn1_rsa_parse_private(const uint8_t *key,
         }
         else
             *exponent1len = taglen;
+        ENSURE_OR_GO_EXIT(exponent1 != NULL);
         *exponent1 = SSS_MALLOC(*exponent1len);
         if ((*exponent1 != NULL) && ((*exponent1len) > 0)) {
             ENSURE_OR_GO_EXIT(bufIndex < keylen);
@@ -473,6 +479,7 @@ sss_status_t sss_util_asn1_rsa_parse_private(const uint8_t *key,
         }
         else
             *exponent2len = taglen;
+        ENSURE_OR_GO_EXIT(exponent2 != NULL);
         *exponent2 = SSS_MALLOC(*exponent2len);
         if (*exponent2 == NULL) {
             LOG_E("malloc failed");
@@ -508,6 +515,7 @@ sss_status_t sss_util_asn1_rsa_parse_private(const uint8_t *key,
         }
         else
             *coefficientlen = taglen;
+        ENSURE_OR_GO_EXIT(coefficient != NULL);
         *coefficient = SSS_MALLOC(*coefficientlen);
         if ((*coefficient != NULL) && ((*coefficientlen) > 0)) {
             ENSURE_OR_GO_EXIT(bufIndex < keylen);
@@ -614,6 +622,7 @@ sss_status_t sss_util_asn1_rsa_parse_private_allow_invalid_key(const uint8_t *ke
         }
         else
             *modlen = taglen;
+        ENSURE_OR_GO_EXIT(modulus != NULL);
         *modulus = SSS_MALLOC(*modlen);
         if ((*modulus != NULL) && ((*modlen) > 0)) {
             ENSURE_OR_GO_EXIT(bufIndex < keylen);
@@ -634,6 +643,7 @@ sss_status_t sss_util_asn1_rsa_parse_private_allow_invalid_key(const uint8_t *ke
 
     if (pubExplen != NULL) {
         *pubExplen = taglen;
+        ENSURE_OR_GO_EXIT(pubExp != NULL);
         *pubExp    = SSS_MALLOC(*pubExplen);
         ENSURE_OR_GO_EXIT(bufIndex < keylen);
         if ((*pubExp != NULL) && ((*pubExplen) > 0)) {
@@ -665,6 +675,7 @@ sss_status_t sss_util_asn1_rsa_parse_private_allow_invalid_key(const uint8_t *ke
         }
         else
             *priExplen = taglen;
+        ENSURE_OR_GO_EXIT(priExp != NULL);
         *priExp = SSS_MALLOC(*priExplen);
         if ((*priExp != NULL) && ((*priExplen) > 0)) {
             ENSURE_OR_GO_EXIT(bufIndex < keylen);
@@ -696,6 +707,7 @@ sss_status_t sss_util_asn1_rsa_parse_private_allow_invalid_key(const uint8_t *ke
         }
         else
             *prime1len = taglen;
+        ENSURE_OR_GO_EXIT(prime1 != NULL);
         *prime1 = SSS_MALLOC(*prime1len);
         if ((*prime1 != NULL) && ((*prime1len) > 0)) {
             ENSURE_OR_GO_EXIT(bufIndex < keylen);
@@ -727,6 +739,7 @@ sss_status_t sss_util_asn1_rsa_parse_private_allow_invalid_key(const uint8_t *ke
         }
         else
             *prime2len = taglen;
+        ENSURE_OR_GO_EXIT(prime2 != NULL);
         *prime2 = SSS_MALLOC(*prime2len);
         if (*prime2 == NULL) {
             LOG_E("malloc failed");
@@ -762,6 +775,7 @@ sss_status_t sss_util_asn1_rsa_parse_private_allow_invalid_key(const uint8_t *ke
         }
         else
             *exponent1len = taglen;
+        ENSURE_OR_GO_EXIT(exponent1 != NULL);
         *exponent1 = SSS_MALLOC(*exponent1len);
         if ((*exponent1 != NULL) && ((*exponent1len) > 0)) {
             ENSURE_OR_GO_EXIT(bufIndex < keylen);
@@ -793,6 +807,7 @@ sss_status_t sss_util_asn1_rsa_parse_private_allow_invalid_key(const uint8_t *ke
         }
         else
             *exponent2len = taglen;
+        ENSURE_OR_GO_EXIT(exponent2 != NULL);
         *exponent2 = SSS_MALLOC(*exponent2len);
         if (*exponent2 == NULL) {
             LOG_E("malloc failed");
@@ -828,6 +843,7 @@ sss_status_t sss_util_asn1_rsa_parse_private_allow_invalid_key(const uint8_t *ke
         }
         else
             *coefficientlen = taglen;
+        ENSURE_OR_GO_EXIT(coefficient != NULL);
         *coefficient = SSS_MALLOC(*coefficientlen);
         if ((*coefficient != NULL) && ((*coefficientlen) > 0)) {
             ENSURE_OR_GO_EXIT(bufIndex < keylen);
@@ -1090,6 +1106,12 @@ sss_status_t sss_util_asn1_rsa_get_public(
     size_t pbkeylen     = modlen + pubExplen + sizeof(grsa1kPubHeader) + 3 + 3;
     size_t index        = 0;
     size_t intModLEn    = modlen + 1; // RSA Key has null byte before moduls start
+
+    ENSURE_OR_GO_EXIT(key != NULL);
+    ENSURE_OR_GO_EXIT(keylen != NULL);
+    ENSURE_OR_GO_EXIT(modulus != NULL);
+    ENSURE_OR_GO_EXIT(pubExp != NULL);
+
     if (*keylen < pbkeylen) {
         LOG_E("Buffer not sufficient");
         goto exit;
@@ -1148,11 +1170,16 @@ exit:
     return status;
 }
 
+#if SSS_HAVE_ECDAA
 sss_status_t sss_util_asn1_ecdaa_get_signature(
     uint8_t *signature, size_t *signatureLen, uint8_t *rawSignature, size_t rawSignatureLen)
 {
     sss_status_t status = kStatus_SSS_Fail;
     size_t signAsn1Len, r_len, s_len;
+
+    ENSURE_OR_GO_EXIT(signature != NULL);
+    ENSURE_OR_GO_EXIT(signatureLen != NULL);
+    ENSURE_OR_GO_EXIT(rawSignature != NULL);
 
     r_len = rawSignatureLen / 2;
     s_len = rawSignatureLen / 2;
@@ -1193,6 +1220,7 @@ sss_status_t sss_util_asn1_ecdaa_get_signature(
 exit:
     return status;
 }
+#endif
 
 #if 0
 static  uint8_t *asn_1_parse_header(uint8_t *key, size_t keylen)
@@ -1275,6 +1303,10 @@ sss_status_t sss_util_asn1_get_oid_from_header(uint8_t *input, size_t inLen, uin
     uint8_t outBufindex = 0;
     sss_status_t status = kStatus_SSS_Fail;
 
+    ENSURE_OR_GO_EXIT(input != NULL);
+    ENSURE_OR_GO_EXIT(output != NULL);
+    ENSURE_OR_GO_EXIT(outLen != NULL);
+
     for (;;) {
         ENSURE_OR_GO_EXIT(i < inLen);
         tag = input[i++];
@@ -1287,7 +1319,7 @@ sss_status_t sss_util_asn1_get_oid_from_header(uint8_t *input, size_t inLen, uin
             }
             else if (taglen == 0x82) {
                 ENSURE_OR_GO_EXIT(i < (inLen - 1));
-                taglen = input[i] | input[i + 1] << 8;
+                taglen = ((input[i] << (0 * 8)) & 0x00FF) + ((input[i + 1] << (1 * 8)) & 0xFF00);
                 i      = i + 2;
             }
 
@@ -1348,6 +1380,10 @@ sss_status_t sss_util_asn1_get_oid_from_sssObj(sss_object_t *pkeyObject, uint32_
     size_t pbKeyBitLen   = 0;
     size_t pbKeyBytetLen = sizeof(pbKey);
 
+    ENSURE_OR_GO_EXIT(pkeyObject != NULL);
+    ENSURE_OR_GO_EXIT(output != NULL);
+    ENSURE_OR_GO_EXIT(outLen != NULL);
+
     status = sss_key_store_get_key(pkeyObject->keyStore, pkeyObject, pbKey, &pbKeyBytetLen, &pbKeyBitLen);
 
     if (status != kStatus_SSS_Success) {
@@ -1372,6 +1408,10 @@ sss_status_t sss_util_pkcs8_asn1_get_ec_public_key_index(
     sss_status_t status = kStatus_SSS_Fail;
     uint8_t value_index = 0;
 
+    ENSURE_OR_GO_EXIT(input != NULL);
+    ENSURE_OR_GO_EXIT(outkeyIndex != NULL);
+    ENSURE_OR_GO_EXIT(publicKeyLen != NULL);
+
     for (;;) {
         ENSURE_OR_GO_EXIT(i < inLen);
         int tag = input[i++];
@@ -1385,7 +1425,7 @@ sss_status_t sss_util_pkcs8_asn1_get_ec_public_key_index(
             }
             else if (taglen == 0x82) {
                 ENSURE_OR_GO_EXIT(i < (inLen - 1));
-                taglen = input[i] | input[i + 1] << 8;
+                taglen = ((input[i] << (0 * 8)) & 0x00FF) + ((input[i + 1] << (1 * 8)) & 0xFF00);
                 i      = i + 2;
             }
 
@@ -1436,6 +1476,12 @@ sss_status_t sss_util_pkcs8_asn1_get_ec_pair_key_index(const uint8_t *input,
     size_t taglen       = 0;
     sss_status_t status = kStatus_SSS_Fail;
     //uint8_t octate_string_start = 0;
+
+    ENSURE_OR_GO_EXIT(input != NULL);
+    ENSURE_OR_GO_EXIT(pubkeyIndex != NULL);
+    ENSURE_OR_GO_EXIT(publicKeyLen != NULL);
+    ENSURE_OR_GO_EXIT(prvkeyIndex != NULL);
+    ENSURE_OR_GO_EXIT(privateKeyLen != NULL);
 
     for (;;) {
         ENSURE_OR_GO_EXIT(i < inLen);
@@ -1511,6 +1557,12 @@ sss_status_t sss_util_rfc8410_asn1_get_ec_pair_key_index(const uint8_t *input,
     sss_status_t status = kStatus_SSS_Fail;
     //uint8_t octate_string_start = 0;
 
+    ENSURE_OR_GO_EXIT(input != NULL);
+    ENSURE_OR_GO_EXIT(pubkeyIndex != NULL);
+    ENSURE_OR_GO_EXIT(publicKeyLen != NULL);
+    ENSURE_OR_GO_EXIT(prvkeyIndex != NULL);
+    ENSURE_OR_GO_EXIT(privateKeyLen != NULL);
+
     for (;;) {
         ENSURE_OR_GO_EXIT(i < inLen);
         int tag = input[i++];
@@ -1524,7 +1576,7 @@ sss_status_t sss_util_rfc8410_asn1_get_ec_pair_key_index(const uint8_t *input,
             }
             else if (taglen == 0x82) {
                 ENSURE_OR_GO_EXIT(i < (inLen - 1));
-                taglen = input[i] | input[i + 1] << 8;
+                taglen = ((input[i] << (0 * 8)) & 0x00FF) + ((input[i + 1] << (1 * 8)) & 0xFF00);
                 i      = i + 2;
             }
 
@@ -1590,6 +1642,11 @@ sss_status_t sss_util_openssl_read_pkcs12(
     BIO *cert_bio                    = BIO_new(BIO_s_mem());
     STACK_OF(X509) *additional_certs = NULL;
 
+    ENSURE_OR_GO_EXIT(pkcs12_cert != NULL);
+    ENSURE_OR_GO_EXIT(password != NULL);
+    ENSURE_OR_GO_EXIT(private_key != NULL);
+    ENSURE_OR_GO_EXIT(cert != NULL);
+
     // Open PKCS12 certificate file
     pkcs12_cert_file = fopen(pkcs12_cert, "rb");
     if (pkcs12_cert_file == NULL) {
@@ -1620,24 +1677,27 @@ exit:
     return retval;
 }
 
-sss_status_t sss_util_openssl_write_pkcs12(sss_session_t *session,
-    sss_key_store_t *ks,
-    sss_object_t *obj,
-    const char *pkcs12_cert,
+sss_status_t sss_util_openssl_write_pkcs12(const char *pkcs12_cert,
     const char *password,
     const char *ref_key,
     long ref_key_length,
-    const char *cert_bytes,
-    const char *cert_subject)
+    const char *cert,
+    long cert_length)
 {
     sss_status_t retval = kStatus_SSS_Success;
 
 #if SSS_HAVE_OPENSSL
     FILE *pkcs12_file;
-    X509 *x509_cert = X509_new();
+    X509 *x509_cert = 0;
     EVP_PKEY *p_key = 0;
     PKCS12 *p12;
     BIO *pem_key_bio = BIO_new(BIO_s_mem());
+    BIO *pem_cert_bio = BIO_new(BIO_s_mem());
+
+    ENSURE_OR_GO_EXIT(pkcs12_cert != NULL);
+    ENSURE_OR_GO_EXIT(password != NULL);
+    ENSURE_OR_GO_EXIT(ref_key != NULL);
+    ENSURE_OR_GO_EXIT(cert != NULL);
 
     // Parse Private key
     BIO_write(pem_key_bio, ref_key, ref_key_length);
@@ -1647,9 +1707,9 @@ sss_status_t sss_util_openssl_write_pkcs12(sss_session_t *session,
         goto exit;
     }
 
-    //Generate certificate
-    retval = sss_util_openssl_generate_cert_pkcs12(session, ks, obj, x509_cert, cert_bytes, cert_subject);
-    if (retval != kStatus_SSS_Success || x509_cert == NULL) {
+    BIO_write(pem_cert_bio, cert, cert_length);
+    PEM_read_bio_X509(pem_cert_bio, &x509_cert, NULL, NULL);
+    if (x509_cert == NULL) {
         retval = kStatus_SSS_Fail;
         goto exit;
     }
@@ -1689,152 +1749,3 @@ exit:
     return retval;
 }
 
-sss_status_t sss_util_openssl_generate_cert_pkcs12(sss_session_t *session,
-    sss_key_store_t *ks,
-    sss_object_t *obj,
-    void *certificate_in,
-    const char *cert_bytes,
-    const char *cert_subject)
-{
-    sss_status_t status = kStatus_SSS_Fail;
-
-#if SSS_HAVE_OPENSSL
-    X509 *certificate = (X509 *)certificate_in;
-    if (!X509_set_version(certificate, 2)) {
-        return status;
-    }
-
-    ASN1_INTEGER *serialNumber = ASN1_INTEGER_new();
-    if (!ASN1_INTEGER_set(serialNumber, 1) || !X509_set_serialNumber(certificate, serialNumber)) {
-        return status;
-    }
-
-    X509_NAME *subjectName = X509_NAME_new();
-    if (!X509_NAME_add_entry_by_txt(subjectName,
-            "CN",
-            MBSTRING_ASC,
-            (const unsigned char *)cert_bytes,
-            -1 /* len */,
-            -1 /* loc */,
-            0 /* set */) ||
-        !X509_set_subject_name(certificate, subjectName)) {
-        return status;
-    }
-
-    if (!X509_set_issuer_name(certificate, subjectName)) {
-        return status;
-    }
-
-    ASN1_TIME *notBefore  = ASN1_TIME_new();
-    time_t activeDateTime = time(NULL);
-    if (!ASN1_TIME_set(notBefore, activeDateTime) || !X509_set_notBefore(certificate, notBefore)) {
-        return status;
-    }
-
-    ASN1_TIME *notAfter = ASN1_TIME_new();
-    time_t notAfterTime = time(NULL);
-    if (!ASN1_TIME_set(notAfter, notAfterTime * 2) || !X509_set_notAfter(certificate, notAfter)) {
-        return status;
-    }
-
-    /*Get public key*/
-    uint8_t key[1024];
-    size_t keybytelen = sizeof(key);
-    size_t keybitlen  = keybytelen * 8;
-    status            = sss_key_store_get_key(ks, obj, key, &keybytelen, &keybitlen);
-    LOG_I("sss_key_store_get_key status %x", status);
-    if (status != kStatus_SSS_Success)
-        return status;
-
-    status   = kStatus_SSS_Fail;
-    BIO *bio = BIO_new_mem_buf(key, (int)sizeof(key));
-    if (bio == NULL) {
-        return status;
-    }
-
-    EVP_PKEY *pKey = d2i_PUBKEY_bio(bio, NULL);
-    if (pKey == NULL) {
-        return status;
-    }
-    /*Add public key*/
-
-    if (!X509_set_pubkey(certificate, pKey)) {
-        return status;
-    }
-
-    X509V3_CTX x509v3_ctx = {0};
-
-    char *basicConstraints        = "CA:TRUE";
-    X509_EXTENSION *extension_SAN = X509V3_EXT_nconf_nid(NULL, &x509v3_ctx, NID_subject_alt_name, (char *)cert_subject);
-    if (!X509_add_ext(certificate, extension_SAN, -1)) {
-        return status;
-    }
-    X509_EXTENSION *extension_BasicConstraints =
-        X509V3_EXT_nconf_nid(NULL, &x509v3_ctx, NID_basic_constraints, basicConstraints);
-    if (!X509_add_ext(certificate, extension_BasicConstraints, -1)) {
-        return status;
-    }
-
-    int type = NID_ecdsa_with_SHA256;
-#if (OPENSSL_VERSION_NUMBER < 0x10100000L)
-    X509_ALGOR *tbs_algo = certificate->cert_info->signature;
-    X509_ALGOR *algo     = certificate->sig_alg;
-    X509_ALGOR_set0(algo, OBJ_nid2obj(type), V_ASN1_NULL, NULL);
-#else
-
-    X509_ALGOR *tbs_algo = (X509_ALGOR *)X509_get0_tbs_sigalg(certificate);
-#endif
-    X509_ALGOR_set0(tbs_algo, OBJ_nid2obj(type), V_ASN1_NULL, NULL);
-
-    /*Convert to DER format to sign*/
-    int len = 0;
-
-    uint8_t tbs_bytes[1024];
-    uint8_t *p_tbs_bytes = &tbs_bytes[0];
-
-#if (OPENSSL_VERSION_NUMBER < 0x10100000L)
-    X509_CINF *cinf = certificate->cert_info;
-    len             = i2d_X509_CINF(cinf, &p_tbs_bytes);
-#else
-    len                  = i2d_re_X509_tbs(certificate, &p_tbs_bytes);
-    LOG_I("len = %d", len);
-#endif
-
-    /*Calculate digest for signing*/
-    uint8_t digest[32] = {0};
-    size_t digestLen   = sizeof(digest);
-    sss_digest_t digestCtx;
-    status = sss_digest_context_init(&digestCtx, session, kAlgorithm_SSS_SHA256, kMode_SSS_Digest);
-    status = sss_digest_one_go(&digestCtx, &tbs_bytes[0], len, digest, &digestLen);
-    sss_digest_context_free(&digestCtx);
-    if (status != kStatus_SSS_Success)
-        return status;
-
-    status = kStatus_SSS_Fail;
-    /*Sign digest*/
-    sss_asymmetric_t asymmCtx;
-    uint8_t signature[512];
-    uint8_t *p_signature      = &signature[0];
-    size_t signatureLen       = sizeof(signature);
-    sss_algorithm_t hash_algo = kAlgorithm_SSS_SHA256;
-    if (obj->cipherType == kSSS_CipherType_RSA || obj->cipherType == kSSS_CipherType_RSA_CRT)
-        hash_algo = kAlgorithm_SSS_RSASSA_PKCS1_PSS_MGF1_SHA256;
-    status = sss_asymmetric_context_init(&asymmCtx, session, obj, hash_algo, kMode_SSS_Sign);
-    status = sss_asymmetric_sign_digest(&asymmCtx, digest, digestLen, signature, &signatureLen);
-    if (status != kStatus_SSS_Success)
-        return status;
-
-        /*Add signature to certificate structure*/
-#if (OPENSSL_VERSION_NUMBER < 0x10100000L)
-    ASN1_BIT_STRING *sig = certificate->signature;
-#else
-    ASN1_BIT_STRING *sig;
-    X509_ALGOR *algo;
-    X509_get0_signature((const ASN1_BIT_STRING **)&sig, (const X509_ALGOR **)&algo, certificate);
-    X509_ALGOR_set0(algo, OBJ_nid2obj(type), V_ASN1_NULL, NULL);
-#endif
-    len = ASN1_BIT_STRING_set(sig, p_signature, (int)signatureLen);
-#endif
-
-    return status;
-}

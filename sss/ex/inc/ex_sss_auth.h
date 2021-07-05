@@ -65,7 +65,7 @@
  * See https://www.nxp.com/docs/en/application-note/AN12436.pdf
  */
 
-#if  1 /* Customer facing */
+#if EXTERNAL_CUSTOMER_BUILD_CONFIGURATION
 
 #if SSS_HAVE_SE05X_VER_06_00 // Applet 6.0
     #ifndef EX_SSS_AUTH_SE05X_KEY_ENC

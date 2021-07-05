@@ -280,6 +280,8 @@ typedef enum
     kAccessPermission_SSS_Delete = (1u << 3),
     /** Can change permissions applicable to an object */
     kAccessPermission_SSS_ChangeAttributes = (1u << 4),
+    /** Bitwise OR of all sss_access_permission. */
+    kAccessPermission_SSS_All_Permission = 0x1F,
 } sss_access_permission_t;
 
 /**
@@ -344,7 +346,7 @@ typedef enum
     /** Barreto Naehrig curve */
     kSSS_CipherType_EC_BARRETO_NAEHRIG = 53,
 
-    kSSS_CipherType_UserID      = 70,
+    kSSS_CipherType_UserID = 70,
 
     /** Use kSSS_CipherType_Binary to store Certificate */
     kSSS_CipherType_Certificate = 71,
@@ -770,6 +772,8 @@ sss_status_t sss_session_create(sss_session_t *session,
  *                shall be supplied to all SSS APIs as argument. Low level SSS
  *                functions can provide implementation specific behaviour based
  *                on the session argument.
+ *                Note: sss_session_open() must not be called concurrently from
+ *                multiple threads. The application must ensure this.
  *
  * @param[in,out] session          Session context.
  * @param[in]     subsystem        Indicates which security subsystem is
@@ -1113,7 +1117,7 @@ sss_status_t sss_symmetric_context_init(sss_symmetric_t *context,
  * @param context Pointer to symmetric crypto context.
  * @param iv Buffer containing the symmetric operation Initialization Vector.
  * @param ivLen Length of the Initialization Vector in bytes.
- * @param srcData Buffer containing the input data.
+ * @param srcData Buffer containing the input data (block aligned).
  * @param destData Buffer containing the output data.
  * @param dataLen Size of input and output data buffer in bytes.
  * @returns Status of the operation
