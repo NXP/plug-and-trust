@@ -40,7 +40,7 @@ U16 GP_Select(void *conn_ctx, const U8 *appletName, U16 appletNameLen, U8 *respo
     ENSURE_OR_GO_CLEANUP(0 != responseDataLen);
     ENSURE_OR_GO_CLEANUP(appletNameLen < 255);
     /* cla+ins+p1+p2+lc+appletNameLen+le */
-    ENSURE_OR_GO_CLEANUP(sizeof(tx_buf) > (6 + appletNameLen));
+    ENSURE_OR_GO_CLEANUP(sizeof(tx_buf) > (6u + appletNameLen));
 
     tx_buf[0] = CLA_ISO7816;
     tx_buf[1] = INS_GP_SELECT;
