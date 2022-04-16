@@ -40,7 +40,7 @@
 /* *****************************************************************************************************************
  *   Function Prototypes
  * ***************************************************************************************************************** */
-#if SSS_HAVE_SE
+#if SSS_HAVE_APPLET
 sss_status_t ex_sss_boot_se_open(ex_sss_boot_ctx_t *pCtx, const char *portName);
 #endif
 
@@ -51,19 +51,19 @@ sss_status_t ex_sss_boot_se05x_open(ex_sss_boot_ctx_t *pCtx, const char *portNam
 sss_status_t ex_sss_boot_se05x_open_on_Id(ex_sss_boot_ctx_t *pCtx, const char *portName, const int32_t authID);
 #endif
 
-#if SSS_HAVE_MBEDTLS
+#if SSS_HAVE_HOSTCRYPTO_MBEDTLS
 sss_status_t ex_sss_boot_mbedtls_open(ex_sss_boot_ctx_t *pCtx, const char *portName);
 #endif
 
-#if SSS_HAVE_OPENSSL
+#if SSS_HAVE_HOSTCRYPTO_OPENSSL
 sss_status_t ex_sss_boot_openssl_open(ex_sss_boot_ctx_t *pCtx, const char *portName);
 #endif
 
-#if SSS_HAVE_A71CH || SSS_HAVE_A71CH_SIM
+#if SSS_HAVE_APPLET_A71CH || SSS_HAVE_APPLET_A71CH_SIM
 sss_status_t ex_sss_boot_a71ch_open(ex_sss_boot_ctx_t *pCtx, const char *portName);
 #endif
 
-#if SSS_HAVE_A71CL || SSS_HAVE_SE050_L
+#if SSS_HAVE_APPLET_A71CL || SSS_HAVE_SE050_L
 sss_status_t ex_sss_boot_a71cl_open(ex_sss_boot_ctx_t *pCtx, const char *portName);
 #endif
 

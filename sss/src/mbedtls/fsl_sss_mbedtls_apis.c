@@ -8,7 +8,7 @@
 
 #define MBEDTLS_DO_LITTLE_ENDIAN
 
-#if SSS_HAVE_MBEDTLS
+#if SSS_HAVE_HOSTCRYPTO_MBEDTLS
 
 #include <mbedtls/version.h>
 #include <stdlib.h>
@@ -41,6 +41,7 @@
 #define END_PUBLIC "\n-----END PUBLIC KEY-----"
 
 #define CIPHER_BLOCK_SIZE 16
+#define DES_BLOCK_SIZE (MBEDTLS_KEY_LENGTH_DES / 8)
 
 /* ************************************************************************** */
 /* Functions : Private sss mbedtls delceration                                */
@@ -90,6 +91,7 @@ static sss_status_t sss_mbedtls_aead_ccm_update(sss_mbedtls_aead_t *context, con
 #error Need MBEDTLS_CTR_DRBG_C defined
 #endif
 
+// LCOV_EXCL_START
 sss_status_t sss_mbedtls_session_create(sss_mbedtls_session_t *session,
     sss_type_t subsystem,
     uint32_t application_id,
@@ -100,6 +102,7 @@ sss_status_t sss_mbedtls_session_create(sss_mbedtls_session_t *session,
     /* Nothing special to be handled */
     return retval;
 }
+// LCOV_EXCL_STOP
 
 sss_status_t sss_mbedtls_session_open(sss_mbedtls_session_t *session,
     sss_type_t subsystem,
@@ -167,10 +170,12 @@ sss_status_t sss_mbedtls_session_prop_get_au8(
 
 void sss_mbedtls_session_close(sss_mbedtls_session_t *session)
 {
-    if (session->ctr_drbg != NULL)
+    if (session->ctr_drbg != NULL) {
         SSS_FREE(session->ctr_drbg);
-    if (session->entropy != NULL)
+    }
+    if (session->entropy != NULL) {
         SSS_FREE(session->entropy);
+    }
     memset(session, 0, sizeof(*session));
 }
 
@@ -210,10 +215,12 @@ sss_status_t sss_mbedtls_key_object_allocate_handle(sss_mbedtls_object_t *keyObj
     ENSURE_OR_GO_CLEANUP(keyId != 0xFFFFFFFFu);
 
 #ifdef EX_SSS_OBJID_TEST_START
-    if (keyId < EX_SSS_OBJID_TEST_START)
+    if (keyId < EX_SSS_OBJID_TEST_START) {
         return kStatus_SSS_Fail;
-    if (keyId > EX_SSS_OBJID_TEST_END)
+    }
+    if (keyId > EX_SSS_OBJID_TEST_END) {
         return kStatus_SSS_Fail;
+    }
 #endif
 
     if (options != kKeyObject_Mode_Persistent && options != kKeyObject_Mode_Transient) {
@@ -221,10 +228,14 @@ sss_status_t sss_mbedtls_key_object_allocate_handle(sss_mbedtls_object_t *keyObj
         retval = kStatus_SSS_Fail;
         goto cleanup;
     }
-    if ((unsigned int)key_part > UINT8_MAX) {
-        LOG_E(" Only objectType 8 bits wide supported");
-        retval = kStatus_SSS_Fail;
-        goto cleanup;
+    {
+        /* to avoid error -Werror=type-limit */
+        unsigned int uikey_part = ((unsigned int)key_part);
+        if (uikey_part > UINT8_MAX) {
+            LOG_E(" Only objectType 8 bits wide supported");
+            retval = kStatus_SSS_Fail;
+            goto cleanup;
+        }
     }
 #if defined(MBEDTLS_FS_IO) && !AX_EMBEDDED
     if (options == kKeyObject_Mode_Persistent) {
@@ -312,11 +323,12 @@ sss_status_t sss_mbedtls_key_object_set_access(sss_mbedtls_object_t *keyObject, 
     sss_status_t retval = kStatus_SSS_Fail;
     ENSURE_OR_GO_EXIT((keyObject->accessRights & kAccessPermission_SSS_ChangeAttributes));
     retval                  = kStatus_SSS_Success;
-    keyObject->accessRights = access;
+    keyObject->accessRights = (sss_access_permission_t)access;
 exit:
     return retval;
 }
 
+// LCOV_EXCL_START
 sss_status_t sss_mbedtls_key_object_set_eccgfp_group(sss_mbedtls_object_t *keyObject, sss_eccgfp_group_t *group)
 {
     sss_status_t retval = kStatus_SSS_Success;
@@ -344,6 +356,7 @@ sss_status_t sss_mbedtls_key_object_get_access(sss_mbedtls_object_t *keyObject, 
     *access             = keyObject->accessRights;
     return retval;
 }
+// LCOV_EXCL_STOP
 
 void sss_mbedtls_key_object_free(sss_mbedtls_object_t *keyObject)
 {
@@ -552,6 +565,9 @@ sss_status_t sss_mbedtls_derive_key_dh(sss_mbedtls_derive_key_t *context,
     const mbedtls_ecp_curve_info *p_curve_info = NULL;
     mbedtls_mpi rawSharedData;
 
+    ENSURE_OR_GO_EXIT(otherPartyKeyObject);
+    ENSURE_OR_GO_EXIT(derivedKeyObject);
+
     pKeyPrv = (mbedtls_pk_context *)context->keyObject->contents;
     pEcpPrv = mbedtls_pk_ec(*pKeyPrv);
 
@@ -573,7 +589,13 @@ sss_status_t sss_mbedtls_derive_key_dh(sss_mbedtls_derive_key_t *context,
     }
     else {
         p_curve_info = mbedtls_ecp_curve_info_from_grp_id(pEcpPrv->grp.id);
-        keyLen       = (size_t)(((p_curve_info->bit_size + 7)) / 8);
+        if (p_curve_info != NULL) {
+            keyLen = (size_t)(((p_curve_info->bit_size + 7)) / 8);
+        }
+        else {
+            retval = kStatus_SSS_Fail;
+            goto exit;
+        }
     }
 
     sharedSecretLen = (size_t)(keyLen);
@@ -745,16 +767,17 @@ sss_status_t sss_mbedtls_key_store_generate_key(
 {
     sss_status_t retval = kStatus_SSS_Fail;
 #if SSS_HAVE_TESTCOUNTERPART && (SSSFTR_SW_ECC || SSSFTR_SW_RSA)
-    sss_mbedtls_session_t *pS = keyStore->session;
+    sss_mbedtls_session_t *pS = NULL;
     mbedtls_pk_context *pkey;
-
-    sss_key_part_t key_part       = keyObject->objectType;
-    sss_cipher_type_t cipher_type = keyObject->cipherType;
-
-    ENSURE_OR_GO_CLEANUP(keyObject->contents); /* Must be allocated in allocate handle */
+    sss_key_part_t key_part       = kSSS_KeyPart_NONE;
+    sss_cipher_type_t cipher_type = kSSS_CipherType_NONE;
     ENSURE_OR_GO_CLEANUP(keyStore);
     ENSURE_OR_GO_CLEANUP(keyObject);
-    ENSURE_OR_GO_CLEANUP(keyObject->contents);
+    ENSURE_OR_GO_CLEANUP(keyObject->contents); /* Must be allocated in allocate handle */
+
+    pS          = keyStore->session;
+    key_part    = keyObject->objectType;
+    cipher_type = keyObject->cipherType;
 
     pkey = (mbedtls_pk_context *)keyObject->contents;
     if (key_part != kSSS_KeyPart_Pair) {
@@ -801,13 +824,18 @@ sss_status_t sss_mbedtls_key_store_get_key(sss_mbedtls_key_store_t *keyStore,
 
     ENSURE_OR_GO_CLEANUP(keyObject);
     ENSURE_OR_GO_CLEANUP((keyObject->accessRights & kAccessPermission_SSS_Read));
+    ENSURE_OR_GO_CLEANUP(data);
+    ENSURE_OR_GO_CLEANUP(dataLen);
 
     switch (keyObject->objectType) {
     case kSSS_KeyPart_Default:
+        ENSURE_OR_GO_CLEANUP(*dataLen >= keyObject->contents_size);
         memcpy(data, keyObject->contents, keyObject->contents_size);
-        *dataLen    = keyObject->contents_size;
-        *pKeyBitLen = keyObject->contents_size * 8;
-        retval      = kStatus_SSS_Success;
+        *dataLen = keyObject->contents_size;
+        if (pKeyBitLen != NULL) {
+            *pKeyBitLen = keyObject->contents_size * 8;
+        }
+        retval = kStatus_SSS_Success;
         break;
 #if SSSFTR_SW_RSA || SSSFTR_SW_ECC
     case kSSS_KeyPart_Public:
@@ -817,16 +845,23 @@ sss_status_t sss_mbedtls_key_store_get_key(sss_mbedtls_key_store_t *keyStore,
             mbedtls_ecp_keypair *pEcpPub = mbedtls_pk_ec(*pk);
             size_t pubKey_size           = 0;
             size_t header_size           = 0;
+
             if (pEcpPub->grp.id == MBEDTLS_ECP_DP_CURVE25519) {
                 pubKey_size = 32;
-                *pKeyBitLen = 256;
+                if (pKeyBitLen != NULL) {
+                    *pKeyBitLen = 256;
+                }
                 header_size = der_ecc_mont_dh_25519_header_len;
+                ENSURE_OR_GO_CLEANUP(*dataLen >= (pubKey_size + header_size));
                 memcpy(data, gecc_der_header_mont_dh_25519, header_size);
             }
             else if (pEcpPub->grp.id == MBEDTLS_ECP_DP_CURVE448) {
                 pubKey_size = 56;
-                *pKeyBitLen = 448;
+                if (pKeyBitLen != NULL) {
+                    *pKeyBitLen = 448;
+                }
                 header_size = der_ecc_mont_dh_448_header_len;
+                ENSURE_OR_GO_CLEANUP(*dataLen >= (pubKey_size + header_size));
                 memcpy(data, gecc_der_header_mont_dh_448, header_size);
             }
             else {
@@ -856,8 +891,9 @@ sss_status_t sss_mbedtls_key_store_get_key(sss_mbedtls_key_store_t *keyStore,
             ret = mbedtls_pk_write_pubkey_der(pk, output, sizeof(output));
             if (ret > 0) {
                 if ((*dataLen) >= (size_t)ret) {
-                    *pKeyBitLen = mbedtls_pk_get_bitlen(pk);
-                    //*pKeyBitLen = ret * 8;
+                    if (pKeyBitLen != NULL) {
+                        *pKeyBitLen = mbedtls_pk_get_bitlen(pk);
+                    }
                     *dataLen = ret;
                     /* Data is put at end, so copy it to front of output buffer */
                     c = output + sizeof(output) - ret;
@@ -1085,26 +1121,31 @@ static mbedtls_md_type_t sss_mbedtls_set_padding_get_hash(sss_algorithm_t algori
     switch (algorithm) {
     case kAlgorithm_SSS_RSASSA_PKCS1_V1_5_SHA1:
     case kAlgorithm_SSS_RSASSA_PKCS1_PSS_MGF1_SHA1:
+    case kAlgorithm_SSS_ECDSA_SHA1:
     case kAlgorithm_SSS_SHA1: {
         md_alg = MBEDTLS_MD_SHA1;
     } break;
     case kAlgorithm_SSS_RSASSA_PKCS1_V1_5_SHA224:
     case kAlgorithm_SSS_RSASSA_PKCS1_PSS_MGF1_SHA224:
+    case kAlgorithm_SSS_ECDSA_SHA224:
     case kAlgorithm_SSS_SHA224: {
         md_alg = MBEDTLS_MD_SHA224;
     } break;
     case kAlgorithm_SSS_RSASSA_PKCS1_V1_5_SHA256:
     case kAlgorithm_SSS_RSASSA_PKCS1_PSS_MGF1_SHA256:
+    case kAlgorithm_SSS_ECDSA_SHA256:
     case kAlgorithm_SSS_SHA256: {
         md_alg = MBEDTLS_MD_SHA256;
     } break;
     case kAlgorithm_SSS_RSASSA_PKCS1_V1_5_SHA384:
     case kAlgorithm_SSS_RSASSA_PKCS1_PSS_MGF1_SHA384:
+    case kAlgorithm_SSS_ECDSA_SHA384:
     case kAlgorithm_SSS_SHA384: {
         md_alg = MBEDTLS_MD_SHA384;
     } break;
     case kAlgorithm_SSS_RSASSA_PKCS1_V1_5_SHA512:
     case kAlgorithm_SSS_RSASSA_PKCS1_PSS_MGF1_SHA512:
+    case kAlgorithm_SSS_ECDSA_SHA512:
     case kAlgorithm_SSS_SHA512: {
         md_alg = MBEDTLS_MD_SHA512;
     } break;
@@ -1218,6 +1259,7 @@ sss_status_t sss_mbedtls_cipher_one_go(sss_mbedtls_symmetric_t *context,
     mbedtls_aes_context aes_ctx;
 #if defined(MBEDTLS_DES_C)
     mbedtls_des_context des_ctx;
+    mbedtls_des3_context des3_ctx;
 #endif
     int mbedtls_ret = 1; /* Fail by default */
 
@@ -1244,8 +1286,6 @@ sss_status_t sss_mbedtls_cipher_one_go(sss_mbedtls_symmetric_t *context,
     } break;
     case kAlgorithm_SSS_DES_CBC:
     case kAlgorithm_SSS_DES_ECB:
-    case kAlgorithm_SSS_DES3_CBC:
-    case kAlgorithm_SSS_DES3_ECB:
         mbedtls_des_init(&des_ctx);
         if (context->mode == kMode_SSS_Encrypt) {
             mbedtls_ret = mbedtls_des_setkey_enc(&des_ctx, context->keyObject->contents);
@@ -1254,6 +1294,17 @@ sss_status_t sss_mbedtls_cipher_one_go(sss_mbedtls_symmetric_t *context,
             mbedtls_ret = mbedtls_des_setkey_dec(&des_ctx, context->keyObject->contents);
         }
         break;
+    case kAlgorithm_SSS_DES3_CBC:
+    case kAlgorithm_SSS_DES3_ECB: {
+        mbedtls_des3_init(&des3_ctx);
+        if (context->mode == kMode_SSS_Encrypt) {
+            mbedtls_ret = mbedtls_des3_set3key_enc(&des3_ctx, context->keyObject->contents);
+        }
+        else if (context->mode == kMode_SSS_Decrypt) {
+            mbedtls_ret = mbedtls_des3_set3key_dec(&des3_ctx, context->keyObject->contents);
+        }
+        break;
+    }
 #endif //SSS_HAVE_TESTCOUNTERPART
     default:
         goto exit;
@@ -1286,6 +1337,12 @@ sss_status_t sss_mbedtls_cipher_one_go(sss_mbedtls_symmetric_t *context,
             mbedtls_ret = mbedtls_des_crypt_cbc(&des_ctx, MBEDTLS_DES_ENCRYPT, dataLen, iv, srcData, destData);
             break;
 #endif
+        case kAlgorithm_SSS_DES3_ECB:
+            mbedtls_ret = mbedtls_des3_crypt_ecb(&des3_ctx, srcData, destData);
+            break;
+        case kAlgorithm_SSS_DES3_CBC:
+            mbedtls_ret = mbedtls_des3_crypt_cbc(&des3_ctx, MBEDTLS_DES_ENCRYPT, dataLen, iv, srcData, destData);
+            break;
         default:
             break;
         }
@@ -1315,6 +1372,12 @@ sss_status_t sss_mbedtls_cipher_one_go(sss_mbedtls_symmetric_t *context,
             mbedtls_ret = mbedtls_des_crypt_cbc(&des_ctx, MBEDTLS_DES_DECRYPT, dataLen, iv, srcData, destData);
             break;
 #endif
+        case kAlgorithm_SSS_DES3_ECB:
+            mbedtls_ret = mbedtls_des3_crypt_ecb(&des3_ctx, srcData, destData);
+            break;
+        case kAlgorithm_SSS_DES3_CBC:
+            mbedtls_ret = mbedtls_des3_crypt_cbc(&des3_ctx, MBEDTLS_DES_DECRYPT, dataLen, iv, srcData, destData);
+            break;
         default:
             break;
         }
@@ -1336,10 +1399,13 @@ sss_status_t sss_mbedtls_cipher_one_go(sss_mbedtls_symmetric_t *context,
 #if SSS_HAVE_TESTCOUNTERPART
     case kAlgorithm_SSS_DES_CBC:
     case kAlgorithm_SSS_DES_ECB:
-    case kAlgorithm_SSS_DES3_CBC:
-    case kAlgorithm_SSS_DES3_ECB:
         mbedtls_des_free(&des_ctx);
         break;
+    case kAlgorithm_SSS_DES3_CBC:
+    case kAlgorithm_SSS_DES3_ECB: {
+        mbedtls_des3_free(&des3_ctx);
+        break;
+    }
 #endif //SSS_HAVE_TESTCOUNTERPART
     default:
         goto exit;
@@ -1350,18 +1416,32 @@ exit:
     return retval;
 }
 
+sss_status_t sss_mbedtls_cipher_one_go_v2(sss_mbedtls_symmetric_t *context,
+    uint8_t *iv,
+    size_t ivLen,
+    const uint8_t *srcData,
+    const size_t srcLen,
+    uint8_t *destData,
+    size_t *pDataLen)
+{
+    if (*pDataLen < srcLen) {
+        return kStatus_SSS_Fail;
+    }
+    *pDataLen = srcLen;
+    return sss_mbedtls_cipher_one_go(context, iv, ivLen, srcData, destData, *pDataLen);
+}
+
 sss_status_t sss_mbedtls_cipher_init(sss_mbedtls_symmetric_t *context, uint8_t *iv, size_t ivLen)
 {
     sss_status_t retval = kStatus_SSS_Fail;
 #if SSS_HAVE_TESTCOUNTERPART
     const mbedtls_cipher_info_t *cipher_info = NULL;
+    retval                                   = kStatus_SSS_Success;
+    mbedtls_cipher_type_t cipher_type        = MBEDTLS_CIPHER_NONE;
     context->cipher_ctx                      = (mbedtls_cipher_context_t *)SSS_MALLOC(sizeof(mbedtls_cipher_context_t));
     ENSURE_OR_GO_EXIT(context->cipher_ctx != NULL);
-    retval = kStatus_SSS_Success;
 
     if (context->algorithm == kAlgorithm_SSS_AES_ECB) {
-        mbedtls_cipher_type_t cipher_type = MBEDTLS_CIPHER_NONE;
-
         switch (context->keyObject->keyBitLen) {
         case 128:
             cipher_type = MBEDTLS_CIPHER_AES_128_ECB;
@@ -1373,14 +1453,8 @@ sss_status_t sss_mbedtls_cipher_init(sss_mbedtls_symmetric_t *context, uint8_t *
             cipher_type = MBEDTLS_CIPHER_AES_256_ECB;
             break;
         }
-
-        if (cipher_type != MBEDTLS_CIPHER_NONE) {
-            cipher_info = mbedtls_cipher_info_from_type(cipher_type);
-        }
     }
     else if (context->algorithm == kAlgorithm_SSS_AES_CBC) {
-        mbedtls_cipher_type_t cipher_type = MBEDTLS_CIPHER_NONE;
-
         switch (context->keyObject->keyBitLen) {
         case 128:
             cipher_type = MBEDTLS_CIPHER_AES_128_CBC;
@@ -1392,14 +1466,8 @@ sss_status_t sss_mbedtls_cipher_init(sss_mbedtls_symmetric_t *context, uint8_t *
             cipher_type = MBEDTLS_CIPHER_AES_256_CBC;
             break;
         }
-
-        if (cipher_type != MBEDTLS_CIPHER_NONE) {
-            cipher_info = mbedtls_cipher_info_from_type(cipher_type);
-        }
     }
     else if (context->algorithm == kAlgorithm_SSS_AES_CTR) {
-        mbedtls_cipher_type_t cipher_type = MBEDTLS_CIPHER_NONE;
-
         switch (context->keyObject->keyBitLen) {
         case 128:
             cipher_type = MBEDTLS_CIPHER_AES_128_CTR;
@@ -1411,14 +1479,26 @@ sss_status_t sss_mbedtls_cipher_init(sss_mbedtls_symmetric_t *context, uint8_t *
             cipher_type = MBEDTLS_CIPHER_AES_256_CTR;
             break;
         }
-
-        if (cipher_type != MBEDTLS_CIPHER_NONE) {
-            cipher_info = mbedtls_cipher_info_from_type(cipher_type);
-        }
+    }
+    else if (context->algorithm == kAlgorithm_SSS_DES_ECB) {
+        cipher_type = MBEDTLS_CIPHER_DES_ECB;
+    }
+    else if (context->algorithm == kAlgorithm_SSS_DES3_ECB) {
+        cipher_type = MBEDTLS_CIPHER_DES_EDE3_ECB;
+    }
+    else if (context->algorithm == kAlgorithm_SSS_DES_CBC) {
+        cipher_type = MBEDTLS_CIPHER_DES_CBC;
+    }
+    else if (context->algorithm == kAlgorithm_SSS_DES3_CBC) {
+        cipher_type = MBEDTLS_CIPHER_DES_EDE3_CBC;
     }
     else {
         retval = kStatus_SSS_InvalidArgument;
         goto exit;
+    }
+
+    if (cipher_type != MBEDTLS_CIPHER_NONE) {
+        cipher_info = mbedtls_cipher_info_from_type(cipher_type);
     }
 
     mbedtls_cipher_init(context->cipher_ctx);
@@ -1468,8 +1548,14 @@ sss_status_t sss_mbedtls_cipher_update(
     size_t outBuffSize   = *destLen;
     size_t blockoutLen   = 0;
     int retMbedtlsVal;
+    size_t cipherBlockSize = CIPHER_BLOCK_SIZE;
 
-    if ((context->cache_data_len + srcLen) < CIPHER_BLOCK_SIZE) {
+    if (context->algorithm == kAlgorithm_SSS_DES_ECB || context->algorithm == kAlgorithm_SSS_DES_CBC ||
+        context->algorithm == kAlgorithm_SSS_DES3_ECB || context->algorithm == kAlgorithm_SSS_DES3_CBC) {
+        cipherBlockSize = DES_BLOCK_SIZE;
+    }
+
+    if ((context->cache_data_len + srcLen) < cipherBlockSize) {
         /* Insufficinet data to process . Cache the data */
         memcpy((context->cache_data + context->cache_data_len), srcData, srcLen);
         context->cache_data_len = context->cache_data_len + srcLen;
@@ -1480,9 +1566,9 @@ sss_status_t sss_mbedtls_cipher_update(
         /* Concatenate the unprocessed and current input data*/
         memcpy(inputData, context->cache_data, context->cache_data_len);
         inputData_len = context->cache_data_len;
-        memcpy((inputData + inputData_len), srcData, (CIPHER_BLOCK_SIZE - context->cache_data_len));
-        inputData_len += (CIPHER_BLOCK_SIZE - context->cache_data_len);
-        src_offset += (CIPHER_BLOCK_SIZE - context->cache_data_len);
+        memcpy((inputData + inputData_len), srcData, (cipherBlockSize - context->cache_data_len));
+        inputData_len += (cipherBlockSize - context->cache_data_len);
+        src_offset += (cipherBlockSize - context->cache_data_len);
         context->cache_data_len = 0;
 
         blockoutLen = outBuffSize;
@@ -1494,12 +1580,12 @@ sss_status_t sss_mbedtls_cipher_update(
         outBuffSize -= blockoutLen;
         output_offset += blockoutLen;
 
-        while (srcLen - src_offset >= CIPHER_BLOCK_SIZE) {
-            memcpy(inputData, (srcData + src_offset), CIPHER_BLOCK_SIZE);
-            src_offset += CIPHER_BLOCK_SIZE;
+        while (srcLen - src_offset >= cipherBlockSize) {
+            memcpy(inputData, (srcData + src_offset), cipherBlockSize);
+            src_offset += cipherBlockSize;
 
             blockoutLen   = outBuffSize;
-            inputData_len = CIPHER_BLOCK_SIZE;
+            inputData_len = cipherBlockSize;
             ENSURE_OR_GO_EXIT(blockoutLen >= inputData_len);
             retMbedtlsVal = mbedtls_cipher_update(
                 context->cipher_ctx, inputData, inputData_len, (destData + output_offset), &blockoutLen);
@@ -1538,14 +1624,21 @@ sss_status_t sss_mbedtls_cipher_finish(
     size_t srcdata_updated_len = 0;
     size_t outBuffSize         = *destLen;
     size_t blockoutLen         = 0;
+    size_t output_offset       = 0;
     int retMbedtlsVal;
     uint8_t temp[16] = {
         0,
     };
-    size_t temp_len = sizeof(temp);
+    size_t temp_len        = sizeof(temp);
+    size_t cipherBlockSize = CIPHER_BLOCK_SIZE;
 
-    if (srcLen > CIPHER_BLOCK_SIZE) {
-        LOG_E("srcLen cannot be grater than 16 bytes. Call update function ");
+    if (context->algorithm == kAlgorithm_SSS_DES_ECB || context->algorithm == kAlgorithm_SSS_DES_CBC ||
+        context->algorithm == kAlgorithm_SSS_DES3_ECB || context->algorithm == kAlgorithm_SSS_DES3_CBC) {
+        cipherBlockSize = DES_BLOCK_SIZE;
+    }
+
+    if (srcLen > cipherBlockSize) {
+        LOG_E("srcLen cannot be grater than %d bytes. Call update function ", cipherBlockSize);
         *destLen = 0;
         goto exit;
     }
@@ -1560,32 +1653,51 @@ sss_status_t sss_mbedtls_cipher_finish(
         srcdata_updated_len += srcLen;
     }
 
-    srcdata_updated_len = srcdata_updated_len + (CIPHER_BLOCK_SIZE - (srcdata_updated_len % 16));
+    /* Align buffer to cipherBlockSize */
+    if (srcdata_updated_len > 0 && (srcdata_updated_len % cipherBlockSize != 0)) {
+        srcdata_updated_len = srcdata_updated_len + (cipherBlockSize - (srcdata_updated_len % cipherBlockSize));
+    }
 
     if (*destLen < srcdata_updated_len) {
         LOG_E("Output buffer not sufficient");
         goto exit;
     }
 
+    *destLen = 0;
+
     if (srcdata_updated_len > 0) {
         blockoutLen = outBuffSize;
-        ENSURE_OR_GO_EXIT(blockoutLen >= CIPHER_BLOCK_SIZE);
-        retMbedtlsVal =
-            mbedtls_cipher_update(context->cipher_ctx, srcdata_updated, CIPHER_BLOCK_SIZE, destData, &blockoutLen);
+        ENSURE_OR_GO_EXIT(blockoutLen >= cipherBlockSize);
+        retMbedtlsVal = mbedtls_cipher_update(
+            context->cipher_ctx, srcdata_updated, cipherBlockSize, (destData + output_offset), &blockoutLen);
         ENSURE_OR_GO_EXIT(retMbedtlsVal == 0);
         *destLen = blockoutLen;
         outBuffSize -= blockoutLen;
+        output_offset += blockoutLen;
     }
 
-    if (srcdata_updated_len > CIPHER_BLOCK_SIZE) {
+    if (srcdata_updated_len > cipherBlockSize) {
         blockoutLen = outBuffSize;
-        ENSURE_OR_GO_EXIT(blockoutLen >= CIPHER_BLOCK_SIZE);
+        ENSURE_OR_GO_EXIT(blockoutLen >= cipherBlockSize);
         retMbedtlsVal = mbedtls_cipher_update(context->cipher_ctx,
-            srcdata_updated + CIPHER_BLOCK_SIZE,
-            CIPHER_BLOCK_SIZE,
-            destData + CIPHER_BLOCK_SIZE,
+            srcdata_updated + cipherBlockSize,
+            cipherBlockSize,
+            destData + output_offset,
             &blockoutLen);
         ENSURE_OR_GO_EXIT(retMbedtlsVal == 0);
+        *destLen += blockoutLen;
+        outBuffSize -= blockoutLen;
+        output_offset += blockoutLen;
+    }
+
+    /*
+    * For decrypt operation, on passing 16 bytes of buffer data to mbedtls_cipher_update, data is cached
+    * and in next updated call it is processed.
+    * So call another update api with zero dummy data
+    */
+    if (context->mode == kMode_SSS_Decrypt) {
+        blockoutLen = outBuffSize;
+        mbedtls_cipher_update(context->cipher_ctx, temp, temp_len, destData + output_offset, &blockoutLen);
         *destLen += blockoutLen;
     }
 
@@ -1628,7 +1740,7 @@ sss_status_t sss_mbedtls_cipher_crypt_ctr(sss_mbedtls_symmetric_t *context,
         ENSURE_OR_GO_EXIT(mbedtls_ret == 0);
         break;
     default:
-        retval = MBEDTLS_ERR_AES_INVALID_KEY_LENGTH;
+        //retval = MBEDTLS_ERR_AES_INVALID_KEY_LENGTH;
         goto exit;
     }
 
@@ -1775,6 +1887,10 @@ sss_status_t sss_mbedtls_aead_update_aad(sss_mbedtls_aead_t *context, const uint
     sss_status_t retval = kStatus_SSS_Fail;
     int ret             = 1;
     int mode            = (context->mode == kMode_SSS_Encrypt) ? MBEDTLS_GCM_ENCRYPT : MBEDTLS_GCM_DECRYPT;
+    ENSURE_OR_GO_CLEANUP(context);
+    if (aadDataLen > 0) {
+        ENSURE_OR_GO_CLEANUP(aadData);
+    }
     if (context->algorithm == kAlgorithm_SSS_AES_GCM) {
         /* Initialize gcm context */
         mbedtls_gcm_init(context->gcm_ctx);
@@ -1917,6 +2033,13 @@ sss_status_t sss_mbedtls_aead_finish(sss_mbedtls_aead_t *context,
     };
     size_t srcdata_updated_len = 0;
     uint8_t *pTag              = NULL;
+    ENSURE_OR_GO_EXIT(context);
+    if (srcLen) {
+        ENSURE_OR_GO_EXIT(srcData);
+    }
+    ENSURE_OR_GO_EXIT(destData);
+    ENSURE_OR_GO_EXIT(tag);
+    ENSURE_OR_GO_EXIT(tagLen);
     if (context->algorithm == kAlgorithm_SSS_AES_CCM) { /* Check if finish has got source data */
         if ((srcData != NULL) && (srcLen > 0)) {
             retval = sss_mbedtls_aead_ccm_update(context, srcData, srcLen);
@@ -1948,6 +2071,7 @@ sss_status_t sss_mbedtls_aead_finish(sss_mbedtls_aead_t *context,
         ENSURE_OR_GO_EXIT(ret == 0);
 
         pTag = (uint8_t *)SSS_MALLOC(*tagLen);
+        ENSURE_OR_GO_EXIT(pTag);
         memset(pTag, 0, *tagLen);
 
         /* Get Tag for Enc*/
@@ -2033,10 +2157,12 @@ void sss_mbedtls_aead_context_free(sss_mbedtls_aead_t *context)
                 }
             }
         }
-        if (context->pCcm_aad != NULL)
+        if (context->pCcm_aad != NULL) {
             context->pCcm_aad = NULL;
-        if (context->pNonce != NULL)
+        }
+        if (context->pNonce != NULL) {
             context->pNonce = NULL;
+        }
         memset(context, 0, sizeof(*context));
     }
 }
@@ -2128,10 +2254,33 @@ sss_status_t sss_mbedtls_mac_one_go(
                     if (ret == 0) {
                         ret = mbedtls_cipher_cmac_update(context->cipher_ctx, message, messageLen);
                         if (ret == 0) {
-                            ret = mbedtls_cipher_cmac_finish(context->cipher_ctx, mac);
-                            if (ret == 0) {
-                                *macLen = context->cipher_ctx->cipher_info->block_size;
-                                status  = kStatus_SSS_Success;
+                            if (context->mode == kMode_SSS_Mac) {
+                                ret = mbedtls_cipher_cmac_finish(context->cipher_ctx, mac);
+                                if (ret == 0) {
+                                    *macLen = context->cipher_ctx->cipher_info->block_size;
+                                    status  = kStatus_SSS_Success;
+                                }
+                            }
+                            else if (context->mode == kMode_SSS_Mac_Validate) {
+                                /* validate MAC*/
+                                uint8_t macLocal[64] = {
+                                    0,
+                                };
+                                size_t macLocalLen;
+                                status = kStatus_SSS_Fail;
+                                ret    = mbedtls_cipher_cmac_finish(context->cipher_ctx, macLocal);
+                                if (ret == 0) {
+                                    macLocalLen = context->cipher_ctx->cipher_info->block_size;
+                                    if (macLocalLen == *macLen) {
+                                        if (!memcmp(macLocal, mac, macLocalLen)) {
+                                            status = kStatus_SSS_Success;
+                                        }
+                                    }
+                                }
+                            }
+                            else {
+                                LOG_E("Unknown mode");
+                                status = kStatus_SSS_Fail;
                             }
                         }
                     }
@@ -2168,10 +2317,33 @@ sss_status_t sss_mbedtls_mac_one_go(
         }
 
         if (md_info != NULL) {
-            ret = mbedtls_md_hmac(md_info, key, keylen, message, messageLen, mac);
-            if (ret == 0) {
-                *macLen = mbedtls_md_get_size(md_info);
-                status  = kStatus_SSS_Success;
+            if (context->mode == kMode_SSS_Mac) {
+                ret = mbedtls_md_hmac(md_info, key, keylen, message, messageLen, mac);
+                if (ret == 0) {
+                    *macLen = mbedtls_md_get_size(md_info);
+                    status  = kStatus_SSS_Success;
+                }
+            }
+            else if (context->mode == kMode_SSS_Mac_Validate) {
+                /* validate MAC*/
+                uint8_t macLocal[64] = {
+                    0,
+                };
+                size_t macLocalLen = sizeof(macLocal);
+                status             = kStatus_SSS_Fail;
+                ret                = mbedtls_md_hmac(md_info, key, keylen, message, messageLen, macLocal);
+                if (ret == 0) {
+                    macLocalLen = mbedtls_md_get_size(md_info);
+                    if (macLocalLen == *macLen) {
+                        if (!memcmp(macLocal, mac, macLocalLen)) {
+                            status = kStatus_SSS_Success;
+                        }
+                    }
+                }
+            }
+            else {
+                LOG_E("Unknown mode");
+                status = kStatus_SSS_Fail;
             }
         }
     }
@@ -2226,8 +2398,9 @@ sss_status_t sss_mbedtls_mac_init(sss_mbedtls_mac_t *context)
 #ifdef MBEDTLS_CMAC_C
                 ret = mbedtls_cipher_cmac_starts(context->cipher_ctx, key, (keylen * 8));
 #endif
-                if (ret == 0)
+                if (ret == 0) {
                     status = kStatus_SSS_Success;
+                }
             }
         }
     }
@@ -2334,12 +2507,37 @@ sss_status_t sss_mbedtls_mac_finish(sss_mbedtls_mac_t *context, uint8_t *mac, si
         mbedtls_cipher_context_t *ctx;
         ctx = context->cipher_ctx;
 
+        if (context->mode == kMode_SSS_Mac) {
 #ifdef MBEDTLS_CMAC_C
-        ret = mbedtls_cipher_cmac_finish(ctx, mac);
+            ret = mbedtls_cipher_cmac_finish(ctx, mac);
 #endif
-        if (ret == 0) {
-            *macLen = ctx->cipher_info->block_size;
-            status  = kStatus_SSS_Success;
+            if (ret == 0) {
+                *macLen = ctx->cipher_info->block_size;
+                status  = kStatus_SSS_Success;
+            }
+        }
+        else if (context->mode == kMode_SSS_Mac_Validate) {
+            /* validate MAC*/
+            uint8_t macLocal[64] = {
+                0,
+            };
+            size_t macLocalLen;
+            status = kStatus_SSS_Fail;
+#ifdef MBEDTLS_CMAC_C
+            ret = mbedtls_cipher_cmac_finish(ctx, macLocal);
+#endif
+            if (ret == 0) {
+                macLocalLen = ctx->cipher_info->block_size;
+                if (macLocalLen == *macLen) {
+                    if (!memcmp(macLocal, mac, macLocalLen)) {
+                        status = kStatus_SSS_Success;
+                    }
+                }
+            }
+        }
+        else {
+            LOG_E("Unknown mode");
+            status = kStatus_SSS_Fail;
         }
     }
 #if SSS_HAVE_TESTCOUNTERPART
@@ -2349,10 +2547,33 @@ sss_status_t sss_mbedtls_mac_finish(sss_mbedtls_mac_t *context, uint8_t *mac, si
         mbedtls_md_context_t *hmacctx;
         hmacctx = context->HmacCtx;
 
-        ret = mbedtls_md_hmac_finish(hmacctx, mac);
-        if (ret == 0) {
-            *macLen = mbedtls_md_get_size(hmacctx->md_info);
-            status  = kStatus_SSS_Success;
+        if (context->mode == kMode_SSS_Mac) {
+            ret = mbedtls_md_hmac_finish(hmacctx, mac);
+            if (ret == 0) {
+                *macLen = mbedtls_md_get_size(hmacctx->md_info);
+                status  = kStatus_SSS_Success;
+            }
+        }
+        else if (context->mode == kMode_SSS_Mac_Validate) {
+            /* validate MAC*/
+            uint8_t macLocal[64] = {
+                0,
+            };
+            size_t macLocalLen = sizeof(macLocal);
+            status             = kStatus_SSS_Fail;
+            ret                = mbedtls_md_hmac_finish(hmacctx, macLocal);
+            if (ret == 0) {
+                macLocalLen = mbedtls_md_get_size(hmacctx->md_info);
+                if (macLocalLen == *macLen) {
+                    if (!memcmp(macLocal, mac, macLocalLen)) {
+                        status = kStatus_SSS_Success;
+                    }
+                }
+            }
+        }
+        else {
+            LOG_E("Unknown mode");
+            status = kStatus_SSS_Fail;
         }
     }
 #endif //SSS_HAVE_TESTCOUNTERPART
@@ -2555,8 +2776,9 @@ exit:
 
 void sss_mbedtls_digest_context_free(sss_mbedtls_digest_t *context)
 {
-    // if (context->md_ctx)
+    // if (context->md_ctx) {
     //     mbedtls_md_free(&context->md_ctx);
+    // }
     memset(context, 0, sizeof(*context));
 }
 
@@ -2571,6 +2793,7 @@ sss_status_t sss_mbedtls_rng_context_init(sss_mbedtls_rng_context_t *context, ss
     sss_status_t retval = kStatus_SSS_Fail;
 
     ENSURE_OR_GO_EXIT(context);
+    ENSURE_OR_GO_EXIT(session);
 
     context->session = session;
 
@@ -2960,7 +3183,7 @@ static sss_status_t sss_mbedtls_generate_ecp_key(
         ret = mbedtls_ecp_gen_key(groupId, mbedtls_pk_ec(*pkey), mbedtls_ctr_drbg_random, pSession->ctr_drbg);
     }
     else {
-        LOG_E(" Don't have support keyBitLen", keyBitLen);
+        LOG_E(" Don't have support for this keyBitLen");
         ret = 1;
     }
 
@@ -3114,7 +3337,8 @@ sss_status_t ks_mbedtls_key_object_create(sss_mbedtls_object_t *keyObject,
     keyObject->contents_max_size  = keyByteLenMax;
     keyObject->contents_must_free = 1;
     keyObject->keyMode            = keyMode;
-    keyObject->accessRights       = 0x1F; /* Bitwise OR of all sss_access_permission. */
+    /* Bitwise OR of all sss_access_permission. */
+    keyObject->accessRights = kAccessPermission_SSS_All_Permission;
     switch (keyPart) {
     case kSSS_KeyPart_Default:
         size = keyByteLenMax;
@@ -3141,4 +3365,4 @@ cleanup:
     return retval;
 }
 
-#endif /* SSS_HAVE_MBEDTLS */
+#endif /* SSS_HAVE_HOSTCRYPTO_MBEDTLS */

@@ -18,7 +18,7 @@
 #include "fsl_sss_ftr_default.h"
 #endif
 
-#if SSS_HAVE_OPENSSL
+#if SSS_HAVE_HOSTCRYPTO_OPENSSL
 
 #include <fsl_sss_keyid_map.h>
 #include <openssl/cmac.h>
@@ -234,6 +234,6 @@ sss_status_t sss_openssl_key_object_allocate(sss_openssl_object_t *keyObject,
 
 /** @} */
 
-#endif /* SSS_HAVE_OPENSSL */
+#endif /* SSS_HAVE_HOSTCRYPTO_OPENSSL */
 
 #endif /* SSS_APIS_INC_FSL_SSS_OPENSSL_TYPES_H_ */

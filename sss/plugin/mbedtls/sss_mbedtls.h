@@ -21,7 +21,7 @@
 #include "fsl_sss_ftr_default.h"
 #endif
 
-#if SSS_HAVE_ALT_SSS
+#if SSS_HAVE_MBEDTLS_ALT_SSS
 #include "sss_mbedtls.h"
 #else
 #include "ax_mbedtls.h"
@@ -29,10 +29,10 @@
 
 #include <fsl_sss_api.h>
 
-#if SSS_HAVE_A71CH || SSS_HAVE_A71CH_SIM
+#if SSS_HAVE_APPLET_A71CH || SSS_HAVE_APPLET_A71CH_SIM
 #include <fsl_sscp_a71ch.h>
 #endif
-#if SSS_HAVE_MBEDTLS
+#if SSS_HAVE_HOSTCRYPTO_MBEDTLS
 #include <fsl_sss_mbedtls_apis.h>
 #endif
 

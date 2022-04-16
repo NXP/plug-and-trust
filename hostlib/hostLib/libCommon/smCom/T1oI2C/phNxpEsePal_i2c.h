@@ -30,10 +30,25 @@
  */
 #define ESE_POLL_DELAY_MS (1)
 /*!
- * \brief ESE Poll timeout (max 2 seconds).
- * Increased to 500. Need more timeout for RSA operations. We get NACK before WTX
+ * \brief ESE Poll timeout.
+ * As Max WTX timeout is 1sec, select ESE_NAD_POLLING_MAX count in such a way that WTX request frm SE is not skiped
+ * select target value is 2 sec.
+ *
+ * Note: Here ESE_NAD_POLLING_MAX is depend on platform, If i2c driver does not have backoff delay implemented,
+ * then set ESE_NAD_POLLING_MAX value to >=300
+ *
  */
-#define ESE_NAD_POLLING_MAX (2*250)
+#if AX_EMBEDDED //back off delay is implemented for AX_EMBEDDED devices
+  /*TODO:semslite need more than 20 polling count right now max is set to 60 as 46 was the max sof counter observed
+   SIMW-2927*/
+#if defined(LPC_55x)
+  #define ESE_NAD_POLLING_MAX (2*250)
+ #else
+  #define ESE_NAD_POLLING_MAX (2*30)
+#endif
+#else
+  #define ESE_NAD_POLLING_MAX (2*250)
+#endif
 /*!
  * \brief Max retry count for Write
  */

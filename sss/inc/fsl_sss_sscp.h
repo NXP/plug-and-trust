@@ -513,6 +513,17 @@ sss_status_t sss_sscp_cipher_one_go(sss_sscp_symmetric_t *context,
     uint8_t *destData,
     size_t dataLen);
 
+/** @copydoc sss_cipher_one_go_v2
+ *
+ */
+sss_status_t sss_sscp_cipher_one_go_v2(sss_sscp_symmetric_t *context,
+    uint8_t *iv,
+    size_t ivLen,
+    const uint8_t *srcData,
+    const size_t srcLen,
+    uint8_t *destData,
+    size_t *pDataLen);
+
 /** @copydoc sss_cipher_init
  *
  */

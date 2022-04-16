@@ -233,7 +233,10 @@ typedef enum
     kSE05x_P2_RESTRICT = 0x57,
     kSE05x_P2_SANITY = 0x58,
     kSE05x_P2_DH_REVERSE = 0x59,
-    kSE05x_P2_READ_STATE = 0x5B
+    kSE05x_P2_READ_STATE = 0x5B,
+#endif
+#if SSS_HAVE_SE05X_VER_GTE_07_02
+    kSE05x_P2_ECPM = 0x62
 #endif
 } SE05x_P2_t;
 
@@ -286,6 +289,10 @@ typedef enum
     kSE05x_TAG_9 = 0x49,
     kSE05x_TAG_10 = 0x4A,
     kSE05x_TAG_11 = 0x4B,
+#if SSS_HAVE_SE05X_VER_GTE_07_02
+    kSE05x_TAG_TIMESTAMP = 0x4F,
+    kSE05x_TAG_SIGNATURE = 0x52,
+#endif
     kSE05x_GP_TAG_CONTRL_REF_PARM = 0xA6,
     kSE05x_GP_TAG_AID = 0x4F,
     kSE05x_GP_TAG_KEY_TYPE = 0x80,
@@ -331,6 +338,17 @@ typedef enum
     /** Message input must be pre-hashed (using SHA256) */
     kSE05x_ECDAASignatureAlgo_ECDAA = 0xF4,
 } SE05x_ECDAASignatureAlgo_t;
+
+/** Different ECDH algorithms */
+typedef enum
+{
+    /** Invalid */
+    kSE05x_ECDHAlgo_NA = 0,
+    /** Generates the SHA1 of the X coordinate. */
+    kSE05x_ECDHAlgo_EC_SVDP_DH = 0x01,
+    /** Generates the X coordinate. */
+    kSE05x_ECDHAlgo_EC_SVDP_DH_PLAIN = 0x03,
+} SE05x_ECDHAlgo_t;
 
 /** Different signature algorithms for RSA */
 typedef enum
@@ -432,6 +450,7 @@ typedef enum
     kSE05x_MACAlgo_HMAC_SHA384 = 0x1A,
     kSE05x_MACAlgo_HMAC_SHA512 = 0x1B,
     kSE05x_MACAlgo_CMAC_128 = 0x31,
+    kSE05x_MACAlgo_DES_CMAC8 = 0x7A,
 } SE05x_MACAlgo_t;
 
 /** AEAD Algorithms */
@@ -558,10 +577,15 @@ typedef enum
     kSE05x_CipherMode_AES_GCM = 0xB0,
     /** Typically using AESKey identifiers */
     kSE05x_CipherMode_AES_CTR = 0xF0,
+    /** Typically using AESKey CTR mode with internal IV Gen */
+    /** Only used by MW. Change to kSE05x_CipherMode_AES_CTR when sending to SE */
+    kSE05x_CipherMode_AES_CTR_INT_IV = 0xF1,
     /** Typically using AEAD GCM with internal IV Gen */
     kSE05x_CipherMode_AES_GCM_INT_IV = 0xF3,
     /** Typically using AEAD CCM mode */
     kSE05x_CipherMode_AES_CCM = 0xF4,
+    /** Typically using AEAD CCM with internal IV Gen */
+    kSE05x_CipherMode_AES_CCM_INT_IV = 0xF5,
 } SE05x_CipherMode_t;
 
 /** Features which are available / enabled in the Applet */
@@ -705,14 +729,14 @@ typedef enum
     /** Performs tests on the active shield protection of the
      * hardware. When the test fails, the chip triggers the attack
      * counter and the chip will reset. */
-    kSE05x_HealthCheckMode_SHIELDING = 0xFB04,
+    kSE05x_HealthCheckMode_SHIELDING = 0xFC03,
     /** Performs self-tests on hardware sensors and reports the
      * status. */
-    kSE05x_HealthCheckMode_SENSOR = 0xFA05,
+    kSE05x_HealthCheckMode_SENSOR = 0xFB04,
     /** Performs self-tests on the hardware registers. When the test
      * fails, the chip triggers the attack counter and the chip will
      * reset. */
-    kSE05x_HealthCheckMode_SFR_CHECK = 0xFC03,
+    kSE05x_HealthCheckMode_SFR_CHECK = 0xFA05,
 } SE05x_HealthCheckMode_t;
 #endif
 
@@ -751,6 +775,7 @@ typedef enum
     kSE05x_CryptoObject_AES_CBC_ISO9797_M2,
     kSE05x_CryptoObject_AES_CBC_PKCS5,
     kSE05x_CryptoObject_AES_CTR,
+    kSE05x_CryptoObject_AES_CTR_INT_IV,
     kSE05x_CryptoObject_HMAC_SHA1,
     kSE05x_CryptoObject_HMAC_SHA256,
     kSE05x_CryptoObject_HMAC_SHA384,
@@ -759,6 +784,7 @@ typedef enum
     kSE05x_CryptoObject_AES_GCM,
     kSE05x_CryptoObject_AES_GCM_INT_IV,
     kSE05x_CryptoObject_AES_CCM,
+	kSE05x_CryptoObject_AES_CCM_INT_IV,
     kSE05x_CryptoObject_SPAKE_VERIFIER,
     kSE05x_CryptoObject_SPAKE_PROVER,
     kSE05x_CryptoObject_End,
@@ -810,7 +836,7 @@ typedef enum
 /**
  * the maximum APDU payload length will be smaller, depending on which protocol applies, etc.
  */
-#define SE050_MAX_APDU_PAYLOAD_LENGTH 896
+#define SE050_MAX_APDU_PAYLOAD_LENGTH 892
 //#define SE050_DEFAULT_MAX_ATTEMPTS 10
 
 /** 3 MSBit for instruction characteristics. */
@@ -821,6 +847,8 @@ typedef enum
 /** Type of Object */
 typedef enum
 {
+    /**  */
+    kSE05x_SecObjTyp_NA = 0x00,
     /**  */
     kSE05x_SecObjTyp_EC_KEY_PAIR = 0x01,
     /**  */
@@ -853,21 +881,73 @@ typedef enum
     kSE05x_SecObjTyp_CURVE = 0x10,
     /**  */
     kSE05x_SecObjTyp_HMAC_KEY = 0x11,
+#if SSS_HAVE_SE05X_VER_GTE_07_02
+    kSE05x_SecObjTyp_EC_KEY_PAIR_NIST_P192 = 0x21,
+    kSE05x_SecObjTyp_EC_PRIV_KEY_NIST_P192 = 0x22,
+    kSE05x_SecObjTyp_EC_PUB_KEY_NIST_P192 = 0x23,
+    kSE05x_SecObjTyp_EC_KEY_PAIR_NIST_P224 = 0x25,
+    kSE05x_SecObjTyp_EC_PRIV_KEY_NIST_P224 = 0x26,
+    kSE05x_SecObjTyp_EC_PUB_KEY_NIST_P224 = 0x27,
+    kSE05x_SecObjTyp_EC_KEY_PAIR_NIST_P256 = 0x29,
+    kSE05x_SecObjTyp_EC_PRIV_KEY_NIST_P256 = 0x2A,
+    kSE05x_SecObjTyp_EC_PUB_KEY_NIST_P256 = 0x2B,
+    kSE05x_SecObjTyp_EC_KEY_PAIR_NIST_P384 = 0x2D,
+    kSE05x_SecObjTyp_EC_PRIV_KEY_NIST_P384 = 0x2E,
+    kSE05x_SecObjTyp_EC_PUB_KEY_NIST_P384 = 0x2F,
+    kSE05x_SecObjTyp_EC_KEY_PAIR_NIST_P521 = 0x31,
+    kSE05x_SecObjTyp_EC_PRIV_KEY_NIST_P521 = 0x32,
+    kSE05x_SecObjTyp_EC_PUB_KEY_NIST_P521 = 0x33,
+    kSE05x_SecObjTyp_EC_KEY_PAIR_Brainpool160 = 0x35,
+    kSE05x_SecObjTyp_EC_PRIV_KEY_Brainpool160 = 0x36,
+    kSE05x_SecObjTyp_EC_PUB_KEY_Brainpool160 = 0x37,
+    kSE05x_SecObjTyp_EC_KEY_PAIR_Brainpool192 = 0x39,
+    kSE05x_SecObjTyp_EC_PRIV_KEY_Brainpool192 = 0x3A,
+    kSE05x_SecObjTyp_EC_PUB_KEY_Brainpool192 = 0x3B,
+    kSE05x_SecObjTyp_EC_KEY_PAIR_Brainpool224 = 0x3D,
+    kSE05x_SecObjTyp_EC_PRIV_KEY_Brainpool224 = 0x3E,
+    kSE05x_SecObjTyp_EC_PUB_KEY_Brainpool224 = 0x3F,
+    kSE05x_SecObjTyp_EC_KEY_PAIR_Brainpool256 = 0x41,
+    kSE05x_SecObjTyp_EC_PRIV_KEY_Brainpool256 = 0x42,
+    kSE05x_SecObjTyp_EC_PUB_KEY_Brainpool256 = 0x43,
+    kSE05x_SecObjTyp_EC_KEY_PAIR_Brainpool320 = 0x45,
+    kSE05x_SecObjTyp_EC_PRIV_KEY_Brainpool320 = 0x46,
+    kSE05x_SecObjTyp_EC_PUB_KEY_Brainpool320 = 0x47,
+    kSE05x_SecObjTyp_EC_KEY_PAIR_Brainpool384 = 0x49,
+    kSE05x_SecObjTyp_EC_PRIV_KEY_Brainpool384 = 0x4A,
+    kSE05x_SecObjTyp_EC_PUB_KEY_Brainpool384 = 0x4B,
+    kSE05x_SecObjTyp_EC_KEY_PAIR_Brainpool512 = 0x4D,
+    kSE05x_SecObjTyp_EC_PRIV_KEY_Brainpool512 = 0x4E,
+    kSE05x_SecObjTyp_EC_PUB_KEY_Brainpool512 = 0x4F,
+    kSE05x_SecObjTyp_EC_KEY_PAIR_Secp160k1 = 0x51,
+    kSE05x_SecObjTyp_EC_PRIV_KEY_Secp160k1 = 0x52,
+    kSE05x_SecObjTyp_EC_PUB_KEY_Secp160k1 = 0x53,
+    kSE05x_SecObjTyp_EC_KEY_PAIR_Secp192k1 = 0x55,
+    kSE05x_SecObjTyp_EC_PRIV_KEY_Secp192k1 = 0x56,
+    kSE05x_SecObjTyp_EC_PUB_KEY_Secp192k1 = 0x57,
+    kSE05x_SecObjTyp_EC_KEY_PAIR_Secp224k1 = 0x59,
+    kSE05x_SecObjTyp_EC_PRIV_KEY_Secp224k1 = 0x5A,
+    kSE05x_SecObjTyp_EC_PUB_KEY_Secp224k1 = 0x5B,
+    kSE05x_SecObjTyp_EC_KEY_PAIR_Secp256k1 = 0x5D,
+    kSE05x_SecObjTyp_EC_PRIV_KEY_Secp256k1 = 0x5E,
+    kSE05x_SecObjTyp_EC_PUB_KEY_Secp256k1 = 0x5F,
+    kSE05x_SecObjTyp_EC_KEY_PAIR_BN_P256 = 0x61,
+    kSE05x_SecObjTyp_EC_PRIV_KEY_BN_P256 = 0x62,
+    kSE05x_SecObjTyp_EC_PUB_KEY_BN_P256 = 0x63,
+    kSE05x_SecObjTyp_EC_KEY_PAIR_ED25519 = 0x65,
+    kSE05x_SecObjTyp_EC_PRIV_KEY_ED25519 = 0x66,
+    kSE05x_SecObjTyp_EC_PUB_KEY_ED25519 = 0x67,
+    kSE05x_SecObjTyp_EC_KEY_PAIR_MONT_DH_25519 = 0x69,
+    kSE05x_SecObjTyp_EC_PRIV_KEY_MONT_DH_25519 = 0x6A,
+    kSE05x_SecObjTyp_EC_PUB_KEY_MONT_DH_25519 = 0x6B,
+    kSE05x_SecObjTyp_EC_KEY_PAIR_MONT_DH_448 = 0x71,
+    kSE05x_SecObjTyp_EC_PRIV_KEY_MONT_DH_448 = 0x72,
+    kSE05x_SecObjTyp_EC_PUB_KEY_MONT_DH_448 = 0x73,
+#endif
 } SE05x_SecObjTyp_t;
 
 /** @copydoc SE05x_SecObjTyp_t */
 typedef SE05x_SecObjTyp_t SE05x_SecureObjectType_t;
 
-/** Type of memory. Used when we query available free size */
-typedef enum
-{
-    /** Transient memory, clear on reset */
-    kSE05x_MemTyp_TRANSIENT_RESET = 0x01,
-    /** Transient memory, clear on deselect */
-    kSE05x_MemTyp_TRANSIENT_DESELECT = 0x02,
-    /** Persistent memory */
-    kSE05x_MemTyp_PERSISTENT = 0x03,
-} SE05x_MemTyp_t;
 
 /** Algorithms for RSA Signature */
 typedef enum
@@ -999,6 +1079,7 @@ typedef enum
 /** Symmetric keys */
 typedef enum
 {
+    kSE05x_SymmKeyType_NA = 0,
     kSE05x_SymmKeyType_AES = kSE05x_P1_AES,
     kSE05x_SymmKeyType_DES = kSE05x_P1_DES,
     kSE05x_SymmKeyType_HMAC = kSE05x_P1_HMAC,
@@ -1049,6 +1130,13 @@ typedef enum
     kSE05x_RSAKeyFormat_CRT = kSE05x_P2_DEFAULT,
     kSE05x_RSAKeyFormat_RAW = kSE05x_P2_RAW,
 } SE05x_RSAKeyFormat_t;
+
+/** ECPMAlgo */
+typedef enum
+{
+    kSE05x_ECPMAlgo_PACE_GM = 0x05,
+    kSE05x_ECPMAlgo_SVDP_DH_PLAIN_XY = 0x06,
+} SE05x_ECPMAlgo_t;
 
 /** @copydoc SE05x_MACAlgo_t */
 typedef SE05x_MACAlgo_t SE05x_MacOperation_t;

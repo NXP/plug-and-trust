@@ -167,9 +167,15 @@ cleanup:
     else {
         LOG_E("ex_sss_ecc Example Failed !!!...");
     }
-    if (ctx_asymm.session != NULL)
+    if (ctx_asymm.session != NULL) {
         sss_asymmetric_context_free(&ctx_asymm);
-    if (ctx_verify.session != NULL)
+    }
+    if (ctx_verify.session != NULL) {
         sss_asymmetric_context_free(&ctx_verify);
+    }
+
+    sss_key_object_free(&keyPair);
+    sss_key_object_free(&key_pub);
+
     return status;
 }

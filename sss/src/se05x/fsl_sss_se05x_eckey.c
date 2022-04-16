@@ -21,15 +21,16 @@
 #include <smCom.h>
 #include <sm_const.h>
 #include <string.h>
-#if SSS_HAVE_MBEDTLS
+#if SSS_HAVE_HOSTCRYPTO_MBEDTLS
 #include "fsl_sss_mbedtls_types.h"
-#elif SSS_HAVE_OPENSSL
+#elif SSS_HAVE_HOSTCRYPTO_OPENSSL
 #include "fsl_sss_openssl_types.h"
 #endif
 
 /* ************************************************************************** */
 /* Functions : Private function declaration                                   */
 /* ************************************************************************** */
+
 static sss_status_t nxECKey_InternalAuthenticate(pSe05xSession_t se05xSession,
     SE05x_AuthCtx_ECKey_t *pAuthFScp,
     uint8_t *hostEckaPubKey,
@@ -51,8 +52,6 @@ static sss_status_t nxECKey_Calculate_Shared_secret(
 
 #define TAG_PK_SE_ECKA 0x7F49
 #define TAG_SIG_SE_ECKA 0x5F37
-static sss_status_t nxECKey_GetVerify_SE_Ecka_Public(
-    pSe05xSession_t se05xSession, uint8_t *pSePubEcka, size_t *pSePubEckaLen);
 
 static void set_secp256r1nist_header(uint8_t *pbKey, size_t *pbKeyByteLen);
 
@@ -62,7 +61,8 @@ int get_u8buf_2bTag(uint8_t *buf, size_t *pBufIndex, const size_t bufLen, uint16
 /* Functions : Function definition                                            */
 /* ************************************************************************** */
 
-sss_status_t nxECKey_AuthenticateChannel(pSe05xSession_t se05xSession, SE05x_AuthCtx_ECKey_t *pAuthFScp)
+sss_status_t nxECKey_AuthenticateChannel(
+    pSe05xSession_t se05xSession, SE05x_AuthCtx_ECKey_t *pAuthFScp, uint8_t *pSePubkey, size_t *pSePubkeyLen)
 {
     sss_status_t status = kStatus_SSS_Fail;
     // Host public key to send to the SE for internal authenticate
@@ -79,10 +79,6 @@ sss_status_t nxECKey_AuthenticateChannel(pSe05xSession_t se05xSession, SE05x_Aut
     size_t offset                      = 0;
     NXECKey03_StaticCtx_t *pStatic_ctx = pAuthFScp->pStatic_ctx;
     NXSCP03_DynCtx_t *pDyn_ctx         = pAuthFScp->pDyn_ctx;
-    uint8_t sePubkey[150]              = {
-        0,
-    }; // SE ECKA Public Key
-    size_t sePubkeyLen = sizeof(sePubkey);
     uint8_t *pkSeEcka;
 
     /* clang-format off */
@@ -109,18 +105,11 @@ sss_status_t nxECKey_AuthenticateChannel(pSe05xSession_t se05xSession, SE05x_Aut
     hostEckaPub[offset++] = KEY_PARAMETER_REFERENCE_VALUE;
     hostEckaPubLen        = offset;
 
-    /* Get SE ECKA Public Key*/
-    status = nxECKey_GetVerify_SE_Ecka_Public(se05xSession, sePubkey, &sePubkeyLen);
-    ENSURE_OR_GO_EXIT(status == kStatus_SSS_Success);
+    pkSeEcka = pSePubkey; // Exclude first two bytes Tag and len
+    set_secp256r1nist_header(pkSeEcka, pSePubkeyLen);
 
-    /* Create the Key in ASN1 Der format */
-    pkSeEcka    = &sePubkey[2]; // Exclude first two bytes Tag and len
-    sePubkeyLen = sePubkeyLen - 2;
-    set_secp256r1nist_header(pkSeEcka, &sePubkeyLen);
-    sePubkeyLen = sePubkeyLen - 2; // Exclude last three bytes Key parameter tag len and value
-                                   /*Set the key in Fast scp Host context*/
     status = sss_host_key_store_set_key(
-        pStatic_ctx->SeEcPubKey.keyStore, &pStatic_ctx->SeEcPubKey, pkSeEcka, sePubkeyLen, 256, NULL, 0);
+        pStatic_ctx->SeEcPubKey.keyStore, &pStatic_ctx->SeEcPubKey, pkSeEcka, *pSePubkeyLen, 256, NULL, 0);
     ENSURE_OR_GO_EXIT(status == kStatus_SSS_Success);
 
     status = nxECKey_InternalAuthenticate(
@@ -276,7 +265,7 @@ static void set_secp256r1nist_header(uint8_t *pbKey, size_t *pbKeyByteLen)
 {
     unsigned int i = 0;
     /* clang-format off */
-    char temp[112] = { 0x30, 0x59, 0x30, 0x13, 0x06, 0x07, 0x2A, 0x86, 0x48, 0xCE, 0x3D,
+    uint8_t temp[112] = { 0x30, 0x59, 0x30, 0x13, 0x06, 0x07, 0x2A, 0x86, 0x48, 0xCE, 0x3D,
         0x02, 0x01, 0x06, 0x08, 0x2A, 0x86, 0x48, 0xCE, 0x3D, 0x03, 0x01,
         0x07, 0x03, 0x42, 0x00 };
     /* clang-format on */
@@ -399,53 +388,6 @@ cleanup:
     return status;
 }
 
-sss_status_t nxECKey_GetVerify_SE_Ecka_Public(pSe05xSession_t se05xSession, uint8_t *pSePubEcka, size_t *pSePubEckaLen)
-{
-    smStatus_t retStatus = SM_NOT_OK;
-    sss_status_t status  = kStatus_SSS_Fail;
-    int tlvRet           = 0;
-    uint8_t cmdbuf[100];
-    uint8_t rspbuf[512];
-    uint8_t *pRspbuf = &rspbuf[0];
-    size_t rspbufLen = ARRAY_SIZE(rspbuf);
-
-    uint8_t sigSePubkey[100];
-    size_t sigSePubkeyLen = sizeof(sigSePubkey);
-    size_t i              = 0;
-
-    const tlvHeader_t hdr   = {{CLA_GP_7816, INS_GP_GET_DATA, P1_GP_GET_DATA, P2_GP_GET_DATA}};
-    size_t cntrlRefTemp_Len = 0 + 1 + 1 + 2; /*TLV Key */
-
-    cmdbuf[i++] = kSE05x_TAG_GP_CONTRL_REF_PARM; // Tag Control reference template
-    cmdbuf[i++] = (uint8_t)cntrlRefTemp_Len;
-    cmdbuf[i++] = kSE05x_GP_TAG_GET_DATA;
-    cmdbuf[i++] = 0x02;
-    cmdbuf[i++] = 0x00; //Key Identifier
-    cmdbuf[i++] = 0x00; //Key Version Number
-
-    retStatus = DoAPDUTxRx_s_Case4(se05xSession, &hdr, cmdbuf, i, rspbuf, &rspbufLen);
-    ENSURE_OR_GO_CLEANUP(retStatus == SM_OK);
-
-    i = 0;
-    /* Get the Public Key*/
-    tlvRet = get_u8buf_2bTag(pRspbuf, &i, rspbufLen, (uint16_t)TAG_PK_SE_ECKA, pSePubEcka, pSePubEckaLen);
-    if (0 != tlvRet) {
-        goto cleanup;
-    }
-    /* Get the signiture */
-    tlvRet = get_u8buf_2bTag(pRspbuf, &i, rspbufLen, (uint16_t)TAG_SIG_SE_ECKA, sigSePubkey, &sigSePubkeyLen);
-    if (0 != tlvRet) {
-        goto cleanup;
-    }
-
-    ENSURE_OR_GO_CLEANUP((i + 2) == rspbufLen)
-    retStatus = (pRspbuf[i] << 8) | (pRspbuf[i + 1]);
-    ENSURE_OR_GO_CLEANUP(retStatus == SM_OK);
-    status = kStatus_SSS_Success;
-cleanup:
-    return status;
-}
-
 int get_u8buf_2bTag(uint8_t *buf, size_t *pBufIndex, const size_t bufLen, uint16_t tag, uint8_t *rsp, size_t *pRspLen)
 {
     int retVal    = 1;
@@ -456,8 +398,9 @@ int get_u8buf_2bTag(uint8_t *buf, size_t *pBufIndex, const size_t bufLen, uint16
     size_t extendedLen;
     size_t rspLen;
     //size_t len;
-    if (got_tag != tag)
+    if (got_tag != tag) {
         goto cleanup;
+    }
     rspLen = *pBuf++;
 
     if (rspLen <= 0x7FU) {
@@ -477,10 +420,12 @@ int get_u8buf_2bTag(uint8_t *buf, size_t *pBufIndex, const size_t bufLen, uint16
         goto cleanup;
     }
 
-    if (extendedLen > *pRspLen)
+    if (extendedLen > *pRspLen) {
         goto cleanup;
-    if (extendedLen > bufLen)
+    }
+    if (extendedLen > bufLen) {
         goto cleanup;
+    }
 
     *pRspLen = extendedLen;
     *pBufIndex += extendedLen;
@@ -530,5 +475,6 @@ cleanup:
     sss_host_key_object_free(&shsSecret);
     return status;
 }
+
 #endif /* defined SSS_HAVE_SCP_SCP03_SSS */
 #endif /* SSS_HAVE_APPLET_SE05X_IOT */

@@ -61,7 +61,7 @@
 
 #if defined(MBEDTLS_RSA_ALT)
 
-#if SSS_HAVE_ALT_SSS
+#if SSS_HAVE_MBEDTLS_ALT_SSS
 #  include "sss_mbedtls.h"
 #else
 #  include "ax_mbedtls.h"

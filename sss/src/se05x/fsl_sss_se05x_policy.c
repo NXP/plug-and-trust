@@ -85,17 +85,53 @@ static void sss_se05x_update_header_sym_key_policy(sss_policy_sym_key_u key_pol,
     if (key_pol.can_Decrypt) {
         header |= POLICY_OBJ_ALLOW_DEC;
     }
-    if (key_pol.can_KD) {
-        header |= POLICY_OBJ_ALLOW_KDF;
+    if (key_pol.can_Import_Export) {
+        header |= POLICY_OBJ_ALLOW_IMPORT_EXPORT;
+    }
+    if (key_pol.forbid_Derived_Output) {
+#if SSS_HAVE_SE05X_VER_GTE_06_00
+        header |= POLICY_OBJ_FORBID_DERIVED_OUTPUT;
+#else
+        LOG_W("forbid_Derived_Output is not applied");
+#endif
+    }
+    if (key_pol.can_TLS_KDF) {
+#if SSS_HAVE_SE05X_VER_GTE_07_02
+        header |= POLICY_OBJ_ALLOW_TLS_KDF;
+#else
+        LOG_W("can_TLS_KDF is not applied");
+#endif
+    }
+    if (key_pol.allow_kdf_ext_rnd) {
+#if SSS_HAVE_SE05X_VER_GTE_06_00
+        header |= POLICY_OBJ_ALLOW_KDF_EXT_RANDOM;
+#else
+        LOG_W("allow_kdf_ext_rnd is not applied");
+#endif
+    }
+    if (key_pol.can_TLS_PMS_KD) {
+#if SSS_HAVE_SE05X_VER_GTE_07_02
+        header |= POLICY_OBJ_ALLOW_TLS_PMS;
+#else
+        LOG_W("can_TLS_PMS_KD is not applied");
+#endif
+    }
+    if (key_pol.can_HKDF) {
+#if SSS_HAVE_SE05X_VER_GTE_07_02
+        header |= POLICY_OBJ_ALLOW_HKDF;
+#else
+        LOG_W("can_HKDF is not applied");
+#endif
+    }
+    if (key_pol.can_PBKDF) {
+#if SSS_HAVE_SE05X_VER_GTE_07_02
+        header |= POLICY_OBJ_ALLOW_PBKDF;
+#else
+        LOG_W("can_PBKDF is not applied");
+#endif
     }
     if (key_pol.can_Wrap) {
         header |= POLICY_OBJ_ALLOW_WRAP;
-    }
-    if (key_pol.can_Write) {
-        header |= POLICY_OBJ_ALLOW_WRITE;
-    }
-    if (key_pol.can_Gen) {
-        header |= POLICY_OBJ_ALLOW_GEN;
     }
     if (key_pol.can_Desfire_Auth) {
         header |= POLICY_OBJ_ALLOW_DESFIRE_AUTHENTICATION;
@@ -103,19 +139,51 @@ static void sss_se05x_update_header_sym_key_policy(sss_policy_sym_key_u key_pol,
     if (key_pol.can_Desfire_Dump) {
         header |= POLICY_OBJ_ALLOW_DESFIRE_DUMP_SESSION_KEYS;
     }
-    if (key_pol.can_Import_Export) {
-        header |= POLICY_OBJ_ALLOW_IMPORT_EXPORT;
-    }
-#if SSS_HAVE_SE05X_VER_GTE_06_00
-    if (key_pol.forbid_Derived_Output) {
-        header |= POLICY_OBJ_FORBID_DERIVED_OUTPUT;
-    }
+    if (key_pol.can_Desfire_KD) {
+#if SSS_HAVE_SE05X_VER_GTE_07_02
+        header |= POLICY_OBJ_ALLOW_DESFIRE_KDF;
+#else
+        LOG_W("can_Desfire_KD is not applied");
 #endif
-#if SSS_HAVE_SE05X_VER_GTE_06_00
-    if (key_pol.allow_kdf_ext_rnd) {
-        header |= POLICY_OBJ_ALLOW_KDF_EXT_RANDOM;
     }
+    if (key_pol.forbid_external_iv) {
+#if SSS_HAVE_SE05X_VER_GTE_07_02
+        header |= POLICY_OBJ_FORBID_EXTERNAL_IV;
+#else
+        LOG_W("forbid_external_iv is not applied");
 #endif
+    }
+    if (key_pol.can_usage_hmac_pepper) {
+#if SSS_HAVE_SE05X_VER_GTE_07_02
+        header |= POLICY_OBJ_ALLOW_USAGE_AS_HMAC_PEPPER;
+#else
+        LOG_W("can_usage_hmac_pepper is not applied");
+#endif
+    }
+
+    /* Old policies */
+    if (key_pol.can_KD) {
+#if !SSS_HAVE_SE05X_VER_GTE_07_02
+        header |= POLICY_OBJ_ALLOW_KDF;
+#else
+        LOG_W("can_KD is not applied");
+#endif
+    }
+    if (key_pol.can_Write) {
+#if !SSS_HAVE_SE05X_VER_GTE_07_02
+        header |= POLICY_OBJ_ALLOW_WRITE;
+#else
+        LOG_W("can_Write is not applied");
+#endif
+    }
+    if (key_pol.can_Gen) {
+#if !SSS_HAVE_SE05X_VER_GTE_07_02
+        header |= POLICY_OBJ_ALLOW_GEN;
+#else
+        LOG_W("can_Gen is not applied");
+#endif
+    }
+
     sss_se05x_copy_uint32_to_u8_array(header, pbuffer);
 }
 
@@ -134,49 +202,88 @@ static void sss_se05x_update_header_asym_key_policy(sss_policy_asym_key_u key_po
     if (key_pol.can_Decrypt) {
         header |= POLICY_OBJ_ALLOW_DEC;
     }
-    if (key_pol.can_KD) {
-        header |= POLICY_OBJ_ALLOW_KDF;
+    if (key_pol.can_Import_Export) {
+        header |= POLICY_OBJ_ALLOW_IMPORT_EXPORT;
     }
-    if (key_pol.can_Wrap) {
-        header |= POLICY_OBJ_ALLOW_WRAP;
-    }
-    if (key_pol.can_Write) {
-        header |= POLICY_OBJ_ALLOW_WRITE;
+    if (key_pol.forbid_Derived_Output) {
+#if SSS_HAVE_SE05X_VER_GTE_06_00
+        header |= POLICY_OBJ_FORBID_DERIVED_OUTPUT;
+#else
+        LOG_W("forbid_Derived_Output is not applied");
+#endif
     }
     if (key_pol.can_Gen) {
         header |= POLICY_OBJ_ALLOW_GEN;
     }
-    if (key_pol.can_Import_Export) {
-        header |= POLICY_OBJ_ALLOW_IMPORT_EXPORT;
-    }
     if (key_pol.can_KA) {
         header |= POLICY_OBJ_ALLOW_KA;
-    }
-    if (key_pol.can_Read) {
-        header |= POLICY_OBJ_ALLOW_READ;
     }
     if (key_pol.can_Attest) {
         header |= POLICY_OBJ_ALLOW_ATTESTATION;
     }
-#if SSS_HAVE_SE05X_VER_GTE_06_00
-    if (key_pol.forbid_Derived_Output) {
-        header |= POLICY_OBJ_FORBID_DERIVED_OUTPUT;
-    }
+
+    /* Old policies */
+    if (key_pol.can_Read) {
+#if !SSS_HAVE_SE05X_VER_GTE_07_02
+        header |= POLICY_OBJ_ALLOW_READ;
+#else
+        LOG_W("can_Read is not applied");
 #endif
+    }
+    if (key_pol.can_Write) {
+#if !SSS_HAVE_SE05X_VER_GTE_07_02
+        header |= POLICY_OBJ_ALLOW_WRITE;
+#else
+        LOG_W("can_Write is not applied");
+#endif
+    }
+    if (key_pol.can_KD) {
+#if !SSS_HAVE_SE05X_VER_GTE_07_02
+        header |= POLICY_OBJ_ALLOW_KDF;
+#else
+        LOG_W("can_KD is not applied");
+#endif
+    }
+    if (key_pol.can_Wrap) {
+#if !SSS_HAVE_SE05X_VER_GTE_07_02
+        header |= POLICY_OBJ_ALLOW_WRAP;
+#else
+        LOG_W("can_Wrap is not applied");
+#endif
+    }
+
     sss_se05x_copy_uint32_to_u8_array(header, pbuffer);
 }
 
 static void sss_se05x_update_header_common_policy(sss_policy_common_u common_pol, uint8_t *pbuffer)
 {
     uint32_t header = 0;
-    if (common_pol.can_Delete) {
-        header |= POLICY_OBJ_ALLOW_DELETE;
-    }
+
     if (common_pol.forbid_All) {
         header |= POLICY_OBJ_FORBID_ALL;
     }
+    if (common_pol.can_Read) {
+#if SSS_HAVE_SE05X_VER_GTE_07_02
+        header |= POLICY_OBJ_ALLOW_READ;
+#else
+        LOG_W("can_Read is not applied");
+#endif
+    }
+    if (common_pol.can_Write) {
+#if SSS_HAVE_SE05X_VER_GTE_07_02
+        header |= POLICY_OBJ_ALLOW_WRITE;
+#else
+        LOG_W("can_Write is not applied");
+#endif
+    }
+    if (common_pol.can_Delete) {
+        header |= POLICY_OBJ_ALLOW_DELETE;
+    }
     if (common_pol.req_Sm) {
         header |= POLICY_OBJ_REQUIRE_SM;
+    }
+    if (common_pol.req_pcr_val) {
+        header |= POLICY_OBJ_REQUIRE_PCR_VALUE;
     }
     sss_se05x_copy_uint32_to_u8_array(header, pbuffer);
 }
@@ -244,6 +351,58 @@ static void sss_se05x_update_ext_pcr_value_policy(
     *ext_offset += sizeof(pcr_pol.pcrExpectedValue);
 }
 
+#if SSS_HAVE_SE05X_VER_GTE_07_02
+
+static void sss_se05x_update_header_desfire_chg_authId_value_policy(
+    sss_policy_desfire_changekey_authId_value_u pcr_pol, uint8_t *pbuffer)
+{
+#if SSS_HAVE_SE05X_VER_GTE_07_02
+    uint32_t header = 0;
+    header |= POLICY_OBJ_ALLOW_DESFIRE_CHANGEKEY;
+    sss_se05x_copy_uint32_to_u8_array(header, pbuffer);
+#else
+    LOG_W("desfire_changekey_authId pol is not applied");
+#endif
+}
+
+static void sss_se05x_update_ext_desfire_chg_authId_value_policy(
+    sss_policy_desfire_changekey_authId_value_u desfireAuthId_pol, uint8_t *pbuffer, uint32_t *ext_offset)
+{
+#if SSS_HAVE_SE05X_VER_GTE_07_02
+    /*copy 4 bytes Auth Object ID*/
+    sss_se05x_copy_uint32_to_u8_array(desfireAuthId_pol.desfire_authId, pbuffer + *ext_offset);
+    *ext_offset += sizeof(desfireAuthId_pol.desfire_authId);
+#else
+    LOG_W("desfire_changekey_authId ext pol is not applied");
+#endif
+}
+
+static void sss_se05x_update_header_key_drv_masterId_value_policy(
+    sss_policy_key_drv_master_keyid_value_u masterkey_pol, uint8_t *pbuffer)
+{
+#if SSS_HAVE_SE05X_VER_GTE_07_02
+    uint32_t header = 0;
+    header |= POLICY_OBJ_ALLOW_DERIVED_INPUT;
+    sss_se05x_copy_uint32_to_u8_array(header, pbuffer);
+#else
+    LOG_W("key_drv_masterId pol is not applied");
+#endif
+}
+
+static void sss_se05x_update_ext_key_drv_masterId_value_policy(
+    sss_policy_key_drv_master_keyid_value_u masterkey_pol, uint8_t *pbuffer, uint32_t *ext_offset)
+{
+#if SSS_HAVE_SE05X_VER_GTE_07_02
+    /*copy 4 bytes Master Object ID*/
+    sss_se05x_copy_uint32_to_u8_array(masterkey_pol.master_keyId, pbuffer + *ext_offset);
+    *ext_offset += sizeof(masterkey_pol.master_keyId);
+#else
+    LOG_W("key_drv_masterId ext is not applied");
+#endif
+}
+
+#endif
+
 static void sss_se05x_copy_uint32_to_u8_array(uint32_t u32, uint8_t *pbuffer)
 {
     pbuffer[0] |= (uint8_t)((u32 >> 3 * 8) & 0xFF);
@@ -278,8 +437,9 @@ sss_status_t sss_se05x_create_object_policy_buffer(sss_policy_t *policies, uint8
     uint32_t ext_offset                      = 0;
     uint32_t offset                          = 0;
 
-    if ((policies == NULL) || (pbuff == NULL) || (buf_len == NULL))
+    if ((policies == NULL) || (pbuff == NULL) || (buf_len == NULL)) {
         return kStatus_SSS_InvalidArgument;
+    }
 
     if (policies->nPolicies > SSS_POLICY_COUNT_MAX) {
         return kStatus_SSS_InvalidArgument;
@@ -338,6 +498,34 @@ sss_status_t sss_se05x_create_object_policy_buffer(sss_policy_t *policies, uint8
                     sss_se05x_update_header_pin_policy(
                         (policies->policies[indexArray[j]])->policy.pin, &temp_buffer[OBJ_POLICY_HEADER_OFFSET]);
                     break;
+                case KPolicy_Desfire_Changekey_Auth_Id:
+#if SSS_HAVE_SE05X_VER_GTE_07_02
+                    sss_se05x_update_header_desfire_chg_authId_value_policy(
+                        (policies->policies[indexArray[j]])->policy.desfire_auth_id,
+                        &temp_buffer[OBJ_POLICY_HEADER_OFFSET]);
+                    sss_se05x_update_ext_desfire_chg_authId_value_policy(
+                        (policies->policies[indexArray[j]])->policy.desfire_auth_id,
+                        &temp_buffer[OBJ_POLICY_EXT_OFFSET],
+                        &ext_offset);
+                    temp_buffer[OBJ_POLICY_LENGTH_OFFSET] += OBJ_POLICY_OBJ_ID_SIZE;
+#else
+                    LOG_W("KPolicy_Desfire_Changekey_Auth_Id is not applied");
+#endif
+                    break;
+                case KPolicy_Derive_Master_Key_Id:
+#if SSS_HAVE_SE05X_VER_GTE_07_02
+                    sss_se05x_update_header_key_drv_masterId_value_policy(
+                        (policies->policies[indexArray[j]])->policy.master_key_id,
+                        &temp_buffer[OBJ_POLICY_HEADER_OFFSET]);
+                    sss_se05x_update_ext_key_drv_masterId_value_policy(
+                        (policies->policies[indexArray[j]])->policy.master_key_id,
+                        &temp_buffer[OBJ_POLICY_EXT_OFFSET],
+                        &ext_offset);
+                    temp_buffer[OBJ_POLICY_LENGTH_OFFSET] += OBJ_POLICY_OBJ_ID_SIZE;
+#else
+                    LOG_W("KPolicy_Derive_Master_Key_Id is not applied");
+#endif
+                    break;
                 default:
                     break;
                 }
@@ -363,8 +551,9 @@ sss_status_t sss_se05x_create_session_policy_buffer(
     /*Reinitialize policy buffer for every Secure object*/
     memset(session_pol_buff, 0x00, MAX_POLICY_BUFFER_SIZE);
 
-    if ((session_policy == NULL) || (session_pol_buff == NULL) || (buf_len == NULL))
+    if ((session_policy == NULL) || (session_pol_buff == NULL) || (buf_len == NULL)) {
         return kStatus_SSS_InvalidArgument;
+    }
 
     *buf_len = DEFAULT_SESSION_POLICY_SIZE;
 

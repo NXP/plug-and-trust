@@ -87,6 +87,14 @@ extern "C"{
 #endif
 /** Initialize the I2C platform HW/Driver*/
 
+/* MAX data supported by respective protocol in single read/write*/
+#if defined(SCI2C)
+#define MAX_DATA_LEN      270
+#elif defined(T1oI2C)
+#define MAX_DATA_LEN      260
+#endif
+
+
 i2c_error_t axI2CInit(void **conn_ctx, const char *pDevName);
 
 /** Terminate / de-initialize the I2C platform HW/Driver

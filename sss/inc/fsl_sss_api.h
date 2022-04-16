@@ -39,12 +39,14 @@ typedef enum
     /** Operation not performed because some of the passed parameters
      * were found inappropriate */
     kStatus_SSS_InvalidArgument = 0x3c3c0001u,
+    // LCOV_EXCL_START
     /** Where the underlying sub-system *supports* multi-threading,
      * Internal status to handle simultaneous access.
      *
      * This status is not expected to be returned to higher layers.
      * */
     kStatus_SSS_ResourceBusy = 0x3c3c0002u,
+    // LCOV_EXCL_STOP
 } sss_status_t;
 
 /** Helper macro to set enum value */
@@ -59,6 +61,7 @@ typedef enum
     kType_SSS_Software = SSS_ENUM(0x01 << 8, 0x00),
     kType_SSS_mbedTLS  = SSS_ENUM(kType_SSS_Software, 0x01),
     kType_SSS_OpenSSL  = SSS_ENUM(kType_SSS_Software, 0x02),
+    // LCOV_EXCL_START
     /** HOST HW Based */
     kType_SSS_HW   = SSS_ENUM(0x02 << 8, 0x00),
     kType_SSS_SECO = SSS_ENUM(kType_SSS_HW, 0x01),
@@ -69,6 +72,7 @@ typedef enum
     kType_SSS_Sentinel300 = SSS_ENUM(kType_SSS_Isolated_HW, 0x03),
     kType_SSS_Sentinel400 = SSS_ENUM(kType_SSS_Isolated_HW, 0x04),
     kType_SSS_Sentinel500 = SSS_ENUM(kType_SSS_Isolated_HW, 0x05),
+    // LCOV_EXCL_STOP
     /** Secure Element */
     kType_SSS_SecureElement = SSS_ENUM(0x08 << 8, 0x00),
     /** To connect to https://www.nxp.com/products/:A71CH */
@@ -143,14 +147,20 @@ typedef enum /* _sss_algorithm */
     kAlgorithm_SSS_AES_GCM        = SSS_ENUM_ALGORITHM(AES, 0x04),
     kAlgorithm_SSS_AES_CCM        = SSS_ENUM_ALGORITHM(AES, 0x05),
     kAlgorithm_SSS_AES_GCM_INT_IV = SSS_ENUM_ALGORITHM(AES, 0x06),
+    kAlgorithm_SSS_AES_CTR_INT_IV = SSS_ENUM_ALGORITHM(AES, 0x07),
+    kAlgorithm_SSS_AES_CCM_INT_IV = SSS_ENUM_ALGORITHM(AES, 0x08),
     /* CHACHA_POLY */
     kAlgorithm_SSS_CHACHA_POLY = SSS_ENUM_ALGORITHM(CHACHA, 0x01),
     /* DES */
-    kAlgorithm_SSS_DES_ECB = SSS_ENUM_ALGORITHM(DES, 0x01),
-    kAlgorithm_SSS_DES_CBC = SSS_ENUM_ALGORITHM(DES, 0x02),
+    kAlgorithm_SSS_DES_ECB            = SSS_ENUM_ALGORITHM(DES, 0x01),
+    kAlgorithm_SSS_DES_CBC            = SSS_ENUM_ALGORITHM(DES, 0x02),
+    kAlgorithm_SSS_DES_CBC_ISO9797_M1 = SSS_ENUM_ALGORITHM(DES, 0x05),
+    kAlgorithm_SSS_DES_CBC_ISO9797_M2 = SSS_ENUM_ALGORITHM(DES, 0x06),
     /* DES3 */
-    kAlgorithm_SSS_DES3_ECB = SSS_ENUM_ALGORITHM(DES, 0x03),
-    kAlgorithm_SSS_DES3_CBC = SSS_ENUM_ALGORITHM(DES, 0x04),
+    kAlgorithm_SSS_DES3_ECB            = SSS_ENUM_ALGORITHM(DES, 0x03),
+    kAlgorithm_SSS_DES3_CBC            = SSS_ENUM_ALGORITHM(DES, 0x04),
+    kAlgorithm_SSS_DES3_CBC_ISO9797_M1 = SSS_ENUM_ALGORITHM(DES, 0x07),
+    kAlgorithm_SSS_DES3_CBC_ISO9797_M2 = SSS_ENUM_ALGORITHM(DES, 0x08),
     /* digest */
     /* doc:start hash_algo */
     kAlgorithm_SSS_SHA1   = SSS_ENUM_ALGORITHM(SHA, 0x01),
@@ -159,15 +169,15 @@ typedef enum /* _sss_algorithm */
     kAlgorithm_SSS_SHA384 = SSS_ENUM_ALGORITHM(SHA, 0x04),
     kAlgorithm_SSS_SHA512 = SSS_ENUM_ALGORITHM(SHA, 0x05),
     /* doc:end hash_algo */
+
     /* MAC */
-    kAlgorithm_SSS_CMAC_AES    = SSS_ENUM_ALGORITHM(MAC, 0x01),
+    kAlgorithm_SSS_CMAC_AES    = SSS_ENUM_ALGORITHM(MAC, 0x01), /* CMAC-128 */
     kAlgorithm_SSS_HMAC_SHA1   = SSS_ENUM_ALGORITHM(MAC, 0x02),
     kAlgorithm_SSS_HMAC_SHA224 = SSS_ENUM_ALGORITHM(MAC, 0x03),
     kAlgorithm_SSS_HMAC_SHA256 = SSS_ENUM_ALGORITHM(MAC, 0x04),
     kAlgorithm_SSS_HMAC_SHA384 = SSS_ENUM_ALGORITHM(MAC, 0x05),
     kAlgorithm_SSS_HMAC_SHA512 = SSS_ENUM_ALGORITHM(MAC, 0x06),
-    /* See above:
-     * kAlgorithm_SSS_HMAC_SHA224 = SSS_ENUM_ALGORITHM(CHACHA, 0x01) */
+    kAlgorithm_SSS_DES_CMAC8   = SSS_ENUM_ALGORITHM(MAC, 0x07), /* Only with OneShot mode */
 
     /* Diffie-Helmann */
     kAlgorithm_SSS_DH   = SSS_ENUM_ALGORITHM(DH, 0x01),
@@ -255,9 +265,11 @@ typedef enum
     kMode_SSS_Digest              = 6, //!< Message Digest
     kMode_SSS_Mac                 = 7, //!< Message Authentication Code
 
-    // For now, use kMode_SSS_ComputeSharedSecret for HKDF Extract and Expand
     // kMode_SSS_HKDF = 8,   //!< HKDF Extract and Expand (RFC 5869)
-    kMode_SSS_HKDF_ExpandOnly = 9 //!< HKDF Expand Only (RFC 5869)
+    kMode_SSS_HKDF_ExpandOnly    = 9,  //!< HKDF Expand Only (RFC 5869)
+    kMode_SSS_HKDF_ExtractExpand = 10, //!< HKDF Extract and Expand (RFC 5869)
+
+    kMode_SSS_Mac_Validate = 11, //!< MAC Validate
 } sss_mode_t;
 
 /**
@@ -280,6 +292,8 @@ typedef enum
     kAccessPermission_SSS_Delete = (1u << 3),
     /** Can change permissions applicable to an object */
     kAccessPermission_SSS_ChangeAttributes = (1u << 4),
+    /** Bitwise OR of all sss_access_permission. */
+    kAccessPermission_SSS_All_Permission = 0x1F,
 } sss_access_permission_t;
 
 /**
@@ -344,7 +358,7 @@ typedef enum
     /** Barreto Naehrig curve */
     kSSS_CipherType_EC_BARRETO_NAEHRIG = 53,
 
-    kSSS_CipherType_UserID      = 70,
+    kSSS_CipherType_UserID = 70,
 
     /** Use kSSS_CipherType_Binary to store Certificate */
     kSSS_CipherType_Certificate = 71,
@@ -770,6 +784,8 @@ sss_status_t sss_session_create(sss_session_t *session,
  *                shall be supplied to all SSS APIs as argument. Low level SSS
  *                functions can provide implementation specific behaviour based
  *                on the session argument.
+ *                Note: sss_session_open() must not be called concurrently from
+ *                multiple threads. The application must ensure this.
  *
  * @param[in,out] session          Session context.
  * @param[in]     subsystem        Indicates which security subsystem is
@@ -1111,9 +1127,10 @@ sss_status_t sss_symmetric_context_init(sss_symmetric_t *context,
  *  The function blocks current thread until the operation completes or an error occurs.
  *
  * @param context Pointer to symmetric crypto context.
- * @param iv Buffer containing the symmetric operation Initialization Vector.
+ * @param iv Buffer containing the symmetric operation Initialization Vector. When using internal IV algorithms (only encrypt)
+ * for SE051, iv buffer will be filled with genereted Initialization Vector.
  * @param ivLen Length of the Initialization Vector in bytes.
- * @param srcData Buffer containing the input data.
+ * @param srcData Buffer containing the input data (block aligned).
  * @param destData Buffer containing the output data.
  * @param dataLen Size of input and output data buffer in bytes.
  * @returns Status of the operation
@@ -1123,11 +1140,35 @@ sss_status_t sss_symmetric_context_init(sss_symmetric_t *context,
 sss_status_t sss_cipher_one_go(
     sss_symmetric_t *context, uint8_t *iv, size_t ivLen, const uint8_t *srcData, uint8_t *destData, size_t dataLen);
 
+/** @brief Symmetric cipher in one blocking function call.
+ *  The function blocks current thread until the operation completes or an error occurs.
+ *
+ * @param context Pointer to symmetric crypto context.
+ * @param iv Buffer containing the symmetric operation Initialization Vector. When using internal IV algorithms (only encrypt)
+ * for SE051, iv buffer will be filled with genereted Initialization Vector.
+ * @param ivLen Length of the Initialization Vector in bytes.
+ * @param srcData Buffer containing the input data (block aligned).
+ * @param srcLen  Length of buffer srcData.
+ * @param destData Buffer containing the output data.
+ * @param pDataLen Pointer to Size of buffer destData in bytes.
+ * @returns Status of the operation
+ * @retval #kStatus_SSS_Success The operation has completed successfully.
+ * @retval #kStatus_SSS_Fail The operation has failed.
+ */
+sss_status_t sss_cipher_one_go_v2(sss_symmetric_t *context,
+    uint8_t *iv,
+    size_t ivLen,
+    const uint8_t *srcData,
+    const size_t srcLen,
+    uint8_t *destData,
+    size_t *dataLen);
+
 /** @brief Symmetric cipher init.
  *  The function starts the symmetric cipher operation.
  *
  * @param context Pointer to symmetric crypto context.
- * @param iv Buffer containing the symmetric operation Initialization Vector.
+ * @param iv Buffer containing the symmetric operation Initialization Vector. When using internal IV algorithms (only encrypt)
+ * for SE051, iv buffer will be filled with genereted Initialization Vector.
  * @param ivLen Length of the Initialization Vector in bytes.
  * @returns Status of the operation
  * @retval #kStatus_SSS_Success The operation has completed successfully.
@@ -1177,7 +1218,8 @@ sss_status_t sss_cipher_finish(
  * @param srcData Buffer containing the input data.
  * @param destData Buffer containing the output data.
  * @param size Size of source and destination data buffers in bytes.
- * @param[in,out] initialCounter Input counter (updates on return)
+ * @param[in,out] initialCounter Input counter (Always 16 bytes) (updates on return). When using internal IV algorithms (only encrypt)
+ * for SE051, initialCounter buffer will be filled with genereted Initial counter.
  * @param[out] lastEncryptedCounter Output cipher of last counter, for chained CTR calls. NULL can be passed if
  * chained calls are not used.
  * @param[out] szLeft Output number of bytes in left unused in lastEncryptedCounter block. NULL can be passed if
@@ -1233,7 +1275,8 @@ sss_status_t sss_aead_context_init(
  * @param srcData Buffer containing the input data.
  * @param destData Buffer containing the output data.
  * @param size Size of input and output data buffer in bytes.
- * @param nonce The operation nonce or IV.
+ * @param nonce The operation nonce or IV. When using internal IV algorithms (only encrypt) for SE051,
+ * iv buffer will be filled with genereted Initialization Vector.
  * @param nonceLen The length of nonce in bytes. For AES-GCM it must be >= 1. For AES-CCM it must be 7, 8, 9, 10,
  * 11, 12, or 13.
  * @param aad Input additional authentication data AAD
@@ -1263,7 +1306,8 @@ sss_status_t sss_aead_one_go(sss_aead_t *context,
  *  The function starts the aead operation.
  *
  * @param context Pointer to aead crypto context.
- * @param nonce The operation nonce or IV.
+ * @param nonce The operation nonce or IV. When using internal IV algorithms (only encrypt) for SE051,
+ * iv buffer will be filled with genereted Initialization Vector.
  * @param nonceLen The length of nonce in bytes. For AES-GCM it must be >= 1. For AES-CCM it must be 7, 8, 9, 10,
  * 11, 12, or 13.
  * @param tagLen Length of the computed or received tag in bytes.

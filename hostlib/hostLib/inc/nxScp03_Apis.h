@@ -15,7 +15,7 @@
 /* ************************************************************************** */
 
 #ifdef __cplusplus
-extern "C"
+extern "C" {
 #endif
 
 #include "nxScp03_Types.h"

@@ -21,10 +21,10 @@ extern "C" {
 #include "nxScp03_Const.h"
 #include "nxScp03_Types.h"
 #include "se05x_tlv.h"
-#if SSS_HAVE_MBEDTLS
+#if SSS_HAVE_HOSTCRYPTO_MBEDTLS
 #include <fsl_sss_mbedtls_apis.h>
 #endif
-#if SSS_HAVE_OPENSSL
+#if SSS_HAVE_HOSTCRYPTO_OPENSSL
 #include <fsl_sss_openssl_apis.h>
 #endif
 
@@ -47,7 +47,8 @@ sss_status_t nxScp03_AuthenticateChannel(pSe05xSession_t se05xSession, NXSCP03_A
 /**
 * To send and receive encrypted communication using Fast SCP
 */
-sss_status_t nxECKey_AuthenticateChannel(pSe05xSession_t se05xSession, SE05x_AuthCtx_ECKey_t *pAuthFScp);
+sss_status_t nxECKey_AuthenticateChannel(
+    pSe05xSession_t se05xSession, SE05x_AuthCtx_ECKey_t *pAuthFScp, uint8_t *pSePubkey, size_t *sePubkeyLen);
 
 #ifdef __cplusplus
 } /* extern "c"*/

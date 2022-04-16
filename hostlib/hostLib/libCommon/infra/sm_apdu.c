@@ -35,7 +35,7 @@ static void ReserveLc(apdu_t * pApdu);
 static void SetLc(apdu_t * pApdu, U16 lc);
 static void AddLe(apdu_t * pApdu, U16 le);
 
-#if SSS_HAVE_A71CH_SIM
+#if SSS_HAVE_APPLET_A71CH_SIM
 /* Send session ID in trans-receive */
 static U8 session_Tlv[7];
 static U8 gEnableEnc = 0;
@@ -129,7 +129,7 @@ exit:
     return ret;
 }
 
-#if SSS_HAVE_A71CH_SIM
+#if SSS_HAVE_APPLET_A71CH_SIM
 /**
  * Creates session TLV from session ID. Session ID is retrieved as response to auth command.
  * \param[in] sessionId
@@ -256,11 +256,13 @@ static void AddLe(apdu_t * pApdu, U16 le)
 
     if (pApdu->extendedLength) {
         if (pApdu->hasData) {
+            ENSURE_OR_GO_EXIT( (pApdu->offset + 1) < MAX_APDU_BUF_LENGTH);
             pApdu->pBuf[pApdu->offset] = (U8)(le >> 8);
             pApdu->pBuf[pApdu->offset + 1] = (U8)(le & 0xFF);
             pApdu->leLength = 2;
         }
         else {
+            ENSURE_OR_GO_EXIT( (pApdu->offset + 2) < MAX_APDU_BUF_LENGTH);
             pApdu->pBuf[pApdu->offset] = 0x00;
             pApdu->pBuf[pApdu->offset + 1] = (U8)(le >> 8);
             pApdu->pBuf[pApdu->offset + 2] = (U8)(le & 0xFF);
@@ -269,6 +271,7 @@ static void AddLe(apdu_t * pApdu, U16 le)
     }
     else {
         // regular length
+        ENSURE_OR_GO_EXIT(pApdu->offset < MAX_APDU_BUF_LENGTH);
         pApdu->pBuf[pApdu->offset] = (U8)(le & 0xFF);
         pApdu->leLength = 1;
     }
@@ -525,7 +528,7 @@ U16 ParseResponse(apdu_t *pApdu, U16 expectedTag, U16 *pLen, U8 *pValue)
 /**
  * Add or append data to the body of a command APDU.
  * WARNING:
- * - Bufferoverflow fix not applied for SSS_HAVE_A71CH_SIM
+ * - Bufferoverflow fix not applied for SSS_HAVE_APPLET_A71CH_SIM
  * WARNING for non-TGT_A71CH cases :
  * - TGT_A71CL: This function must only be called once in case pApdu->txHasChkSum is set
  */
@@ -570,7 +573,7 @@ U16 smApduAppendCmdData(apdu_t *pApdu, const U8 *data, U16 dataLen)
         ReserveLc(pApdu);
     }
 
-#if SSS_HAVE_A71CH_SIM
+#if SSS_HAVE_APPLET_A71CH_SIM
     if (gEnableEnc)
     {
         pApdu->lc += (dataLen + sizeof(session_Tlv));
@@ -579,7 +582,7 @@ U16 smApduAppendCmdData(apdu_t *pApdu, const U8 *data, U16 dataLen)
         pApdu->offset += sizeof(session_Tlv);
     }
     else
-#endif // SSS_HAVE_A71CH_SIM
+#endif // SSS_HAVE_APPLET_A71CH_SIM
     {
         pApdu->lc += dataLen;
     }
@@ -853,7 +856,7 @@ bool smApduGetTxRxCase(uint8_t *apdu, size_t apduLen, size_t* data_offset, size_
         }
         else
         {
-            size_t len = ((apdu[5] & 0xFF) << 8) | (apdu[6] & 0xFF);
+            size_t len = ((apdu[5] << (1 * 8)) & 0xFF00) + ((apdu[6] << (0 * 8)) & 0x00FF);
             if (apduLen == 7 + len) {
                 //case 3E
                 *apdu_case = APDU_TXRX_CASE_3E;

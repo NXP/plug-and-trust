@@ -23,7 +23,8 @@
 typedef enum
 {
     ESE_MODE_NORMAL = 0, /*!< All wired transaction other OSU */
-    ESE_MODE_OSU /*!< Jcop Os update mode */
+    ESE_MODE_OSU, /*!< Jcop Os update mode */
+    ESE_MODE_RESUME /*!< Session Resume mode */
 } phNxpEse_initMode;
 
 #if defined(__cplusplus)
@@ -64,6 +65,14 @@ U16 smComT1oI2C_Open(void *conn_ctx, U8 mode, U8 seqCnt, U8 *T1oI2Catr, U16 *T1o
 * @return
 */
 U16 smComT1oI2C_Init(void **conn_ctx, const char *pConnString);
+
+/**
+* Resume I2C device.
+* @param conn_ctx      IN: pointer connection context
+* @param pConnParam    IN: I2C address
+* @return
+*/
+U16 smComT1oI2C_Resume(void **conn_ctx, const char *pConnString);
 
 #if defined(__cplusplus)
 }

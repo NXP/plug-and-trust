@@ -85,6 +85,7 @@ typedef struct {
                               Last bit of LSByte encodes whether Applet is in Debug Mode, a '1' means 'Debug Mode' is available */
     U16 sbVersion;       //!< Expected to be 0x0000
     U8  select;          //!< Applet selection mode
+    U8  sessionResume;   //!< Set to 1 to resume an open session with SE
 } SmCommState_t;
 
 /** \name Communication functions

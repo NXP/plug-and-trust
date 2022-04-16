@@ -16,7 +16,9 @@
 #include <stdio.h>
 
 #include "ex_sss_boot_int.h"
-
+#if AX_EMBEDDED
+#include <app_boot.h>
+#endif
 
 #include "ex_sss_auth.h"
 
@@ -195,12 +197,14 @@ sss_status_t ex_sss_boot_se05x_open(ex_sss_boot_ctx_t *pCtx, const char *portNam
 #endif
 
 #if SSS_HAVE_HOSTCRYPTO_ANY
-    status = ex_sss_se05x_prepare_host(
-        &pCtx->host_session, &pCtx->host_ks, pConnectCtx, &pCtx->ex_se05x_auth, SSS_EX_SE05x_AUTH_MECH);
+    if (SSS_EX_SE05x_AUTH_MECH != kSSS_AuthType_None) {
+        status = ex_sss_se05x_prepare_host(
+            &pCtx->host_session, &pCtx->host_ks, pConnectCtx, &pCtx->ex_se05x_auth, SSS_EX_SE05x_AUTH_MECH);
 
-    if (kStatus_SSS_Success != status) {
-        LOG_E("ex_sss_se05x_prepare_host failed");
-        goto cleanup;
+        if (kStatus_SSS_Success != status) {
+            LOG_E("ex_sss_se05x_prepare_host failed");
+            goto cleanup;
+        }
     }
 #endif // SSS_HAVE_HOSTCRYPTO_ANY
 
@@ -275,7 +279,7 @@ sss_status_t ex_sss_boot_se05x_open_on_Id(ex_sss_boot_ctx_t *pCtx, const char *p
     sss_connection_type_t connectType = kSSS_ConnectionType_Plain;
 #endif
 
-#if 0
+#ifdef SSS_EX_SE05x_AUTH_ID
     const uint32_t auth_id = authID;
 #endif
 
@@ -347,15 +351,17 @@ sss_status_t ex_sss_boot_se05x_open_on_Id(ex_sss_boot_ctx_t *pCtx, const char *p
 
 #if SSS_HAVE_HOSTCRYPTO_ANY
     pConnectCtx->auth.authType = SSS_EX_SE05x_AUTH_MECH;
+#ifdef SSS_EX_SE05x_AUTH_ID
     status =
         ex_sss_se05x_prepare_host_keys(&pCtx->host_session, &pCtx->host_ks, pConnectCtx, &pCtx->ex_se05x_auth, auth_id);
-
+#else
+    status = ex_sss_se05x_prepare_host_keys(&pCtx->host_session, &pCtx->host_ks, pConnectCtx, &pCtx->ex_se05x_auth, 0);
+#endif // SSS_EX_SE05x_AUTH_ID
     if (kStatus_SSS_Success != status) {
         LOG_E("ex_sss_se05x_prepare_host_keys failed");
         goto cleanup;
     }
 #endif // SSS_HAVE_HOSTCRYPTO_ANY
-
     if (SSS_EX_SE05x_AUTH_MECH == kSSS_AuthType_SCP03 || SSS_EX_SE05x_AUTH_MECH == kSSS_AuthType_None) {
         status = sss_session_open(pPfSession, kType_SSS_SE_SE05x, 0, SSS_EX_CONNECTION_TYPE, pConnectCtx);
         if (kStatus_SSS_Success != status) {
@@ -376,7 +382,7 @@ sss_status_t ex_sss_boot_se05x_open_on_Id(ex_sss_boot_ctx_t *pCtx, const char *p
         status = kStatus_SSS_Fail;
     }
 #endif /* SSS_EX_SE05x_AUTH_ID */
-
+#ifdef SSS_EX_SE05x_AUTH_ID
 #if (SSS_HAVE_SE05X_AUTH_USERID_PLATFSCP03) || (SSS_HAVE_SE05X_AUTH_AESKEY_PLATFSCP03) || \
     (SSS_HAVE_SE05X_AUTH_ECKEY_PLATFSCP03)
     SE05x_Connect_Ctx_t *pchannlCtxt = &pCtx->se05x_open_ctx;
@@ -412,6 +418,7 @@ sss_status_t ex_sss_boot_se05x_open_on_Id(ex_sss_boot_ctx_t *pCtx, const char *p
     ((sss_se05x_session_t *)&pCtx->session)->s_ctx.conn_ctx = ((sss_se05x_session_t *)pPfSession)->s_ctx.conn_ctx;
 
 #endif
+#endif //SSS_EX_SE05x_AUTH_ID
 
 cleanup:
     return status;

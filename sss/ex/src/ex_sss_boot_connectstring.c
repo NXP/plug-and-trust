@@ -151,6 +151,9 @@ bool ex_sss_boot_isSerialPortName(const char *portName)
 
 bool ex_sss_boot_isSocketPortName(const char *portName)
 {
+#ifdef ACCESS_MGR_UNIX_SOCKETS
+    return TRUE;
+#else
     bool is_socket = FALSE;
 #if SMCOM_JRCP_V1 || SMCOM_JRCP_V2
     if (portName == NULL) {
@@ -161,6 +164,7 @@ bool ex_sss_boot_isSocketPortName(const char *portName)
     }
 #endif
     return is_socket;
+#endif
 }
 
 bool ex_sss_boot_isHelp(const char *argname)

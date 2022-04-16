@@ -37,9 +37,9 @@ extern "C" {
 #include "ex_sss_boot_int.h"
 #include "nxLog_App.h"
 #include "stdio.h"
-
+#if defined(SECURE_WORLD)
 #include "fsl_sss_lpc55s_apis.h"
-
+#endif
 #if SSS_HAVE_APPLET_SE05X_IOT
 #include "se05x_APDU.h"
 #endif
@@ -69,17 +69,17 @@ sss_status_t ex_sss_boot_open(ex_sss_boot_ctx_t *pCtx, const char *portName)
 {
     sss_status_t status = kStatus_SSS_Fail;
 
-#if SSS_HAVE_A71CH || SSS_HAVE_A71CH_SIM
+#if SSS_HAVE_APPLET_A71CH || SSS_HAVE_APPLET_A71CH_SIM
     status = ex_sss_boot_a71ch_open(pCtx, portName);
-#elif SSS_HAVE_A71CL || SSS_HAVE_SE050_L
+#elif SSS_HAVE_APPLET_A71CL || SSS_HAVE_SE050_L
     status = ex_sss_boot_a71cl_open(pCtx, portName);
 #elif SSS_HAVE_APPLET_SE05X_IOT
     status = ex_sss_boot_se05x_open(pCtx, portName);
-#elif SSS_HAVE_SE
+#elif SSS_HAVE_APPLET
     status = ex_sss_boot_se_open(pCtx, portName);
-#elif SSS_HAVE_MBEDTLS
+#elif SSS_HAVE_HOSTCRYPTO_MBEDTLS
     status = ex_sss_boot_mbedtls_open(pCtx, portName);
-#elif SSS_HAVE_OPENSSL
+#elif SSS_HAVE_HOSTCRYPTO_OPENSSL
     status = ex_sss_boot_openssl_open(pCtx, portName);
 #endif
     return status;
@@ -99,25 +99,27 @@ sss_status_t ex_sss_boot_factory_reset(ex_sss_boot_ctx_t *pCtx)
 {
     sss_status_t status = kStatus_SSS_Fail;
 
-#if SSS_HAVE_A71CH || SSS_HAVE_A71CH_SIM
+#if SSS_HAVE_APPLET_A71CH || SSS_HAVE_APPLET_A71CH_SIM
     uint16_t ret;
     ret = HLSE_DbgReset();
-    if (ret == HLSE_SW_OK)
+    if (ret == HLSE_SW_OK) {
         status = kStatus_SSS_Success;
+    }
 
-#elif SSS_HAVE_A71CL || SSS_HAVE_SE050_L
+#elif SSS_HAVE_APPLET_A71CL || SSS_HAVE_SE050_L
     status = kStatus_SSS_Success;
 
 #elif SSS_HAVE_APPLET_SE05X_IOT
     smStatus_t st;
     sss_se05x_session_t *pSession = (sss_se05x_session_t *)&pCtx->session;
     st                            = Se05x_API_DeleteAll_Iterative(&pSession->s_ctx);
-    if (st == SW_OK)
+    if (st == SW_OK) {
         status = kStatus_SSS_Success;
+    }
 
-#elif SSS_HAVE_MBEDTLS
+#elif SSS_HAVE_HOSTCRYPTO_MBEDTLS
     status = kStatus_SSS_Success;
-#elif SSS_HAVE_OPENSSL
+#elif SSS_HAVE_HOSTCRYPTO_OPENSSL
     status = kStatus_SSS_Success;
 #else
     LOG_E("Select atleast one security subsystem");

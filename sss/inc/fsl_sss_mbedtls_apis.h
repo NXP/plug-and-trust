@@ -17,7 +17,7 @@ extern "C" {
 #include "fsl_sss_ftr_default.h"
 #endif
 
-#if SSS_HAVE_MBEDTLS
+#if SSS_HAVE_HOSTCRYPTO_MBEDTLS
 #include <fsl_sss_mbedtls_types.h>
 
 /* ************************************************************************** */
@@ -334,6 +334,17 @@ sss_status_t sss_mbedtls_cipher_one_go(sss_mbedtls_symmetric_t *context,
     uint8_t *destData,
     size_t dataLen);
 
+/** @copydoc sss_cipher_one_go_v2
+ *
+ */
+sss_status_t sss_mbedtls_cipher_one_go_v2(sss_mbedtls_symmetric_t *context,
+    uint8_t *iv,
+    size_t ivLen,
+    const uint8_t *srcData,
+    const size_t srcLen,
+    uint8_t *destData,
+    size_t *pDataLen);
+
 /** @copydoc sss_cipher_init
  *
  */
@@ -623,6 +634,8 @@ sss_status_t sss_mbedtls_rng_context_free(sss_mbedtls_rng_context_t *context);
             sss_mbedtls_symmetric_context_init(((sss_mbedtls_symmetric_t * ) context),((sss_mbedtls_session_t * ) session),((sss_mbedtls_object_t * ) keyObject),(algorithm),(mode))
 #       define sss_cipher_one_go(context,iv,ivLen,srcData,destData,dataLen) \
             sss_mbedtls_cipher_one_go(((sss_mbedtls_symmetric_t * ) context),(iv),(ivLen),(srcData),(destData),(dataLen))
+#       define sss_cipher_one_go_v2(context,iv,ivLen,srcData,srcLen,destData,pDataLen) \
+            sss_mbedtls_cipher_one_go_v2(((sss_mbedtls_symmetric_t * ) context),(iv),(ivLen),(srcData),(srcLen),(destData),(pDataLen))
 #       define sss_cipher_init(context,iv,ivLen) \
             sss_mbedtls_cipher_init(((sss_mbedtls_symmetric_t * ) context),(iv),(ivLen))
 #       define sss_cipher_update(context,srcData,srcLen,destData,destLen) \
@@ -682,7 +695,7 @@ sss_status_t sss_mbedtls_rng_context_free(sss_mbedtls_rng_context_t *context);
 #       define sss_rng_context_free(context) \
             sss_mbedtls_rng_context_free(((sss_mbedtls_rng_context_t * ) context))
 #   endif /* (SSS_HAVE_SSS == 1) */
-#   if (SSS_HAVE_OPENSSL == 0)
+#   if (SSS_HAVE_HOSTCRYPTO_OPENSSL == 0)
         /* Host Call : session */
 #       define sss_host_session_create(session,subsystem,application_id,connection_type,connectionData) \
             sss_mbedtls_session_create(((sss_mbedtls_session_t * ) session),(subsystem),(application_id),(connection_type),(connectionData))
@@ -769,6 +782,8 @@ sss_status_t sss_mbedtls_rng_context_free(sss_mbedtls_rng_context_t *context);
             sss_mbedtls_symmetric_context_init(((sss_mbedtls_symmetric_t * ) context),((sss_mbedtls_session_t * ) session),((sss_mbedtls_object_t * ) keyObject),(algorithm),(mode))
 #       define sss_host_cipher_one_go(context,iv,ivLen,srcData,destData,dataLen) \
             sss_mbedtls_cipher_one_go(((sss_mbedtls_symmetric_t * ) context),(iv),(ivLen),(srcData),(destData),(dataLen))
+#       define sss_host_cipher_one_go_v2(context,iv,ivLen,srcData,srcLen,destData,pDataLen) \
+            sss_mbedtls_cipher_one_go_v2(((sss_mbedtls_symmetric_t * ) context),(iv),(ivLen),(srcData),(srcLen),(destData),(pDataLen))
 #       define sss_host_cipher_init(context,iv,ivLen) \
             sss_mbedtls_cipher_init(((sss_mbedtls_symmetric_t * ) context),(iv),(ivLen))
 #       define sss_host_cipher_update(context,srcData,srcLen,destData,destLen) \
@@ -829,7 +844,7 @@ sss_status_t sss_mbedtls_rng_context_free(sss_mbedtls_rng_context_t *context);
             sss_mbedtls_rng_context_free(((sss_mbedtls_rng_context_t * ) context))
 #   endif /* (SSS_HAVE_SSS == 1) */
 /* clang-format on */
-#endif /* SSS_HAVE_MBEDTLS */
+#endif /* SSS_HAVE_HOSTCRYPTO_MBEDTLS */
 #ifdef __cplusplus
 } // extern "C"
 #endif /* __cplusplus */

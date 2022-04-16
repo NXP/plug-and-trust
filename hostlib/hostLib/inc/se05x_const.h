@@ -49,6 +49,8 @@
 #define SE05X_I2CM_MAX_FRESHNESS_SIZE (16)
 #define SE05X_I2CM_MAX_CHIP_ID_SIZE (18)
 
+#define SE05X_MINIMUM_KEY_DERIVATION_OUTPUT_LEN (16)
+
 /** How many attestation records
  *
  * Whle reading RSA Objects, modulus and public exporent get attested separately, */
@@ -62,6 +64,9 @@
 #endif
 
 #define CIPHER_BLOCK_SIZE 16
+#define DES_BLOCK_SIZE 8
+#define CIPHER_UPDATE_MAX_DATA 448
+#define AEAD_UPDATE_MAX_DATA 800
 #define AEAD_BLOCK_SIZE 16
 #define BINARY_WRITE_MAX_LEN 500
 
@@ -108,7 +113,7 @@ enum Se05x_I2CM_RESULT_TYPE
 
 #define MAX_OBJ_PCR_VALUE_SIZE 32
 #define MAX_POLICY_BUFFER_SIZE 256
-#define MAX_OBJ_POLICY_SIZE 47
+#define MAX_OBJ_POLICY_SIZE 55
 #define MAX_OBJ_POLICY_TYPES 6
 #define DEFAULT_OBJECT_POLICY_SIZE 8
 #define OBJ_POLICY_HEADER_OFFSET 5
@@ -117,6 +122,7 @@ enum Se05x_I2CM_RESULT_TYPE
 #define OBJ_POLICY_EXT_OFFSET 9
 #define OBJ_POLICY_PCR_DATA_SIZE (4 + MAX_OBJ_PCR_VALUE_SIZE) /*4 bytes PCR Obj id + 32 bytes PCR value*/
 #define OBJ_POLICY_AUTH_DATA_SIZE 2
+#define OBJ_POLICY_OBJ_ID_SIZE 4
 
 #define SESSION_POLICY_LENGTH_OFFSET 0
 #define SESSION_POLICY_AR_HEADER_OFFSET 1
@@ -137,7 +143,9 @@ example : B1b8 : 0x80000000
 #define POLICY_OBJ_ALLOW_KA             0x04000000
 #define POLICY_OBJ_ALLOW_ENC            0x02000000
 #define POLICY_OBJ_ALLOW_DEC            0x01000000
+#if !SSS_HAVE_SE05X_VER_GTE_07_02
 #define POLICY_OBJ_ALLOW_KDF            0x00800000
+#endif
 #define POLICY_OBJ_ALLOW_WRAP           0x00400000
 #define POLICY_OBJ_ALLOW_READ           0x00200000
 #define POLICY_OBJ_ALLOW_WRITE          0x00100000
@@ -154,6 +162,18 @@ example : B1b8 : 0x80000000
 #endif
 #if SSS_HAVE_SE05X_VER_GTE_06_00 // 5.4
 #define POLICY_OBJ_ALLOW_KDF_EXT_RANDOM     0x00000400
+#endif
+
+#if SSS_HAVE_SE05X_VER_GTE_07_02
+#define POLICY_OBJ_ALLOW_TLS_KDF                    0x80000000
+#define POLICY_OBJ_ALLOW_TLS_PMS                    0x40000000
+#define POLICY_OBJ_ALLOW_HKDF                       0x00800000
+#define POLICY_OBJ_ALLOW_DESFIRE_CHANGEKEY          0x00000200
+#define POLICY_OBJ_ALLOW_DERIVED_INPUT              0x00000100
+#define POLICY_OBJ_ALLOW_PBKDF                      0x00000080
+#define POLICY_OBJ_ALLOW_DESFIRE_KDF                0x00000040
+#define POLICY_OBJ_FORBID_EXTERNAL_IV               0x00000020
+#define POLICY_OBJ_ALLOW_USAGE_AS_HMAC_PEPPER       0x00000010
 #endif
 
 /* Access Rules for Session Policy*/

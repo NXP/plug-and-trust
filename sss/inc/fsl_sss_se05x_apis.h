@@ -363,6 +363,17 @@ sss_status_t sss_se05x_cipher_one_go(sss_se05x_symmetric_t *context,
     uint8_t *destData,
     size_t dataLen);
 
+/** @copydoc sss_cipher_one_go_v2
+ *
+ */
+sss_status_t sss_se05x_cipher_one_go_v2(sss_se05x_symmetric_t *context,
+    uint8_t *iv,
+    size_t ivLen,
+    const uint8_t *srcData,
+    const size_t srcLen,
+    uint8_t *destData,
+    size_t *pDataLen);
+
 /** @copydoc sss_cipher_init
  *
  */
@@ -706,6 +717,8 @@ sss_status_t sss_se05x_key_store_create_curve(Se05xSession_t *pSession, uint32_t
             sss_se05x_symmetric_context_init(((sss_se05x_symmetric_t * ) context),((sss_se05x_session_t * ) session),((sss_se05x_object_t * ) keyObject),(algorithm),(mode))
 #       define sss_cipher_one_go(context,iv,ivLen,srcData,destData,dataLen) \
             sss_se05x_cipher_one_go(((sss_se05x_symmetric_t * ) context),(iv),(ivLen),(srcData),(destData),(dataLen))
+#       define sss_cipher_one_go_v2(context,iv,ivLen,srcData,srcLen,destData,pDataLen) \
+            sss_se05x_cipher_one_go_v2(((sss_se05x_symmetric_t * ) context),(iv),(ivLen),(srcData),(srcLen),(destData),(pDataLen))
 #       define sss_cipher_init(context,iv,ivLen) \
             sss_se05x_cipher_init(((sss_se05x_symmetric_t * ) context),(iv),(ivLen))
 #       define sss_cipher_update(context,srcData,srcLen,destData,destLen) \

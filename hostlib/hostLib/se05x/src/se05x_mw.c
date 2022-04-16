@@ -65,8 +65,9 @@ smStatus_t Se05x_API_DeleteAll_Iterative(pSe05xSession_t session_ctx)
         goto cleanup;
     }
     for (i = 0; i < listlen; i += 4) {
-        uint16_t cryptoObjectId = list[i + 1] | (list[i + 0] << 8);
-        retStatus               = Se05x_API_DeleteCryptoObject(session_ctx, cryptoObjectId);
+        uint16_t cryptoObjectId                = list[i + 1] | (list[i + 0] << 8);
+        SE05x_CryptoObjectID_t ecryptoObjectId = (SE05x_CryptoObjectID_t)cryptoObjectId;
+        retStatus                              = Se05x_API_DeleteCryptoObject(session_ctx, ecryptoObjectId);
         if (retStatus != SM_OK) {
             LOG_W("Error in erasing CryptoObject=%04X", cryptoObjectId);
         }

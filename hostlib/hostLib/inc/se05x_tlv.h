@@ -76,6 +76,7 @@ typedef struct Se05xSession
     uint8_t value[8];
     uint8_t hasSession : 1;
     SE_AuthType_t authType;
+    uint32_t auth_id;
     /** Meta Funciton
      *
      * Internall first calls fp_Transform
@@ -140,7 +141,7 @@ typedef struct Se05xSession
 
     struct _sss_se05x_tunnel_context * pChannelCtx;
 #endif
-#if SSS_HAVE_SE
+#if SSS_HAVE_APPLET
     smStatus_t(*fp_Transmit)(
         SE_AuthType_t currAuth,
         const tlvHeader_t *hdr,
@@ -294,6 +295,7 @@ int tlvGet_U16(uint8_t *buf, size_t *pBufIndex, const size_t bufLen, SE05x_TAG_t
 int tlvGet_U32(uint8_t *buf, size_t *pBufIndex, const size_t bufLen, SE05x_TAG_t tag, uint32_t *pRsp);
 
 int tlvGet_u8buf(uint8_t *buf, size_t *pBufIndex, const size_t bufLen, SE05x_TAG_t tag, uint8_t *rsp, size_t *pRspLen);
+int tlvGet_ValueIndex(uint8_t *buf, size_t *pBufIndex, const size_t bufLen, SE05x_TAG_t tag);
 int tlvGet_Se05xSession(
     uint8_t *buf, size_t *pBufIndex, const size_t bufLen, SE05x_TAG_t tag, pSe05xSession_t *pSessionId);
 int tlvGet_TimeStamp(uint8_t *buf, size_t *pBufIndex, const size_t bufLen, SE05x_TAG_t tag, SE05x_TimeStamp_t *pTs);

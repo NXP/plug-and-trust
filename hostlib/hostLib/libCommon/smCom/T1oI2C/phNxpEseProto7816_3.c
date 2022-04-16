@@ -123,7 +123,8 @@ static bool_t phNxpEseProto7816_GetRawFrame(void* conn_ctx, uint32_t *data_len, 
 static uint16_t phNxpEseProto7816_ComputeCRC(unsigned char *p_buff, uint32_t offset,
         uint32_t length)
 {
-    uint16_t CAL_CRC = 0xFFFF, CRC = 0x0000, i = 0;
+    uint16_t CAL_CRC = 0xFFFF, CRC = 0x0000;
+    uint32_t i = 0;
 
     ENSURE_OR_GO_EXIT(p_buff != NULL);
     for (i = offset; i < length; i++)
@@ -366,15 +367,34 @@ static  bool_t phNxpEseProto7816_sendRframe(void* conn_ctx, rFrameTypes_t rFrame
 #endif
     uint16_t calc_crc=0;
     iFrameInfo_t *pRx_lastRcvdIframeInfo = &phNxpEseProto7816_3_Var.phNxpEseRx_Cntx.lastRcvdIframeInfo;
+    rFrameInfo_t *pNextTx_RframeInfo = &phNxpEseProto7816_3_Var.phNxpEseNextTx_Cntx.RframeInfo;
     if(RNACK == rFrameType) /* R-NACK */
     {
-        recv_ack[PH_PROPTO_7816_PCB_OFFSET] = 0x82;
+        switch(pNextTx_RframeInfo->errCode)
+        {
+        case PARITY_ERROR:
+            recv_ack[PH_PROPTO_7816_PCB_OFFSET] |= (0x01 & 0xFF);
+        break;
+
+        case OTHER_ERROR:
+            recv_ack[PH_PROPTO_7816_PCB_OFFSET] |= (0x02 & 0xFF);
+        break;
+
+        case SOF_MISSED_ERROR:
+        case UNDEFINED_ERROR:
+            recv_ack[PH_PROPTO_7816_PCB_OFFSET] |= (0x03 & 0xFF);
+        break;
+
+        default:
+        break;
+        }
     }
     else /* R-ACK*/
     {
         /* This update is helpful in-case a R-NACK is transmitted from the MW */
         phNxpEseProto7816_3_Var.lastSentNonErrorframeType = RFRAME;
     }
+
     recv_ack[PH_PROPTO_7816_PCB_OFFSET] |= ((pRx_lastRcvdIframeInfo->seqNo ^ 1) << 4);
     LOG_D("%s recv_ack[PH_PROPTO_7816_PCB_OFFSET]:0x%x ", __FUNCTION__, recv_ack[PH_PROPTO_7816_PCB_OFFSET]);
     calc_crc = phNxpEseProto7816_ComputeCRC(recv_ack, 0x00, (sizeof(recv_ack) -2));
@@ -747,10 +767,12 @@ static bool_t phNxpEseProto7816_DecodeFrame(uint8_t *p_data, uint32_t data_len)
             ((pcb_bits.lsb == 0x00) && (pcb_bits.bit2 == 0x01)))
         {
             sm_sleep(DELAY_ERROR_RECOVERY/1000);
-            if((pcb_bits.lsb == 0x00) && (pcb_bits.bit2 == 0x01))
+            if((pcb_bits.lsb == 0x00) && (pcb_bits.bit2 == 0x01)) {
                 pRx_lastRcvdRframeInfo->errCode = OTHER_ERROR;
-            else
+            }
+            else {
                 pRx_lastRcvdRframeInfo->errCode = PARITY_ERROR;
+            }
             if(phNxpEseProto7816_3_Var.recoveryCounter < PH_PROTO_7816_FRAME_RETRY_COUNT)
             {
                 if(phNxpEseProto7816_3_Var.phNxpEseLastTx_Cntx.FrameType == IFRAME)
@@ -897,8 +919,9 @@ static bool_t phNxpEseProto7816_DecodeFrame(uint8_t *p_data, uint32_t data_len)
                 break;
 #if defined(T1oI2C_UM11225)
             case INTF_RESET_RSP:
-                if(p_data[PH_PROPTO_7816_FRAME_LENGTH_OFFSET] > 0)
+                if(p_data[PH_PROPTO_7816_FRAME_LENGTH_OFFSET] > 0) {
                     phNxpEseProto7816_DecodeSFrameData(p_data);
+                }
                 phNxpEseProro7816_SaveRxframeData(&p_data[PH_PROPTO_7816_INF_BYTE_OFFSET], data_len - PH_PROTO_7816_INF_FILED);
                 if(phNxpEseProto7816_3_Var.recoveryCounter > PH_PROTO_7816_FRAME_RETRY_COUNT){
                     /*Max recovery counter reached, send failure to APDU layer  */
@@ -915,31 +938,35 @@ static bool_t phNxpEseProto7816_DecodeFrame(uint8_t *p_data, uint32_t data_len)
                 break;
             case PROP_END_APDU_RSP:
                 pRx_lastRcvdSframeInfo->sFrameType = PROP_END_APDU_RSP;
-                if(p_data[PH_PROPTO_7816_FRAME_LENGTH_OFFSET] > 0)
+                if(p_data[PH_PROPTO_7816_FRAME_LENGTH_OFFSET] > 0) {
                     phNxpEseProto7816_DecodeSFrameData(p_data);
+                }
                 phNxpEseProto7816_3_Var.phNxpEseNextTx_Cntx.FrameType= UNKNOWN;
                 phNxpEseProto7816_3_Var.phNxpEseProto7816_nextTransceiveState = IDLE_STATE;
                 break;
             case ATR_RES:
                 pRx_lastRcvdSframeInfo->sFrameType = ATR_RES;
-                if(p_data[PH_PROPTO_7816_FRAME_LENGTH_OFFSET] > 0)
+                if(p_data[PH_PROPTO_7816_FRAME_LENGTH_OFFSET] > 0) {
                     phNxpEseProto7816_DecodeSFrameData(p_data);
+                }
                 phNxpEseProro7816_SaveRxframeData(&p_data[PH_PROPTO_7816_INF_BYTE_OFFSET], data_len - PH_PROTO_7816_INF_FILED);
                 phNxpEseProto7816_3_Var.phNxpEseNextTx_Cntx.FrameType= UNKNOWN;
                 phNxpEseProto7816_3_Var.phNxpEseProto7816_nextTransceiveState = IDLE_STATE;
                 break;
             case CHIP_RESET_RES:
                 pRx_lastRcvdSframeInfo->sFrameType = CHIP_RESET_RES;
-                if(p_data[PH_PROPTO_7816_FRAME_LENGTH_OFFSET] > 0)
+                if(p_data[PH_PROPTO_7816_FRAME_LENGTH_OFFSET] > 0) {
                     phNxpEseProto7816_DecodeSFrameData(p_data);
+                }
                 phNxpEseProto7816_3_Var.phNxpEseNextTx_Cntx.FrameType= UNKNOWN;
                 phNxpEseProto7816_3_Var.phNxpEseProto7816_nextTransceiveState = IDLE_STATE;
                 break;
 #endif
 #if defined(T1oI2C_GP1_0)
             case SWR_RSP:
-                if(p_data[PH_PROPTO_7816_FRAME_LENGTH_OFFSET] > 0)
+                if(p_data[PH_PROPTO_7816_FRAME_LENGTH_OFFSET] > 0) {
                     phNxpEseProto7816_DecodeSFrameData(p_data);
+                }
                 if(phNxpEseProto7816_3_Var.recoveryCounter > PH_PROTO_7816_FRAME_RETRY_COUNT){
                     /*Max recovery counter reached, send failure to APDU layer  */
                     LOG_E("%s Max retry count reached!!! ", __FUNCTION__);
@@ -955,23 +982,26 @@ static bool_t phNxpEseProto7816_DecodeFrame(uint8_t *p_data, uint32_t data_len)
                 break;
             case RELEASE_RES:
                 pRx_lastRcvdSframeInfo->sFrameType = RELEASE_RES;
-                if(p_data[PH_PROPTO_7816_FRAME_LENGTH_OFFSET] > 0)
+                if(p_data[PH_PROPTO_7816_FRAME_LENGTH_OFFSET] > 0) {
                     phNxpEseProto7816_DecodeSFrameData(p_data);
+                }
                 phNxpEseProto7816_3_Var.phNxpEseNextTx_Cntx.FrameType= UNKNOWN;
                 phNxpEseProto7816_3_Var.phNxpEseProto7816_nextTransceiveState = IDLE_STATE;
                 break;
             case CIP_RES:
                 pRx_lastRcvdSframeInfo->sFrameType = CIP_RES;
-                if(p_data[PH_PROPTO_7816_FRAME_LENGTH_OFFSET] > 0)
+                if(p_data[PH_PROPTO_7816_FRAME_LENGTH_OFFSET] > 0) {
                     phNxpEseProto7816_DecodeSFrameData(p_data);
+                }
                 phNxpEseProro7816_SaveRxframeData(&p_data[PH_PROPTO_7816_INF_BYTE_OFFSET], data_len - PH_PROTO_7816_INF_FILED);
                 phNxpEseProto7816_3_Var.phNxpEseNextTx_Cntx.FrameType= UNKNOWN;
                 phNxpEseProto7816_3_Var.phNxpEseProto7816_nextTransceiveState = IDLE_STATE;
                 break;
             case COLD_RESET_RES:
                 pRx_lastRcvdSframeInfo->sFrameType = COLD_RESET_RES;
-                if(p_data[PH_PROPTO_7816_FRAME_LENGTH_OFFSET] > 0)
+                if(p_data[PH_PROPTO_7816_FRAME_LENGTH_OFFSET] > 0) {
                     phNxpEseProto7816_DecodeSFrameData(p_data);
+                }
                 phNxpEseProto7816_3_Var.phNxpEseNextTx_Cntx.FrameType= UNKNOWN;
                 phNxpEseProto7816_3_Var.phNxpEseProto7816_nextTransceiveState = IDLE_STATE;
                 break;
@@ -1049,11 +1079,12 @@ static bool_t phNxpEseProto7816_ProcessResponse(void* conn_ctx)
     }
     else
     {
-        LOG_E("%s phNxpEseProto7816_GetRawFrame failed ", __FUNCTION__);
+        LOG_E("%s phNxpEseProto7816_GetRawFrame failed starting recovery", __FUNCTION__);
         if ((SFRAME == phNxpEseProto7816_3_Var.phNxpEseLastTx_Cntx.FrameType) &&
             ((WTX_RSP == pLastTx_SframeInfo->sFrameType) || (RESYNCH_RSP == pLastTx_SframeInfo->sFrameType))) {
             if(phNxpEseProto7816_3_Var.rnack_retry_counter < phNxpEseProto7816_3_Var.rnack_retry_limit)
             {
+                phNxpEse_clearReadBuffer(conn_ctx);
                 phNxpEseProto7816_3_Var.phNxpEseRx_Cntx.lastRcvdFrameType = INVALID ;
                 phNxpEseProto7816_3_Var.phNxpEseNextTx_Cntx.FrameType= RFRAME;
                 pNextTx_RframeInfo->errCode = OTHER_ERROR;
@@ -1063,8 +1094,31 @@ static bool_t phNxpEseProto7816_ProcessResponse(void* conn_ctx)
             }
             else
             {
+                LOG_E("%s Recovery failed completely, Going to exit ", __FUNCTION__);
                 phNxpEseProto7816_3_Var.rnack_retry_counter = PH_PROTO_7816_VALUE_ZERO;
-                /* Re-transmission failed completely, Going to exit */
+                /* Recovery failed completely, Going to exit */
+                phNxpEseProto7816_3_Var.phNxpEseProto7816_nextTransceiveState = IDLE_STATE;
+                phNxpEseProto7816_3_Var.timeoutCounter = PH_PROTO_7816_VALUE_ZERO;
+            }
+        }
+        /*ISO7816-3 Rule 7.1 Implementation*/
+        else if (IFRAME == phNxpEseProto7816_3_Var.phNxpEseLastTx_Cntx.FrameType)
+        {
+            if(phNxpEseProto7816_3_Var.rnack_retry_counter < phNxpEseProto7816_3_Var.rnack_retry_limit)
+            {
+                phNxpEse_clearReadBuffer(conn_ctx);
+                phNxpEseProto7816_3_Var.phNxpEseRx_Cntx.lastRcvdFrameType = INVALID ;
+                phNxpEseProto7816_3_Var.phNxpEseNextTx_Cntx.FrameType= RFRAME;
+                pNextTx_RframeInfo->errCode = PARITY_ERROR;
+                pNextTx_RframeInfo->seqNo = (!pRx_lastRcvdIframeInfo->seqNo) << 4;
+                phNxpEseProto7816_3_Var.phNxpEseProto7816_nextTransceiveState = SEND_R_NACK ;
+                phNxpEseProto7816_3_Var.rnack_retry_counter++;
+            }
+            else
+            {
+                LOG_E("%s Recovery failed completely, Going to exit ", __FUNCTION__);
+                phNxpEseProto7816_3_Var.rnack_retry_counter = PH_PROTO_7816_VALUE_ZERO;
+                /* Recovery failed completely, Going to exit */
                 phNxpEseProto7816_3_Var.phNxpEseProto7816_nextTransceiveState = IDLE_STATE;
                 phNxpEseProto7816_3_Var.timeoutCounter = PH_PROTO_7816_VALUE_ZERO;
             }
@@ -1081,7 +1135,8 @@ static bool_t phNxpEseProto7816_ProcessResponse(void* conn_ctx)
             }
             else
             {
-                /* Re-transmission failed completely, Going to exit */
+                /* Recovery failed completely, Going to exit */
+                LOG_E("%s Recovery failed completely, Going to exit ", __FUNCTION__);
                 phNxpEseProto7816_3_Var.phNxpEseProto7816_nextTransceiveState = IDLE_STATE;
                 phNxpEseProto7816_3_Var.timeoutCounter = PH_PROTO_7816_VALUE_ZERO;
             }
@@ -1404,8 +1459,9 @@ bool_t phNxpEseProto7816_Close(void* conn_ctx)
     phNxpEseRx_Cntx_t *pRx_EseCntx = &phNxpEseProto7816_3_Var.phNxpEseRx_Cntx;
     pRx_EseCntx->pRsp = NULL;
 
-    if(phNxpEseProto7816_3_Var.phNxpEseProto7816_CurrentState != PH_NXP_ESE_PROTO_7816_IDLE)
+    if(phNxpEseProto7816_3_Var.phNxpEseProto7816_CurrentState != PH_NXP_ESE_PROTO_7816_IDLE) {
         return status;
+    }
     phNxpEseProto7816_3_Var.phNxpEseProto7816_CurrentState = PH_NXP_ESE_PROTO_7816_DEINIT;
     phNxpEseProto7816_3_Var.recoveryCounter = 0;
     phNxpEseProto7816_3_Var.wtx_counter = 0;

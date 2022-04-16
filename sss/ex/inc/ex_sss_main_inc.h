@@ -72,7 +72,7 @@
 #include "task.h"
 #endif
 
-#if SSS_HAVE_A71CH || SSS_HAVE_A71CH_SIM
+#if SSS_HAVE_APPLET_A71CH || SSS_HAVE_APPLET_A71CH_SIM
 #include "ex_a71ch_scp03.h"
 #endif
 
@@ -211,7 +211,7 @@ int main(int argc, const char *argv[])
     ex_sss_boot_open_host_session((PCONTEXT));
 #endif
 
-#if (SSS_HAVE_A71CH || SSS_HAVE_A71CH_SIM) && SSS_HAVE_A71CH_AUTH_SCP03
+#if (SSS_HAVE_APPLET_A71CH || SSS_HAVE_APPLET_A71CH_SIM) && SSS_HAVE_A71CH_AUTH_SCP03
     LOG_I("A71CH SCP03 add-on");
     {
         // Variables used by calls to legacy API
@@ -251,7 +251,8 @@ before_ex_sss_entry:
         goto cleanup;
     }
 #endif /* No RTOS, No Embedded */
-
+    // Delete locks for pthreads
+    nLog_DeInit();
     goto cleanup;
 
 cleanup:
@@ -316,7 +317,7 @@ static void sss_ex_rtos_task(void *ctx)
 #endif // INCLUDE_uxTaskGetStackHighWaterMark
 #endif
 
-#if SSS_HAVE_A71CH || SSS_HAVE_A71CH_SIM
+#if SSS_HAVE_APPLET_A71CH || SSS_HAVE_APPLET_A71CH_SIM
 #if EX_SSS_BOOT_OPEN_HOST_SESSION
     ex_sss_boot_open_host_session((PCONTEXT));
 #endif
@@ -330,13 +331,23 @@ static void sss_ex_rtos_task(void *ctx)
     }
 
     ex_sss_session_close(PCONTEXT);
-
+    /* Delete locks for FreeRtos*/
+    nLog_DeInit();
 #if INCLUDE_uxTaskGetStackHighWaterMark
     sss_ex_rtos_stack_size("After:ex_sss_entry");
 #endif // INCLUDE_uxTaskGetStackHighWaterMark
 
 exit:
+#if defined(_MSC_VER) || defined(__linux__) || defined(__MINGW32__) || defined(__MINGW64__)
+    if (kStatus_SSS_Success == status) {
+        exit(0);
+    }
+    else {
+        exit(1);
+    }
+#else
     vTaskDelete(NULL);
+#endif
 }
 
 #if INCLUDE_uxTaskGetStackHighWaterMark

@@ -41,8 +41,7 @@
 #endif
 
 #ifdef EX_SSS_SCP03_FILE_PATH
-sss_status_t scp03_keys_from_path(
-    uint8_t *penc, size_t enc_len, uint8_t *pmac, size_t mac_len, uint8_t *pdek, size_t dek_len);
+sss_status_t scp03_keys_from_path(uint8_t *penc, size_t enc_len, uint8_t *pmac, size_t mac_len);
 #endif
 
 #define SSS_AUTH_SE050_OEF_0004A2D0_KEY_ENC                                                            \

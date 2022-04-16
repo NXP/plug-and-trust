@@ -50,13 +50,8 @@
 
 static sss_status_t Scp03_KeyString_to_Keybuffer(bool hasAuthKey, char *inputKey, uint8_t *auth_key, size_t key_size);
 
-static sss_status_t read_platfscp03_keys_from_file(const char *scp03_file_path,
-    uint8_t *enc,
-    size_t enc_len,
-    uint8_t *mac,
-    size_t mac_len,
-    uint8_t *dek,
-    size_t dek_len);
+static sss_status_t read_platfscp03_keys_from_file(
+    const char *scp03_file_path, uint8_t *enc, size_t enc_len, uint8_t *mac, size_t mac_len);
 
 #define UNSECURE_LOGGING_OF_SCP_KEYS 0
 
@@ -64,8 +59,7 @@ static sss_status_t read_platfscp03_keys_from_file(const char *scp03_file_path,
 * Public Functions
 * ***************************************************************************************************************** */
 
-sss_status_t scp03_keys_from_path(
-    uint8_t *penc, size_t enc_len, uint8_t *pmac, size_t mac_len, uint8_t *pdek, size_t dek_len)
+sss_status_t scp03_keys_from_path(uint8_t *penc, size_t enc_len, uint8_t *pmac, size_t mac_len)
 {
     sss_status_t status  = kStatus_SSS_Fail;
     const char *filename = EX_SSS_SCP03_FILE_PATH;
@@ -76,14 +70,14 @@ sss_status_t scp03_keys_from_path(
         // File exists. Get keys from file
         LOG_W("Using SCP03 keys from:'%s' (FILE=%s)", filename, EX_SSS_SCP03_FILE_PATH);
         fclose(fp);
-        status = read_platfscp03_keys_from_file(filename, penc, enc_len, pmac, mac_len, pdek, dek_len);
+        status = read_platfscp03_keys_from_file(filename, penc, enc_len, pmac, mac_len);
     }
     else {
         // File does not exist. Check env variable
         const char *scp03_path_env = getenv(EX_SSS_BOOT_SCP03_PATH_ENV);
         if (scp03_path_env != NULL) {
             LOG_W("Using SCP03 keys from:'%s' (ENV=%s)", scp03_path_env, EX_SSS_BOOT_SCP03_PATH_ENV);
-            status = read_platfscp03_keys_from_file(scp03_path_env, penc, enc_len, pmac, mac_len, pdek, dek_len);
+            status = read_platfscp03_keys_from_file(scp03_path_env, penc, enc_len, pmac, mac_len);
         }
         else {
             LOG_I(
@@ -100,13 +94,8 @@ sss_status_t scp03_keys_from_path(
     return status;
 }
 
-static sss_status_t read_platfscp03_keys_from_file(const char *scp03_file_path,
-    uint8_t *enc,
-    size_t enc_len,
-    uint8_t *mac,
-    size_t mac_len,
-    uint8_t *dek,
-    size_t dek_len)
+static sss_status_t read_platfscp03_keys_from_file(
+    const char *scp03_file_path, uint8_t *enc, size_t enc_len, uint8_t *mac, size_t mac_len)
 {
     sss_status_t status = kStatus_SSS_Fail;
 
@@ -120,7 +109,6 @@ static sss_status_t read_platfscp03_keys_from_file(const char *scp03_file_path,
     char *pdata = &file_data[0];
     bool hasEnc = false;
     bool hasMac = false;
-    bool hasDek = false;
 
     while (fgets(pdata, sizeof(file_data), scp_file)) {
         size_t i = 0, j = 0;
@@ -171,15 +159,15 @@ static sss_status_t read_platfscp03_keys_from_file(const char *scp03_file_path,
         }
 
         else if (!strncmp(&pdata[i], "DEK ", strlen("DEK "))) {
-#if UNSECURE_LOGGING_OF_SCP_KEYS
-            LOG_I("%s", &pdata[i]);
-#endif
-            status = Scp03_KeyString_to_Keybuffer(hasDek, &pdata[i], dek, dek_len);
-            if (status != kStatus_SSS_Success) {
-                fclose(scp_file);
-                return status;
-            }
-            hasDek = true;
+            // #if UNSECURE_LOGGING_OF_SCP_KEYS
+            //             LOG_I("%s", &pdata[i]);
+            // #endif
+            //             status = Scp03_KeyString_to_Keybuffer(hasDek, &pdata[i], dek, dek_len);
+            //             if (status != kStatus_SSS_Success) {
+            //                 fclose(scp_file);
+            //                 return status;
+            //             }
+            //             hasDek = true;
         }
 
         else {

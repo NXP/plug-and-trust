@@ -118,8 +118,9 @@ uint8_t pkcs1_v15_encode(
 
     /* Double-check that 8 + hashlen + oid_size can be used as a
         * 1-byte ASN.1 length encoding and that there's no overflow. */
-    if (8 + hashlen + oid_size >= 0x80)
+    if (8 + hashlen + oid_size >= 0x80) {
         return 1;
+    }
 
     /*
         * Static bounds check:
@@ -129,14 +130,16 @@ uint8_t pkcs1_v15_encode(
         * - Need hashlen bytes for hash
         * - Need oid_size bytes for hash alg OID.
         */
-    if (nb_pad < 10 + hashlen + oid_size)
+    if (nb_pad < 10 + hashlen + oid_size) {
         return 1;
+    }
     nb_pad -= 10 + hashlen + oid_size;
 
     /* Need space for signature header and padding delimiter (3 bytes),
         * and 8 bytes for the minimal padding */
-    if (nb_pad < 3 + 8)
+    if (nb_pad < 3 + 8) {
         return 1;
+    }
     nb_pad -= 3;
 
     /* Now nb_pad is the amount of memory to be filled
@@ -247,8 +250,9 @@ uint8_t sss_mgf_mask_func(uint8_t *dst,
 
     while (dlen > 0) {
         use_len = hashlength;
-        if (dlen < hashlength)
+        if (dlen < hashlength) {
             use_len = dlen;
+        }
 
         status = sss_digest_init(&digest);
         if (status != kStatus_SSS_Success) {
@@ -308,7 +312,7 @@ uint8_t emsa_encode(sss_se05x_asymmetric_t *context, const uint8_t *hash, size_t
     size_t msb;
     sss_rng_context_t rng;
     sss_digest_t digest;
-    sss_algorithm_t sha_algorithm = -1;
+    sss_algorithm_t sha_algorithm = kAlgorithm_None;
     size_t digestLen              = 512; /* MAX - SHA512*/
     sss_status_t status           = kStatus_SSS_Fail;
     uint16_t key_size_bytes       = 0;
@@ -415,13 +419,15 @@ uint8_t emsa_encode(sss_se05x_asymmetric_t *context, const uint8_t *hash, size_t
 
     sss_digest_context_free(&digest);
 
-    if (msb % 8 == 0)
+    if (msb % 8 == 0) {
         offset = 1;
+    }
 
     /* Apply MGF Mask */
     if (0 !=
-        sss_mgf_mask_func(out + offset, outlength - hashlength - 1 - offset, p, hashlength, sha_algorithm, context))
+        sss_mgf_mask_func(out + offset, outlength - hashlength - 1 - offset, p, hashlength, sha_algorithm, context)) {
         goto exit;
+    }
 
     out[0] &= 0xFF >> (outlength * 8 - msb);
 
@@ -445,7 +451,7 @@ uint8_t emsa_decode_and_compare(
     uint8_t zeros[8];
     uint32_t observed_salt_len, msb;
     uint8_t buf[1024];
-    sss_algorithm_t sha_algorithm = -1;
+    sss_algorithm_t sha_algorithm = kAlgorithm_None;
     sss_digest_t digest;
     size_t digestLen    = 512; /* MAX - SHA512*/
     sss_status_t status = kStatus_SSS_Fail;
@@ -487,15 +493,18 @@ uint8_t emsa_decode_and_compare(
 
     msb = (hlen * 8) - 1;
 
-    if (buf[0] >> (8 - siglen * 8 + msb))
+    if (buf[0] >> (8 - siglen * 8 + msb)) {
         goto exit;
+    }
 
-    if (siglen < hlen + 2)
+    if (siglen < hlen + 2) {
         goto exit;
+    }
     hash_start = p + siglen - hlen - 1;
 
-    if (0 != sss_mgf_mask_func(p, siglen - hlen - 1, hash_start, hlen, sha_algorithm, context))
+    if (0 != sss_mgf_mask_func(p, siglen - hlen - 1, hash_start, hlen, sha_algorithm, context)) {
         goto exit;
+    }
 
     buf[0] &= 0xFF >> ((siglen * 8 - msb) % 8);
 

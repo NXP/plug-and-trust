@@ -15,7 +15,7 @@
 #include MBEDTLS_CONFIG_FILE
 #endif
 
-#if defined(MBEDTLS_ECDH_C) && defined(MBEDTLS_ECDH_ALT) && SSS_HAVE_ALT_SSS
+#if defined(MBEDTLS_ECDH_C) && defined(MBEDTLS_ECDH_ALT) && SSS_HAVE_MBEDTLS_ALT_SSS
 
 #include <fsl_sss_util_asn1_der.h>
 #include <nxLog_sss.h>
@@ -53,82 +53,108 @@ int get_header_and_bit_Length(int groupid, int *headerLen, int *bitLen)
 {
     switch (groupid) {
     case MBEDTLS_ECP_DP_SECP192R1:
-        if (headerLen != NULL)
+        if (headerLen != NULL) {
             *headerLen = der_ecc_nistp192_header_len;
-        if (bitLen != NULL)
+        }
+        if (bitLen != NULL) {
             *bitLen = 192;
+        }
         break;
     case MBEDTLS_ECP_DP_SECP224R1:
-        if (headerLen != NULL)
+        if (headerLen != NULL) {
             *headerLen = der_ecc_nistp224_header_len;
-        if (bitLen != NULL)
+        }
+        if (bitLen != NULL) {
             *bitLen = 224;
+        }
         break;
     case MBEDTLS_ECP_DP_SECP256R1:
-        if (headerLen != NULL)
+        if (headerLen != NULL) {
             *headerLen = der_ecc_nistp256_header_len;
-        if (bitLen != NULL)
+        }
+        if (bitLen != NULL) {
             *bitLen = 256;
+        }
         break;
     case MBEDTLS_ECP_DP_SECP384R1:
-        if (headerLen != NULL)
+        if (headerLen != NULL) {
             *headerLen = der_ecc_nistp384_header_len;
-        if (bitLen != NULL)
+        }
+        if (bitLen != NULL) {
             *bitLen = 384;
+        }
         break;
     case MBEDTLS_ECP_DP_SECP521R1:
-        if (headerLen != NULL)
+        if (headerLen != NULL) {
             *headerLen = der_ecc_nistp521_header_len;
-        if (bitLen != NULL)
+        }
+        if (bitLen != NULL) {
             *bitLen = 521;
+        }
         break;
     case MBEDTLS_ECP_DP_BP256R1:
-        if (headerLen != NULL)
+        if (headerLen != NULL) {
             *headerLen = der_ecc_bp256_header_len;
-        if (bitLen != NULL)
+        }
+        if (bitLen != NULL) {
             *bitLen = 256;
+        }
         break;
     case MBEDTLS_ECP_DP_BP384R1:
-        if (headerLen != NULL)
+        if (headerLen != NULL) {
             *headerLen = der_ecc_bp384_header_len;
-        if (bitLen != NULL)
+        }
+        if (bitLen != NULL) {
             *bitLen = 384;
+        }
         break;
     case MBEDTLS_ECP_DP_BP512R1:
-        if (headerLen != NULL)
+        if (headerLen != NULL) {
             *headerLen = der_ecc_bp512_header_len;
-        if (bitLen != NULL)
+        }
+        if (bitLen != NULL) {
             *bitLen = 512;
+        }
         break;
     case MBEDTLS_ECP_DP_SECP192K1:
-        if (headerLen != NULL)
+        if (headerLen != NULL) {
             *headerLen = der_ecc_192k_header_len;
-        if (bitLen != NULL)
+        }
+        if (bitLen != NULL) {
             *bitLen = 192;
+        }
         break;
     case MBEDTLS_ECP_DP_SECP224K1:
-        if (headerLen != NULL)
+        if (headerLen != NULL) {
             *headerLen = der_ecc_224k_header_len;
-        if (bitLen != NULL)
+        }
+        if (bitLen != NULL) {
             *bitLen = 224;
+        }
         break;
     case MBEDTLS_ECP_DP_SECP256K1:
-        if (headerLen != NULL)
+        if (headerLen != NULL) {
             *headerLen = der_ecc_256k_header_len;
-        if (bitLen != NULL)
+        }
+        if (bitLen != NULL) {
             *bitLen = 256;
+        }
         break;
     case MBEDTLS_ECP_DP_CURVE25519:
-        if (headerLen != NULL)
+        if (headerLen != NULL) {
             *headerLen = 0;
-        if (bitLen != NULL)
+        }
+        if (bitLen != NULL) {
             *bitLen = 256;
+        }
         break;
     case MBEDTLS_ECP_DP_CURVE448:
-        if (headerLen != NULL)
+        if (headerLen != NULL) {
             *headerLen = 0;
-        if (bitLen != NULL)
+        }
+        if (bitLen != NULL) {
             *bitLen = 448;
+        }
         break;
     default:
         LOG_E("get_header_and_bit_Length: Group id not supported");
@@ -365,6 +391,7 @@ int mbedtls_ecdh_compute_shared(mbedtls_ecp_group *grp,
                     break;
                 }
 
+                LOG_I("%s: Using SE for DH key gen", __FUNCTION__);
                 status = sss_derive_key_dh(&context, &otherPartyKeyObject, &derivedKeyObject);
                 if (status != kStatus_SSS_Success) {
                     printf(" sss_derive_key_dh Failed...\n");

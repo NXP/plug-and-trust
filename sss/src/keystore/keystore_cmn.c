@@ -65,8 +65,9 @@ sss_status_t ks_common_update_fat(keyStoreTable_t *keystore_shadow,
     uint8_t entries_written  = 0;
     uint16_t keyLen_roundoff = 0;
     retval                   = isValidKeyStoreShadow(keystore_shadow);
-    if (retval != kStatus_SSS_Success)
+    if (retval != kStatus_SSS_Success) {
         goto cleanup;
+    }
     for (i = 0; i < keystore_shadow->maxEntries; i++) {
         keyIdAndTypeIndexLookup_t *keyEntry = &keystore_shadow->entries[i];
         if (keyEntry->extKeyId == extId) {
@@ -111,8 +112,9 @@ sss_status_t ks_common_remove_fat(keyStoreTable_t *keystore_shadow, uint32_t ext
     uint32_t i;
     bool found_entry = FALSE;
     retval           = isValidKeyStoreShadow(keystore_shadow);
-    if (retval != kStatus_SSS_Success)
+    if (retval != kStatus_SSS_Success) {
         goto cleanup;
+    }
 
     for (i = 0; i < keystore_shadow->maxEntries; i++) {
         keyIdAndTypeIndexLookup_t *keyEntry = &keystore_shadow->entries[i];

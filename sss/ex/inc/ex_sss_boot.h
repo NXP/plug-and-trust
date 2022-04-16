@@ -42,7 +42,7 @@ extern "C" {
 /* *****************************************************************************************************************
  * Types/Structure Declarations
  * ***************************************************************************************************************** */
-#if SSS_HAVE_SE || SSS_HAVE_APPLET_SE05X_IOT
+#if SSS_HAVE_APPLET || SSS_HAVE_APPLET_SE05X_IOT
 
 typedef union ex_auth {
     struct
@@ -128,6 +128,14 @@ sss_status_t ex_sss_se05x_prepare_host(sss_session_t *host_session,
     ex_SE05x_authCtx_t *ex_se05x_authctx,
     SE_AuthType_t auth_type);
 
+sss_status_t ex_sss_se05x_prepare_host_with_key(sss_session_t *host_session,
+    sss_key_store_t *host_ks,
+    SE_Connect_Ctx_t *se05x_open_ctx,
+    ex_SE05x_authCtx_t *se05x_auth_ctx,
+    SE_AuthType_t auth_type,
+    uint8_t *authKey,
+    size_t authKeyLen);
+
 /* Prepare host for multiple user sessions */
 sss_status_t ex_sss_se05x_prepare_host_keys(sss_session_t *pHostSession,
     sss_key_store_t *pHostKs,
@@ -136,7 +144,7 @@ sss_status_t ex_sss_se05x_prepare_host_keys(sss_session_t *pHostSession,
     uint32_t offset);
 #endif
 
-#if SSS_HAVE_SE
+#if SSS_HAVE_APPLET
 sss_status_t ex_sss_se_prepare_host(sss_session_t *host_session,
     sss_key_store_t *host_ks,
     SE_Connect_Ctx_t *se05x_open_ctx,

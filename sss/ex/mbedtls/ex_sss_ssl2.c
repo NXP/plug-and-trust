@@ -80,7 +80,7 @@ int main(void)
 #   include "sm_printf.h"
 #endif
 
-#if SSS_HAVE_ALT_SSS
+#if SSS_HAVE_MBEDTLS_ALT_SSS
 #include "sss_mbedtls.h"
 #if defined(MBEDTLS_ECDSA_VERIFY_ALT)
 #include "ecdsa_verify_alt.h"
@@ -634,7 +634,7 @@ sss_status_t ex_sss_entry(ex_sss_boot_ctx_t *pCtx)
         sss_se05x_session_t *pSe05xSession = (sss_se05x_session_t *)&pCtx->session;
         status = smComJRCP_NvmCount(pSe05xSession->s_ctx.conn_ctx, &start_nvmCount);
         if (status == SMCOM_OK) {
-            mbedtls_printf("NVM count at start : %lu \n", start_nvmCount);
+            mbedtls_printf("NVM count at start : %u \n", start_nvmCount);
         }
     }
 #endif
@@ -2221,7 +2221,7 @@ exit:
         sss_se05x_session_t *pSe05xSession = (sss_se05x_session_t *)&pCtx->session;
         status = smComJRCP_NvmCount(pSe05xSession->s_ctx.conn_ctx, &end_nvmCount);
         if (status == SMCOM_OK) {
-            mbedtls_printf("NVM count at end : %lu \n", end_nvmCount);
+            mbedtls_printf("NVM count at end : %u \n", end_nvmCount);
         }
 
         /* Ignore one nvm write for rsa sign for the first time */

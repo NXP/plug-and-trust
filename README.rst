@@ -114,11 +114,14 @@ Example File - `/sss/ex/ecc/ex_sss_ecc.c`
 
 Use the below macros in ``fsl_sss_ftr.h`` file to enable support for either SE050 or SE051. ::
 
-	/** SE050 */
-	#define SSS_HAVE_SE05X_VER_03_XX 1
+    /** SE050 */
+    #define SSS_HAVE_SE05X_VER_03_XX 1
 
-	/** SE051 */
-	#define SSS_HAVE_SE05X_VER_06_00 0
+    /** SE051 */
+    #define SSS_HAVE_SE05X_VER_06_00 0
+
+    /** SE051 */
+    #define SSS_HAVE_SE05X_VER_07_02 0
 
 
 To enable authenticated session to SE05x, make the following changes,
@@ -211,7 +214,7 @@ Also add compile defination ``MBEDTLS_CONFIG_FILE`` to use the correct mbedtls c
     TARGET_COMPILE_DEFINITIONS(
         ${PROJECT_NAME}
         PUBLIC
-        MBEDTLS_CONFIG_FILE=\"sss_mbedtls_x86_config.h\"
+        MBEDTLS_USER_CONFIG_FILE=\"sss_mbedtls_x86_config.h\"
     )
 
 .. note::
@@ -306,24 +309,26 @@ Memory details of ex_ecc example on Raspberry Pi built with,
 
 - No hostcrypto
 - Plain session
+- Applet - 03_XX
 
 ::
 
-    Text segment -- 184505 Bytes
-    Data segment -- 416 Bytes
-    Bss segment --- 2808 Bytes
-    Total  -------- 187729 Bytes
+    Text segment -- 204900 Bytes
+    Data segment -- 420 Bytes
+    Bss segment --- 3028 Bytes
+    Total  -------- 208348 Bytes
 
 
 Memory details of ex_ecc example on Raspberry Pi built with
 
 - Openssl hostcrypto
-- PlatformSCP + ECKey (EXFL_SE050_AUTH_ECKey_PlatfSCP03 ) session
+- PlatformSCP + ECKey (SSS_HAVE_SE05X_AUTH_ECKEY_PLATFSCP03) session
+- Applet - 03_XX
 
 ::
 
-    Text segment -- 292336 Bytes
-    Data segment -- 1116 Bytes
-    Bss segment --- 3692 Bytes
-    Total  -------- 297144 Bytes
+    Text segment -- 319078 Bytes
+    Data segment -- 1036 Bytes
+    Bss segment --- 4136 Bytes
+    Total  -------- 324250 Bytes
 

@@ -19,7 +19,7 @@
 #include "fsl_sss_ftr_default.h"
 #endif
 
-#if SSS_HAVE_MBEDTLS
+#if SSS_HAVE_HOSTCRYPTO_MBEDTLS
 
 #if !defined(MBEDTLS_CONFIG_FILE)
 #include "mbedtls/config.h"
@@ -248,6 +248,6 @@ sss_status_t ks_mbedtls_key_object_create(sss_mbedtls_object_t *keyObject,
 
 /** @}  */
 
-#endif /* SSS_HAVE_MBEDTLS */
+#endif /* SSS_HAVE_HOSTCRYPTO_MBEDTLS */
 
 #endif /* SSS_APIS_INC_FSL_SSS_MBEDTLS_TYPES_H_ */
