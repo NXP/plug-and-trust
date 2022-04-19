@@ -41,6 +41,8 @@ typedef enum
     KPolicy_PCR,
     KPolicy_Common,
     KPolicy_Common_PCR_Value,
+    KPolicy_Desfire_Changekey_Auth_Id,
+    KPolicy_Derive_Master_Key_Id,
 } sss_policy_type_u;
 
 /** Policy applicable to a session */
@@ -74,26 +76,40 @@ typedef struct
     uint8_t can_Encrypt : 1;
     /** Allow decryption */
     uint8_t can_Decrypt : 1;
-    /** Allow key derivation */
-    uint8_t can_KD : 1;
+    /** Allow to imported or exported */
+    uint8_t can_Import_Export : 1;
+    /** Forbid derived output */
+    uint8_t forbid_Derived_Output : 1;
+    /** Allow TLS PRF key derivation */
+    uint8_t can_TLS_KDF : 1;
+    /** Allow kdf(prf) external random */
+    uint8_t allow_kdf_ext_rnd : 1;
+    /** Allow TLS PMS key derivation */
+    uint8_t can_TLS_PMS_KD : 1;
+    /** Allow HKDF */
+    uint8_t can_HKDF : 1;
+    /** Allow PBKDF */
+    uint8_t can_PBKDF : 1;
     /** Allow key wrapping */
     uint8_t can_Wrap : 1;
-    /** Allow to write the object */
-    uint8_t can_Write : 1;
-    /** Allow to (re)generate the object */
-    uint8_t can_Gen : 1;
     /** Allow to perform DESFire authentication */
     uint8_t can_Desfire_Auth : 1;
     /** Allow to dump DESFire session keys */
     uint8_t can_Desfire_Dump : 1;
-    /** Allow to imported or exported */
-    uint8_t can_Import_Export : 1;
-#if 1 // SSS_HAVE_SE05X_VER_GTE_06_00
-    /** Forbid derived output */
-    uint8_t forbid_Derived_Output : 1;
-#endif
-    /** Allow kdf(prf) external random */
-    uint8_t allow_kdf_ext_rnd : 1;
+    /** Allow Desfire key derivation */
+    uint8_t can_Desfire_KD : 1;
+    /** Forbid External iv */
+    uint8_t forbid_external_iv : 1;
+    /** Allow usage as hmac pepper */
+    uint8_t can_usage_hmac_pepper : 1;
+
+    /* Old policies */
+    /** Allow key derivation */
+    uint8_t can_KD : 1;
+    /** Allow to write the object */
+    uint8_t can_Write : 1;
+    /** Allow to (re)generate the object */
+    uint8_t can_Gen : 1;
 } sss_policy_sym_key_u;
 
 /** Policies applicable to Asymmetric KEY */
@@ -107,26 +123,26 @@ typedef struct
     uint8_t can_Encrypt : 1;
     /** Allow decryption */
     uint8_t can_Decrypt : 1;
+    /** Allow to imported or exported */
+    uint8_t can_Import_Export : 1;
+    /** Forbid derived output */
+    uint8_t forbid_Derived_Output : 1;
+    /** Allow to (re)generate the object */
+    uint8_t can_Gen : 1;
+    /** Allow key agreement */
+    uint8_t can_KA : 1;
+    /** Allow to attest an object */
+    uint8_t can_Attest : 1;
+
+    /* Old policies */
+    /** Allow to read the object */
+    uint8_t can_Read : 1;
+    /** Allow to write the object */
+    uint8_t can_Write : 1;
     /** Allow key derivation */
     uint8_t can_KD : 1;
     /** Allow key wrapping */
     uint8_t can_Wrap : 1;
-    /** Allow to write the object */
-    uint8_t can_Write : 1;
-    /** Allow to (re)generate the object */
-    uint8_t can_Gen : 1;
-    /** Allow to imported or exported */
-    uint8_t can_Import_Export : 1;
-    /** Allow key agreement */
-    uint8_t can_KA : 1;
-    /** Allow to read the object */
-    uint8_t can_Read : 1;
-    /** Allow to attest an object */
-    uint8_t can_Attest : 1;
-#if 1 // SSS_HAVE_SE05X_VER_GTE_06_00
-    /** Forbid derived output */
-    uint8_t forbid_Derived_Output : 1;
-#endif
 } sss_policy_asym_key_u;
 
 /** All policies related to secure object type File */
@@ -168,10 +184,16 @@ typedef struct
 {
     /** Forbid all operations */
     uint8_t forbid_All : 1;
+    /** Allow to read the object */
+    uint8_t can_Read : 1;
+    /** Allow to write the object */
+    uint8_t can_Write : 1;
     /** Allow to delete the object */
     uint8_t can_Delete : 1;
     /** Require having secure messaging enabled with encryption and integrity on the command */
     uint8_t req_Sm : 1;
+    /** Require PCR value */
+    uint8_t req_pcr_val : 1;
 } sss_policy_common_u;
 
 /** Common PCR Value Policies for all object types */
@@ -182,6 +204,20 @@ typedef struct
     /** Expected value of the PCR */
     uint8_t pcrExpectedValue[32];
 } sss_policy_common_pcr_value_u;
+
+/** DESFire ChangeKey - authentication key identifier. */
+typedef struct
+{
+    /** DESFire authentication object ID */
+    uint32_t desfire_authId;
+} sss_policy_desfire_changekey_authId_value_u;
+
+/** Key Derive - Master key identifier. */
+typedef struct
+{
+    /** Master key ID */
+    uint32_t master_keyId;
+} sss_policy_key_drv_master_keyid_value_u;
 
 /** Unique/individual policy.
  * For any operation, you need array of sss_policy_u.
@@ -204,6 +240,8 @@ typedef struct
         sss_policy_common_u common;
         sss_policy_common_pcr_value_u common_pcr_value;
         sss_policy_session_u session;
+        sss_policy_desfire_changekey_authId_value_u desfire_auth_id;
+        sss_policy_key_drv_master_keyid_value_u master_key_id;
     } policy;
 } sss_policy_u;
 

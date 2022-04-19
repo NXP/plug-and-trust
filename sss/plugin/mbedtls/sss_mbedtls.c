@@ -18,7 +18,7 @@
 #include MBEDTLS_CONFIG_FILE
 #endif
 
-#if defined(MBEDTLS_ECP_ALT) && SSS_HAVE_ALT_SSS
+#if defined(MBEDTLS_ECP_ALT) && SSS_HAVE_MBEDTLS_ALT_SSS
 
 /** @ingroup ax_mbed_tls */
 /** @{ */
@@ -394,7 +394,7 @@ static int sss_eckey_verify(void *ctx,
         return 1;
     }
 
-    LOG_D("%s: Verify using key '0x%08X'", __FUNCTION__, pax_ctx->grp.pSSSObject->keyId);
+    LOG_I("%s: Verify using key '0x%08X'", __FUNCTION__, pax_ctx->grp.pSSSObject->keyId);
 
     status = sss_asymmetric_context_init(
         &asymVerifyCtx, sssObject->keyStore->session, sssObject, algorithm, kMode_SSS_Verify);
@@ -457,7 +457,7 @@ static int sss_eckey_sign(void *ctx,
         return 1;
     }
 
-    LOG_D("%s: Signing using key '0x%08lX'", __FUNCTION__, pax_ctx->grp.pSSSObject->keyId);
+    LOG_I("%s: Signing using key '0x%08lX'", __FUNCTION__, pax_ctx->grp.pSSSObject->keyId);
 
     status = sss_asymmetric_sign_digest(&asymVerifyCtx, (uint8_t *)hash, hash_len, sig, &u16_sig_len);
     if (status != kStatus_SSS_Success) {

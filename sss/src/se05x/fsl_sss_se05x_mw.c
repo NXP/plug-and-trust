@@ -171,6 +171,53 @@ smStatus_t Se05x_API_EC_CurveGetId(pSe05xSession_t session_ctx, uint32_t objectI
     return ret;
 }
 
+int add_taglength_to_data(
+    uint8_t **buf, size_t *bufLen, SE05x_TAG_t tag, const uint8_t *cmd, size_t cmdLen, bool extendedLength)
+{
+    uint8_t *pBuf         = NULL;
+    size_t size_of_length = 3;
+    size_t size_of_tlv    = 0;
+
+    if ((buf == NULL) || (bufLen == NULL) || (cmd == NULL)) {
+        return 1;
+    }
+
+    pBuf = *buf;
+
+    if (pBuf == NULL) {
+        return 1;
+    }
+
+    *pBuf++ = (uint8_t)tag;
+
+    if (!extendedLength) {
+        *pBuf++        = (uint8_t)cmdLen;
+        size_of_length = 1;
+    }
+    else if (cmdLen <= 0xFFFFu) {
+        *pBuf++ = (uint8_t)(0x80 /* Extended */ | 0x02 /* Additional Length */);
+        *pBuf++ = (uint8_t)((cmdLen >> 1 * 8) & 0xFF);
+        *pBuf++ = (uint8_t)((cmdLen >> 0 * 8) & 0xFF);
+    }
+    else {
+        return 1;
+    }
+
+    size_of_tlv = 1 + size_of_length + cmdLen;
+
+    if ((cmdLen > 0) && (cmd != NULL)) {
+        while (cmdLen-- > 0) {
+            *pBuf++ = *cmd++;
+        }
+    }
+
+    *bufLen += size_of_tlv;
+    *buf = pBuf;
+
+    return 0;
+}
+
+// LCOV_EXCL_START
 smStatus_t Se05x_i2c_master_txn(sss_session_t *sess, SE05x_I2CM_cmd_t *p, uint8_t noOftags)
 {
     smStatus_t retval                              = SM_NOT_OK;
@@ -329,24 +376,17 @@ smStatus_t Se05x_i2c_master_attst_txn(sss_session_t *sess,
     uint8_t *random_attst,
     size_t random_attstLen,
     SE05x_AttestationAlgo_t attst_algo,
-    SE05x_TimeStamp_t *ptimeStamp,
-    size_t *timeStampLen,
-    uint8_t *freshness,
-    size_t *pfreshnessLen,
-    uint8_t *chipId,
-    size_t *pchipIdLen,
-    uint8_t *signature,
-    size_t *psignatureLen,
+    sss_se05x_attst_comp_data_t *pattest_data,
+    uint8_t *rspbuffer,
+    size_t *rspbufferLen,
     uint8_t noOftags)
 {
-    smStatus_t retval                              = SM_NOT_OK;
-    uint8_t buffer[SE05X_I2CM_MAX_BUF_SIZE_CMD]    = {0};
-    size_t bufferLen                               = 0;
-    uint8_t iCnt                                   = 0;
-    uint8_t remainingCnt                           = 0;
-    int tlvRet                                     = 0;
-    uint8_t rspbuffer[SE05X_I2CM_MAX_BUF_SIZE_RSP] = {0};
-    size_t rspbufferLen                            = sizeof(rspbuffer);
+    smStatus_t retval                           = SM_NOT_OK;
+    uint8_t buffer[SE05X_I2CM_MAX_BUF_SIZE_CMD] = {0};
+    size_t bufferLen                            = 0;
+    uint8_t iCnt                                = 0;
+    uint8_t remainingCnt                        = 0;
+    int tlvRet                                  = 0;
     uint32_t attestID;
 
     sss_se05x_session_t *se05x_session = (sss_se05x_session_t *)sess;
@@ -404,40 +444,62 @@ smStatus_t Se05x_i2c_master_attst_txn(sss_session_t *sess,
             break;
         }
     }
-    *timeStampLen = sizeof(SE05x_TimeStamp_t);
-    SendLen       = bufferLen;
-    retval        = Se05x_API_I2CM_ExecuteCommandSet(se050session_id,
+    SendLen = bufferLen;
+#if SSS_HAVE_SE05X_VER_GTE_07_02
+    retval = Se05x_API_I2CM_ExecuteCommandSet(se050session_id,
         pSendbuf,
         SendLen,
         attestID,
         attst_algo,
         rspbuffer,
-        &rspbufferLen,
-        ptimeStamp,
-        freshness,
-        pfreshnessLen,
-        chipId,
-        pchipIdLen,
-        signature,
-        psignatureLen,
+        rspbufferLen,
+        &pattest_data->timeStamp,
+        pattest_data->chipId,
+        &pattest_data->chipIdLen,
+        pattest_data->signature,
+        &pattest_data->signatureLen,
+        random_attst,
+        random_attstLen,
+        pattest_data->objSize,
+        &pattest_data->objSizeLen,
+        pattest_data->cmd,
+        &pattest_data->cmdLen);
+
+#else
+    retval = Se05x_API_I2CM_ExecuteCommandSet(se050session_id,
+        pSendbuf,
+        SendLen,
+        attestID,
+        attst_algo,
+        rspbuffer,
+        rspbufferLen,
+        &pattest_data->timeStamp,
+        pattest_data->outrandom,
+        &pattest_data->outrandomLen,
+        pattest_data->chipId,
+        &pattest_data->chipIdLen,
+        pattest_data->signature,
+        &pattest_data->signatureLen,
         random_attst,
         random_attstLen);
+#endif
 
     if (retval == SM_OK) {
-        // Walk through the result.
-        // In principle the order of results matches the order the incoming commands.
-        // Exception: Structural error in format incoming commands
+        /* Walk through the result.
+         * In principle the order of results matches the order the incoming commands.
+         * Exception: Structural error in format incoming commands
+         */
         uint8_t *rspTag     = &rspbuffer[0];
         unsigned int rspPos = 1u;
         for (iCnt = 0; iCnt < noOftags; iCnt++) {
             if (*rspTag == kSE05x_I2CM_StructuralIssue) {
-                // Modify TLV type of command to report back error
+                /* Modify TLV type of command to report back error */
                 p[iCnt].type                  = kSE05x_I2CM_StructuralIssue;
                 p[iCnt].cmd.issue.issueStatus = rspbuffer[rspPos];
                 break;
             }
             else if (p[iCnt].type == kSE05x_I2CM_Configure) {
-                // Check whether response is in expected order
+                /* Check whether response is in expected order */
                 if (*rspTag != p[iCnt].type) {
                     LOG_W("Response out-of-order");
                     break;
@@ -447,7 +509,7 @@ smStatus_t Se05x_i2c_master_attst_txn(sss_session_t *sess,
             //else if (p[iCnt].type == kSE05x_I2CM_Security) {
             //}
             else if (p[iCnt].type == kSE05x_I2CM_Write) {
-                // Check whether response is in expected order
+                /* Check whether response is in expected order */
                 if (*rspTag != p[iCnt].type) {
                     LOG_W("Response out-of-order");
                     break;
@@ -455,14 +517,14 @@ smStatus_t Se05x_i2c_master_attst_txn(sss_session_t *sess,
                 p[iCnt].cmd.w.wrStatus = rspbuffer[rspPos];
             }
             else if (p[iCnt].type == kSE05x_I2CM_Read) {
-                // Check whether response is in expected order
+                /* Check whether response is in expected order */
                 if (*rspTag != p[iCnt].type) {
                     LOG_W("Response out-of-order");
                     break;
                 }
                 p[iCnt].cmd.rd.rdStatus = rspbuffer[rspPos];
                 if (p[iCnt].cmd.rd.rdStatus == kSE05x_I2CM_Success) {
-                    // Receiving less data than requested is not considered an error
+                    /* Receiving less data than requested is not considered an error */
                     uint16_t reportedRead = (rspbuffer[rspPos + 1] << 8) + rspbuffer[rspPos + 2];
                     rspPos += 2;
                     if (reportedRead < p[iCnt].cmd.rd.readLength) {
@@ -471,13 +533,13 @@ smStatus_t Se05x_i2c_master_attst_txn(sss_session_t *sess,
                             reportedRead);
                         p[iCnt].cmd.rd.readLength = reportedRead;
                     }
-                    // Did we receive enough data?
-                    if (rspbufferLen > (rspPos + p[iCnt].cmd.rd.readLength)) {
+                    /* Did we receive enough data? */
+                    if (*rspbufferLen > (rspPos + p[iCnt].cmd.rd.readLength)) {
                         memcpy(p[iCnt].cmd.rd.rdBuf, &rspbuffer[rspPos + 1], p[iCnt].cmd.rd.readLength);
                         rspPos += p[iCnt].cmd.rd.readLength;
                     }
                     else {
-                        // TODO: Indicate we could not transfer result into buffer
+                        /* TODO: Indicate we could not transfer result into buffer */
                         LOG_E(
                             "kSE05x_I2CM_Read: Expecting more data (%d) than "
                             "was received",
@@ -490,7 +552,7 @@ smStatus_t Se05x_i2c_master_attst_txn(sss_session_t *sess,
                 break;
             }
             // Update parsing position
-            if (rspbufferLen > rspPos + 2u) {
+            if (*rspbufferLen > rspPos + 2u) {
                 rspTag = &rspbuffer[rspPos + 1];
                 rspPos += 2;
             }
@@ -505,5 +567,14 @@ smStatus_t Se05x_i2c_master_attst_txn(sss_session_t *sess,
 cleanup:
     return retval;
 }
+
+/**
+ * Returns the applet version compiled by MW
+ */
+uint32_t se05x_GetAppletVersion()
+{
+    return APPLET_SE050_VER_MAJOR_MINOR;
+}
+// LCOV_EXCL_STOP
 
 #endif /* SSS_HAVE_APPLET_SE05X_IOT */

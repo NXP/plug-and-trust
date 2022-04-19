@@ -197,12 +197,14 @@ sss_status_t ex_sss_boot_se05x_open(ex_sss_boot_ctx_t *pCtx, const char *portNam
 #endif
 
 #if SSS_HAVE_HOSTCRYPTO_ANY
-    status = ex_sss_se05x_prepare_host(
-        &pCtx->host_session, &pCtx->host_ks, pConnectCtx, &pCtx->ex_se05x_auth, SSS_EX_SE05x_AUTH_MECH);
+    if (SSS_EX_SE05x_AUTH_MECH != kSSS_AuthType_None) {
+        status = ex_sss_se05x_prepare_host(
+            &pCtx->host_session, &pCtx->host_ks, pConnectCtx, &pCtx->ex_se05x_auth, SSS_EX_SE05x_AUTH_MECH);
 
-    if (kStatus_SSS_Success != status) {
-        LOG_E("ex_sss_se05x_prepare_host failed");
-        goto cleanup;
+        if (kStatus_SSS_Success != status) {
+            LOG_E("ex_sss_se05x_prepare_host failed");
+            goto cleanup;
+        }
     }
 #endif // SSS_HAVE_HOSTCRYPTO_ANY
 
@@ -347,15 +349,13 @@ sss_status_t ex_sss_boot_se05x_open_on_Id(ex_sss_boot_ctx_t *pCtx, const char *p
     pConnectCtx->portName = portName;
 #endif
 
-
 #if SSS_HAVE_HOSTCRYPTO_ANY
     pConnectCtx->auth.authType = SSS_EX_SE05x_AUTH_MECH;
 #ifdef SSS_EX_SE05x_AUTH_ID
     status =
         ex_sss_se05x_prepare_host_keys(&pCtx->host_session, &pCtx->host_ks, pConnectCtx, &pCtx->ex_se05x_auth, auth_id);
 #else
-    status =
-        ex_sss_se05x_prepare_host_keys(&pCtx->host_session, &pCtx->host_ks, pConnectCtx, &pCtx->ex_se05x_auth, 0);
+    status = ex_sss_se05x_prepare_host_keys(&pCtx->host_session, &pCtx->host_ks, pConnectCtx, &pCtx->ex_se05x_auth, 0);
 #endif // SSS_EX_SE05x_AUTH_ID
     if (kStatus_SSS_Success != status) {
         LOG_E("ex_sss_se05x_prepare_host_keys failed");

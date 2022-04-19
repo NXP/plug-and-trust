@@ -24,7 +24,7 @@
 #endif
 
 #if USE_RTOS
-    static SemaphoreHandle_t gSmComlock; 
+static SemaphoreHandle_t gSmComlock;
 #elif (__GNUC__ && !AX_EMBEDDED)
 #include<pthread.h>
     /* Only for base session with os */
@@ -38,18 +38,22 @@
 #endif
 
 #if USE_RTOS
-#define LOCK_TXN()                                               \
-    LOG_D("Trying to Acquire Lock");                             \
-    if (xSemaphoreTake(gSmComlock, portMAX_DELAY) == pdTRUE)     \
-        LOG_D("LOCK Acquired");                                  \
-    else                                                         \
-        LOG_D("LOCK Acquisition failed");
-#define UNLOCK_TXN()                                             \
-    LOG_D("Trying to Released Lock");                            \
-    if (xSemaphoreGive(gSmComlock) == pdTRUE)                    \
-        LOG_D("LOCK Released");                                  \
-    else                                                         \
-        LOG_D("LOCK Releasing failed");
+#define LOCK_TXN()                                             \
+    LOG_D("Trying to Acquire Lock");                           \
+    if (xSemaphoreTake(gSmComlock, portMAX_DELAY) == pdTRUE) { \
+        LOG_D("LOCK Acquired");                                \
+    }                                                          \
+    else {                                                     \
+        LOG_D("LOCK Acquisition failed");                      \
+    }
+#define UNLOCK_TXN()                            \
+    LOG_D("Trying to Released Lock");           \
+    if (xSemaphoreGive(gSmComlock) == pdTRUE) { \
+        LOG_D("LOCK Released");                 \
+    }                                           \
+    else {                                      \
+        LOG_D("LOCK Releasing failed");         \
+    }
 #elif (__GNUC__ && !AX_EMBEDDED)
 #define LOCK_TXN()                                               \
     LOG_D("Trying to Acquire Lock thread: %ld", pthread_self()); \
@@ -86,7 +90,7 @@ U16 smCom_Init(ApduTransceiveFunction_t pTransceive, ApduTransceiveRawFunction_t
     {
         LOG_E("\n mutex init has failed");
         return ret;
-    } 
+    }
 #endif
     pSmCom_Transceive = pTransceive;
     pSmCom_TransceiveRaw = pTransceiveRaw;
@@ -100,7 +104,7 @@ void smCom_DeInit(void)
     if (gSmComlock != NULL) {
     	vSemaphoreDelete(gSmComlock);
         gSmComlock = NULL;
-    } 
+    }
 #elif (__GNUC__ && !AX_EMBEDDED)
     pthread_mutex_destroy(&gSmComlock);
 #endif
@@ -157,7 +161,7 @@ U32 smCom_TransceiveRaw(void *conn_ctx, U8 * pTx, U16 txLen, U8 * pRx, U32 * pRx
 void smCom_Echo(void *conn_ctx, const char *comp, const char *level, const char *buffer)
 {
 #if USE_LOCK
-    /* If this function is called before smcom init 
+    /* If this function is called before smcom init
     then Lock fails, return without echo */
     if (pSmCom_TransceiveRaw == NULL) {
         return;

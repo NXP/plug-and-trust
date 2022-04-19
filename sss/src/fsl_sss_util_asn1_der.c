@@ -14,11 +14,11 @@
 #include <fsl_sss_se05x_apis.h>
 #endif
 
-#if SSS_HAVE_MBEDTLS
+#if SSS_HAVE_HOSTCRYPTO_MBEDTLS
 #include <fsl_sss_mbedtls_apis.h>
 #endif
 
-#if SSS_HAVE_OPENSSL
+#if SSS_HAVE_HOSTCRYPTO_OPENSSL
 #include <fsl_sss_openssl_apis.h>
 #include <openssl/pem.h>
 #include <openssl/pkcs12.h>
@@ -251,8 +251,9 @@ sss_status_t sss_util_asn1_rsa_parse_private(const uint8_t *key,
                     0x02, 0x81, 0x81,       ;Integer    - Modulus
         */
     ret = asn_1_parse_tlv(pBuf, &taglen, &bufIndex);
-    if (ret != 0)
+    if (ret != 0) {
         goto exit;
+    }
     if (taglen != (keylen - bufIndex)) {
         LOG_E("Invlaid Key");
         goto exit;
@@ -266,10 +267,12 @@ sss_status_t sss_util_asn1_rsa_parse_private(const uint8_t *key,
     tag = pBuf[bufIndex];
     while (tag != ASN_TAG_INT) {
         ret = asn_1_parse_tlv(pBuf, &taglen, &bufIndex); /* Private Key Header Nested TLV */
-        if (ret != 0)
+        if (ret != 0) {
             goto exit;
-        if (tag == ASN_TAG_SEQUENCE && pBuf[bufIndex] != ASN_TAG_INT)
+        }
+        if (tag == ASN_TAG_SEQUENCE && pBuf[bufIndex] != ASN_TAG_INT) {
             bufIndex += taglen;
+        }
         ENSURE_OR_GO_EXIT(bufIndex < keylen);
         tag = pBuf[bufIndex];
     }
@@ -280,8 +283,9 @@ sss_status_t sss_util_asn1_rsa_parse_private(const uint8_t *key,
     }
     /* Get the Modulus*/
     ret = asn_1_parse_tlv(pBuf, &taglen, &bufIndex);
-    if (ret != 0)
+    if (ret != 0) {
         goto exit;
+    }
     if (modlen != NULL) {
         ENSURE_OR_GO_EXIT(bufIndex < keylen);
         if (pBuf[bufIndex] == 0x00) {
@@ -293,8 +297,9 @@ sss_status_t sss_util_asn1_rsa_parse_private(const uint8_t *key,
                 goto exit;
             }
         }
-        else
+        else {
             *modlen = taglen;
+        }
         ENSURE_OR_GO_EXIT(modulus != NULL);
         *modulus = SSS_MALLOC(*modlen);
         if ((*modulus != NULL) && ((*modlen) > 0)) {
@@ -307,17 +312,19 @@ sss_status_t sss_util_asn1_rsa_parse_private(const uint8_t *key,
             goto exit;
         }
     }
-    else
+    else {
         bufIndex += taglen;
+    }
 
     /* Get Public Exponent */
     ret = asn_1_parse_tlv(pBuf, &taglen, &bufIndex);
-    if (ret != 0)
+    if (ret != 0) {
         goto exit;
+    }
     if (pubExplen != NULL) {
         *pubExplen = taglen;
         ENSURE_OR_GO_EXIT(pubExp != NULL);
-        *pubExp    = SSS_MALLOC(*pubExplen);
+        *pubExp = SSS_MALLOC(*pubExplen);
         if ((*pubExp != NULL) && ((*pubExplen) > 0)) {
             ENSURE_OR_GO_EXIT(bufIndex < keylen);
             memcpy(*pubExp, pBuf + bufIndex, *pubExplen);
@@ -328,13 +335,15 @@ sss_status_t sss_util_asn1_rsa_parse_private(const uint8_t *key,
             goto exit;
         }
     }
-    else
+    else {
         bufIndex += taglen;
+    }
 
     /* Get Private Exponent*/
     ret = asn_1_parse_tlv(pBuf, &taglen, &bufIndex);
-    if (ret != 0)
+    if (ret != 0) {
         goto exit;
+    }
     if (priExplen != NULL) {
         ENSURE_OR_GO_EXIT(bufIndex < keylen);
         if (pBuf[bufIndex] == 0x00) {
@@ -346,8 +355,9 @@ sss_status_t sss_util_asn1_rsa_parse_private(const uint8_t *key,
                 goto exit;
             }
         }
-        else
+        else {
             *priExplen = taglen;
+        }
         ENSURE_OR_GO_EXIT(priExp != NULL);
         *priExp = SSS_MALLOC(*priExplen);
         if ((*priExp != NULL) && ((*priExplen) > 0)) {
@@ -360,13 +370,15 @@ sss_status_t sss_util_asn1_rsa_parse_private(const uint8_t *key,
             goto exit;
         }
     }
-    else
+    else {
         bufIndex += taglen;
+    }
 
     /* Get First prime (p)*/
     ret = asn_1_parse_tlv(pBuf, &taglen, &bufIndex);
-    if (ret != 0)
+    if (ret != 0) {
         goto exit;
+    }
     if (prime1len != NULL) {
         if (pBuf[bufIndex] == 0x00) {
             if (taglen) {
@@ -377,8 +389,9 @@ sss_status_t sss_util_asn1_rsa_parse_private(const uint8_t *key,
                 goto exit;
             }
         }
-        else
+        else {
             *prime1len = taglen;
+        }
         ENSURE_OR_GO_EXIT(prime1 != NULL);
         *prime1 = SSS_MALLOC(*prime1len);
         if ((*prime1 != NULL) && ((*prime1len) > 0)) {
@@ -391,13 +404,15 @@ sss_status_t sss_util_asn1_rsa_parse_private(const uint8_t *key,
             goto exit;
         }
     }
-    else
+    else {
         bufIndex += taglen;
+    }
 
     /* Get Second prime (q)*/
     ret = asn_1_parse_tlv(pBuf, &taglen, &bufIndex);
-    if (ret != 0)
+    if (ret != 0) {
         goto exit;
+    }
     if (prime2len != NULL) {
         ENSURE_OR_GO_EXIT(bufIndex < keylen);
         if (pBuf[bufIndex] == 0x00) {
@@ -409,8 +424,9 @@ sss_status_t sss_util_asn1_rsa_parse_private(const uint8_t *key,
                 goto exit;
             }
         }
-        else
+        else {
             *prime2len = taglen;
+        }
         ENSURE_OR_GO_EXIT(prime2 != NULL);
         *prime2 = SSS_MALLOC(*prime2len);
         if (*prime2 == NULL) {
@@ -427,13 +443,15 @@ sss_status_t sss_util_asn1_rsa_parse_private(const uint8_t *key,
             goto exit;
         }
     }
-    else
+    else {
         bufIndex += taglen;
+    }
 
     /* Get First exponent (dP)*/
     ret = asn_1_parse_tlv(pBuf, &taglen, &bufIndex);
-    if (ret != 0)
+    if (ret != 0) {
         goto exit;
+    }
     if (exponent1len != NULL) {
         ENSURE_OR_GO_EXIT(bufIndex < keylen);
         if (pBuf[bufIndex] == 0x00) {
@@ -445,8 +463,9 @@ sss_status_t sss_util_asn1_rsa_parse_private(const uint8_t *key,
                 goto exit;
             }
         }
-        else
+        else {
             *exponent1len = taglen;
+        }
         ENSURE_OR_GO_EXIT(exponent1 != NULL);
         *exponent1 = SSS_MALLOC(*exponent1len);
         if ((*exponent1 != NULL) && ((*exponent1len) > 0)) {
@@ -459,13 +478,15 @@ sss_status_t sss_util_asn1_rsa_parse_private(const uint8_t *key,
             goto exit;
         }
     }
-    else
+    else {
         bufIndex += taglen;
+    }
 
     /* Get Second  exponent (dQ)*/
     ret = asn_1_parse_tlv(pBuf, &taglen, &bufIndex);
-    if (ret != 0)
+    if (ret != 0) {
         goto exit;
+    }
     if (exponent2len != NULL) {
         ENSURE_OR_GO_EXIT(bufIndex < keylen);
         if (pBuf[bufIndex] == 0x00) {
@@ -477,8 +498,9 @@ sss_status_t sss_util_asn1_rsa_parse_private(const uint8_t *key,
                 goto exit;
             }
         }
-        else
+        else {
             *exponent2len = taglen;
+        }
         ENSURE_OR_GO_EXIT(exponent2 != NULL);
         *exponent2 = SSS_MALLOC(*exponent2len);
         if (*exponent2 == NULL) {
@@ -495,13 +517,15 @@ sss_status_t sss_util_asn1_rsa_parse_private(const uint8_t *key,
             goto exit;
         }
     }
-    else
+    else {
         bufIndex += taglen;
+    }
 
     /* Get Coefficient (qinv)*/
     ret = asn_1_parse_tlv(pBuf, &taglen, &bufIndex);
-    if (ret != 0)
+    if (ret != 0) {
         goto exit;
+    }
     if (coefficientlen != NULL) {
         ENSURE_OR_GO_EXIT(bufIndex < keylen);
         if (pBuf[bufIndex] == 0x00) {
@@ -513,8 +537,9 @@ sss_status_t sss_util_asn1_rsa_parse_private(const uint8_t *key,
                 goto exit;
             }
         }
-        else
+        else {
             *coefficientlen = taglen;
+        }
         ENSURE_OR_GO_EXIT(coefficient != NULL);
         *coefficient = SSS_MALLOC(*coefficientlen);
         if ((*coefficient != NULL) && ((*coefficientlen) > 0)) {
@@ -527,8 +552,9 @@ sss_status_t sss_util_asn1_rsa_parse_private(const uint8_t *key,
             goto exit;
         }
     }
-    else
+    else {
         bufIndex += taglen;
+    }
 
     status = kStatus_SSS_Success;
 exit:
@@ -595,8 +621,9 @@ sss_status_t sss_util_asn1_rsa_parse_private_allow_invalid_key(const uint8_t *ke
         ret = asn_1_parse_tlv(pBuf, &taglen, &bufIndex); /* Private Key Head*/
         ENSURE_OR_GO_EXIT(0 == ret);
 
-        if (tag == ASN_TAG_SEQUENCE && pBuf[bufIndex] != ASN_TAG_INT)
+        if (tag == ASN_TAG_SEQUENCE && pBuf[bufIndex] != ASN_TAG_INT) {
             bufIndex += taglen;
+        }
         ENSURE_OR_GO_EXIT(bufIndex < keylen);
         tag = pBuf[bufIndex];
     }
@@ -620,8 +647,9 @@ sss_status_t sss_util_asn1_rsa_parse_private_allow_invalid_key(const uint8_t *ke
                 goto exit;
             }
         }
-        else
+        else {
             *modlen = taglen;
+        }
         ENSURE_OR_GO_EXIT(modulus != NULL);
         *modulus = SSS_MALLOC(*modlen);
         if ((*modulus != NULL) && ((*modlen) > 0)) {
@@ -634,8 +662,9 @@ sss_status_t sss_util_asn1_rsa_parse_private_allow_invalid_key(const uint8_t *ke
             goto exit;
         }
     }
-    else
+    else {
         bufIndex += taglen;
+    }
 
     /* Get Public Exponent */
     ret = asn_1_parse_tlv(pBuf, &taglen, &bufIndex);
@@ -644,7 +673,7 @@ sss_status_t sss_util_asn1_rsa_parse_private_allow_invalid_key(const uint8_t *ke
     if (pubExplen != NULL) {
         *pubExplen = taglen;
         ENSURE_OR_GO_EXIT(pubExp != NULL);
-        *pubExp    = SSS_MALLOC(*pubExplen);
+        *pubExp = SSS_MALLOC(*pubExplen);
         ENSURE_OR_GO_EXIT(bufIndex < keylen);
         if ((*pubExp != NULL) && ((*pubExplen) > 0)) {
             memcpy(*pubExp, pBuf + bufIndex, *pubExplen);
@@ -655,8 +684,9 @@ sss_status_t sss_util_asn1_rsa_parse_private_allow_invalid_key(const uint8_t *ke
             goto exit;
         }
     }
-    else
+    else {
         bufIndex += taglen;
+    }
 
     /* Get Private Exponent*/
     ret = asn_1_parse_tlv(pBuf, &taglen, &bufIndex);
@@ -673,8 +703,9 @@ sss_status_t sss_util_asn1_rsa_parse_private_allow_invalid_key(const uint8_t *ke
                 goto exit;
             }
         }
-        else
+        else {
             *priExplen = taglen;
+        }
         ENSURE_OR_GO_EXIT(priExp != NULL);
         *priExp = SSS_MALLOC(*priExplen);
         if ((*priExp != NULL) && ((*priExplen) > 0)) {
@@ -687,8 +718,9 @@ sss_status_t sss_util_asn1_rsa_parse_private_allow_invalid_key(const uint8_t *ke
             goto exit;
         }
     }
-    else
+    else {
         bufIndex += taglen;
+    }
 
     /* Get First prime (p)*/
     ret = asn_1_parse_tlv(pBuf, &taglen, &bufIndex);
@@ -705,8 +737,9 @@ sss_status_t sss_util_asn1_rsa_parse_private_allow_invalid_key(const uint8_t *ke
                 goto exit;
             }
         }
-        else
+        else {
             *prime1len = taglen;
+        }
         ENSURE_OR_GO_EXIT(prime1 != NULL);
         *prime1 = SSS_MALLOC(*prime1len);
         if ((*prime1 != NULL) && ((*prime1len) > 0)) {
@@ -719,8 +752,9 @@ sss_status_t sss_util_asn1_rsa_parse_private_allow_invalid_key(const uint8_t *ke
             goto exit;
         }
     }
-    else
+    else {
         bufIndex += taglen;
+    }
 
     /* Get Second prime (q)*/
     ret = asn_1_parse_tlv(pBuf, &taglen, &bufIndex);
@@ -737,8 +771,9 @@ sss_status_t sss_util_asn1_rsa_parse_private_allow_invalid_key(const uint8_t *ke
                 goto exit;
             }
         }
-        else
+        else {
             *prime2len = taglen;
+        }
         ENSURE_OR_GO_EXIT(prime2 != NULL);
         *prime2 = SSS_MALLOC(*prime2len);
         if (*prime2 == NULL) {
@@ -755,8 +790,9 @@ sss_status_t sss_util_asn1_rsa_parse_private_allow_invalid_key(const uint8_t *ke
             goto exit;
         }
     }
-    else
+    else {
         bufIndex += taglen;
+    }
 
     /* Get First exponent (dP)*/
     ret = asn_1_parse_tlv(pBuf, &taglen, &bufIndex);
@@ -773,8 +809,9 @@ sss_status_t sss_util_asn1_rsa_parse_private_allow_invalid_key(const uint8_t *ke
                 goto exit;
             }
         }
-        else
+        else {
             *exponent1len = taglen;
+        }
         ENSURE_OR_GO_EXIT(exponent1 != NULL);
         *exponent1 = SSS_MALLOC(*exponent1len);
         if ((*exponent1 != NULL) && ((*exponent1len) > 0)) {
@@ -787,8 +824,9 @@ sss_status_t sss_util_asn1_rsa_parse_private_allow_invalid_key(const uint8_t *ke
             goto exit;
         }
     }
-    else
+    else {
         bufIndex += taglen;
+    }
 
     /* Get Second  exponent (dQ)*/
     ret = asn_1_parse_tlv(pBuf, &taglen, &bufIndex);
@@ -805,8 +843,9 @@ sss_status_t sss_util_asn1_rsa_parse_private_allow_invalid_key(const uint8_t *ke
                 goto exit;
             }
         }
-        else
+        else {
             *exponent2len = taglen;
+        }
         ENSURE_OR_GO_EXIT(exponent2 != NULL);
         *exponent2 = SSS_MALLOC(*exponent2len);
         if (*exponent2 == NULL) {
@@ -823,8 +862,9 @@ sss_status_t sss_util_asn1_rsa_parse_private_allow_invalid_key(const uint8_t *ke
             goto exit;
         }
     }
-    else
+    else {
         bufIndex += taglen;
+    }
 
     /* Get Coefficient (qinv)*/
     ret = asn_1_parse_tlv(pBuf, &taglen, &bufIndex);
@@ -841,8 +881,9 @@ sss_status_t sss_util_asn1_rsa_parse_private_allow_invalid_key(const uint8_t *ke
                 goto exit;
             }
         }
-        else
+        else {
             *coefficientlen = taglen;
+        }
         ENSURE_OR_GO_EXIT(coefficient != NULL);
         *coefficient = SSS_MALLOC(*coefficientlen);
         if ((*coefficient != NULL) && ((*coefficientlen) > 0)) {
@@ -855,8 +896,9 @@ sss_status_t sss_util_asn1_rsa_parse_private_allow_invalid_key(const uint8_t *ke
             goto exit;
         }
     }
-    else
+    else {
         bufIndex += taglen;
+    }
 
     status = kStatus_SSS_Success;
 exit:
@@ -882,26 +924,31 @@ sss_status_t sss_util_asn1_rsa_parse_public_nomalloc(
     Public Key contains 3 Sequences as header */
     ENSURE_OR_GO_EXIT(bufIndex < keylen);
     ret = asn_1_parse_tlv(pBuf, &taglen, &bufIndex); /* ASN.1 Sequence */
-    if (ret != 0)
+    if (ret != 0) {
         goto exit;
+    }
     ret = asn_1_parse_tlv(pBuf, &taglen, &bufIndex); /* Public Header Nested TLV */
-    if (ret != 0)
+    if (ret != 0) {
         goto exit;
+    }
     bufIndex += taglen;
 
     /* Bit-String + NULL Byte */
     ret = asn_1_parse_tlv(pBuf, &taglen, &bufIndex);
-    if (ret != 0)
+    if (ret != 0) {
         goto exit;
+    }
     bufIndex++;
 
     ret = asn_1_parse_tlv(pBuf, &taglen, &bufIndex); /* Sequence of interger*/
-    if (ret != 0)
+    if (ret != 0) {
         goto exit;
+    }
     /* Get the Modulus*/
     ret = asn_1_parse_tlv(pBuf, &taglen, &bufIndex);
-    if (ret != 0)
+    if (ret != 0) {
         goto exit;
+    }
     ENSURE_OR_GO_EXIT(bufIndex < keylen);
     if (pBuf[bufIndex] == 0x00) {
         if (taglen) {
@@ -912,8 +959,9 @@ sss_status_t sss_util_asn1_rsa_parse_public_nomalloc(
             goto exit;
         }
     }
-    else
+    else {
         temp_modlen = taglen;
+    }
 
     if (*modlen < temp_modlen) {
         LOG_E("modulus overflow");
@@ -968,26 +1016,31 @@ sss_status_t sss_util_asn1_rsa_parse_public_nomalloc_complete_modulus(
     Public Key contains 3 Sequences as header */
     ENSURE_OR_GO_EXIT(bufIndex < keylen);
     ret = asn_1_parse_tlv(pBuf, &taglen, &bufIndex); /* ASN.1 Sequence */
-    if (ret != 0)
+    if (ret != 0) {
         goto exit;
+    }
     ret = asn_1_parse_tlv(pBuf, &taglen, &bufIndex); /* Public Header Nested TLV */
-    if (ret != 0)
+    if (ret != 0) {
         goto exit;
+    }
     bufIndex += taglen;
 
     /* Bit-String + NULL Byte */
     ret = asn_1_parse_tlv(pBuf, &taglen, &bufIndex);
-    if (ret != 0)
+    if (ret != 0) {
         goto exit;
+    }
     bufIndex++;
 
     ret = asn_1_parse_tlv(pBuf, &taglen, &bufIndex); /* Sequence of interger*/
-    if (ret != 0)
+    if (ret != 0) {
         goto exit;
+    }
     /* Get the Modulus*/
     ret = asn_1_parse_tlv(pBuf, &taglen, &bufIndex);
-    if (ret != 0)
+    if (ret != 0) {
         goto exit;
+    }
     ENSURE_OR_GO_EXIT(bufIndex < keylen);
     temp_modlen = taglen;
 
@@ -1038,26 +1091,31 @@ sss_status_t sss_util_asn1_rsa_parse_public(
     Public Key contains 3 Sequences as header */
     ENSURE_OR_GO_EXIT(bufIndex < keylen);
     ret = asn_1_parse_tlv(pBuf, &taglen, &bufIndex); /* ASN.1 Sequence */
-    if (ret != 0)
+    if (ret != 0) {
         goto exit;
+    }
     ret = asn_1_parse_tlv(pBuf, &taglen, &bufIndex); /* Public Header Nested TLV */
-    if (ret != 0)
+    if (ret != 0) {
         goto exit;
+    }
     bufIndex += taglen;
 
     /* Bit-String + NULL Byte */
     ret = asn_1_parse_tlv(pBuf, &taglen, &bufIndex);
-    if (ret != 0)
+    if (ret != 0) {
         goto exit;
+    }
     bufIndex++;
 
     ret = asn_1_parse_tlv(pBuf, &taglen, &bufIndex); /* Sequence of interger*/
-    if (ret != 0)
+    if (ret != 0) {
         goto exit;
+    }
     /* Get the Modulus*/
     ret = asn_1_parse_tlv(pBuf, &taglen, &bufIndex);
-    if (ret != 0)
+    if (ret != 0) {
         goto exit;
+    }
     ENSURE_OR_GO_EXIT(bufIndex < keylen);
     if (pBuf[bufIndex] == 0x00) {
         if (taglen) {
@@ -1068,8 +1126,9 @@ sss_status_t sss_util_asn1_rsa_parse_public(
             goto exit;
         }
     }
-    else
+    else {
         *modlen = taglen;
+    }
     *modulus = SSS_MALLOC(*modlen);
     if ((*modulus != NULL) && ((*modlen) > 0)) {
         ENSURE_OR_GO_EXIT(bufIndex < keylen);
@@ -1143,8 +1202,9 @@ sss_status_t sss_util_asn1_rsa_get_public(
         index += sizeof(grsa4kPubHeader);
     }
 
-    if (intModLEn < 0x7f)
+    if (intModLEn < 0x7f) {
         key[index++] = (uint8_t)intModLEn;
+    }
     else if (intModLEn < 0xFF) {
         key[index++] = 0x81;
         key[index++] = (uint8_t)intModLEn;
@@ -1171,6 +1231,51 @@ exit:
 }
 
 #if SSS_HAVE_ECDAA
+#if SSS_HAVE_SE05X_VER_GTE_07_02
+sss_status_t sss_util_asn1_ecdaa_get_signature(
+    uint8_t *signature, size_t *signatureLen, uint8_t *rawSignature, size_t rawSignatureLen)
+{
+    sss_status_t status = kStatus_SSS_Fail;
+    size_t signAsn1Len, s_len;
+
+    ENSURE_OR_GO_EXIT(signature != NULL);
+    ENSURE_OR_GO_EXIT(signatureLen != NULL);
+    ENSURE_OR_GO_EXIT(rawSignature != NULL);
+
+    s_len = rawSignatureLen;
+    // SEQUENCE (2B) + INTEGER(2B)
+    signAsn1Len = 4 + rawSignatureLen;
+    if (*signatureLen < signAsn1Len) {
+        LOG_E("ECDAA Signature buffer overflow");
+        goto exit;
+    }
+
+    /*
+        Example:
+        30 22                                ; SEQUENCE (34 Bytes)
+            02 20                            ; INTEGER (32 Bytes)
+            |  3d 46 28 7b 8c 6e 8c 8c  26 1c 1b 88 f2 73 b0 9a
+            |  32 a6 cf 28 09 fd 6e 30  d5 a7 9f 26 37 00 8f 54
+    */
+    *signatureLen = signAsn1Len;
+    if (rawSignatureLen == 0x20) {                     // TPM_ECC_BN_P256
+        signature[0] = 0x30;                           //SEQUENCE
+        signature[1] = (uint8_t)(rawSignatureLen + 2); //INTEGER(2B)
+        signature[2] = 0x02;                           //INTEGER
+        signature[3] = (uint8_t)s_len;                 //lenght of s
+        memcpy(&signature[4], &rawSignature[0], s_len);
+    }
+    else {
+        LOG_E("Invalid ECDAA Signature data");
+        goto exit;
+    }
+
+    status = kStatus_SSS_Success;
+exit:
+    return status;
+}
+
+#else  // Applet 06_00 or lower
 sss_status_t sss_util_asn1_ecdaa_get_signature(
     uint8_t *signature, size_t *signatureLen, uint8_t *rawSignature, size_t rawSignatureLen)
 {
@@ -1220,6 +1325,7 @@ sss_status_t sss_util_asn1_ecdaa_get_signature(
 exit:
     return status;
 }
+#endif // SSS_HAVE_SE05X_VER_GTE_07_02
 #endif
 
 #if 0
@@ -1323,15 +1429,18 @@ sss_status_t sss_util_asn1_get_oid_from_header(uint8_t *input, size_t inLen, uin
                 i      = i + 2;
             }
 
-            if (taglen > inLen)
+            if (taglen > inLen) {
                 goto exit;
+            }
 
-            if (tag == ASN_TAG_OBJ_IDF)
+            if (tag == ASN_TAG_OBJ_IDF) {
                 objectIdCnt++;
+            }
 
             if (objectIdCnt == 2) {
-                if (taglen <= 0)
+                if (taglen <= 0) {
                     goto exit;
+                }
                 ENSURE_OR_GO_EXIT(i < inLen);
                 ENSURE_OR_GO_EXIT(outBufindex < (*outLen));
                 output[outBufindex++] = input[i] / 40;
@@ -1357,8 +1466,9 @@ sss_status_t sss_util_asn1_get_oid_from_header(uint8_t *input, size_t inLen, uin
             else {
                 if (tag == 0x06) {
                     i = i + taglen;
-                    if (i > inLen)
+                    if (i > inLen) {
                         goto exit;
+                    }
                 }
             }
         }
@@ -1429,8 +1539,9 @@ sss_status_t sss_util_pkcs8_asn1_get_ec_public_key_index(
                 i      = i + 2;
             }
 
-            if (taglen > inLen)
+            if (taglen > inLen) {
                 goto exit;
+            }
 
             value_index = (uint8_t)i;
 
@@ -1500,8 +1611,9 @@ sss_status_t sss_util_pkcs8_asn1_get_ec_pair_key_index(const uint8_t *input,
                 i      = i + 2;
             }
 
-            if (taglen > inLen)
+            if (taglen > inLen) {
                 goto exit;
+            }
 
             if (tag == ASN_TAG_OCTETSTRING) {
                 if (i + taglen == inLen) {
@@ -1580,8 +1692,9 @@ sss_status_t sss_util_rfc8410_asn1_get_ec_pair_key_index(const uint8_t *input,
                 i      = i + 2;
             }
 
-            if (taglen > inLen)
+            if (taglen > inLen) {
                 goto exit;
+            }
 
             if (tag == ASN_TAG_OCTETSTRING) {
                 // With RFC8410, the private key is an Octet String packed inside an Octet String
@@ -1632,7 +1745,7 @@ sss_status_t sss_util_openssl_read_pkcs12(
 {
     sss_status_t retval = kStatus_SSS_Success;
 
-#if SSS_HAVE_OPENSSL
+#if SSS_HAVE_HOSTCRYPTO_OPENSSL
     int status = 0;
     FILE *pkcs12_cert_file;
     PKCS12 *p12_cert;
@@ -1686,12 +1799,12 @@ sss_status_t sss_util_openssl_write_pkcs12(const char *pkcs12_cert,
 {
     sss_status_t retval = kStatus_SSS_Success;
 
-#if SSS_HAVE_OPENSSL
+#if SSS_HAVE_HOSTCRYPTO_OPENSSL
     FILE *pkcs12_file;
     X509 *x509_cert = 0;
     EVP_PKEY *p_key = 0;
     PKCS12 *p12;
-    BIO *pem_key_bio = BIO_new(BIO_s_mem());
+    BIO *pem_key_bio  = BIO_new(BIO_s_mem());
     BIO *pem_cert_bio = BIO_new(BIO_s_mem());
 
     ENSURE_OR_GO_EXIT(pkcs12_cert != NULL);
@@ -1748,4 +1861,3 @@ exit:
 
     return retval;
 }
-

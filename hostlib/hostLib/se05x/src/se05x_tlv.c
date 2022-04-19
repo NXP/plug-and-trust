@@ -19,7 +19,7 @@
 #define VERBOSE_APDU_LOGS 0
 #endif
 
-#if SSS_HAVE_SE05X
+#if SSS_HAVE_APPLET_SE05X_IOT
 #define SE05X_TLV_BUF_SIZE_CMD SE05X_MAX_BUF_SIZE_CMD
 #define SE05X_TLV_BUF_SIZE_RSP SE05X_MAX_BUF_SIZE_RSP
 #else
@@ -31,8 +31,9 @@ int tlvSet_U8(uint8_t **buf, size_t *bufLen, SE05x_TAG_t tag, uint8_t value)
 {
     uint8_t *pBuf            = *buf;
     const size_t size_of_tlv = 1 + 1 + 1;
-    if (((*bufLen) + size_of_tlv) > SE05X_TLV_BUF_SIZE_CMD)
+    if (((*bufLen) + size_of_tlv) > SE05X_TLV_BUF_SIZE_CMD) {
         return 1;
+    }
     *pBuf++ = (uint8_t)tag;
     *pBuf++ = 1;
     *pBuf++ = value;
@@ -43,18 +44,21 @@ int tlvSet_U8(uint8_t **buf, size_t *bufLen, SE05x_TAG_t tag, uint8_t value)
 
 int tlvSet_U16Optional(uint8_t **buf, size_t *bufLen, SE05x_TAG_t tag, uint16_t value)
 {
-    if (value == 0)
+    if (value == 0) {
         return 0;
-    else
+    }
+    else {
         return tlvSet_U16(buf, bufLen, tag, value);
+    }
 }
 
 int tlvSet_U16(uint8_t **buf, size_t *bufLen, SE05x_TAG_t tag, uint16_t value)
 {
     const size_t size_of_tlv = 1 + 1 + 2;
     uint8_t *pBuf            = *buf;
-    if (((*bufLen) + size_of_tlv) > SE05X_TLV_BUF_SIZE_CMD)
+    if (((*bufLen) + size_of_tlv) > SE05X_TLV_BUF_SIZE_CMD) {
         return 1;
+    }
     *pBuf++ = (uint8_t)tag;
     *pBuf++ = 2;
     *pBuf++ = (uint8_t)((value >> 1 * 8) & 0xFF);
@@ -68,8 +72,9 @@ int tlvSet_U32(uint8_t **buf, size_t *bufLen, SE05x_TAG_t tag, uint32_t value)
 {
     const size_t size_of_tlv = 1 + 1 + 4;
     uint8_t *pBuf            = *buf;
-    if (((*bufLen) + size_of_tlv) > SE05X_TLV_BUF_SIZE_CMD)
+    if (((*bufLen) + size_of_tlv) > SE05X_TLV_BUF_SIZE_CMD) {
         return 1;
+    }
     *pBuf++ = (uint8_t)tag;
     *pBuf++ = 4;
     *pBuf++ = (uint8_t)((value >> 3 * 8) & 0xFF);
@@ -87,8 +92,9 @@ int tlvSet_U64_size(uint8_t **buf, size_t *bufLen, SE05x_TAG_t tag, uint64_t val
     pos                      = (uint8_t)size;
     const size_t size_of_tlv = 1 + 1 + size;
     uint8_t *pBuf            = *buf;
-    if (((*bufLen) + size_of_tlv) > SE05X_TLV_BUF_SIZE_CMD)
+    if (((*bufLen) + size_of_tlv) > SE05X_TLV_BUF_SIZE_CMD) {
         return 1;
+    }
     *pBuf++ = (uint8_t)tag;
     *pBuf++ = pos;
     pos--;
@@ -123,17 +129,20 @@ int tlvSet_Se05xPolicy(const char *description, uint8_t **buf, size_t *bufLen, S
 int tlvSet_ECCurve(uint8_t **buf, size_t *bufLen, SE05x_TAG_t tag, SE05x_ECCurve_t value)
 {
     int retVal = 0;
-    if (value != kSE05x_ECCurve_NA)
+    if (value != kSE05x_ECCurve_NA) {
         retVal = tlvSet_U8(buf, bufLen, tag, (uint8_t)value);
+    }
     return retVal;
 }
 
 int tlvSet_u8bufOptional(uint8_t **buf, size_t *bufLen, SE05x_TAG_t tag, const uint8_t *cmd, size_t cmdLen)
 {
-    if (cmdLen == 0)
+    if (cmdLen == 0) {
         return 0;
-    else
+    }
+    else {
         return tlvSet_u8buf(buf, bufLen, tag, cmd, cmdLen);
+    }
 }
 
 int tlvSet_u8bufOptional_ByteShift(uint8_t **buf, size_t *bufLen, SE05x_TAG_t tag, const uint8_t *cmd, size_t cmdLen)
@@ -234,11 +243,13 @@ int tlvGet_U8(uint8_t *buf, size_t *pBufIndex, const size_t bufLen, SE05x_TAG_t 
         goto cleanup;
     }
 
-    if (got_tag != tag)
+    if (got_tag != tag) {
         goto cleanup;
+    }
     rspLen = *pBuf++;
-    if (rspLen > 1)
+    if (rspLen > 1) {
         goto cleanup;
+    }
     *pRsp = *pBuf;
     *pBufIndex += (1 + 1 + (rspLen));
     retVal = 0;
@@ -351,10 +362,12 @@ int tlvGet_u8buf(uint8_t *buf, size_t *pBufIndex, const size_t bufLen, SE05x_TAG
         goto cleanup;
     }
 
-    if (extendedLen > *pRspLen)
+    if (extendedLen > *pRspLen) {
         goto cleanup;
-    if (extendedLen > bufLen)
+    }
+    if (extendedLen > bufLen) {
         goto cleanup;
+    }
 
     *pRspLen = extendedLen;
     *pBufIndex += extendedLen;
@@ -373,8 +386,8 @@ cleanup:
 
 int tlvGet_ValueIndex(uint8_t *buf, size_t *pBufIndex, const size_t bufLen, SE05x_TAG_t tag)
 {
-    int retVal = 1;
-    uint8_t *pBuf = buf + (*pBufIndex);
+    int retVal      = 1;
+    uint8_t *pBuf   = buf + (*pBufIndex);
     uint8_t got_tag = *pBuf++;
     size_t extendedLen;
     size_t rspLen;
@@ -405,8 +418,9 @@ int tlvGet_ValueIndex(uint8_t *buf, size_t *pBufIndex, const size_t bufLen, SE05
         goto cleanup;
     }
 
-    if (extendedLen > bufLen)
+    if (extendedLen > bufLen) {
         goto cleanup;
+    }
 
     retVal = 0;
 cleanup:
@@ -415,6 +429,10 @@ cleanup:
 
 int tlvGet_TimeStamp(uint8_t *buf, size_t *pBufIndex, const size_t bufLen, SE05x_TAG_t tag, SE05x_TimeStamp_t *pTs)
 {
+    int retVal = 1;
+    if (pTs == NULL) {
+        return retVal;
+    }
     size_t rspBufSize = sizeof(pTs->ts);
     return tlvGet_u8buf(buf, pBufIndex, bufLen, tag, pTs->ts, &rspBufSize);
 }
@@ -521,7 +539,7 @@ smStatus_t DoAPDUTxRx(
     return apduStatus;
 }
 
-#if SSS_HAVE_SE05X
+#if SSS_HAVE_APPLET_SE05X_IOT
 int tlvSet_u8buf_I2CM(uint8_t **buf, size_t *bufLen, SE05x_I2CM_TAG_t tag, const uint8_t *cmd, size_t cmdLen)
 {
     /* if < 0x7F

@@ -17,7 +17,7 @@ extern "C" {
 #include "fsl_sss_ftr_default.h"
 #endif
 
-#if SSS_HAVE_OPENSSL
+#if SSS_HAVE_HOSTCRYPTO_OPENSSL
 #include <fsl_sss_openssl_types.h>
 
 /* ************************************************************************** */
@@ -334,6 +334,17 @@ sss_status_t sss_openssl_cipher_one_go(sss_openssl_symmetric_t *context,
     uint8_t *destData,
     size_t dataLen);
 
+/** @copydoc sss_cipher_one_go_v2
+ *
+ */
+sss_status_t sss_openssl_cipher_one_go_v2(sss_openssl_symmetric_t *context,
+    uint8_t *iv,
+    size_t ivLen,
+    const uint8_t *srcData,
+    const size_t srcLen,
+    uint8_t *destData,
+    size_t *pDataLen);
+
 /** @copydoc sss_cipher_init
  *
  */
@@ -623,6 +634,8 @@ sss_status_t sss_openssl_rng_context_free(sss_openssl_rng_context_t *context);
             sss_openssl_symmetric_context_init(((sss_openssl_symmetric_t * ) context),((sss_openssl_session_t * ) session),((sss_openssl_object_t * ) keyObject),(algorithm),(mode))
 #       define sss_cipher_one_go(context,iv,ivLen,srcData,destData,dataLen) \
             sss_openssl_cipher_one_go(((sss_openssl_symmetric_t * ) context),(iv),(ivLen),(srcData),(destData),(dataLen))
+#       define sss_cipher_one_go_v2(context,iv,ivLen,srcData,srcLen,destData,pDataLen) \
+            sss_openssl_cipher_one_go_v2(((sss_openssl_symmetric_t * ) context),(iv),(ivLen),(srcData),(srcLen),(destData),(pDataLen))
 #       define sss_cipher_init(context,iv,ivLen) \
             sss_openssl_cipher_init(((sss_openssl_symmetric_t * ) context),(iv),(ivLen))
 #       define sss_cipher_update(context,srcData,srcLen,destData,destLen) \
@@ -682,7 +695,7 @@ sss_status_t sss_openssl_rng_context_free(sss_openssl_rng_context_t *context);
 #       define sss_rng_context_free(context) \
             sss_openssl_rng_context_free(((sss_openssl_rng_context_t * ) context))
 #   endif /* (SSS_HAVE_SSS == 1) */
-#   if (SSS_HAVE_MBEDTLS == 0)
+#   if (SSS_HAVE_HOSTCRYPTO_MBEDTLS == 0)
         /* Host Call : session */
 #       define sss_host_session_create(session,subsystem,application_id,connection_type,connectionData) \
             sss_openssl_session_create(((sss_openssl_session_t * ) session),(subsystem),(application_id),(connection_type),(connectionData))
@@ -771,6 +784,8 @@ sss_status_t sss_openssl_rng_context_free(sss_openssl_rng_context_t *context);
             sss_openssl_symmetric_context_init(((sss_openssl_symmetric_t * ) context),((sss_openssl_session_t * ) session),((sss_openssl_object_t * ) keyObject),(algorithm),(mode))
 #       define sss_host_cipher_one_go(context,iv,ivLen,srcData,destData,dataLen) \
             sss_openssl_cipher_one_go(((sss_openssl_symmetric_t * ) context),(iv),(ivLen),(srcData),(destData),(dataLen))
+#       define sss_host_cipher_one_go_v2(context,iv,ivLen,srcData,srcLen,destData,pDataLen) \
+            sss_openssl_cipher_one_go_v2(((sss_openssl_symmetric_t * ) context),(iv),(ivLen),(srcData),(srcLen),(destData),(pDataLen))
 #       define sss_host_cipher_init(context,iv,ivLen) \
             sss_openssl_cipher_init(((sss_openssl_symmetric_t * ) context),(iv),(ivLen))
 #       define sss_host_cipher_update(context,srcData,srcLen,destData,destLen) \
@@ -831,7 +846,7 @@ sss_status_t sss_openssl_rng_context_free(sss_openssl_rng_context_t *context);
             sss_openssl_rng_context_free(((sss_openssl_rng_context_t * ) context))
 #   endif /* (SSS_HAVE_SSS == 1) */
 /* clang-format on */
-#endif /* SSS_HAVE_OPENSSL */
+#endif /* SSS_HAVE_HOSTCRYPTO_OPENSSL */
 #ifdef __cplusplus
 } // extern "C"
 #endif /* __cplusplus */

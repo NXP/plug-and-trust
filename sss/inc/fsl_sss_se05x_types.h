@@ -342,10 +342,12 @@ typedef struct
 /** Attestation data */
 typedef struct
 {
+#if !SSS_HAVE_SE05X_VER_GTE_07_02
     /** Random used during attestation */
     uint8_t outrandom[16];
     /** length of outrandom */
     size_t outrandomLen;
+#endif
     /** time stamp */
     SE05x_TimeStamp_t timeStamp;
     /** Length of timeStamp */
@@ -358,9 +360,19 @@ typedef struct
     uint8_t attribute[MAX_POLICY_BUFFER_SIZE + 15];
     /** Length of Attribute */
     size_t attributeLen;
+#if SSS_HAVE_SE05X_VER_GTE_07_02
+    /** capdu for attestation */
+    uint8_t cmd[100];
+    /** capdu Length of attestation */
+    size_t cmdLen;
+    /** object size */
+    uint8_t objSize[2];
+    /** object size Length */
+    size_t objSizeLen;
+#endif
     /** Signature for attestation */
     uint8_t signature[512];
-    /** Lenght of signature */
+    /** Length of signature */
     size_t signatureLen;
 } sss_se05x_attst_comp_data_t;
 
@@ -594,20 +606,19 @@ smStatus_t Se05x_i2c_master_attst_txn(sss_session_t *sess,
     uint8_t *random_attst,
     size_t random_attstLen,
     SE05x_AttestationAlgo_t attst_algo,
-    SE05x_TimeStamp_t *ptimeStamp,
-    size_t *timeStampLen,
-    uint8_t *freshness,
-    size_t *pfreshnessLen,
-    uint8_t *chipId,
-    size_t *pchipIdLen,
-    uint8_t *signature,
-    size_t *psignatureLen,
+    sss_se05x_attst_comp_data_t *pattest_data,
+    uint8_t *rspbuffer,
+    size_t *rspbufferLen,
     uint8_t noOftags);
 
 /*!
  *@}
  */ /* end of se050_i2cm */
 
+/**
+ * Returns the applet version compiled by MW
+ */
+uint32_t se05x_GetAppletVersion();
 #endif /* SSS_HAVE_APPLET_SE05X_IOT */
 
 #endif /* SSS_APIS_INC_FSL_SSS_SE05X_TYPES_H_ */

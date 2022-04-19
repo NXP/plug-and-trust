@@ -71,6 +71,11 @@ ESESTATUS phNxpEse_init(void *conn_ctx, phNxpEse_initParams initParams, phNxpEse
     {
         protoInitParam.interfaceReset = TRUE;
     }
+    else if (ESE_MODE_RESUME == initParams.initMode)
+    {
+        /* To skip GetAtr command */
+        protoInitParam.interfaceReset = FALSE;
+    }
     else
     {
         protoInitParam.interfaceReset = FALSE;
@@ -170,8 +175,9 @@ ESESTATUS phNxpEse_Transceive(void* conn_ctx, phNxpEse_data *pCmd, phNxpEse_data
     bool_t bStatus = FALSE;
     phNxpEse_Context_t* nxpese_ctxt = (conn_ctx == NULL) ? &gnxpese_ctxt : (phNxpEse_Context_t*)conn_ctx;
 
-    if((NULL == pCmd) || (NULL == pRsp))
+    if((NULL == pCmd) || (NULL == pRsp)) {
         return ESESTATUS_INVALID_PARAMETER;
+    }
 
     if ((pCmd->len == 0) || pCmd->p_data == NULL )
     {
@@ -253,8 +259,9 @@ ESESTATUS phNxpEse_EndOfApdu(void* conn_ctx)
     ESESTATUS status = ESESTATUS_SUCCESS;
     phNxpEse_Context_t* nxpese_ctxt = (conn_ctx == NULL) ? &gnxpese_ctxt : (phNxpEse_Context_t*)conn_ctx;
     bool_t bStatus = phNxpEseProto7816_Close((void*)nxpese_ctxt);
-    if(!bStatus)
+    if(!bStatus) {
         status = ESESTATUS_FAILED;
+    }
     return status;
 }
 
@@ -344,7 +351,7 @@ ESESTATUS phNxpEse_close(void* conn_ctx)
     phNxpEse_memset (nxpese_ctxt, 0x00, sizeof (*nxpese_ctxt));
     LOG_D("phNxpEse_close - ESE Context deinit completed");
     /* Return success always */
-    if(conn_ctx != NULL){
+    if((conn_ctx != NULL) &&(conn_ctx != &gnxpese_ctxt)){
         /*free the memory allocated during phNxpEse_open*/
         phNxpEse_free(conn_ctx);
     }

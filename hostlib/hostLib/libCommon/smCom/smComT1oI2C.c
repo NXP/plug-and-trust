@@ -82,6 +82,24 @@ U16 smComT1oI2C_Init(void **conn_ctx, const char *pConnString)
     return SMCOM_OK;
 }
 
+U16 smComT1oI2C_Resume(void **conn_ctx, const char *pConnString)
+{
+    ESESTATUS ret;
+    phNxpEse_initParams initParams;
+    initParams.initMode = ESE_MODE_RESUME;
+
+    if(conn_ctx != NULL) {
+        *conn_ctx = NULL;
+    }
+    ret = phNxpEse_open(conn_ctx, initParams, pConnString);
+    if (ret != ESESTATUS_SUCCESS)
+    {
+        LOG_E(" Failed to create physical connection with ESE ");
+        return SMCOM_COM_FAILED;
+    }
+    return SMCOM_OK;
+}
+
 U16 smComT1oI2C_Open(void *conn_ctx, U8 mode, U8 seqCnt, U8 *T1oI2Catr, U16 *T1oI2CatrLen)
 {
     ESESTATUS ret;

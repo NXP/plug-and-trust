@@ -18,11 +18,11 @@
 
 #include <fsl_sss_keyid_map.h>
 
-#if SSS_HAVE_MBEDTLS
+#if SSS_HAVE_HOSTCRYPTO_MBEDTLS
 #include <fsl_sss_mbedtls_apis.h>
 #endif
 
-#if SSS_HAVE_OPENSSL
+#if SSS_HAVE_HOSTCRYPTO_OPENSSL
 #include <fsl_sss_openssl_types.h>
 #endif
 
@@ -34,7 +34,7 @@
 #include "nxLog_sss.h"
 #include "sm_types.h"
 
-#if (defined(MBEDTLS_FS_IO) && !AX_EMBEDDED) || SSS_HAVE_OPENSSL
+#if (defined(MBEDTLS_FS_IO) && !AX_EMBEDDED) || SSS_HAVE_HOSTCRYPTO_OPENSSL
 
 /* ************************************************************************** */
 /* Local Defines                                                              */
@@ -155,7 +155,7 @@ sss_status_t ks_mbedtls_fat_update(sss_mbedtls_key_store_t *keyStore)
 }
 #endif
 
-#if SSS_HAVE_OPENSSL
+#if SSS_HAVE_HOSTCRYPTO_OPENSSL
 sss_status_t ks_openssl_fat_update(sss_openssl_key_store_t *keyStore)
 {
     return ks_sw_fat_update(keyStore->keystore_shadow, keyStore->session->szRootPath);
@@ -229,7 +229,7 @@ sss_status_t ks_mbedtls_load_key(sss_mbedtls_object_t *sss_key, keyStoreTable_t 
         else {
             /* Buffer to hold max RSA Key*/
             uint8_t *keyBuf = NULL;
-            int signed_val = 0;
+            int signed_val  = 0;
             fseek(fp, 0, SEEK_END);
             signed_val = ftell(fp);
             if (signed_val < 0) {
@@ -241,6 +241,10 @@ sss_status_t ks_mbedtls_load_key(sss_mbedtls_object_t *sss_key, keyStoreTable_t 
             size = (size_t)signed_val;
             fseek(fp, 0, SEEK_SET);
             keyBuf = SSS_CALLOC(1, size);
+            if (keyBuf == NULL) {
+                fclose(fp);
+                return kStatus_SSS_Fail;
+            }
             signed_val = (int)fread(keyBuf, size, 1, fp);
             if (signed_val < 0) {
                 LOG_E("fread faild");

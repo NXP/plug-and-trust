@@ -136,7 +136,7 @@ static int sss_rsakey_verify(void *ctx,
     }
     sssObject = (sss_object_t *)pax_ctx->pSSSObject;
 
-    LOG_D("%s: Verify using key '0x%08lX'", __FUNCTION__, pax_ctx->pSSSObject->keyId);
+    LOG_I("%s: Verify using key '0x%08lX'", __FUNCTION__, pax_ctx->pSSSObject->keyId);
 
     status = sss_asymmetric_context_init(
         &asymVerifyCtx, sssObject->keyStore->session, sssObject, algorithm, kMode_SSS_Verify);
@@ -200,7 +200,7 @@ static int sss_rsakey_sign(void *ctx,
         return 1;
     }
 
-    LOG_D("%s: Signing using key '0x%08lX'", __FUNCTION__, pax_ctx->pSSSObject->keyId);
+    LOG_I("%s: Signing using key '0x%08lX'", __FUNCTION__, pax_ctx->pSSSObject->keyId);
 
     status = sss_asymmetric_sign_digest(&asymVerifyCtx, (uint8_t *)hash, hash_len, sig, &u16_sig_len);
     if (status != kStatus_SSS_Success) {

@@ -20,6 +20,7 @@
 #endif
 
 #if SSS_HAVE_HOSTCRYPTO_USER
+#include <../src/user/crypto/aes.h>
 
 /**
  * @addtogroup sss_sw_host_impl
@@ -30,7 +31,7 @@
 /* Defines                                                                    */
 /* ************************************************************************** */
 
-#define SSS_SUBSYSTEM_TYPE_IS_HOST(subsystem) (subsystem == kType_SSS_mbedTLS)
+#define SSS_SUBSYSTEM_TYPE_IS_HOST(subsystem) (subsystem == kType_SSS_Software)
 
 #define SSS_SESSION_TYPE_IS_HOST(session) (session && SSS_SUBSYSTEM_TYPE_IS_HOST(session->subsystem))
 
@@ -73,6 +74,11 @@ typedef struct _sss_user_impl_object
     /*! Application specific key identifier. The keyId is kept in the key  store
      * along with the key data and other properties. */
     uint32_t keyId;
+
+    /*! Implementation specific part */
+    void *contents;
+    uint8_t key[16]; //Todo testing
+    size_t contents_size;
 } sss_user_impl_object_t;
 
 typedef struct _sss_user_impl_derive_key
@@ -100,6 +106,10 @@ typedef struct _sss_user_impl_symmetric
     sss_user_impl_object_t *keyObject;
     sss_algorithm_t algorithm;
     sss_mode_t mode;
+
+    //aes_128_context_t *pAesctx;
+    aes_ctx_t *pAesctx;
+
 } sss_user_impl_symmetric_t;
 
 typedef struct _sss_user_impl_mac
@@ -109,6 +119,13 @@ typedef struct _sss_user_impl_mac
     sss_user_impl_object_t *keyObject;
     sss_algorithm_t algorithm; /*!  */
     sss_mode_t mode;           /*!  */
+
+    /*! Implementation specific part */
+    aes_ctx_t *pAesmacctx;
+    uint8_t calc_mac[16];
+    uint8_t cache_data[16];
+    size_t cache_dataLen;
+    //size_t offset;
 } sss_user_impl_mac_t;
 
 typedef struct _sss_user_impl_digest

@@ -34,9 +34,13 @@
 #define EX_SSS_BOOT_SSS_SOCKET_PORTNUMBER_DEFAULT 8050
 #define EX_SSS_BOOT_SSS_SOCKET_PORTSZ_DEFAULT "8050"
 #define EX_SSS_BOOT_SSS_PCSC_READER_DEFAULT "NXP SE050C v03.01.00 0"
+#ifdef ACCESS_MGR_UNIX_SOCKETS
+#define EX_SSS_BOOT_SSS_SOCKETPORT_DEFAULT "/var/run/am"
+#else
 #define EX_SSS_BOOT_SSS_SOCKETPORT_DEFAULT  \
     EX_SSS_BOOT_SSS_SOCKET_HOSTNAME_DEFAULT \
     ":" EX_SSS_BOOT_SSS_SOCKET_PORTSZ_DEFAULT
+#endif
 
 /* *****************************************************************************************************************
  * Types/Structure Declarations

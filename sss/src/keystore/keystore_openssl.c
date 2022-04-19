@@ -17,7 +17,7 @@
 #include <string.h>
 
 #include "nxLog_sss.h"
-#if SSS_HAVE_OPENSSL
+#if SSS_HAVE_HOSTCRYPTO_OPENSSL
 #include <openssl/evp.h>
 
 /* ************************************************************************** */
@@ -101,17 +101,22 @@ sss_status_t ks_openssl_load_key(sss_openssl_object_t *sss_key, keyStoreTable_t 
                 switch (sss_key->cipherType) {
                 case kSSS_CipherType_RSA:
                 case kSSS_CipherType_RSA_CRT: {
-                    if (sss_key->contents != NULL)
+                    if (sss_key->contents != NULL) {
                         SSS_FREE((void *)sss_key->contents);
-                    if (sss_key->objectType == kSSS_KeyPart_Public)
+                    }
+                    if (sss_key->objectType == kSSS_KeyPart_Public) {
                         pkey = d2i_PublicKey(EVP_PKEY_RSA, NULL, &buf_ptr, (long)size);
-                    else
+                    }
+                    else {
                         pkey = d2i_AutoPrivateKey(NULL, &buf_ptr, (long)size);
+                    }
 
-                    if (pkey == NULL)
+                    if (pkey == NULL) {
                         retval = kStatus_SSS_Fail;
-                    else
+                    }
+                    else {
                         sss_key->contents = (void *)pkey;
+                    }
 
                     sss_key->keyBitLen = EVP_PKEY_bits(pkey);
                 } break;
@@ -120,17 +125,22 @@ sss_status_t ks_openssl_load_key(sss_openssl_object_t *sss_key, keyStoreTable_t 
                 case kSSS_CipherType_EC_BRAINPOOL:
                 case kSSS_CipherType_EC_MONTGOMERY:
                 case kSSS_CipherType_EC_TWISTED_ED: {
-                    if (sss_key->contents != NULL)
+                    if (sss_key->contents != NULL) {
                         EVP_PKEY_free((EVP_PKEY *)sss_key->contents);
-                    if (sss_key->objectType == kSSS_KeyPart_Public)
+                    }
+                    if (sss_key->objectType == kSSS_KeyPart_Public) {
                         pkey = d2i_PublicKey(EVP_PKEY_EC, NULL, &buf_ptr, (long)size);
-                    else
+                    }
+                    else {
                         pkey = d2i_AutoPrivateKey(NULL, &buf_ptr, (long)size);
+                    }
 
-                    if (pkey == NULL)
+                    if (pkey == NULL) {
                         retval = kStatus_SSS_Fail;
-                    else
+                    }
+                    else {
                         sss_key->contents = (void *)pkey;
+                    }
                     sss_key->keyBitLen = EVP_PKEY_bits(pkey);
                 } break;
                 default: {
@@ -168,22 +178,26 @@ sss_status_t ks_openssl_store_key(const sss_openssl_object_t *sss_key)
         case kSSS_KeyPart_Pair:
         case kSSS_KeyPart_Private:
             len = i2d_PrivateKey(pk, NULL);
-            if (len < 0)
+            if (len < 0) {
                 goto exit;
+            }
             //Buffer = (unsigned char *)malloc(len + 1);
             len = i2d_PrivateKey(pk, &Buffer);
-            if (len < 0)
+            if (len < 0) {
                 goto exit;
+            }
             break;
         case kSSS_KeyPart_Public:
             len = i2d_PublicKey(pk, NULL);
-            if (len < 0)
+            if (len < 0) {
                 goto exit;
+            }
 
             //Buffer = (unsigned char *)malloc(len + 1);
             len = i2d_PublicKey(pk, &Buffer);
-            if (len < 0)
+            if (len < 0) {
                 goto exit;
+            }
             break;
         }
         if (len > 0 && retval != kStatus_SSS_Success) {
@@ -192,10 +206,12 @@ sss_status_t ks_openssl_store_key(const sss_openssl_object_t *sss_key)
         }
     }
 exit:
-    if (fp != NULL)
+    if (fp != NULL) {
         fclose(fp);
-    if (Buffer != NULL)
+    }
+    if (Buffer != NULL) {
         SSS_FREE(Buffer);
+    }
     return retval;
 }
 

@@ -76,6 +76,7 @@ typedef struct Se05xSession
     uint8_t value[8];
     uint8_t hasSession : 1;
     SE_AuthType_t authType;
+    uint32_t auth_id;
     /** Meta Funciton
      *
      * Internall first calls fp_Transform
@@ -140,7 +141,7 @@ typedef struct Se05xSession
 
     struct _sss_se05x_tunnel_context * pChannelCtx;
 #endif
-#if SSS_HAVE_SE
+#if SSS_HAVE_APPLET
     smStatus_t(*fp_Transmit)(
         SE_AuthType_t currAuth,
         const tlvHeader_t *hdr,

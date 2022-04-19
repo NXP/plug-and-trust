@@ -33,8 +33,8 @@
  *  This file is part of Mbed TLS (https://tls.mbed.org)
  */
 
-#ifndef SSS_ECP_ALT_H_INCLUDED
-#define SSS_ECP_ALT_H_INCLUDED
+#ifndef MBEDTLS_ECP_ALT_H
+#define MBEDTLS_ECP_ALT_H
 
 /* clang-format off */
 
@@ -44,10 +44,10 @@ extern "C" {
 
 #if defined(MBEDTLS_ECP_ALT)
 
-#if SSS_HAVE_ALT_SSS
+#if SSS_HAVE_MBEDTLS_ALT_SSS
 #include <fsl_sss_api.h>
 #endif
-#if SSS_HAVE_ALT_A71CH
+#if SSS_HAVE_MBEDTLS_ALT_A71CH
 #include "HLSETypes.h"
 #endif
 
@@ -87,7 +87,7 @@ extern "C" {
  * reduction. It must return 0 on success and non-zero on failure.
  *
  */
-typedef struct
+typedef struct mbedtls_ecp_group
 {
     mbedtls_ecp_group_id id;    /*!< An internal group identifier. */
     mbedtls_mpi P;              /*!< The prime modulus of the base field. */
@@ -110,11 +110,11 @@ typedef struct
     mbedtls_ecp_point *T;       /*!< Pre-computed points for ecp_mul_comb(). */
     size_t T_size;              /*!< The number of pre-computed points. */
 
-#if SSS_HAVE_ALT_A71CH
+#if SSS_HAVE_MBEDTLS_ALT_A71CH
     /** Reference to object mapped between HLSE Layer of A71CH Host library         */
     HLSE_OBJECT_HANDLE hlse_handle;
 #endif
-#if SSS_HAVE_ALT_SSS
+#if SSS_HAVE_MBEDTLS_ALT_SSS
     /** Reference to object mapped between SSS Layer        */
     sss_object_t* pSSSObject;
     sss_key_store_t* hostKs;
@@ -180,6 +180,10 @@ mbedtls_ecp_group;
 
 /* \} name SECTION: Module settings */
 
+int ecp_add( const mbedtls_ecp_group *grp, mbedtls_ecp_point *R,
+             const mbedtls_ecp_point *P,
+             const mbedtls_ecp_point *Q );
+
 #endif /* MBEDTLS_ECP_ALT */
 
 #ifdef __cplusplus
@@ -187,5 +191,4 @@ mbedtls_ecp_group;
 #endif
 
 /* clang-format on */
-
-#endif /* SSS_ECP_ALT_H_INCLUDED */
+#endif /* ecp_alt.h */

@@ -142,7 +142,7 @@ void axReset_PowerUp()
     close(fd);
 }
 
-#if SSS_HAVE_SE05X || SSS_HAVE_LOOPBACK
+#if SSS_HAVE_APPLET_SE05X_IOT || SSS_HAVE_APPLET_LOOPBACK
 
 void se05x_ic_reset()
 {

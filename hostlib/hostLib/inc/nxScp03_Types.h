@@ -20,10 +20,10 @@
 #include "fsl_sss_ftr_default.h"
 #endif
 
-#if SSS_HAVE_MBEDTLS
+#if SSS_HAVE_HOSTCRYPTO_MBEDTLS
 #include <fsl_sss_mbedtls_apis.h>
 #endif
-#if SSS_HAVE_OPENSSL
+#if SSS_HAVE_HOSTCRYPTO_OPENSSL
 #include <fsl_sss_openssl_apis.h>
 #endif
 #if SSS_HAVE_HOSTCRYPTO_USER
@@ -246,6 +246,9 @@ typedef struct
 
     /** 12C address on embedded devices. */
     U32 i2cAddress;
+
+    /** Set to 1 if we should resume a session already open with SE */
+    uint8_t sessionResume;
 
     /** If we need to refresh session, SE050 specific */
     uint8_t refresh_session : 1;

@@ -35,7 +35,7 @@ static void ReserveLc(apdu_t * pApdu);
 static void SetLc(apdu_t * pApdu, U16 lc);
 static void AddLe(apdu_t * pApdu, U16 le);
 
-#if SSS_HAVE_A71CH_SIM
+#if SSS_HAVE_APPLET_A71CH_SIM
 /* Send session ID in trans-receive */
 static U8 session_Tlv[7];
 static U8 gEnableEnc = 0;
@@ -129,7 +129,7 @@ exit:
     return ret;
 }
 
-#if SSS_HAVE_A71CH_SIM
+#if SSS_HAVE_APPLET_A71CH_SIM
 /**
  * Creates session TLV from session ID. Session ID is retrieved as response to auth command.
  * \param[in] sessionId
@@ -528,7 +528,7 @@ U16 ParseResponse(apdu_t *pApdu, U16 expectedTag, U16 *pLen, U8 *pValue)
 /**
  * Add or append data to the body of a command APDU.
  * WARNING:
- * - Bufferoverflow fix not applied for SSS_HAVE_A71CH_SIM
+ * - Bufferoverflow fix not applied for SSS_HAVE_APPLET_A71CH_SIM
  * WARNING for non-TGT_A71CH cases :
  * - TGT_A71CL: This function must only be called once in case pApdu->txHasChkSum is set
  */
@@ -573,7 +573,7 @@ U16 smApduAppendCmdData(apdu_t *pApdu, const U8 *data, U16 dataLen)
         ReserveLc(pApdu);
     }
 
-#if SSS_HAVE_A71CH_SIM
+#if SSS_HAVE_APPLET_A71CH_SIM
     if (gEnableEnc)
     {
         pApdu->lc += (dataLen + sizeof(session_Tlv));
@@ -582,7 +582,7 @@ U16 smApduAppendCmdData(apdu_t *pApdu, const U8 *data, U16 dataLen)
         pApdu->offset += sizeof(session_Tlv);
     }
     else
-#endif // SSS_HAVE_A71CH_SIM
+#endif // SSS_HAVE_APPLET_A71CH_SIM
     {
         pApdu->lc += dataLen;
     }

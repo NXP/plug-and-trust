@@ -301,8 +301,9 @@ smStatus_t Se05x_API_AeadInit(pSe05xSession_t session_ctx,
  */
 smStatus_t Se05x_API_AeadCCMInit(pSe05xSession_t session_ctx,
     uint32_t objectID,
+    SE05x_CipherMode_t cipherMode,
     SE05x_CryptoObjectID_t cryptoObjectID,
-    const uint8_t *pIV,
+    uint8_t *pIV,
     size_t IVLen,
     size_t aadLen,
     size_t payloadLen,
@@ -734,6 +735,128 @@ smStatus_t Se05x_API_ReadObjectAttributes(
 smStatus_t Se05x_API_TriggerSelfTest(
     pSe05xSession_t session_ctx, SE05x_HealthCheckMode_t healthCheckMode, uint8_t *result);
 
+#if SSS_HAVE_SE05X_VER_GTE_07_02
+/** Se05x_API_TriggerSelfTest_W_Attst
+ *
+ * Trigger a system health check for the system. When calling this command, a self-test is
+ * triggered in the operating system. When the test fails, the device might not respond with
+ * a R-APDU as the chip is reset.
+ * If HealthCheckMode is set to HCM_FIPS, the test will only work if the device is running in
+ * FIPS approved mode of operation.
+ *
+ * # Command to Applet
+ *
+ *
+ * @rst
+ * +------------+---------------------------------+------------------------------------------------+
+ * | Field      | Value                           | Description                                    |
+ * +============+=================================+================================================+
+ * | CLA        | 0x80                            |                                                |
+ * +------------+---------------------------------+------------------------------------------------+
+ * | INS        | INS_MGMT                        | See :cpp:type:`SE05x_INS_t`. In addition to    |
+ * |            |                                 | INS_CRYPTO, users  can set the INS_ATTEST      |
+ * |            |                                 | flag. In that case, attestation applies.       |
+ * +------------+---------------------------------+------------------------------------------------+
+ * | P1         | P1_DEFAULT                      | See :cpp:type:`SE05x_P1_t`                     |
+ * +------------+---------------------------------+------------------------------------------------+
+ * | P2         | P2_SANITY                       | See :cpp:type:`SE05x_P2_t`                     |
+ * +------------+---------------------------------+------------------------------------------------+
+ * | Lc         | #(Payload)                      | Payload length                                 |
+ * +------------+---------------------------------+------------------------------------------------+
+ * | Payload    | TLV[TAG_1]                      | 2-byte value from HealthCheckMode              |
+ * +------------+---------------------------------+------------------------------------------------+
+ * | TLV[TAG_5] | 4-byte attestation object       |                                                |
+ * |            | identifier.   [Optional]        |                                                |
+ * |            | [Conditional: only when         |                                                |
+ * |            | INS_ATTEST is set]              |                                                |
+ * +------------+---------------------------------+------------------------------------------------+
+ * | TLV[TAG_6] | 1-byte AttestationAlgo          |                                                |
+ * |            | [Optional]   [Conditional: only |                                                |
+ * |            | when INS_ATTEST is set]         |                                                |
+ * +------------+---------------------------------+------------------------------------------------+
+ * | TLV[TAG_7] | 16-byte freshness random        |                                                |
+ * |            | [Optional]   [Conditional: only |                                                |
+ * |            | when INS_ATTEST is set]         |                                                |
+ * +------------+---------------------------------+------------------------------------------------+
+ * | Le         | 0x00                            | 2-byte response + attested data (if INS_ATTEST |
+ * |            |                                 | is set).                                       |
+ * +------------+---------------------------------+------------------------------------------------+
+ * @endrst
+ *
+ * # R-APDU Body
+ *
+ *
+ * @rst
+ * +------------+------------------------------------------------+
+ * | Value      | Description                                    |
+ * +============+================================================+
+ * | TLV[TAG_1] | TLV containing 1-byte Result.                  |
+ * +------------+------------------------------------------------+
+ * | TLV[TAG_3] | TLV containing 12-byte timestamp               |
+ * |            | [Conditional: only when C-APDU contains        |
+ * |            | INS_ATTEST]                                    |
+ * +------------+------------------------------------------------+
+ * | TLV[TAG_4] | TLV containing 16-byte freshness (random)      |
+ * |            | [Conditional: only when C-APDU contains        |
+ * |            | INS_ATTEST]                                    |
+ * +------------+------------------------------------------------+
+ * | TLV[TAG_5] | TLV containing 18-byte chip unique ID          |
+ * |            | [Conditional: only when C-APDU contains        |
+ * |            | INS_ATTEST]                                    |
+ * +------------+------------------------------------------------+
+ * | TLV[TAG_6] | TLV containing signature over the concatenated |
+ * |            | values of TLV[TAG_1], TLV[TAG_3],  TLV[TAG_4]  |
+ * |            | and TLV[TAG_5].   [Conditional: only when      |
+ * |            | C-APDU contains INS_ATTEST]                    |
+ * +------------+------------------------------------------------+
+ * @endrst
+ *
+ * # R-APDU Trailer
+ *
+ *
+ * @rst
+ * +-------------+--------------------------------------+
+ * | SW          | Description                          |
+ * +=============+======================================+
+ * | SW_NO_ERROR | The command is handled successfully. |
+ * +-------------+--------------------------------------+
+ * @endrst
+ *
+ *
+ * @param[in]  session_ctx      The session context
+ * @param[in]  HealthCheckMode  The health check mode
+ * @param[in]  attestID         The attest id
+ * @param[in]  attestAlgo       The attest algorithm
+ * @param[in]  random           The random
+ * @param[in]  randomLen        The random length
+ * @param      result           The result of Self Test
+ * @param      ptimeStamp       The ptime stamp
+ * @param      outrandom        The outrandom
+ * @param      poutrandomLen    The poutrandom length
+ * @param      chipId           The chip identifier
+ * @param      pchipIdLen       The pchip identifier length
+ * @param      signature        The signature
+ * @param      psignatureLen    The psignature length
+ *
+ * @return     The sm status.
+ */
+smStatus_t Se05x_API_TriggerSelfTest_W_Attst(pSe05xSession_t session_ctx,
+    SE05x_HealthCheckMode_t healthCheckMode,
+    uint32_t attestID,
+    SE05x_AttestationAlgo_t attestAlgo,
+    const uint8_t *random,
+    size_t randomLen,
+    uint8_t *result,
+    SE05x_TimeStamp_t *ptimeStamp,
+    uint8_t *chipId,
+    size_t *pchipIdLen,
+    uint8_t *signature,
+    size_t *psignatureLen,
+    uint8_t *pObjectSize,
+    size_t *pObjectSizeLen,
+    uint8_t *pCmd,
+    size_t *pCmdLen);
+#else
 /** Se05x_API_TriggerSelfTest_W_Attst
  *
  * Trigger a system health check for the system. When calling this command, a self-test is
@@ -852,6 +975,7 @@ smStatus_t Se05x_API_TriggerSelfTest_W_Attst(pSe05xSession_t session_ctx,
     size_t *pchipIdLen,
     uint8_t *signature,
     size_t *psignatureLen);
+#endif // SSS_HAVE_SE05X_VER_GTE_07_02
 
 /** Se05x_API_ECDHGenerateSharedSecret_InObject
  *
@@ -1205,3 +1329,81 @@ smStatus_t Se05x_API_UpdatePCR(
 */
 smStatus_t Se05x_API_UpdateCounter(
     pSe05xSession_t session_ctx, pSe05xPolicy_t policy, uint32_t objectID, uint16_t size, uint64_t value);
+
+/** Se05x_API_WriteSymmKey_Ver_extended
+*
+* See @ref Extension of Se05x_API_WriteSymmKey_Ver api. Allows to set minimum tag length for AEAD (2 bytes).
+*
+*/
+smStatus_t Se05x_API_WriteSymmKey_Ver_extended(pSe05xSession_t session_ctx,
+    pSe05xPolicy_t policy,
+    SE05x_MaxAttemps_t maxAttempt,
+    uint32_t objectID,
+    SE05x_KeyID_t kekID,
+    const uint8_t *keyValue,
+    size_t keyValueLen,
+    const SE05x_INS_t ins_type,
+    const SE05x_SymmKeyType_t type,
+    uint32_t version,
+    uint16_t min_aead_tag_len);
+
+#if SSS_HAVE_SE05X_VER_GTE_07_02
+
+/** Se05x_API_PBKDF2_extended
+*
+* See @ref Se05x_API_PBKDF2_extended.
+* New PBKDF2 api with optional salt object id and optional derived Session key id.
+* This api also supports additional mac algorithms.
+* @param[in]  session_ctx                  The session context
+* @param[in]  objectID                     HMAC key object id
+* @param[in]  salt                         Salt data
+* @param[in]  saltLen                      Salt length
+* @param[in]  saltID                       Object id with salt data
+* @param[in]  macAlgo                      MAC Algorithm
+* @param[in]  requestedLen                 Requested derived session key length
+* @param[in, out]  derivedSessionKeyID     HMAC object id to store output derived session key
+* @param[in, out]  derivedSessionKey       Buffer to store derived session key on host
+* @param[in, out]  pderivedSessionKeyLen   DerivedSessionKey buffer length
+*
+*/
+smStatus_t Se05x_API_PBKDF2_extended(pSe05xSession_t session_ctx,
+    uint32_t objectID,
+    const uint8_t *salt,
+    size_t saltLen,
+    uint32_t saltID,
+    uint16_t count,
+    SE05x_MACAlgo_t macAlgo,
+    uint16_t requestedLen,
+    uint32_t derivedSessionKeyID,
+    uint8_t *derivedSessionKey,
+    size_t *pderivedSessionKeyLen);
+
+/** Se05x_API_ECDHGenerateSharedSecret_InObject_extended
+*
+* See @ref Se05x_API_ECDHGenerateSharedSecret_InObject_extended.
+* New ECDH api with support for ECDH algo input (EC_SVDP_DH and EC_SVDP_DH_PLAIN).
+* @param[in]  session_ctx                  The session context
+* @param[in]  objectID                     Private key or key pair identifier
+* @param[in]  pubKey                       External EC public key
+* @param[in]  pubKeyLen                    External EC public key length
+* @param[in]  ecdhAlgo                     ECDH Algorithm
+* @param[in]  sharedSecretID               Identifier to store derived key
+* @param[in]  invertEndianness             Option to invert endianness of derived key
+*
+*/
+smStatus_t Se05x_API_ECDHGenerateSharedSecret_InObject_extended(pSe05xSession_t session_ctx,
+    uint32_t objectID,
+    const uint8_t *pubKey,
+    size_t pubKeyLen,
+    SE05x_ECDHAlgo_t ecdhAlgo,
+    uint32_t sharedSecretID,
+    uint8_t invertEndianness);
+
+smStatus_t Se05x_API_ECPointMultiply_InputObj(pSe05xSession_t session_ctx,
+    uint32_t objectID,
+    uint32_t pubKeyID,
+    uint32_t sharedSecretID,
+    uint8_t *sharedSecretOuput,
+    size_t *psharedSecretOuputLen,
+    SE05x_ECPMAlgo_t ECPMAlgo);
+#endif

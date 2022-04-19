@@ -100,8 +100,7 @@ sss_status_t nxScp03_AuthenticateChannel(pSe05xSession_t se05xSession, NXSCP03_A
     sss_status_t status = kStatus_SSS_Fail;
 
     if ((pStatic_ctx->Enc.keyStore == NULL) || (pStatic_ctx->Mac.keyStore == NULL) ||
-        (pStatic_ctx->Dek.keyStore == NULL) || (pDyn_ctx->Enc.keyStore == NULL) || (pDyn_ctx->Mac.keyStore == NULL) ||
-        (pDyn_ctx->Rmac.keyStore == NULL)) {
+        (pDyn_ctx->Enc.keyStore == NULL) || (pDyn_ctx->Mac.keyStore == NULL) || (pDyn_ctx->Rmac.keyStore == NULL)) {
         LOG_E("nxScp03_GP_InitializeUpdate fails Invalid objects sent %04X", status);
         return status;
     }
@@ -300,8 +299,9 @@ sss_status_t nxScp03_HostLocal_VerifyCardCryptogram(
     LOG_MAU8_D(" Output:cardCryptogram", cardCryptogramFullLength, AES_KEY_LEN_nBYTE);
 
     // Verify whether the 8 left most byte of cardCryptogramFullLength match cardCryptogram
-    if (memcmp(cardCryptogramFullLength, cardCryptogram, SCP_GP_IU_CARD_CRYPTOGRAM_LEN) != 0)
+    if (memcmp(cardCryptogramFullLength, cardCryptogram, SCP_GP_IU_CARD_CRYPTOGRAM_LEN) != 0) {
         status = kStatus_SSS_Fail;
+    }
 exit:
     return status;
 }

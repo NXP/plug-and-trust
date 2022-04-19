@@ -12,7 +12,7 @@
 #include "se05x_enums.h"
 #include "se05x_tlv.h"
 
-/* Enable compilation of deprecated API Se05x_API_WritePCR 
+/* Enable compilation of deprecated API Se05x_API_WritePCR
  * Deprecated from Q1 2021.
  * Support will be removed by Q1 2022
  */
@@ -1484,6 +1484,30 @@ smStatus_t Se05x_API_ReadObject(
  *
  * @return     The sm status.
  */
+
+#if SSS_HAVE_SE05X_VER_GTE_07_02
+smStatus_t Se05x_API_ReadObject_W_Attst_V2(pSe05xSession_t session_ctx,
+    uint32_t objectID,
+    uint16_t offset,
+    uint16_t length,
+    uint32_t attestID,
+    SE05x_AttestationAlgo_t attestAlgo,
+    const uint8_t *random,
+    size_t randomLen,
+    uint8_t *data,
+    size_t *pdataLen,
+    uint8_t *attribute,
+    size_t *pattributeLen,
+    SE05x_TimeStamp_t *ptimeStamp,
+    uint8_t *chipId,
+    size_t *pchipIdLen,
+    uint8_t *pCmd,
+    size_t *pCmdLen,
+    uint8_t *pObj,
+    size_t *pObjLen,
+    uint8_t *signature,
+    size_t *psignatureLen);
+#else
 smStatus_t Se05x_API_ReadObject_W_Attst(pSe05xSession_t session_ctx,
     uint32_t objectID,
     uint16_t offset,
@@ -1503,7 +1527,7 @@ smStatus_t Se05x_API_ReadObject_W_Attst(pSe05xSession_t session_ctx,
     size_t *pchipIdLen,
     uint8_t *signature,
     size_t *psignatureLen);
-
+#endif
 /** Se05x_API_ReadRSA
  *
  * See @ref Se05x_API_ReadObject
@@ -1551,6 +1575,31 @@ smStatus_t Se05x_API_ReadRSA(pSe05xSession_t session_ctx,
  *
  * @return     The sm status.
  */
+#if SSS_HAVE_SE05X_VER_GTE_07_02
+smStatus_t Se05x_API_ReadRSA_W_Attst_V2(pSe05xSession_t session_ctx,
+    uint32_t objectID,
+    uint16_t offset,
+    uint16_t length,
+    SE05x_RSAPubKeyComp_t rsa_key_comp,
+    uint32_t attestID,
+    SE05x_AttestationAlgo_t attestAlgo,
+    const uint8_t *random,
+    size_t randomLen,
+    uint8_t *data,
+    size_t *pdataLen,
+    uint8_t *attribute,
+    size_t *pattributeLen,
+    SE05x_TimeStamp_t *ptimeStamp,
+    uint8_t *chipId,
+    size_t *pchipIdLen,
+    uint8_t *pCmd,
+    size_t *pCmdLen,
+    uint8_t *pObj,
+    size_t *pObjLen,
+    uint8_t *signature,
+    size_t *psignatureLen);
+
+#else
 smStatus_t Se05x_API_ReadRSA_W_Attst(pSe05xSession_t session_ctx,
     uint32_t objectID,
     uint16_t offset,
@@ -1571,7 +1620,7 @@ smStatus_t Se05x_API_ReadRSA_W_Attst(pSe05xSession_t session_ctx,
     size_t *pchipIdLen,
     uint8_t *signature,
     size_t *psignatureLen);
-
+#endif
 /** Se05x_API_ReadObjectAttributes_W_Attst
  *
  * Reads the attributes of a Secure Object (without the value of the Secure
@@ -1744,6 +1793,25 @@ smStatus_t Se05x_API_ReadRSA_W_Attst(pSe05xSession_t session_ctx,
  *
  * @return     The sm status.
  */
+#if SSS_HAVE_SE05X_VER_GTE_07_02
+smStatus_t Se05x_API_ReadObjectAttributes_W_Attst_V2(pSe05xSession_t session_ctx,
+    uint32_t objectID,
+    uint32_t attestID,
+    SE05x_AttestationAlgo_t attestAlgo,
+    const uint8_t *random,
+    size_t randomLen,
+    uint8_t *pCmdapdu,
+    size_t *pCmdapduLen,
+    uint8_t *data,
+    size_t *pdataLen,
+    SE05x_TimeStamp_t *ptimeStamp,
+    uint8_t *obj,
+    size_t *pobjLen,
+    uint8_t *chipId,
+    size_t *pchipIdLen,
+    uint8_t *signature,
+    size_t *psignatureLen);
+#else
 smStatus_t Se05x_API_ReadObjectAttributes_W_Attst(pSe05xSession_t session_ctx,
     uint32_t objectID,
     uint32_t attestID,
@@ -1759,7 +1827,7 @@ smStatus_t Se05x_API_ReadObjectAttributes_W_Attst(pSe05xSession_t session_ctx,
     size_t *pchipIdLen,
     uint8_t *signature,
     size_t *psignatureLen);
-
+#endif
 /** Se05x_API_ExportObject
  *
  * Reads a transient Secure Object from SE05X.
@@ -2886,6 +2954,16 @@ smStatus_t Se05x_API_EdDSASign(pSe05xSession_t session_ctx,
  * @param[out] signature  [0:kSE05x_TAG_1]
  * @param[in,out] psignatureLen Length for signature
  */
+#if SSS_HAVE_SE05X_VER_GTE_07_02
+smStatus_t Se05x_API_ECDAASign(pSe05xSession_t session_ctx,
+    uint32_t objectID,
+    SE05x_ECDAASignatureAlgo_t ecdaaSignAlgo,
+    const uint8_t *inputData,
+    size_t inputDataLen,
+    uint32_t randomObjectID,
+    uint8_t *signature,
+    size_t *psignatureLen);
+#else
 smStatus_t Se05x_API_ECDAASign(pSe05xSession_t session_ctx,
     uint32_t objectID,
     SE05x_ECDAASignatureAlgo_t ecdaaSignAlgo,
@@ -2895,6 +2973,7 @@ smStatus_t Se05x_API_ECDAASign(pSe05xSession_t session_ctx,
     size_t randomDataLen,
     uint8_t *signature,
     size_t *psignatureLen);
+#endif
 
 /** Se05x_API_ECDSAVerify
  *
@@ -3543,7 +3622,7 @@ smStatus_t Se05x_API_RSADecrypt(pSe05xSession_t session_ctx,
 smStatus_t Se05x_API_CipherInit(pSe05xSession_t session_ctx,
     uint32_t objectID,
     SE05x_CryptoObjectID_t cryptoObjectID,
-    const uint8_t *IV,
+    uint8_t *IV,
     size_t IVLen,
     const SE05x_Cipher_Oper_t operation);
 
@@ -3754,7 +3833,7 @@ smStatus_t Se05x_API_CipherOneShot(pSe05xSession_t session_ctx,
     SE05x_CipherMode_t cipherMode,
     const uint8_t *inputData,
     size_t inputDataLen,
-    const uint8_t *IV,
+    uint8_t *IV,
     size_t IVLen,
     uint8_t *outputData,
     size_t *poutputDataLen,
@@ -4030,8 +4109,8 @@ smStatus_t Se05x_API_MACOneShot_G(pSe05xSession_t session_ctx,
  * @param[in] inputDataLen Length of inputData
  * @param[in] MAC MAC to verify (when P2=P2_VALIDATE_ONESHOT) [4:kSE05x_TAG_5]
  * @param[in] MACLen Length of MAC
- * @param[out] macValue  [0:kSE05x_TAG_1]
- * @param[in,out] pmacValueLen Length for macValue
+ * @param[out] result  [0:kSE05x_TAG_1]
+ * @param[in,out] presultLen Length for result
  */
 smStatus_t Se05x_API_MACOneShot_V(pSe05xSession_t session_ctx,
     uint32_t objectID,
@@ -4040,8 +4119,8 @@ smStatus_t Se05x_API_MACOneShot_V(pSe05xSession_t session_ctx,
     size_t inputDataLen,
     const uint8_t *MAC,
     size_t MACLen,
-    uint8_t *macValue,
-    size_t *pmacValueLen);
+    uint8_t *result,
+    size_t *presultLen);
 
 /** Se05x_API_HKDF
  *
@@ -5150,6 +5229,143 @@ smStatus_t Se05x_API_TLSPerformPRF(pSe05xSession_t session_ctx,
     size_t *poutputDataLen,
     const SE05x_TLSPerformPRFType_t tlsprf);
 
+#if SSS_HAVE_SE05X_VER_GTE_07_02
+
+/** Se05x_API_I2CM_ExecuteCommandSet
+ *
+ * Execute one or multiple I2C commands in master mode. Execution is conditional
+ * to the presence of the authentication object identified by
+ * RESERVED_ID_I2CM_ACCESS. If the credential is not present in the eSE, access
+ * is allowed in general. Otherwise, a session shall be established before
+ * executing this command. In this case, the I2CM_ExecuteCommandSet command shall
+ * be sent within the mentioned session.
+ *
+ * The I2C command set is constructed as a sequence of instructions described in
+ * with the following rules:
+ *
+ *   * The length should be limited to MAX_I2CM_COMMAND_LENGTH.
+ *
+ *   * The data to be read cannot exceed MAX_I2CM_COMMAND_LENGTH, including protocol overhead.
+ *
+ * # Command to Applet
+ *
+ * @rst
+ * +-------+------------+------------------------------------------------+
+ * | Field | Value      | Description                                    |
+ * +=======+============+================================================+
+ * | CLA   | 0x80       |                                                |
+ * +-------+------------+------------------------------------------------+
+ * | INS   | INS_CRYPTO | See :cpp:type:`SE05x_INS_t`, in addition to    |
+ * |       |            | INS_CRYPTO, users can set the INS_ATTEST flag. |
+ * |       |            | In that case, attestation applies.             |
+ * +-------+------------+------------------------------------------------+
+ * | P1    | P1_DEFAULT | See :cpp:type:`SE05x_P1_t`                     |
+ * +-------+------------+------------------------------------------------+
+ * | P2    | P2_I2CM    | See :cpp:type:`SE05x_P2_t`                     |
+ * +-------+------------+------------------------------------------------+
+ * | Lc    | #(Payload) |                                                |
+ * +-------+------------+------------------------------------------------+
+ * |       | TLV[TAG_1] | Byte array containing I2C Command set as TLV   |
+ * |       |            | array.                                         |
+ * +-------+------------+------------------------------------------------+
+ * |       | TLV[TAG_2] | 4-byte attestation object identifier.          |
+ * |       |            | [Optional]   [Conditional: only when           |
+ * |       |            | INS_ATTEST is set]                             |
+ * +-------+------------+------------------------------------------------+
+ * |       | TLV[TAG_3] | 1-byte :cpp:type:`SE05x_AttestationAlgo_t`     |
+ * |       |            | [Optional]   [Conditional: only when           |
+ * |       |            | INS_ATTEST is set]                             |
+ * +-------+------------+------------------------------------------------+
+ * |       | TLV[TAG_7] | 16-byte freshness random   [Optional]          |
+ * |       |            | [Conditional: only when INS_ATTEST is set]     |
+ * +-------+------------+------------------------------------------------+
+ * | Le    | 0x00       | Expecting TLV with return data.                |
+ * +-------+------------+------------------------------------------------+
+ * @endrst
+ *
+ * # R-APDU Body
+ *
+ * @rst
+ * +-------------------+------------------------------------------------+
+ * | Value             | Description                                    |
+ * +===================+================================================+
+ * | TLV[TAG_1]        | Read response, a bytestring containing a       |
+ * |                   | sequence of:     *          CONFIGURE (0x01),  |
+ * |                   | followed by 1 byte of return code (0x5A =      |
+ * |                   | SUCCESS).            *          WRITE (0x03),  |
+ * |                   | followed by 1 byte of return code            * |
+ * |                   | READ (0x04), followed by               -       |
+ * |                   | Length: 2 bytes in big endian encoded without  |
+ * |                   | TLV length encoding                      -     |
+ * |                   | Read bytes                      *              |
+ * |                   | 0xFF followed by the error return code in case |
+ * |                   | of a structural error of the incoming buffer   |
+ * |                   | (too long, for example)                        |
+ * +-------------------+------------------------------------------------+
+ * | TLV[TAG_2]        | TLV containing 18-byte chip unique ID          |
+ * +-------------------+------------------------------------------------+
+ * | TLV[TAG_4]        | TLV containing 2-byte total size of the Secure |
+ * |                   | Object                                         |
+ * +-------------------+------------------------------------------------+
+ * | TLV[TAG_TS]       | TLV containing 12-byte timestamp               |
+ * +-------------------+------------------------------------------------+
+ * | TLV[TAG_ATT_SIG]  | TLV containing signature over the concatenated |
+ * |                   | values of TLV[TAG_1], TLV[TAG_3], TLV[TAG_4]   |
+ * |                   | and TLV[TAG_5].                                |
+ * +-------------------+------------------------------------------------+
+ * @endrst
+ *
+ * # R-APDU Trailer
+ *
+ * @rst
+ * +-------------+--------------------------------------+
+ * | SW          | Description                          |
+ * +=============+======================================+
+ * | SW_NO_ERROR | The command is handled successfully. |
+ * +-------------+--------------------------------------+
+ * @endrst
+ *
+ *
+ *
+ *
+ *
+ * @param[in]  session_ctx      The session context
+ * @param[in]  inputData        The input data
+ * @param[in]  inputDataLen     The input data length
+ * @param[in]  attestationID    The attestation id
+ * @param[in]  attestationAlgo  The attestation algorithm
+ * @param      response         The response
+ * @param      presponseLen     The presponse length
+ * @param      ptimeStamp       The ptime stamp
+ * @param      chipId           The chip identifier
+ * @param      pchipIdLen       The pchip identifier length
+ * @param      signature        The signature
+ * @param      psignatureLen    The psignature length
+ * @param      randomAttst      The random attst
+ * @param[in]  randomAttstLen   The random attst length
+ *
+ * @return     The sm status.
+ */
+smStatus_t Se05x_API_I2CM_ExecuteCommandSet(pSe05xSession_t session_ctx,
+    const uint8_t *inputData,
+    size_t inputDataLen,
+    uint32_t attestationID,
+    uint8_t attestationAlgo,
+    uint8_t *response,
+    size_t *presponseLen,
+    SE05x_TimeStamp_t *ptimeStamp,
+    uint8_t *chipId,
+    size_t *pchipIdLen,
+    uint8_t *signature,
+    size_t *psignatureLen,
+    uint8_t *randomAttst,
+    size_t randomAttstLen,
+    uint8_t *pObjectSize,
+    size_t *pObjectSizeLen,
+    uint8_t *pCmd,
+    size_t *pCmdLen);
+
+#else
 /** Se05x_API_I2CM_ExecuteCommandSet
  *
  * Execute one or multiple I2C commands in master mode. Execution is conditional
@@ -5282,6 +5498,8 @@ smStatus_t Se05x_API_I2CM_ExecuteCommandSet(pSe05xSession_t session_ctx,
     size_t *psignatureLen,
     uint8_t *randomAttst,
     size_t randomAttstLen);
+
+#endif
 
 /** Se05x_API_DigestInit
  *

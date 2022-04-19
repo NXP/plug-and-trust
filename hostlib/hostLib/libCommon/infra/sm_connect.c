@@ -166,7 +166,17 @@ U16 SM_RjctConnectSocket(void **conn_ctx, const char *connectString, SmCommState
     }
 #endif
 
+#ifdef ACCESS_MGR_UNIX_SOCKETS
+    if (strlen(connectString) < sizeof(szServer)){
+        strcpy(szServer, connectString);
+        rv = SW_OK;
+    }
+    else {
+        rv = 0;
+    }
+#else
     rv = getSocketParams(connectString, szServer, szServerLen, (unsigned int *)&port);
+#endif
 
 #if defined(SMCOM_JRCP_V1)
     FPRINTF("Connection to secure element over socket to %s\r\n", connectString);
@@ -336,9 +346,13 @@ U16 SM_RjctConnect(void **conn_ctx, const char *connectString, SmCommState_t *co
         LOG_W("connectString is NULL. Aborting.");
         return ERR_NO_VALID_IP_PORT_PATTERN;
     }
+#ifdef ACCESS_MGR_UNIX_SOCKETS
+    is_socket = TRUE;
+#else
     if (NULL != strchr(connectString, ':')) {
         is_socket = TRUE;
     }
+#endif
 #endif
 #if RJCT_VCOM
     if (is_vcom) {
@@ -382,7 +396,12 @@ U16 SM_I2CConnect(void **conn_ctx, SmCommState_t *commState, U8 *atr, U16 *atrLe
 {
     U16 status = SMCOM_COM_FAILED;
 #if defined(T1oI2C)
-    status = smComT1oI2C_Init(conn_ctx, pConnString);
+    if (commState->sessionResume == 1) {
+        status = smComT1oI2C_Resume(conn_ctx, pConnString);
+    }
+    else {
+        status = smComT1oI2C_Init(conn_ctx, pConnString);
+    }
 #elif defined (SCI2C)
     status = smComSCI2C_Init(conn_ctx, pConnString);
 #endif
@@ -434,8 +453,9 @@ U16 SM_Connect(void *conn_ctx, SmCommState_t *commState, U8 *atr, U16 *atrLen)
 #endif
 
 #ifdef TDA8029_UART
-    if ((*atrLen) <= 33)
+    if ((*atrLen) <= 33) {
         return ERR_API_ERROR;
+    }
 
     smComAlpar_Init();
     status = smComAlpar_AtrT1Configure(ALPAR_T1_BAUDRATE_MAX, atr, atrLen, &uartBR, &t1BR);
@@ -454,8 +474,9 @@ U16 SM_Connect(void *conn_ctx, SmCommState_t *commState, U8 *atr, U16 *atrLen)
 #elif defined(T1oI2C)
     sw = smComT1oI2C_Open(conn_ctx, ESE_MODE_NORMAL, 0x00, atr, atrLen);
 #elif defined(SMCOM_JRCP_V1) || defined(SMCOM_JRCP_V2) || defined(PCSC) || defined(SMCOM_PCSC)
-    if (atrLen != NULL)
+    if (atrLen != NULL) {
         *atrLen = 0;
+    }
     AX_UNUSED_ARG(atr);
     AX_UNUSED_ARG(atrLen);
 #elif defined(RJCT_VCOM)
@@ -490,7 +511,7 @@ U16 SM_Connect(void *conn_ctx, SmCommState_t *commState, U8 *atr, U16 *atrLen)
         }
         else
         {
-#if SSS_HAVE_A71CH || SSS_HAVE_A71CH_SIM || SSS_HAVE_A71CL
+#if SSS_HAVE_APPLET_A71CH || SSS_HAVE_APPLET_A71CH_SIM || SSS_HAVE_APPLET_A71CL
             /* Select card manager */
             GP_Select(conn_ctx, (U8 *)&appletName, 0, selectResponseData, &selectResponseDataLen);
             selectResponseDataLen = sizeof(selectResponseData);
@@ -515,7 +536,7 @@ U16 SM_Connect(void *conn_ctx, SmCommState_t *commState, U8 *atr, U16 *atrLen)
                 LOG_MAU8_I("selectResponseData", selectResponseData, selectResponseDataLen);
             }
 #endif // FLOW_VERBOSE
-#if SSS_HAVE_A71CH || SSS_HAVE_A71CH_SIM
+#if SSS_HAVE_APPLET_A71CH || SSS_HAVE_APPLET_A71CH_SIM
             if (selectResponseDataLen >= 2) {
                 commState->appletVersion = (selectResponseData[0] << 8) + selectResponseData[1];
                 if (selectResponseDataLen == 4) {
@@ -528,13 +549,13 @@ U16 SM_Connect(void *conn_ctx, SmCommState_t *commState, U8 *atr, U16 *atrLen)
             else {
                 sw = ERR_CONNECT_SELECT_FAILED;
             }
-#elif SSS_HAVE_A71CL
+#elif SSS_HAVE_APPLET_A71CL
             if (selectResponseDataLen == 0) {
                 commState->appletVersion = 0;
                 commState->sbVersion = 0x0000;
             }
-#endif // SSS_HAVE_A71CH / SSS_HAVE_A71CL
-#if SSS_HAVE_SE05X
+#endif // SSS_HAVE_APPLET_A71CH / SSS_HAVE_APPLET_A71CL
+#if SSS_HAVE_APPLET_SE05X_IOT
             if (selectResponseDataLen == 5 || selectResponseDataLen == 4 || selectResponseDataLen == 7) {
                 // 2.2.4 returns 4 bytes, 2.2.4.[A,B,C]
                 // 2.3.0 returns 5 bytes, 2.3.0.[v1].[v2]
@@ -551,7 +572,7 @@ U16 SM_Connect(void *conn_ctx, SmCommState_t *commState, U8 *atr, U16 *atrLen)
             }
             else {
             }
-#endif // SSS_HAVE_SE05X
+#endif // SSS_HAVE_APPLET_SE05X_IOT
         }
     }
 #endif /* Applet Name*/

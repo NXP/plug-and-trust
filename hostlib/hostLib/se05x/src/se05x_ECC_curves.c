@@ -13,7 +13,7 @@
 #include "fsl_sss_ftr_default.h"
 #endif
 
-#if SSS_HAVE_SE05X && SSSFTR_SE05X_ECC
+#if SSS_HAVE_APPLET_SE05X_IOT && SSSFTR_SE05X_ECC
 
 #include "se05x_ecc_curves.h"
 #include "se05x_APDU.h"

@@ -80,7 +80,7 @@ int main(void)
 #   include "sm_printf.h"
 #endif
 
-#if SSS_HAVE_ALT_SSS
+#if SSS_HAVE_MBEDTLS_ALT_SSS
 #include "sss_mbedtls.h"
 #if defined(MBEDTLS_ECDSA_VERIFY_ALT)
 #include "ecdsa_verify_alt.h"
