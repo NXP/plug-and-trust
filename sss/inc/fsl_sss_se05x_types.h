@@ -32,7 +32,7 @@
 /* FreeRTOS includes. */
 #if USE_RTOS
 #include "FreeRTOS.h"
-#include "FreeRTOSIPConfig.h"
+//#include "FreeRTOSIPConfig.h"
 #include "semphr.h"
 #include "task.h"
 #endif
