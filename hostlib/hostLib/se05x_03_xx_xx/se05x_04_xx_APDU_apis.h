@@ -10,6 +10,10 @@
 #error "Only with SE051 based build"
 #endif
 
+/** @addtogroup se05x_apis
+ *
+ * @{ */
+
 /** Se05x_API_AeadOneShot
  *
  * Authenticated encryption or decryption with associated data in one shot mode.
@@ -989,16 +993,18 @@ smStatus_t Se05x_API_ECDHGenerateSharedSecret_InObject(pSe05xSession_t session_c
     uint32_t sharedSecretID,
     uint8_t invertEndianness);
 
-/*
-* @param[in] session_ctx Session Context[0:kSE05x_pSession]
-* @param[in] keyPairId keyPairId[1:kSE05x_TAG_1]
-* @param[in] pskId pskId[2:kSE05x_TAG_2]
-* @param[in] hmacKeyId hmacKeyId[3:kSE05x_TAG_3]
-* @param[in] inputData inputData[4:kSE05x_TAG_4]
-* @param[in] inputDataLen Length of inputData
-* @param[in] clientVersion client version[6:kSE05x_TAG_6]
-* @param[in] clientVersionLen Length of client version
-*/
+/** Se05x_API_TLSCalculateRsaPreMasterSecret
+ *
+ * @param[in] session_ctx Session Context[0:kSE05x_pSession]
+ * @param[in] keyPairId keyPairId[1:kSE05x_TAG_1]
+ * @param[in] pskId pskId[2:kSE05x_TAG_2]
+ * @param[in] hmacKeyId hmacKeyId[3:kSE05x_TAG_3]
+ * @param[in] inputData inputData[4:kSE05x_TAG_4]
+ * @param[in] inputDataLen Length of inputData
+ * @param[in] clientVersion client version[6:kSE05x_TAG_6]
+ * @param[in] clientVersionLen Length of client version
+ *
+ */
 
 smStatus_t Se05x_API_TLSCalculateRsaPreMasterSecret(pSe05xSession_t session_ctx,
     uint32_t keyPairId,
@@ -1347,7 +1353,7 @@ smStatus_t Se05x_API_WriteSymmKey_Ver_extended(pSe05xSession_t session_ctx,
     uint32_t version,
     uint16_t min_aead_tag_len);
 
-#if SSS_HAVE_SE05X_VER_GTE_07_02
+#if SSS_HAVE_SE05X_VER_GTE_07_02 || defined(__DOXYGEN__)
 
 /** Se05x_API_PBKDF2_extended
 *
@@ -1407,3 +1413,5 @@ smStatus_t Se05x_API_ECPointMultiply_InputObj(pSe05xSession_t session_ctx,
     size_t *psharedSecretOuputLen,
     SE05x_ECPMAlgo_t ECPMAlgo);
 #endif
+
+/** @} */

@@ -47,6 +47,29 @@
 #define STRNICMP strncasecmp
 #endif /*_MSC_VER*/
 
+#if defined(USE_RTOS) && USE_RTOS == 1
+// #include "FreeRTOS.h"
+extern void vPortFree(void *pv);
+extern void *pvPortMalloc(size_t xWantedSize);
+
+void *pvPortCalloc(size_t num, size_t size); /*Calloc for Heap3/Heap4.*/
+
+#ifndef SSS_MALLOC
+#define SSS_MALLOC pvPortMalloc
+#endif // SSS_MALLOC
+
+#ifndef SSS_FREE
+#define SSS_FREE vPortFree
+#endif // SSS_FREE
+
+#ifndef SSS_CALLOC
+#define SSS_CALLOC pvPortCalloc
+#endif // SSS_CALLOC
+
+#else // !USE_RTOS
+
+#include <stdlib.h>
+
 #ifndef SSS_MALLOC
 #define SSS_MALLOC malloc
 #endif // SSS_MALLOC
@@ -58,5 +81,7 @@
 #ifndef SSS_CALLOC
 #define SSS_CALLOC calloc
 #endif // SSS_CALLOC
+
+#endif // USE_RTOS
 
 #endif /* FSL_SSS_TYPES_H */

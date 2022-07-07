@@ -65,6 +65,11 @@ sss_status_t scp03_keys_from_path(uint8_t *penc, size_t enc_len, uint8_t *pmac, 
     const char *filename = EX_SSS_SCP03_FILE_PATH;
     FILE *fp             = NULL;
     LOG_D("Using File: %s", filename);
+
+    if (strstr(filename, "..") != NULL) {
+        LOG_W("Potential directory traversal");
+    }
+
     fp = fopen(filename, "rb");
     if (fp != NULL) {
         // File exists. Get keys from file
@@ -100,6 +105,11 @@ static sss_status_t read_platfscp03_keys_from_file(
     sss_status_t status = kStatus_SSS_Fail;
 
     FILE *scp_file = fopen(scp03_file_path, "r");
+
+    if (strstr(scp03_file_path, "..") != NULL) {
+        LOG_W("Potential directory traversal");
+    }
+
     if (scp_file == NULL) {
         LOG_E("Cannot open SCP file");
         status = kStatus_SSS_Fail;

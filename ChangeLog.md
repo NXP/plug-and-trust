@@ -1,6 +1,24 @@
 # Plug-And-Trust Mini Package Change Log
 
 
+## Release v04.02.00
+
+- SE050E applet support added. Default applet in feature file 'fsl_sss_ftr.h' changed to SE050E.
+
+- Extended :cpp:enumerator:`smStatus_t` with new error codes.
+
+- Updated behaviour of :cpp:func:`sss_se05x_key_object_get_handle` to return
+  a success and print warning if it is unable to read attributes but the object exists so
+  that other operations (like deleting) can proceed if they don't depend
+  on object attributes.
+
+- Updated OEF specific SCP keys handling. Added flags to enable OEF specific SCP03 keys in fsl_sss_ftr.h file.
+
+- SE051-H applet support added (Provides PAKE support).
+
+- Bug fix : Memory leak fix on open session with wrong keys.
+
+
 ## Release v04.01.01
 
 - Policy changes for 7.x applet  (Also refer - :ref:`sss_policies`)

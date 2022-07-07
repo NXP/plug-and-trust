@@ -16,6 +16,7 @@
 #include <nxLog_App.h>
 #include <stdio.h>
 #include <string.h>
+#include "sm_types.h"
 
 /* ************************************************************************** */
 /* Local Defines                                                              */
@@ -39,6 +40,8 @@
 /* ************************************************************************** */
 /* Public Functions                                                           */
 /* ************************************************************************** */
+sss_status_t keystore_shadow_From2_To_3(keyStoreTable_t *keystore_shadow);
+sss_status_t keystore_shadow_From3_To_4(keyStoreTable_t *keystore_shadow);
 
 void ks_common_init_fat(keyStoreTable_t *keystore_shadow, keyIdAndTypeIndexLookup_t *lookup_entires, size_t max_entries)
 {
@@ -58,6 +61,7 @@ sss_status_t ks_common_update_fat(keyStoreTable_t *keystore_shadow,
     uint32_t accessPermission,
     uint16_t keyLen)
 {
+    AX_UNUSED_ARG(accessPermission);
     sss_status_t retval = kStatus_SSS_Fail;
     uint32_t i;
     bool found_entry         = FALSE;

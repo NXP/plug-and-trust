@@ -17,11 +17,6 @@
 #include "fsl_sss_types.h"
 //#include <Applet_SE050_Ver.h>
 
-/** @defgroup sss_policy Policy
- *
- * Policies to restrict and control sessions and objects.
- */
-
 /** @addtogroup sss_policy
  * @{ */
 
@@ -43,6 +38,7 @@ typedef enum
     KPolicy_Common_PCR_Value,
     KPolicy_Desfire_Changekey_Auth_Id,
     KPolicy_Derive_Master_Key_Id,
+    KPolicy_Internal_Sign,
 } sss_policy_type_u;
 
 /** Policy applicable to a session */
@@ -102,7 +98,8 @@ typedef struct
     uint8_t forbid_external_iv : 1;
     /** Allow usage as hmac pepper */
     uint8_t can_usage_hmac_pepper : 1;
-
+    /** Allow key agreement. Only for SE051H, key agreement is applicable for symm objects */
+    uint8_t can_KA : 1;
     /* Old policies */
     /** Allow key derivation */
     uint8_t can_KD : 1;
@@ -219,6 +216,13 @@ typedef struct
     uint32_t master_keyId;
 } sss_policy_key_drv_master_keyid_value_u;
 
+/** Allow internal sign. */
+typedef struct
+{
+    /**  identifier of the tbsItemList Secure Object */
+    uint32_t tbsItemList_KeyId;
+} sss_policy_internal_sign_tbs_value_u;
+
 /** Unique/individual policy.
  * For any operation, you need array of sss_policy_u.
  */
@@ -242,6 +246,7 @@ typedef struct
         sss_policy_session_u session;
         sss_policy_desfire_changekey_authId_value_u desfire_auth_id;
         sss_policy_key_drv_master_keyid_value_u master_key_id;
+        sss_policy_internal_sign_tbs_value_u tbsItemList;
     } policy;
 } sss_policy_u;
 

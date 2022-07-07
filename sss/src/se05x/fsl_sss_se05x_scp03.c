@@ -74,7 +74,7 @@ sss_status_t nxScp03_AuthenticateChannel(pSe05xSession_t se05xSession, NXSCP03_A
 #ifdef INITIAL_HOST_CHALLANGE
     uint8_t hostChallenge[] = INITIAL_HOST_CHALLANGE;
 #else
-    uint8_t hostChallenge[SCP_GP_HOST_CHALLENGE_LEN];
+    uint8_t hostChallenge[SCP_GP_HOST_CHALLENGE_LEN] = {0};
     sss_rng_context_t rngctx;
 #endif
     uint8_t keyDivData[SCP_GP_IU_KEY_DIV_DATA_LEN];
@@ -312,14 +312,14 @@ static sss_status_t nxScp03_HostLocal_CalculateSessionKeys(
     uint8_t ddA[128];
     uint16_t ddALen = sizeof(ddA);
     uint8_t context[128];
-    uint16_t contextLen = 0;
-    uint8_t sessionEncKey[AES_KEY_LEN_nBYTE];
-    uint8_t sessionMacKey[AES_KEY_LEN_nBYTE];
-    uint8_t sessionRmacKey[AES_KEY_LEN_nBYTE];
-    uint32_t signatureLen            = AES_KEY_LEN_nBYTE;
-    sss_status_t status              = kStatus_SSS_Fail;
-    NXSCP03_StaticCtx_t *pStatic_ctx = pAuthScp03->pStatic_ctx;
-    NXSCP03_DynCtx_t *pDyn_ctx       = pAuthScp03->pDyn_ctx;
+    uint16_t contextLen                       = 0;
+    uint8_t sessionEncKey[AES_KEY_LEN_nBYTE]  = {0};
+    uint8_t sessionMacKey[AES_KEY_LEN_nBYTE]  = {0};
+    uint8_t sessionRmacKey[AES_KEY_LEN_nBYTE] = {0};
+    uint32_t signatureLen                     = AES_KEY_LEN_nBYTE;
+    sss_status_t status                       = kStatus_SSS_Fail;
+    NXSCP03_StaticCtx_t *pStatic_ctx          = pAuthScp03->pStatic_ctx;
+    NXSCP03_DynCtx_t *pDyn_ctx                = pAuthScp03->pDyn_ctx;
 
     // Calculate the Derviation data
     memcpy(context, hostChallenge, SCP_GP_HOST_CHALLENGE_LEN);
@@ -418,6 +418,8 @@ static sss_status_t nxScp03_GP_InitializeUpdate(pSe05xSession_t se05xSession,
     uint16_t *pSeqCounterLen,
     uint8_t keyVerNo)
 {
+    AX_UNUSED_ARG(seqCounter);
+    AX_UNUSED_ARG(pSeqCounterLen);
     smStatus_t st = SM_NOT_OK;
     uint8_t response[64];
     size_t responseLen          = 64;

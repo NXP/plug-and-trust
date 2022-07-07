@@ -4,17 +4,32 @@
 * SPDX-License-Identifier: Apache-2.0
 */
 
+#if defined(SSS_USE_FTR_FILE)
+#include "fsl_sss_ftr.h"
+#else
+#include "fsl_sss_ftr_default.h"
+#endif
+
 #if defined(FLOW_VERBOSE)
 #define NX_LOG_ENABLE_SCP_DEBUG 1
 #endif
 
 #include <string.h>
 #include <assert.h>
-#include "smCom.h"
 #include <nxLog_scp.h>
 #include "nxScp03_Apis.h"
 #include "nxEnsure.h"
 #include "se05x_const.h"
+
+#if SSS_HAVE_HOSTCRYPTO_MBEDTLS
+#include <fsl_sss_mbedtls_apis.h>
+#elif SSS_HAVE_HOSTCRYPTO_OPENSSL
+#include <fsl_sss_openssl_apis.h>
+#elif SSS_HAVE_HOSTCRYPTO_USER
+#include <fsl_sss_user_apis.h>
+#else
+#error "No hostcrypto"
+#endif // SSS_HAVE_HOSTCRYPTO_MBEDTLS
 
 #if SSS_HAVE_SE05X_VER_GTE_06_00
 #if defined(SE05X_MAX_BUF_SIZE_CMD) && (SE05X_MAX_BUF_SIZE_CMD != 1024)
@@ -105,6 +120,7 @@ cleanup:
 uint16_t nxpSCP03_Decrypt_ResponseAPDU(
     NXSCP03_DynCtx_t *pdySCP03SessCtx, size_t cmdBufLen, uint8_t *rspBuf, size_t *pRspBufLen, uint8_t hasle)
 {
+    AX_UNUSED_ARG(hasle);
     sss_status_t sss_status = kStatus_SSS_Fail;
     uint16_t status = SCP_FAIL;
     sss_algorithm_t algorithm = kAlgorithm_SSS_CMAC_AES;
@@ -115,10 +131,10 @@ uint16_t nxpSCP03_Decrypt_ResponseAPDU(
     size_t signatureLen = sizeof(respMac);
     size_t compareoffset = 0;
     size_t macSize = SCP_CMAC_SIZE;
-    uint8_t iv[SCP_IV_SIZE];
+    uint8_t iv[SCP_IV_SIZE] = {0};
     uint8_t *pIv = (uint8_t *)iv;
     uint8_t response[NX_SCP03_MAX_BUFFER_SIZE];
-    uint8_t plaintextResponse[NX_SCP03_MAX_BUFFER_SIZE];
+    uint8_t plaintextResponse[NX_SCP03_MAX_BUFFER_SIZE]={0};
     sss_algorithm_t algorithm_aes = kAlgorithm_SSS_AES_CBC;
     sss_mode_t mode_aes = kMode_SSS_Decrypt;
     sss_symmetric_t symm;

@@ -22,10 +22,15 @@
 
 typedef enum
 {
-    SM_NOT_OK = 0xFFFF,
-    SM_OK = 0x9000,
-    SM_ERR_CONDITIONS_OF_USE_NOT_SATISFIED = 0x6985,
-    SM_ERR_ACCESS_DENIED_BASED_ON_POLICY = 0x6986,
+    SM_NOT_OK = 0xFFFF,                         // Error
+    SM_OK = 0x9000,                             // No Error
+    SM_ERR_WRONG_LENGTH = 0x6700,               // Wrong length (e.g. C-APDU does not fit into APDU buffer)
+    SM_ERR_CONDITIONS_NOT_SATISFIED = 0x6985,   // Conditions not satisfied
+    SM_ERR_COMMAND_NOT_ALLOWED = 0x6986,        // Command not allowed - access denied based on object policy
+    SM_ERR_SECURITY_STATUS = 0x6982,            // Security status not satisfied
+    SM_ERR_WRONG_DATA = 0x6A80,                 // Wrong data provided
+    SM_ERR_DATA_INVALID = 0x6984,               // Data invalid - policy set invalid for the given object
+    SM_ERR_FILE_FULL = 0x6A84,                  // Not enough memory space available (either transient or persistent memory)
 } smStatus_t;
 
 
@@ -46,6 +51,10 @@ typedef enum
     CRED_PUB_RSA
 } eSE05xType_t;
 
+
+/** @addtogroup se05x_types
+ *
+ * @{ */
 
 typedef struct
 {
@@ -184,7 +193,7 @@ typedef Se05x_AppletFeatures_t *pSe05xAppletFeatures_t;
 typedef Se05xSession_t *pSe05xSession_t;
 typedef Se05xPolicy_t *pSe05xPolicy_t;
 
-#if VERBOSE_APDU_LOGS
+#if defined(VERBOSE_APDU_LOGS) && (VERBOSE_APDU_LOGS == 1)
 #define DO_LOG_V(TAG, DESCRIPTION, VALUE) nLog("APDU", NX_LEVEL_DEBUG, #TAG " [" DESCRIPTION "] = 0x%X", VALUE);
 #define DO_LOG_A(TAG, DESCRIPTION, ARRAY, ARRAY_LEN) \
     nLog_au8("APDU", NX_LEVEL_DEBUG, #TAG " [" DESCRIPTION "]", ARRAY, ARRAY_LEN);

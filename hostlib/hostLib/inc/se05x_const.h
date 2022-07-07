@@ -176,6 +176,10 @@ example : B1b8 : 0x80000000
 #define POLICY_OBJ_ALLOW_USAGE_AS_HMAC_PEPPER       0x00000010
 #endif
 
+#if SSS_HAVE_APPLET_SE051_H
+#define POLICY_OBJ_INTERNAL_SIGN       0x00000008
+#endif
+
 /* Access Rules for Session Policy*/
 #define POLICY_SESSION_MAX_APDU         0x8000
 #define POLICY_SESSION_MAX_TIME         0x4000

@@ -14,7 +14,7 @@
 #include "smCom.h"
 #include "nxLog_smCom.h"
 
-#if USE_RTOS
+#if defined(USE_RTOS) && (USE_RTOS == 1)
 #include "FreeRTOS.h"
 #include "semphr.h"
 #endif
@@ -23,7 +23,7 @@
 #include "smComJRCP.h"
 #endif
 
-#if USE_RTOS
+#if defined(USE_RTOS) && (USE_RTOS == 1)
 static SemaphoreHandle_t gSmComlock;
 #elif (__GNUC__ && !AX_EMBEDDED)
 #include<pthread.h>
@@ -37,7 +37,7 @@ static SemaphoreHandle_t gSmComlock;
 #define USE_LOCK 0
 #endif
 
-#if USE_RTOS
+#if defined(USE_RTOS) && (USE_RTOS == 1)
 #define LOCK_TXN()                                             \
     LOG_D("Trying to Acquire Lock");                           \
     if (xSemaphoreTake(gSmComlock, portMAX_DELAY) == pdTRUE) { \
@@ -79,7 +79,7 @@ static ApduTransceiveRawFunction_t pSmCom_TransceiveRaw = NULL;
 U16 smCom_Init(ApduTransceiveFunction_t pTransceive, ApduTransceiveRawFunction_t pTransceiveRaw)
 {
     U16 ret = SMCOM_COM_INIT_FAILED;
-#if USE_RTOS
+#if defined(USE_RTOS) && (USE_RTOS == 1)
     gSmComlock = xSemaphoreCreateMutex();
     if (gSmComlock == NULL) {
         LOG_E("\n xSemaphoreCreateMutex failed");
@@ -100,7 +100,7 @@ U16 smCom_Init(ApduTransceiveFunction_t pTransceive, ApduTransceiveRawFunction_t
 
 void smCom_DeInit(void)
 {
-#if USE_RTOS
+#if defined(USE_RTOS) && (USE_RTOS == 1)
     if (gSmComlock != NULL) {
     	vSemaphoreDelete(gSmComlock);
         gSmComlock = NULL;

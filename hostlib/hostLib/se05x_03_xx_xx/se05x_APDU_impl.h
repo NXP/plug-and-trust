@@ -22,12 +22,12 @@ smStatus_t Se05x_API_CreateSession(
     smStatus_t retStatus = SM_NOT_OK;
     tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_MGMT, kSE05x_P1_DEFAULT, kSE05x_P2_SESSION_CREATE}};
     uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
-    size_t cmdbufLen = 0;
-    uint8_t *pCmdbuf = &cmdbuf[0];
-    int tlvRet       = 0;
-    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP];
-    uint8_t *pRspbuf = &rspbuf[0];
-    size_t rspbufLen = ARRAY_SIZE(rspbuf);
+    size_t cmdbufLen                       = 0;
+    uint8_t *pCmdbuf                       = &cmdbuf[0];
+    int tlvRet                             = 0;
+    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP] = {0};
+    uint8_t *pRspbuf                       = &rspbuf[0];
+    size_t rspbufLen                       = ARRAY_SIZE(rspbuf);
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "CreateSession []");
@@ -45,7 +45,7 @@ smStatus_t Se05x_API_CreateSession(
             goto cleanup;
         }
         if ((rspIndex + 2) == rspbufLen) {
-            retStatus = (pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]);
+            retStatus = (smStatus_t)((pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]));
         }
     }
 
@@ -58,10 +58,10 @@ smStatus_t Se05x_API_ExchangeSessionData(pSe05xSession_t session_ctx, pSe05xPoli
     smStatus_t retStatus = SM_NOT_OK;
     tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_MGMT, kSE05x_P1_DEFAULT, kSE05x_P2_SESSION_POLICY}};
     uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
-    size_t cmdbufLen = 0;
-    uint8_t *pCmdbuf = &cmdbuf[0];
-    int tlvRet       = 0;
-    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP];
+    size_t cmdbufLen                       = 0;
+    uint8_t *pCmdbuf                       = &cmdbuf[0];
+    int tlvRet                             = 0;
+    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP] = {0};
     //    uint8_t *pRspbuf = &rspbuf[0];
     size_t rspbufLen = ARRAY_SIZE(rspbuf);
 #if VERBOSE_APDU_LOGS
@@ -764,12 +764,12 @@ smStatus_t Se05x_API_ReadObject(
     smStatus_t retStatus = SM_NOT_OK;
     tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_READ, kSE05x_P1_DEFAULT, kSE05x_P2_DEFAULT}};
     uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
-    size_t cmdbufLen = 0;
-    uint8_t *pCmdbuf = &cmdbuf[0];
-    int tlvRet       = 0;
-    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP];
-    uint8_t *pRspbuf = &rspbuf[0];
-    size_t rspbufLen = ARRAY_SIZE(rspbuf);
+    size_t cmdbufLen                       = 0;
+    uint8_t *pCmdbuf                       = &cmdbuf[0];
+    int tlvRet                             = 0;
+    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP] = {0};
+    uint8_t *pRspbuf                       = &rspbuf[0];
+    size_t rspbufLen                       = ARRAY_SIZE(rspbuf);
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "ReadObject []");
@@ -795,11 +795,11 @@ smStatus_t Se05x_API_ReadObject(
             goto cleanup;
         }
         if ((rspIndex + 2) == rspbufLen) {
-            retStatus = (pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]);
+            retStatus = (smStatus_t)((pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]));
         }
     }
 
-    if (retStatus == SM_ERR_ACCESS_DENIED_BASED_ON_POLICY) {
+    if (retStatus == SM_ERR_COMMAND_NOT_ALLOWED) {
         LOG_W("Denied to read object %08X bases on policy.", objectID);
     }
 
@@ -833,12 +833,12 @@ smStatus_t Se05x_API_ReadObject_W_Attst_V2(pSe05xSession_t session_ctx,
     smStatus_t retStatus = SM_NOT_OK;
     tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_READ_With_Attestation, kSE05x_P1_DEFAULT, kSE05x_P2_DEFAULT}};
     uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
-    size_t cmdbufLen = 0;
-    uint8_t *pCmdbuf = &cmdbuf[0];
-    int tlvRet       = 0;
-    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP];
-    uint8_t *pRspbuf = &rspbuf[0];
-    size_t rspbufLen = ARRAY_SIZE(rspbuf);
+    size_t cmdbufLen                       = 0;
+    uint8_t *pCmdbuf                       = &cmdbuf[0];
+    int tlvRet                             = 0;
+    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP] = {0};
+    uint8_t *pRspbuf                       = &rspbuf[0];
+    size_t rspbufLen                       = ARRAY_SIZE(rspbuf);
 
 #if VERBOSE_APDU_LOGS
     NEWLINE();
@@ -875,6 +875,9 @@ smStatus_t Se05x_API_ReadObject_W_Attst_V2(pSe05xSession_t session_ctx,
     //As length is extended
     pCmdapdu[4] = 0x00;
     pCmdapdu[5] = 0x00;
+    if (cmdbufLen == 0) {
+        goto cleanup;
+    }
     pCmdapdu[6] = (uint8_t)cmdbufLen;
     memcpy(pCmdapdu + 7, cmdbuf, cmdbufLen);
     retStatus = DoAPDUTxRx_s_Case4_ext(session_ctx, &hdr, cmdbuf, cmdbufLen, rspbuf, &rspbufLen);
@@ -908,7 +911,7 @@ smStatus_t Se05x_API_ReadObject_W_Attst_V2(pSe05xSession_t session_ctx,
             goto cleanup;
         }
         if ((rspIndex + 2) == rspbufLen) {
-            retStatus = (pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]);
+            retStatus = (smStatus_t)((pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]));
         }
     }
     else {
@@ -942,12 +945,12 @@ smStatus_t Se05x_API_ReadObject_W_Attst(pSe05xSession_t session_ctx,
     smStatus_t retStatus = SM_NOT_OK;
     tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_READ_With_Attestation, kSE05x_P1_DEFAULT, kSE05x_P2_DEFAULT}};
     uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
-    size_t cmdbufLen = 0;
-    uint8_t *pCmdbuf = &cmdbuf[0];
-    int tlvRet       = 0;
-    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP];
-    uint8_t *pRspbuf = &rspbuf[0];
-    size_t rspbufLen = ARRAY_SIZE(rspbuf);
+    size_t cmdbufLen                       = 0;
+    uint8_t *pCmdbuf                       = &cmdbuf[0];
+    int tlvRet                             = 0;
+    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP] = {0};
+    uint8_t *pRspbuf                       = &rspbuf[0];
+    size_t rspbufLen                       = ARRAY_SIZE(rspbuf);
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "ReadObject_W_Attst []");
@@ -1006,7 +1009,7 @@ smStatus_t Se05x_API_ReadObject_W_Attst(pSe05xSession_t session_ctx,
             goto cleanup;
         }
         if ((rspIndex + 2) == rspbufLen) {
-            retStatus = (pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]);
+            retStatus = (smStatus_t)((pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]));
         }
     }
 
@@ -1026,12 +1029,12 @@ smStatus_t Se05x_API_ReadRSA(pSe05xSession_t session_ctx,
     smStatus_t retStatus = SM_NOT_OK;
     tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_READ, kSE05x_P1_DEFAULT, kSE05x_P2_DEFAULT}};
     uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
-    size_t cmdbufLen = 0;
-    uint8_t *pCmdbuf = &cmdbuf[0];
-    int tlvRet       = 0;
-    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP];
-    uint8_t *pRspbuf = &rspbuf[0];
-    size_t rspbufLen = ARRAY_SIZE(rspbuf);
+    size_t cmdbufLen                       = 0;
+    uint8_t *pCmdbuf                       = &cmdbuf[0];
+    int tlvRet                             = 0;
+    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP] = {0};
+    uint8_t *pRspbuf                       = &rspbuf[0];
+    size_t rspbufLen                       = ARRAY_SIZE(rspbuf);
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "ReadRSA []");
@@ -1061,7 +1064,7 @@ smStatus_t Se05x_API_ReadRSA(pSe05xSession_t session_ctx,
             goto cleanup;
         }
         if ((rspIndex + 2) == rspbufLen) {
-            retStatus = (pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]);
+            retStatus = (smStatus_t)((pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]));
         }
     }
 
@@ -1096,12 +1099,12 @@ smStatus_t Se05x_API_ReadRSA_W_Attst_V2(pSe05xSession_t session_ctx,
     smStatus_t retStatus = SM_NOT_OK;
     tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_READ_With_Attestation, kSE05x_P1_DEFAULT, kSE05x_P2_DEFAULT}};
     uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
-    size_t cmdbufLen = 0;
-    uint8_t *pCmdbuf = &cmdbuf[0];
-    int tlvRet       = 0;
-    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP];
-    uint8_t *pRspbuf = &rspbuf[0];
-    size_t rspbufLen = ARRAY_SIZE(rspbuf);
+    size_t cmdbufLen                       = 0;
+    uint8_t *pCmdbuf                       = &cmdbuf[0];
+    int tlvRet                             = 0;
+    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP] = {0};
+    uint8_t *pRspbuf                       = &rspbuf[0];
+    size_t rspbufLen                       = ARRAY_SIZE(rspbuf);
 
 #if VERBOSE_APDU_LOGS
     NEWLINE();
@@ -1139,6 +1142,9 @@ smStatus_t Se05x_API_ReadRSA_W_Attst_V2(pSe05xSession_t session_ctx,
     //As length is extended
     pCmdapdu[4] = 0x00;
     pCmdapdu[5] = 0x00;
+    if (cmdbufLen == 0) {
+        goto cleanup;
+    }
     pCmdapdu[6] = (uint8_t)cmdbufLen;
     memcpy(pCmdapdu + 7, cmdbuf, cmdbufLen);
     retStatus = DoAPDUTxRx_s_Case4_ext(session_ctx, &hdr, cmdbuf, cmdbufLen, rspbuf, &rspbufLen);
@@ -1172,7 +1178,7 @@ smStatus_t Se05x_API_ReadRSA_W_Attst_V2(pSe05xSession_t session_ctx,
             goto cleanup;
         }
         if ((rspIndex + 2) == rspbufLen) {
-            retStatus = (pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]);
+            retStatus = (smStatus_t)((pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]));
         }
     }
     else {
@@ -1274,7 +1280,7 @@ smStatus_t Se05x_API_ReadRSA_W_Attst(pSe05xSession_t session_ctx,
             goto cleanup;
         }
         if ((rspIndex + 2) == rspbufLen) {
-            retStatus = (pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]);
+            retStatus = (smStatus_t)((pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]));
         }
     }
 
@@ -1289,12 +1295,12 @@ smStatus_t Se05x_API_ExportObject(
     smStatus_t retStatus = SM_NOT_OK;
     tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_READ, kSE05x_P1_DEFAULT, kSE05x_P2_EXPORT}};
     uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
-    size_t cmdbufLen = 0;
-    uint8_t *pCmdbuf = &cmdbuf[0];
-    int tlvRet       = 0;
-    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP];
-    uint8_t *pRspbuf = &rspbuf[0];
-    size_t rspbufLen = ARRAY_SIZE(rspbuf);
+    size_t cmdbufLen                       = 0;
+    uint8_t *pCmdbuf                       = &cmdbuf[0];
+    int tlvRet                             = 0;
+    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP] = {0};
+    uint8_t *pRspbuf                       = &rspbuf[0];
+    size_t rspbufLen                       = ARRAY_SIZE(rspbuf);
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "ExportObject []");
@@ -1317,7 +1323,7 @@ smStatus_t Se05x_API_ExportObject(
             goto cleanup;
         }
         if ((rspIndex + 2) == rspbufLen) {
-            retStatus = (pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]);
+            retStatus = (smStatus_t)((pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]));
         }
     }
 
@@ -1334,12 +1340,12 @@ smStatus_t Se05x_API_ReadType(pSe05xSession_t session_ctx,
     smStatus_t retStatus = SM_NOT_OK;
     tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_READ | attestation_type, kSE05x_P1_DEFAULT, kSE05x_P2_TYPE}};
     uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
-    size_t cmdbufLen = 0;
-    uint8_t *pCmdbuf = &cmdbuf[0];
-    int tlvRet       = 0;
-    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP];
-    uint8_t *pRspbuf = &rspbuf[0];
-    size_t rspbufLen = ARRAY_SIZE(rspbuf);
+    size_t cmdbufLen                       = 0;
+    uint8_t *pCmdbuf                       = &cmdbuf[0];
+    int tlvRet                             = 0;
+    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP] = {0};
+    uint8_t *pRspbuf                       = &rspbuf[0];
+    size_t rspbufLen                       = ARRAY_SIZE(rspbuf);
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "ReadType []");
@@ -1361,7 +1367,7 @@ smStatus_t Se05x_API_ReadType(pSe05xSession_t session_ctx,
             goto cleanup;
         }
         if ((rspIndex + 2) == rspbufLen) {
-            retStatus = (pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]);
+            retStatus = (smStatus_t)((pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]));
         }
     }
 
@@ -1374,12 +1380,12 @@ smStatus_t Se05x_API_ReadSize(pSe05xSession_t session_ctx, uint32_t objectID, ui
     smStatus_t retStatus = SM_NOT_OK;
     tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_READ, kSE05x_P1_DEFAULT, kSE05x_P2_SIZE}};
     uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
-    size_t cmdbufLen = 0;
-    uint8_t *pCmdbuf = &cmdbuf[0];
-    int tlvRet       = 0;
-    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP];
-    uint8_t *pRspbuf = &rspbuf[0];
-    size_t rspbufLen = ARRAY_SIZE(rspbuf);
+    size_t cmdbufLen                       = 0;
+    uint8_t *pCmdbuf                       = &cmdbuf[0];
+    int tlvRet                             = 0;
+    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP] = {0};
+    uint8_t *pRspbuf                       = &rspbuf[0];
+    size_t rspbufLen                       = ARRAY_SIZE(rspbuf);
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "ReadSize []");
@@ -1397,7 +1403,7 @@ smStatus_t Se05x_API_ReadSize(pSe05xSession_t session_ctx, uint32_t objectID, ui
             goto cleanup;
         }
         if ((rspIndex + 2) == rspbufLen) {
-            retStatus = (pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]);
+            retStatus = (smStatus_t)((pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]));
         }
     }
 
@@ -1415,12 +1421,12 @@ smStatus_t Se05x_API_ReadIDList(pSe05xSession_t session_ctx,
     smStatus_t retStatus = SM_NOT_OK;
     tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_READ, kSE05x_P1_DEFAULT, kSE05x_P2_LIST}};
     uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
-    size_t cmdbufLen = 0;
-    uint8_t *pCmdbuf = &cmdbuf[0];
-    int tlvRet       = 0;
-    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP];
-    uint8_t *pRspbuf = &rspbuf[0];
-    size_t rspbufLen = ARRAY_SIZE(rspbuf);
+    size_t cmdbufLen                       = 0;
+    uint8_t *pCmdbuf                       = &cmdbuf[0];
+    int tlvRet                             = 0;
+    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP] = {0};
+    uint8_t *pRspbuf                       = &rspbuf[0];
+    size_t rspbufLen                       = ARRAY_SIZE(rspbuf);
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "ReadIDList []");
@@ -1464,12 +1470,12 @@ smStatus_t Se05x_API_CheckObjectExists(pSe05xSession_t session_ctx, uint32_t obj
     smStatus_t retStatus = SM_NOT_OK;
     tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_MGMT, kSE05x_P1_DEFAULT, kSE05x_P2_EXIST}};
     uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
-    size_t cmdbufLen = 0;
-    uint8_t *pCmdbuf = &cmdbuf[0];
-    int tlvRet       = 0;
-    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP];
-    uint8_t *pRspbuf = &rspbuf[0];
-    size_t rspbufLen = ARRAY_SIZE(rspbuf);
+    size_t cmdbufLen                       = 0;
+    uint8_t *pCmdbuf                       = &cmdbuf[0];
+    int tlvRet                             = 0;
+    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP] = {0};
+    uint8_t *pRspbuf                       = &rspbuf[0];
+    size_t rspbufLen                       = ARRAY_SIZE(rspbuf);
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "CheckObjectExists []");
@@ -1487,7 +1493,7 @@ smStatus_t Se05x_API_CheckObjectExists(pSe05xSession_t session_ctx, uint32_t obj
             goto cleanup;
         }
         if ((rspIndex + 2) == rspbufLen) {
-            retStatus = (pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]);
+            retStatus = (smStatus_t)((pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]));
         }
     }
 
@@ -1579,12 +1585,12 @@ smStatus_t Se05x_API_GetECCurveId(pSe05xSession_t session_ctx, uint32_t objectID
     smStatus_t retStatus = SM_NOT_OK;
     tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_READ, kSE05x_P1_CURVE, kSE05x_P2_ID}};
     uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
-    size_t cmdbufLen = 0;
-    uint8_t *pCmdbuf = &cmdbuf[0];
-    int tlvRet       = 0;
-    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP];
-    uint8_t *pRspbuf = &rspbuf[0];
-    size_t rspbufLen = ARRAY_SIZE(rspbuf);
+    size_t cmdbufLen                       = 0;
+    uint8_t *pCmdbuf                       = &cmdbuf[0];
+    int tlvRet                             = 0;
+    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP] = {0};
+    uint8_t *pRspbuf                       = &rspbuf[0];
+    size_t rspbufLen                       = ARRAY_SIZE(rspbuf);
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "GetECCurveId []");
@@ -1602,7 +1608,7 @@ smStatus_t Se05x_API_GetECCurveId(pSe05xSession_t session_ctx, uint32_t objectID
             goto cleanup;
         }
         if ((rspIndex + 2) == rspbufLen) {
-            retStatus = (pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]);
+            retStatus = (smStatus_t)((pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]));
         }
     }
 
@@ -1615,11 +1621,11 @@ smStatus_t Se05x_API_ReadECCurveList(pSe05xSession_t session_ctx, uint8_t *curve
     smStatus_t retStatus = SM_NOT_OK;
     tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_READ, kSE05x_P1_CURVE, kSE05x_P2_LIST}};
     uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
-    size_t cmdbufLen = 0;
-    int tlvRet       = 0;
-    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP];
-    uint8_t *pRspbuf = &rspbuf[0];
-    size_t rspbufLen = ARRAY_SIZE(rspbuf);
+    size_t cmdbufLen                       = 0;
+    int tlvRet                             = 0;
+    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP] = {0};
+    uint8_t *pRspbuf                       = &rspbuf[0];
+    size_t rspbufLen                       = ARRAY_SIZE(rspbuf);
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "ReadECCurveList []");
@@ -1633,7 +1639,7 @@ smStatus_t Se05x_API_ReadECCurveList(pSe05xSession_t session_ctx, uint8_t *curve
             goto cleanup;
         }
         if ((rspIndex + 2) == rspbufLen) {
-            retStatus = (pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]);
+            retStatus = (smStatus_t)((pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]));
         }
     }
 
@@ -1706,11 +1712,11 @@ smStatus_t Se05x_API_ReadCryptoObjectList(pSe05xSession_t session_ctx, uint8_t *
     smStatus_t retStatus = SM_NOT_OK;
     tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_READ, kSE05x_P1_CRYPTO_OBJ, kSE05x_P2_LIST}};
     uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
-    size_t cmdbufLen = 0;
-    int tlvRet       = 0;
-    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP];
-    uint8_t *pRspbuf = &rspbuf[0];
-    size_t rspbufLen = ARRAY_SIZE(rspbuf);
+    size_t cmdbufLen                       = 0;
+    int tlvRet                             = 0;
+    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP] = {0};
+    uint8_t *pRspbuf                       = &rspbuf[0];
+    size_t rspbufLen                       = ARRAY_SIZE(rspbuf);
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "ReadCryptoObjectList []");
@@ -1725,7 +1731,7 @@ smStatus_t Se05x_API_ReadCryptoObjectList(pSe05xSession_t session_ctx, uint8_t *
             goto cleanup;
         }
         if ((rspIndex + 2) == rspbufLen) {
-            retStatus = (pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]);
+            retStatus = (smStatus_t)((pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]));
         }
     }
 
@@ -1766,12 +1772,12 @@ smStatus_t Se05x_API_ECDSASign(pSe05xSession_t session_ctx,
     smStatus_t retStatus = SM_NOT_OK;
     tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_CRYPTO, kSE05x_P1_SIGNATURE, kSE05x_P2_SIGN}};
     uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
-    size_t cmdbufLen = 0;
-    uint8_t *pCmdbuf = &cmdbuf[0];
-    int tlvRet       = 0;
-    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP];
-    uint8_t *pRspbuf = &rspbuf[0];
-    size_t rspbufLen = ARRAY_SIZE(rspbuf);
+    size_t cmdbufLen                       = 0;
+    uint8_t *pCmdbuf                       = &cmdbuf[0];
+    int tlvRet                             = 0;
+    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP] = {0};
+    uint8_t *pRspbuf                       = &rspbuf[0];
+    size_t rspbufLen                       = ARRAY_SIZE(rspbuf);
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "ECDSASign []");
@@ -1797,7 +1803,7 @@ smStatus_t Se05x_API_ECDSASign(pSe05xSession_t session_ctx,
             goto cleanup;
         }
         if ((rspIndex + 2) == rspbufLen) {
-            retStatus = (pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]);
+            retStatus = (smStatus_t)((pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]));
         }
     }
 
@@ -1816,12 +1822,12 @@ smStatus_t Se05x_API_EdDSASign(pSe05xSession_t session_ctx,
     smStatus_t retStatus = SM_NOT_OK;
     tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_CRYPTO, kSE05x_P1_SIGNATURE, kSE05x_P2_SIGN}};
     uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
-    size_t cmdbufLen = 0;
-    uint8_t *pCmdbuf = &cmdbuf[0];
-    int tlvRet       = 0;
-    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP];
-    uint8_t *pRspbuf = &rspbuf[0];
-    size_t rspbufLen = ARRAY_SIZE(rspbuf);
+    size_t cmdbufLen                       = 0;
+    uint8_t *pCmdbuf                       = &cmdbuf[0];
+    int tlvRet                             = 0;
+    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP] = {0};
+    uint8_t *pRspbuf                       = &rspbuf[0];
+    size_t rspbufLen                       = ARRAY_SIZE(rspbuf);
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "EdDSASign []");
@@ -1847,7 +1853,7 @@ smStatus_t Se05x_API_EdDSASign(pSe05xSession_t session_ctx,
             goto cleanup;
         }
         if ((rspIndex + 2) == rspbufLen) {
-            retStatus = (pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]);
+            retStatus = (smStatus_t)((pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]));
         }
     }
 
@@ -1868,12 +1874,12 @@ smStatus_t Se05x_API_ECDAASign(pSe05xSession_t session_ctx,
     smStatus_t retStatus = SM_NOT_OK;
     tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_CRYPTO, kSE05x_P1_SIGNATURE, kSE05x_P2_SIGN}};
     uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
-    size_t cmdbufLen = 0;
-    uint8_t *pCmdbuf = &cmdbuf[0];
-    int tlvRet       = 0;
-    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP];
-    uint8_t *pRspbuf = &rspbuf[0];
-    size_t rspbufLen = ARRAY_SIZE(rspbuf);
+    size_t cmdbufLen                       = 0;
+    uint8_t *pCmdbuf                       = &cmdbuf[0];
+    int tlvRet                             = 0;
+    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP] = {0};
+    uint8_t *pRspbuf                       = &rspbuf[0];
+    size_t rspbufLen                       = ARRAY_SIZE(rspbuf);
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "ECDAASign []");
@@ -1903,7 +1909,7 @@ smStatus_t Se05x_API_ECDAASign(pSe05xSession_t session_ctx,
             goto cleanup;
         }
         if ((rspIndex + 2) == rspbufLen) {
-            retStatus = (pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]);
+            retStatus = (smStatus_t)((pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]));
         }
     }
 
@@ -1926,12 +1932,12 @@ smStatus_t Se05x_API_ECDAASign(pSe05xSession_t session_ctx,
     smStatus_t retStatus = SM_NOT_OK;
     tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_CRYPTO, kSE05x_P1_SIGNATURE, kSE05x_P2_SIGN}};
     uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
-    size_t cmdbufLen = 0;
-    uint8_t *pCmdbuf = &cmdbuf[0];
-    int tlvRet       = 0;
-    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP];
-    uint8_t *pRspbuf = &rspbuf[0];
-    size_t rspbufLen = ARRAY_SIZE(rspbuf);
+    size_t cmdbufLen                       = 0;
+    uint8_t *pCmdbuf                       = &cmdbuf[0];
+    int tlvRet                             = 0;
+    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP] = {0};
+    uint8_t *pRspbuf                       = &rspbuf[0];
+    size_t rspbufLen                       = ARRAY_SIZE(rspbuf);
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "ECDAASign []");
@@ -1961,7 +1967,7 @@ smStatus_t Se05x_API_ECDAASign(pSe05xSession_t session_ctx,
             goto cleanup;
         }
         if ((rspIndex + 2) == rspbufLen) {
-            retStatus = (pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]);
+            retStatus = (smStatus_t)((pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]));
         }
     }
 
@@ -1982,12 +1988,12 @@ smStatus_t Se05x_API_ECDSAVerify(pSe05xSession_t session_ctx,
     smStatus_t retStatus = SM_NOT_OK;
     tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_CRYPTO, kSE05x_P1_SIGNATURE, kSE05x_P2_VERIFY}};
     uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
-    size_t cmdbufLen = 0;
-    uint8_t *pCmdbuf = &cmdbuf[0];
-    int tlvRet       = 0;
-    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP];
-    uint8_t *pRspbuf = &rspbuf[0];
-    size_t rspbufLen = ARRAY_SIZE(rspbuf);
+    size_t cmdbufLen                       = 0;
+    uint8_t *pCmdbuf                       = &cmdbuf[0];
+    int tlvRet                             = 0;
+    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP] = {0};
+    uint8_t *pRspbuf                       = &rspbuf[0];
+    size_t rspbufLen                       = ARRAY_SIZE(rspbuf);
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "ECDSAVerify []");
@@ -2017,7 +2023,7 @@ smStatus_t Se05x_API_ECDSAVerify(pSe05xSession_t session_ctx,
             goto cleanup;
         }
         if ((rspIndex + 2) == rspbufLen) {
-            retStatus = (pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]);
+            retStatus = (smStatus_t)((pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]));
         }
     }
 
@@ -2037,12 +2043,12 @@ smStatus_t Se05x_API_EdDSAVerify(pSe05xSession_t session_ctx,
     smStatus_t retStatus = SM_NOT_OK;
     tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_CRYPTO, kSE05x_P1_SIGNATURE, kSE05x_P2_VERIFY}};
     uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
-    size_t cmdbufLen = 0;
-    uint8_t *pCmdbuf = &cmdbuf[0];
-    int tlvRet       = 0;
-    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP];
-    uint8_t *pRspbuf = &rspbuf[0];
-    size_t rspbufLen = ARRAY_SIZE(rspbuf);
+    size_t cmdbufLen                       = 0;
+    uint8_t *pCmdbuf                       = &cmdbuf[0];
+    int tlvRet                             = 0;
+    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP] = {0};
+    uint8_t *pRspbuf                       = &rspbuf[0];
+    size_t rspbufLen                       = ARRAY_SIZE(rspbuf);
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "EdDSAVerify []");
@@ -2072,7 +2078,7 @@ smStatus_t Se05x_API_EdDSAVerify(pSe05xSession_t session_ctx,
             goto cleanup;
         }
         if ((rspIndex + 2) == rspbufLen) {
-            retStatus = (pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]);
+            retStatus = (smStatus_t)((pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]));
         }
     }
 
@@ -2090,12 +2096,12 @@ smStatus_t Se05x_API_ECDHGenerateSharedSecret(pSe05xSession_t session_ctx,
     smStatus_t retStatus = SM_NOT_OK;
     tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_CRYPTO, kSE05x_P1_EC, kSE05x_P2_DH}};
     uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
-    size_t cmdbufLen = 0;
-    uint8_t *pCmdbuf = &cmdbuf[0];
-    int tlvRet       = 0;
-    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP];
-    uint8_t *pRspbuf = &rspbuf[0];
-    size_t rspbufLen = ARRAY_SIZE(rspbuf);
+    size_t cmdbufLen                       = 0;
+    uint8_t *pCmdbuf                       = &cmdbuf[0];
+    int tlvRet                             = 0;
+    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP] = {0};
+    uint8_t *pRspbuf                       = &rspbuf[0];
+    size_t rspbufLen                       = ARRAY_SIZE(rspbuf);
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "ECDHGenerateSharedSecret []");
@@ -2117,7 +2123,7 @@ smStatus_t Se05x_API_ECDHGenerateSharedSecret(pSe05xSession_t session_ctx,
             goto cleanup;
         }
         if ((rspIndex + 2) == rspbufLen) {
-            retStatus = (pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]);
+            retStatus = (smStatus_t)((pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]));
         }
     }
 
@@ -2136,12 +2142,12 @@ smStatus_t Se05x_API_RSASign(pSe05xSession_t session_ctx,
     smStatus_t retStatus = SM_NOT_OK;
     tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_CRYPTO, kSE05x_P1_SIGNATURE, kSE05x_P2_SIGN}};
     uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
-    size_t cmdbufLen = 0;
-    uint8_t *pCmdbuf = &cmdbuf[0];
-    int tlvRet       = 0;
-    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP];
-    uint8_t *pRspbuf = &rspbuf[0];
-    size_t rspbufLen = ARRAY_SIZE(rspbuf);
+    size_t cmdbufLen                       = 0;
+    uint8_t *pCmdbuf                       = &cmdbuf[0];
+    int tlvRet                             = 0;
+    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP] = {0};
+    uint8_t *pRspbuf                       = &rspbuf[0];
+    size_t rspbufLen                       = ARRAY_SIZE(rspbuf);
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "RSASign []");
@@ -2167,7 +2173,7 @@ smStatus_t Se05x_API_RSASign(pSe05xSession_t session_ctx,
             goto cleanup;
         }
         if ((rspIndex + 2) == rspbufLen) {
-            retStatus = (pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]);
+            retStatus = (smStatus_t)((pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]));
         }
     }
 
@@ -2187,12 +2193,12 @@ smStatus_t Se05x_API_RSAVerify(pSe05xSession_t session_ctx,
     smStatus_t retStatus = SM_NOT_OK;
     tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_CRYPTO, kSE05x_P1_SIGNATURE, kSE05x_P2_VERIFY}};
     uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
-    size_t cmdbufLen = 0;
-    uint8_t *pCmdbuf = &cmdbuf[0];
-    int tlvRet       = 0;
-    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP];
-    uint8_t *pRspbuf = &rspbuf[0];
-    size_t rspbufLen = ARRAY_SIZE(rspbuf);
+    size_t cmdbufLen                       = 0;
+    uint8_t *pCmdbuf                       = &cmdbuf[0];
+    int tlvRet                             = 0;
+    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP] = {0};
+    uint8_t *pRspbuf                       = &rspbuf[0];
+    size_t rspbufLen                       = ARRAY_SIZE(rspbuf);
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "RSAVerify []");
@@ -2222,7 +2228,7 @@ smStatus_t Se05x_API_RSAVerify(pSe05xSession_t session_ctx,
             goto cleanup;
         }
         if ((rspIndex + 2) == rspbufLen) {
-            retStatus = (pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]);
+            retStatus = (smStatus_t)((pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]));
         }
     }
 
@@ -2241,12 +2247,12 @@ smStatus_t Se05x_API_RSAEncrypt(pSe05xSession_t session_ctx,
     smStatus_t retStatus = SM_NOT_OK;
     tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_CRYPTO, kSE05x_P1_RSA, kSE05x_P2_ENCRYPT_ONESHOT}};
     uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
-    size_t cmdbufLen = 0;
-    uint8_t *pCmdbuf = &cmdbuf[0];
-    int tlvRet       = 0;
-    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP];
-    uint8_t *pRspbuf = &rspbuf[0];
-    size_t rspbufLen = ARRAY_SIZE(rspbuf);
+    size_t cmdbufLen                       = 0;
+    uint8_t *pCmdbuf                       = &cmdbuf[0];
+    int tlvRet                             = 0;
+    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP] = {0};
+    uint8_t *pRspbuf                       = &rspbuf[0];
+    size_t rspbufLen                       = ARRAY_SIZE(rspbuf);
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "RSAEncrypt []");
@@ -2272,7 +2278,7 @@ smStatus_t Se05x_API_RSAEncrypt(pSe05xSession_t session_ctx,
             goto cleanup;
         }
         if ((rspIndex + 2) == rspbufLen) {
-            retStatus = (pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]);
+            retStatus = (smStatus_t)((pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]));
         }
     }
 
@@ -2291,12 +2297,12 @@ smStatus_t Se05x_API_RSADecrypt(pSe05xSession_t session_ctx,
     smStatus_t retStatus = SM_NOT_OK;
     tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_CRYPTO, kSE05x_P1_RSA, kSE05x_P2_DECRYPT_ONESHOT}};
     uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
-    size_t cmdbufLen = 0;
-    uint8_t *pCmdbuf = &cmdbuf[0];
-    int tlvRet       = 0;
-    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP];
-    uint8_t *pRspbuf = &rspbuf[0];
-    size_t rspbufLen = ARRAY_SIZE(rspbuf);
+    size_t cmdbufLen                       = 0;
+    uint8_t *pCmdbuf                       = &cmdbuf[0];
+    int tlvRet                             = 0;
+    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP] = {0};
+    uint8_t *pRspbuf                       = &rspbuf[0];
+    size_t rspbufLen                       = ARRAY_SIZE(rspbuf);
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "RSADecrypt []");
@@ -2322,7 +2328,7 @@ smStatus_t Se05x_API_RSADecrypt(pSe05xSession_t session_ctx,
             goto cleanup;
         }
         if ((rspIndex + 2) == rspbufLen) {
-            retStatus = (pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]);
+            retStatus = (smStatus_t)((pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]));
         }
     }
 
@@ -2340,14 +2346,14 @@ smStatus_t Se05x_API_CipherInit(pSe05xSession_t session_ctx,
     smStatus_t retStatus = SM_NOT_OK;
     tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_CRYPTO, kSE05x_P1_CIPHER, operation}};
     uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
-    size_t cmdbufLen = 0;
-    uint8_t *pCmdbuf = &cmdbuf[0];
-    int tlvRet       = 0;
-    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP];
-    uint8_t *pRspbuf = &rspbuf[0];
-    size_t rspbufLen = ARRAY_SIZE(rspbuf);
-    uint16_t ivlen16 = (uint16_t)IVLen;
-    size_t ivlen32   = IVLen;
+    size_t cmdbufLen                       = 0;
+    uint8_t *pCmdbuf                       = &cmdbuf[0];
+    int tlvRet                             = 0;
+    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP] = {0};
+    uint8_t *pRspbuf                       = &rspbuf[0];
+    size_t rspbufLen                       = ARRAY_SIZE(rspbuf);
+    uint16_t ivlen16                       = (uint16_t)IVLen;
+    size_t ivlen32                         = IVLen;
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "CipherInit []");
@@ -2392,7 +2398,7 @@ smStatus_t Se05x_API_CipherInit(pSe05xSession_t session_ctx,
                 goto cleanup;
             }
             if ((rspIndex + 2) == rspbufLen) {
-                retStatus = (pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]);
+                retStatus = (smStatus_t)((pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]));
             }
         }
     }
@@ -2414,12 +2420,12 @@ smStatus_t Se05x_API_CipherUpdate(pSe05xSession_t session_ctx,
     smStatus_t retStatus = SM_NOT_OK;
     tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_CRYPTO, kSE05x_P1_CIPHER, kSE05x_P2_UPDATE}};
     uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
-    size_t cmdbufLen = 0;
-    uint8_t *pCmdbuf = &cmdbuf[0];
-    int tlvRet       = 0;
-    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP];
-    uint8_t *pRspbuf = &rspbuf[0];
-    size_t rspbufLen = ARRAY_SIZE(rspbuf);
+    size_t cmdbufLen                       = 0;
+    uint8_t *pCmdbuf                       = &cmdbuf[0];
+    int tlvRet                             = 0;
+    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP] = {0};
+    uint8_t *pRspbuf                       = &rspbuf[0];
+    size_t rspbufLen                       = ARRAY_SIZE(rspbuf);
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "CipherUpdate []");
@@ -2441,7 +2447,7 @@ smStatus_t Se05x_API_CipherUpdate(pSe05xSession_t session_ctx,
             goto cleanup;
         }
         if ((rspIndex + 2) == rspbufLen) {
-            retStatus = (pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]);
+            retStatus = (smStatus_t)((pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]));
         }
     }
 
@@ -2459,12 +2465,12 @@ smStatus_t Se05x_API_CipherFinal(pSe05xSession_t session_ctx,
     smStatus_t retStatus = SM_NOT_OK;
     tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_CRYPTO, kSE05x_P1_CIPHER, kSE05x_P2_FINAL}};
     uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
-    size_t cmdbufLen = 0;
-    uint8_t *pCmdbuf = &cmdbuf[0];
-    int tlvRet       = 0;
-    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP];
-    uint8_t *pRspbuf = &rspbuf[0];
-    size_t rspbufLen = ARRAY_SIZE(rspbuf);
+    size_t cmdbufLen                       = 0;
+    uint8_t *pCmdbuf                       = &cmdbuf[0];
+    int tlvRet                             = 0;
+    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP] = {0};
+    uint8_t *pRspbuf                       = &rspbuf[0];
+    size_t rspbufLen                       = ARRAY_SIZE(rspbuf);
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "CipherFinal []");
@@ -2486,7 +2492,7 @@ smStatus_t Se05x_API_CipherFinal(pSe05xSession_t session_ctx,
             goto cleanup;
         }
         if ((rspIndex + 2) == rspbufLen) {
-            retStatus = (pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]);
+            retStatus = (smStatus_t)((pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]));
         }
     }
 
@@ -2508,14 +2514,14 @@ smStatus_t Se05x_API_CipherOneShot(pSe05xSession_t session_ctx,
     smStatus_t retStatus = SM_NOT_OK;
     tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_CRYPTO, kSE05x_P1_CIPHER, operation}};
     uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
-    size_t cmdbufLen = 0;
-    uint8_t *pCmdbuf = &cmdbuf[0];
-    int tlvRet       = 0;
-    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP];
-    uint8_t *pRspbuf = &rspbuf[0];
-    size_t rspbufLen = ARRAY_SIZE(rspbuf);
-    uint16_t ivlen16 = (uint16_t)IVLen;
-    size_t ivlen32   = IVLen;
+    size_t cmdbufLen                       = 0;
+    uint8_t *pCmdbuf                       = &cmdbuf[0];
+    int tlvRet                             = 0;
+    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP] = {0};
+    uint8_t *pRspbuf                       = &rspbuf[0];
+    size_t rspbufLen                       = ARRAY_SIZE(rspbuf);
+    uint16_t ivlen16                       = (uint16_t)IVLen;
+    size_t ivlen32                         = IVLen;
 
 #if VERBOSE_APDU_LOGS
     NEWLINE();
@@ -2573,7 +2579,7 @@ smStatus_t Se05x_API_CipherOneShot(pSe05xSession_t session_ctx,
             }
         }
         if ((rspIndex + 2) == rspbufLen) {
-            retStatus = (pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]);
+            retStatus = (smStatus_t)((pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]));
         }
     }
 
@@ -2650,12 +2656,12 @@ smStatus_t Se05x_API_MACFinal(pSe05xSession_t session_ctx,
     smStatus_t retStatus = SM_NOT_OK;
     tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_CRYPTO, kSE05x_P1_MAC, kSE05x_P2_FINAL}};
     uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
-    size_t cmdbufLen = 0;
-    uint8_t *pCmdbuf = &cmdbuf[0];
-    int tlvRet       = 0;
-    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP];
-    uint8_t *pRspbuf = &rspbuf[0];
-    size_t rspbufLen = ARRAY_SIZE(rspbuf);
+    size_t cmdbufLen                       = 0;
+    uint8_t *pCmdbuf                       = &cmdbuf[0];
+    int tlvRet                             = 0;
+    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP] = {0};
+    uint8_t *pRspbuf                       = &rspbuf[0];
+    size_t rspbufLen                       = ARRAY_SIZE(rspbuf);
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "MACFinal []");
@@ -2682,7 +2688,7 @@ smStatus_t Se05x_API_MACFinal(pSe05xSession_t session_ctx,
             goto cleanup;
         }
         if ((rspIndex + 2) == rspbufLen) {
-            retStatus = (pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]);
+            retStatus = (smStatus_t)((pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]));
         }
     }
 
@@ -2701,12 +2707,12 @@ smStatus_t Se05x_API_MACOneShot_G(pSe05xSession_t session_ctx,
     smStatus_t retStatus = SM_NOT_OK;
     tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_CRYPTO, kSE05x_P1_MAC, kSE05x_P2_GENERATE_ONESHOT}};
     uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
-    size_t cmdbufLen = 0;
-    uint8_t *pCmdbuf = &cmdbuf[0];
-    int tlvRet       = 0;
-    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP];
-    uint8_t *pRspbuf = &rspbuf[0];
-    size_t rspbufLen = ARRAY_SIZE(rspbuf);
+    size_t cmdbufLen                       = 0;
+    uint8_t *pCmdbuf                       = &cmdbuf[0];
+    int tlvRet                             = 0;
+    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP] = {0};
+    uint8_t *pRspbuf                       = &rspbuf[0];
+    size_t rspbufLen                       = ARRAY_SIZE(rspbuf);
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "MACOneShot_G []");
@@ -2732,7 +2738,7 @@ smStatus_t Se05x_API_MACOneShot_G(pSe05xSession_t session_ctx,
             goto cleanup;
         }
         if ((rspIndex + 2) == rspbufLen) {
-            retStatus = (pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]);
+            retStatus = (smStatus_t)((pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]));
         }
     }
 
@@ -2753,12 +2759,12 @@ smStatus_t Se05x_API_MACOneShot_V(pSe05xSession_t session_ctx,
     smStatus_t retStatus = SM_NOT_OK;
     tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_CRYPTO, kSE05x_P1_MAC, kSE05x_P2_VALIDATE_ONESHOT}};
     uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
-    size_t cmdbufLen = 0;
-    uint8_t *pCmdbuf = &cmdbuf[0];
-    int tlvRet       = 0;
-    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP];
-    uint8_t *pRspbuf = &rspbuf[0];
-    size_t rspbufLen = ARRAY_SIZE(rspbuf);
+    size_t cmdbufLen                       = 0;
+    uint8_t *pCmdbuf                       = &cmdbuf[0];
+    int tlvRet                             = 0;
+    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP] = {0};
+    uint8_t *pRspbuf                       = &rspbuf[0];
+    size_t rspbufLen                       = ARRAY_SIZE(rspbuf);
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "MACOneShot_V []");
@@ -2789,7 +2795,7 @@ smStatus_t Se05x_API_MACOneShot_V(pSe05xSession_t session_ctx,
             goto cleanup;
         }
         if ((rspIndex + 2) == rspbufLen) {
-            retStatus = (pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]);
+            retStatus = (smStatus_t)((pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]));
         }
     }
 
@@ -2811,12 +2817,12 @@ smStatus_t Se05x_API_HKDF(pSe05xSession_t session_ctx,
     smStatus_t retStatus = SM_NOT_OK;
     tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_CRYPTO, kSE05x_P1_DEFAULT, kSE05x_P2_HKDF}};
     uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
-    size_t cmdbufLen = 0;
-    uint8_t *pCmdbuf = &cmdbuf[0];
-    int tlvRet       = 0;
-    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP];
-    uint8_t *pRspbuf = &rspbuf[0];
-    size_t rspbufLen = ARRAY_SIZE(rspbuf);
+    size_t cmdbufLen                       = 0;
+    uint8_t *pCmdbuf                       = &cmdbuf[0];
+    int tlvRet                             = 0;
+    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP] = {0};
+    uint8_t *pRspbuf                       = &rspbuf[0];
+    size_t rspbufLen                       = ARRAY_SIZE(rspbuf);
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "HKDF []");
@@ -2850,7 +2856,7 @@ smStatus_t Se05x_API_HKDF(pSe05xSession_t session_ctx,
             goto cleanup;
         }
         if ((rspIndex + 2) == rspbufLen) {
-            retStatus = (pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]);
+            retStatus = (smStatus_t)((pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]));
         }
     }
 
@@ -2875,13 +2881,13 @@ smStatus_t Se05x_API_HKDF_Extended(pSe05xSession_t session_ctx,
     smStatus_t retStatus = SM_NOT_OK;
     tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_CRYPTO, kSE05x_P1_DEFAULT, kSE05x_P2_HKDF}};
     uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
-    size_t cmdbufLen = 0;
-    uint8_t *pCmdbuf = &cmdbuf[0];
-    int tlvRet       = 0;
-    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP];
-    uint8_t *pRspbuf = &rspbuf[0];
-    size_t rspbufLen = ARRAY_SIZE(rspbuf);
-    hdr.hdr[3]       = (hkdfMode == kSE05x_HkdfMode_ExpandOnly ? kSE05x_P2_HKDF_EXPAND_ONLY : kSE05x_P2_HKDF);
+    size_t cmdbufLen                       = 0;
+    uint8_t *pCmdbuf                       = &cmdbuf[0];
+    int tlvRet                             = 0;
+    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP] = {0};
+    uint8_t *pRspbuf                       = &rspbuf[0];
+    size_t rspbufLen                       = ARRAY_SIZE(rspbuf);
+    hdr.hdr[3] = (hkdfMode == kSE05x_HkdfMode_ExpandOnly ? kSE05x_P2_HKDF_EXPAND_ONLY : kSE05x_P2_HKDF);
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "HKDF []");
@@ -2926,7 +2932,7 @@ smStatus_t Se05x_API_HKDF_Extended(pSe05xSession_t session_ctx,
         if (hkdfOuput == NULL) {
             retStatus = SM_NOT_OK;
             if (2 == rspbufLen) {
-                retStatus = (rspbuf[0] << 8) | (rspbuf[1]);
+                retStatus = (smStatus_t)((rspbuf[0] << 8) | (rspbuf[1]));
             }
         }
         else {
@@ -2937,7 +2943,7 @@ smStatus_t Se05x_API_HKDF_Extended(pSe05xSession_t session_ctx,
                 goto cleanup;
             }
             if ((rspIndex + 2) == rspbufLen) {
-                retStatus = (pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]);
+                retStatus = (smStatus_t)((pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]));
             }
         }
     }
@@ -2958,12 +2964,12 @@ smStatus_t Se05x_API_PBKDF2(pSe05xSession_t session_ctx,
     smStatus_t retStatus = SM_NOT_OK;
     tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_CRYPTO, kSE05x_P1_DEFAULT, kSE05x_P2_PBKDF}};
     uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
-    size_t cmdbufLen = 0;
-    uint8_t *pCmdbuf = &cmdbuf[0];
-    int tlvRet       = 0;
-    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP];
-    uint8_t *pRspbuf = &rspbuf[0];
-    size_t rspbufLen = ARRAY_SIZE(rspbuf);
+    size_t cmdbufLen                       = 0;
+    uint8_t *pCmdbuf                       = &cmdbuf[0];
+    int tlvRet                             = 0;
+    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP] = {0};
+    uint8_t *pRspbuf                       = &rspbuf[0];
+    size_t rspbufLen                       = ARRAY_SIZE(rspbuf);
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "PBKDF2 []");
@@ -2995,7 +3001,7 @@ smStatus_t Se05x_API_PBKDF2(pSe05xSession_t session_ctx,
             goto cleanup;
         }
         if ((rspIndex + 2) == rspbufLen) {
-            retStatus = (pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]);
+            retStatus = (smStatus_t)((pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]));
         }
     }
 
@@ -3048,12 +3054,12 @@ smStatus_t Se05x_API_DFAuthenticateFirstPart1(pSe05xSession_t session_ctx,
     smStatus_t retStatus = SM_NOT_OK;
     tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_CRYPTO, kSE05x_P1_DEFAULT, kSE05x_P2_AUTH_FIRST_PART1}};
     uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
-    size_t cmdbufLen = 0;
-    uint8_t *pCmdbuf = &cmdbuf[0];
-    int tlvRet       = 0;
-    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP];
-    uint8_t *pRspbuf = &rspbuf[0];
-    size_t rspbufLen = ARRAY_SIZE(rspbuf);
+    size_t cmdbufLen                       = 0;
+    uint8_t *pCmdbuf                       = &cmdbuf[0];
+    int tlvRet                             = 0;
+    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP] = {0};
+    uint8_t *pRspbuf                       = &rspbuf[0];
+    size_t rspbufLen                       = ARRAY_SIZE(rspbuf);
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "DFAuthenticateFirstPart1 []");
@@ -3075,7 +3081,7 @@ smStatus_t Se05x_API_DFAuthenticateFirstPart1(pSe05xSession_t session_ctx,
             goto cleanup;
         }
         if ((rspIndex + 2) == rspbufLen) {
-            retStatus = (pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]);
+            retStatus = (smStatus_t)((pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]));
         }
     }
 
@@ -3093,12 +3099,12 @@ smStatus_t Se05x_API_DFAuthenticateNonFirstPart1(pSe05xSession_t session_ctx,
     smStatus_t retStatus = SM_NOT_OK;
     tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_CRYPTO, kSE05x_P1_DEFAULT, kSE05x_P2_AUTH_NONFIRST_PART1}};
     uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
-    size_t cmdbufLen = 0;
-    uint8_t *pCmdbuf = &cmdbuf[0];
-    int tlvRet       = 0;
-    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP];
-    uint8_t *pRspbuf = &rspbuf[0];
-    size_t rspbufLen = ARRAY_SIZE(rspbuf);
+    size_t cmdbufLen                       = 0;
+    uint8_t *pCmdbuf                       = &cmdbuf[0];
+    int tlvRet                             = 0;
+    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP] = {0};
+    uint8_t *pRspbuf                       = &rspbuf[0];
+    size_t rspbufLen                       = ARRAY_SIZE(rspbuf);
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "DFAuthenticateFirstPart1 []");
@@ -3120,7 +3126,7 @@ smStatus_t Se05x_API_DFAuthenticateNonFirstPart1(pSe05xSession_t session_ctx,
             goto cleanup;
         }
         if ((rspIndex + 2) == rspbufLen) {
-            retStatus = (pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]);
+            retStatus = (smStatus_t)((pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]));
         }
     }
 
@@ -3137,12 +3143,12 @@ smStatus_t Se05x_API_DFAuthenticateFirstPart2(pSe05xSession_t session_ctx,
     smStatus_t retStatus = SM_NOT_OK;
     tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_CRYPTO, kSE05x_P1_DEFAULT, kSE05x_P2_AUTH_FIRST_PART2}};
     uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
-    size_t cmdbufLen = 0;
-    uint8_t *pCmdbuf = &cmdbuf[0];
-    int tlvRet       = 0;
-    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP];
-    uint8_t *pRspbuf = &rspbuf[0];
-    size_t rspbufLen = ARRAY_SIZE(rspbuf);
+    size_t cmdbufLen                       = 0;
+    uint8_t *pCmdbuf                       = &cmdbuf[0];
+    int tlvRet                             = 0;
+    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP] = {0};
+    uint8_t *pRspbuf                       = &rspbuf[0];
+    size_t rspbufLen                       = ARRAY_SIZE(rspbuf);
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "DFAuthenticateFirstPart2 []");
@@ -3160,7 +3166,7 @@ smStatus_t Se05x_API_DFAuthenticateFirstPart2(pSe05xSession_t session_ctx,
             goto cleanup;
         }
         if ((rspIndex + 2) == rspbufLen) {
-            retStatus = (pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]);
+            retStatus = (smStatus_t)((pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]));
         }
     }
 
@@ -3196,11 +3202,11 @@ smStatus_t Se05x_API_DFDumpSessionKeys(pSe05xSession_t session_ctx, uint8_t *ses
     smStatus_t retStatus = SM_NOT_OK;
     tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_CRYPTO, kSE05x_P1_DEFAULT, kSE05x_P2_DUMP_KEY}};
     uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
-    size_t cmdbufLen = 0;
-    int tlvRet       = 0;
-    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP];
-    uint8_t *pRspbuf = &rspbuf[0];
-    size_t rspbufLen = ARRAY_SIZE(rspbuf);
+    size_t cmdbufLen                       = 0;
+    int tlvRet                             = 0;
+    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP] = {0};
+    uint8_t *pRspbuf                       = &rspbuf[0];
+    size_t rspbufLen                       = ARRAY_SIZE(rspbuf);
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "DFDumpSessionKeys []");
@@ -3219,7 +3225,7 @@ smStatus_t Se05x_API_DFDumpSessionKeys(pSe05xSession_t session_ctx, uint8_t *ses
             goto cleanup;
         }
         if ((rspIndex + 2) == rspbufLen) {
-            retStatus = (pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]);
+            retStatus = (smStatus_t)((pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]));
         }
     }
 
@@ -3239,12 +3245,12 @@ smStatus_t Se05x_API_DFChangeKeyPart1(pSe05xSession_t session_ctx,
     smStatus_t retStatus = SM_NOT_OK;
     tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_CRYPTO, kSE05x_P1_DEFAULT, kSE05x_P2_CHANGE_KEY_PART1}};
     uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
-    size_t cmdbufLen = 0;
-    uint8_t *pCmdbuf = &cmdbuf[0];
-    int tlvRet       = 0;
-    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP];
-    uint8_t *pRspbuf = &rspbuf[0];
-    size_t rspbufLen = ARRAY_SIZE(rspbuf);
+    size_t cmdbufLen                       = 0;
+    uint8_t *pCmdbuf                       = &cmdbuf[0];
+    int tlvRet                             = 0;
+    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP] = {0};
+    uint8_t *pRspbuf                       = &rspbuf[0];
+    size_t rspbufLen                       = ARRAY_SIZE(rspbuf);
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "DFChangeKeyPart1 []");
@@ -3278,7 +3284,7 @@ smStatus_t Se05x_API_DFChangeKeyPart1(pSe05xSession_t session_ctx,
             goto cleanup;
         }
         if ((rspIndex + 2) == rspbufLen) {
-            retStatus = (pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]);
+            retStatus = (smStatus_t)((pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]));
         }
     }
 
@@ -3291,12 +3297,12 @@ smStatus_t Se05x_API_DFChangeKeyPart2(pSe05xSession_t session_ctx, const uint8_t
     smStatus_t retStatus = SM_NOT_OK;
     tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_CRYPTO, kSE05x_P1_DEFAULT, kSE05x_P2_CHANGE_KEY_PART2}};
     uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
-    size_t cmdbufLen = 0;
-    uint8_t *pCmdbuf = &cmdbuf[0];
-    int tlvRet       = 0;
-    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP];
-    uint8_t *pRspbuf = &rspbuf[0];
-    size_t rspbufLen = ARRAY_SIZE(rspbuf);
+    size_t cmdbufLen                       = 0;
+    uint8_t *pCmdbuf                       = &cmdbuf[0];
+    int tlvRet                             = 0;
+    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP] = {0};
+    uint8_t *pRspbuf                       = &rspbuf[0];
+    size_t rspbufLen                       = ARRAY_SIZE(rspbuf);
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "DFChangeKeyPart2 []");
@@ -3314,7 +3320,7 @@ smStatus_t Se05x_API_DFChangeKeyPart2(pSe05xSession_t session_ctx, const uint8_t
             goto cleanup;
         }
         if ((rspIndex + 2) == rspbufLen) {
-            retStatus = (pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]);
+            retStatus = (smStatus_t)((pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]));
         }
     }
 
@@ -3344,11 +3350,11 @@ smStatus_t Se05x_API_TLSGenerateRandom(pSe05xSession_t session_ctx, uint8_t *ran
     smStatus_t retStatus = SM_NOT_OK;
     tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_CRYPTO, kSE05x_P1_TLS, kSE05x_P2_RANDOM}};
     uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
-    size_t cmdbufLen = 0;
-    int tlvRet       = 0;
-    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP];
-    uint8_t *pRspbuf = &rspbuf[0];
-    size_t rspbufLen = ARRAY_SIZE(rspbuf);
+    size_t cmdbufLen                       = 0;
+    int tlvRet                             = 0;
+    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP] = {0};
+    uint8_t *pRspbuf                       = &rspbuf[0];
+    size_t rspbufLen                       = ARRAY_SIZE(rspbuf);
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "TLSGenerateRandom []");
@@ -3362,7 +3368,7 @@ smStatus_t Se05x_API_TLSGenerateRandom(pSe05xSession_t session_ctx, uint8_t *ran
             goto cleanup;
         }
         if ((rspIndex + 2) == rspbufLen) {
-            retStatus = (pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]);
+            retStatus = (smStatus_t)((pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]));
         }
     }
 
@@ -3426,12 +3432,12 @@ smStatus_t Se05x_API_TLSPerformPRF(pSe05xSession_t session_ctx,
     smStatus_t retStatus = SM_NOT_OK;
     tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_CRYPTO, kSE05x_P1_TLS, tlsprf}};
     uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
-    size_t cmdbufLen = 0;
-    uint8_t *pCmdbuf = &cmdbuf[0];
-    int tlvRet       = 0;
-    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP];
-    uint8_t *pRspbuf = &rspbuf[0];
-    size_t rspbufLen = ARRAY_SIZE(rspbuf);
+    size_t cmdbufLen                       = 0;
+    uint8_t *pCmdbuf                       = &cmdbuf[0];
+    int tlvRet                             = 0;
+    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP] = {0};
+    uint8_t *pRspbuf                       = &rspbuf[0];
+    size_t rspbufLen                       = ARRAY_SIZE(rspbuf);
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "TLSPerformPRF []");
@@ -3465,7 +3471,7 @@ smStatus_t Se05x_API_TLSPerformPRF(pSe05xSession_t session_ctx,
             goto cleanup;
         }
         if ((rspIndex + 2) == rspbufLen) {
-            retStatus = (pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]);
+            retStatus = (smStatus_t)((pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]));
         }
     }
 
@@ -3498,12 +3504,12 @@ smStatus_t Se05x_API_I2CM_ExecuteCommandSet(pSe05xSession_t session_ctx,
     smStatus_t retStatus = SM_NOT_OK;
     tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_I2CM_Attestation, kSE05x_P1_DEFAULT, kSE05x_P2_I2CM}};
     uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
-    size_t cmdbufLen = 0;
-    uint8_t *pCmdbuf = &cmdbuf[0];
-    int tlvRet       = 0;
-    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP];
-    uint8_t *pRspbuf = &rspbuf[0];
-    size_t rspbufLen = ARRAY_SIZE(rspbuf);
+    size_t cmdbufLen                       = 0;
+    uint8_t *pCmdbuf                       = &cmdbuf[0];
+    int tlvRet                             = 0;
+    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP] = {0};
+    uint8_t *pRspbuf                       = &rspbuf[0];
+    size_t rspbufLen                       = ARRAY_SIZE(rspbuf);
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "I2CM_ExecuteCommandSet []");
@@ -3528,6 +3534,9 @@ smStatus_t Se05x_API_I2CM_ExecuteCommandSet(pSe05xSession_t session_ctx,
     memcpy(pCmd, &hdr, 4);
     pCmd[4] = 0; // Extended Length
     pCmd[5] = 0; // Extended Length
+    if (cmdbufLen == 0) {
+        goto cleanup;
+    }
     pCmd[6] = (uint8_t)cmdbufLen;
     memcpy(pCmd + 7, cmdbuf, cmdbufLen);
     retStatus = DoAPDUTxRx_s_Case4_ext(session_ctx, &hdr, cmdbuf, cmdbufLen, rspbuf, &rspbufLen);
@@ -3556,7 +3565,7 @@ smStatus_t Se05x_API_I2CM_ExecuteCommandSet(pSe05xSession_t session_ctx,
             goto cleanup;
         }
         if ((rspIndex + 2) == rspbufLen) {
-            retStatus = (pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]);
+            retStatus = (smStatus_t)((pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]));
         }
     }
     else {
@@ -3588,12 +3597,12 @@ smStatus_t Se05x_API_I2CM_ExecuteCommandSet(pSe05xSession_t session_ctx,
     smStatus_t retStatus = SM_NOT_OK;
     tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_I2CM_Attestation, kSE05x_P1_DEFAULT, kSE05x_P2_I2CM}};
     uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
-    size_t cmdbufLen = 0;
-    uint8_t *pCmdbuf = &cmdbuf[0];
-    int tlvRet       = 0;
-    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP];
-    uint8_t *pRspbuf = &rspbuf[0];
-    size_t rspbufLen = ARRAY_SIZE(rspbuf);
+    size_t cmdbufLen                       = 0;
+    uint8_t *pCmdbuf                       = &cmdbuf[0];
+    int tlvRet                             = 0;
+    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP] = {0};
+    uint8_t *pRspbuf                       = &rspbuf[0];
+    size_t rspbufLen                       = ARRAY_SIZE(rspbuf);
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "I2CM_ExecuteCommandSet []");
@@ -3640,7 +3649,7 @@ smStatus_t Se05x_API_I2CM_ExecuteCommandSet(pSe05xSession_t session_ctx,
             goto cleanup;
         }
         if ((rspIndex + 2) == rspbufLen) {
-            retStatus = (pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]);
+            retStatus = (smStatus_t)((pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]));
         }
     }
 
@@ -3709,12 +3718,12 @@ smStatus_t Se05x_API_DigestFinal(pSe05xSession_t session_ctx,
     smStatus_t retStatus = SM_NOT_OK;
     tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_CRYPTO, kSE05x_P1_DEFAULT, kSE05x_P2_FINAL}};
     uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
-    size_t cmdbufLen = 0;
-    uint8_t *pCmdbuf = &cmdbuf[0];
-    int tlvRet       = 0;
-    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP];
-    uint8_t *pRspbuf = &rspbuf[0];
-    size_t rspbufLen = ARRAY_SIZE(rspbuf);
+    size_t cmdbufLen                       = 0;
+    uint8_t *pCmdbuf                       = &cmdbuf[0];
+    int tlvRet                             = 0;
+    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP] = {0};
+    uint8_t *pRspbuf                       = &rspbuf[0];
+    size_t rspbufLen                       = ARRAY_SIZE(rspbuf);
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "DigestFinal []");
@@ -3736,7 +3745,7 @@ smStatus_t Se05x_API_DigestFinal(pSe05xSession_t session_ctx,
             goto cleanup;
         }
         if ((rspIndex + 2) == rspbufLen) {
-            retStatus = (pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]);
+            retStatus = (smStatus_t)((pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]));
         }
     }
 
@@ -3754,12 +3763,12 @@ smStatus_t Se05x_API_DigestOneShot(pSe05xSession_t session_ctx,
     smStatus_t retStatus = SM_NOT_OK;
     tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_CRYPTO, kSE05x_P1_DEFAULT, kSE05x_P2_ONESHOT}};
     uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
-    size_t cmdbufLen = 0;
-    uint8_t *pCmdbuf = &cmdbuf[0];
-    int tlvRet       = 0;
-    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP];
-    uint8_t *pRspbuf = &rspbuf[0];
-    size_t rspbufLen = ARRAY_SIZE(rspbuf);
+    size_t cmdbufLen                       = 0;
+    uint8_t *pCmdbuf                       = &cmdbuf[0];
+    int tlvRet                             = 0;
+    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP] = {0};
+    uint8_t *pRspbuf                       = &rspbuf[0];
+    size_t rspbufLen                       = ARRAY_SIZE(rspbuf);
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "DigestOneShot []");
@@ -3781,7 +3790,7 @@ smStatus_t Se05x_API_DigestOneShot(pSe05xSession_t session_ctx,
             goto cleanup;
         }
         if ((rspIndex + 2) == rspbufLen) {
-            retStatus = (pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]);
+            retStatus = (smStatus_t)((pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]));
         }
     }
 
@@ -3794,11 +3803,11 @@ smStatus_t Se05x_API_GetVersion(pSe05xSession_t session_ctx, uint8_t *pappletVer
     smStatus_t retStatus = SM_NOT_OK;
     tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_MGMT, kSE05x_P1_DEFAULT, kSE05x_P2_VERSION}};
     uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
-    size_t cmdbufLen = 0;
-    int tlvRet       = 0;
-    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP];
-    uint8_t *pRspbuf = &rspbuf[0];
-    size_t rspbufLen = ARRAY_SIZE(rspbuf);
+    size_t cmdbufLen                       = 0;
+    int tlvRet                             = 0;
+    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP] = {0};
+    uint8_t *pRspbuf                       = &rspbuf[0];
+    size_t rspbufLen                       = ARRAY_SIZE(rspbuf);
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "GetVersion []");
@@ -3812,7 +3821,7 @@ smStatus_t Se05x_API_GetVersion(pSe05xSession_t session_ctx, uint8_t *pappletVer
             goto cleanup;
         }
         if ((rspIndex + 2) == rspbufLen) {
-            retStatus = (pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]);
+            retStatus = (smStatus_t)((pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]));
         }
     }
 
@@ -3825,11 +3834,11 @@ smStatus_t Se05x_API_GetTimestamp(pSe05xSession_t session_ctx, SE05x_TimeStamp_t
     smStatus_t retStatus = SM_NOT_OK;
     tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_MGMT, kSE05x_P1_DEFAULT, kSE05x_P2_TIME}};
     uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
-    size_t cmdbufLen = 0;
-    int tlvRet       = 0;
-    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP];
-    uint8_t *pRspbuf = &rspbuf[0];
-    size_t rspbufLen = ARRAY_SIZE(rspbuf);
+    size_t cmdbufLen                       = 0;
+    int tlvRet                             = 0;
+    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP] = {0};
+    uint8_t *pRspbuf                       = &rspbuf[0];
+    size_t rspbufLen                       = ARRAY_SIZE(rspbuf);
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "GetTimestamp []");
@@ -3843,7 +3852,7 @@ smStatus_t Se05x_API_GetTimestamp(pSe05xSession_t session_ctx, SE05x_TimeStamp_t
             goto cleanup;
         }
         if ((rspIndex + 2) == rspbufLen) {
-            retStatus = (pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]);
+            retStatus = (smStatus_t)((pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]));
         }
     }
 
@@ -3856,12 +3865,12 @@ smStatus_t Se05x_API_GetFreeMemory(pSe05xSession_t session_ctx, SE05x_MemoryType
     smStatus_t retStatus = SM_NOT_OK;
     tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_MGMT, kSE05x_P1_DEFAULT, kSE05x_P2_MEMORY}};
     uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
-    size_t cmdbufLen = 0;
-    uint8_t *pCmdbuf = &cmdbuf[0];
-    int tlvRet       = 0;
-    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP];
-    uint8_t *pRspbuf = &rspbuf[0];
-    size_t rspbufLen = ARRAY_SIZE(rspbuf);
+    size_t cmdbufLen                       = 0;
+    uint8_t *pCmdbuf                       = &cmdbuf[0];
+    int tlvRet                             = 0;
+    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP] = {0};
+    uint8_t *pRspbuf                       = &rspbuf[0];
+    size_t rspbufLen                       = ARRAY_SIZE(rspbuf);
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "GetFreeMemory []");
@@ -3879,7 +3888,7 @@ smStatus_t Se05x_API_GetFreeMemory(pSe05xSession_t session_ctx, SE05x_MemoryType
             goto cleanup;
         }
         if ((rspIndex + 2) == rspbufLen) {
-            retStatus = (pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]);
+            retStatus = (smStatus_t)((pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]));
         }
     }
 
@@ -3892,12 +3901,12 @@ smStatus_t Se05x_API_GetRandom(pSe05xSession_t session_ctx, uint16_t size, uint8
     smStatus_t retStatus = SM_NOT_OK;
     tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_MGMT, kSE05x_P1_DEFAULT, kSE05x_P2_RANDOM}};
     uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
-    size_t cmdbufLen = 0;
-    uint8_t *pCmdbuf = &cmdbuf[0];
-    int tlvRet       = 0;
-    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP];
-    uint8_t *pRspbuf = &rspbuf[0];
-    size_t rspbufLen = ARRAY_SIZE(rspbuf);
+    size_t cmdbufLen                       = 0;
+    uint8_t *pCmdbuf                       = &cmdbuf[0];
+    int tlvRet                             = 0;
+    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP] = {0};
+    uint8_t *pRspbuf                       = &rspbuf[0];
+    size_t rspbufLen                       = ARRAY_SIZE(rspbuf);
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "GetRandom []");
@@ -3915,7 +3924,7 @@ smStatus_t Se05x_API_GetRandom(pSe05xSession_t session_ctx, uint16_t size, uint8
             goto cleanup;
         }
         if ((rspIndex + 2) == rspbufLen) {
-            retStatus = (pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]);
+            retStatus = (smStatus_t)((pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]));
         }
     }
 

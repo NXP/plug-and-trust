@@ -108,6 +108,7 @@ int tlvSet_U64_size(uint8_t **buf, size_t *bufLen, SE05x_TAG_t tag, uint64_t val
 
 int tlvSet_Se05xPolicy(const char *description, uint8_t **buf, size_t *bufLen, SE05x_TAG_t tag, Se05xPolicy_t *policy)
 {
+    AX_UNUSED_ARG(description);
     int tlvRet = 0;
     if ((policy != NULL) && (policy->value != NULL)) {
         tlvRet = tlvSet_u8buf(buf, bufLen, tag, policy->value, policy->value_len);
@@ -439,9 +440,9 @@ int tlvGet_TimeStamp(uint8_t *buf, size_t *pBufIndex, const size_t bufLen, SE05x
 
 smStatus_t DoAPDUTx_s_Case3(Se05xSession_t *pSessionCtx, const tlvHeader_t *hdr, uint8_t *cmdBuf, size_t cmdBufLen)
 {
-    uint8_t rxBuf[SE05X_TLV_BUF_SIZE_RSP + 2];
-    size_t rxBufLen       = sizeof(rxBuf);
-    smStatus_t apduStatus = SM_NOT_OK;
+    uint8_t rxBuf[SE05X_TLV_BUF_SIZE_RSP + 2] = {0};
+    size_t rxBufLen                           = sizeof(rxBuf);
+    smStatus_t apduStatus                     = SM_NOT_OK;
     if (pSessionCtx->fp_TXn == NULL) {
         apduStatus = SM_NOT_OK;
     }
@@ -657,6 +658,8 @@ smStatus_t se05x_Transform(struct Se05xSession *pSession,
 smStatus_t se05x_DeCrypt(
     struct Se05xSession *pSessionCtx, size_t cmd_cmacLen, uint8_t *rsp, size_t *rspLength, uint8_t hasle)
 {
+    AX_UNUSED_ARG(cmd_cmacLen);
+    AX_UNUSED_ARG(hasle);
     U16 rv = SM_NOT_OK;
 
     if (*rspLength >= 2) {
@@ -701,7 +704,7 @@ smStatus_t se05x_Transform_scp(struct Se05xSession *pSession,
 {
     smStatus_t apduStatus   = SM_NOT_OK;
     sss_status_t sss_status = kStatus_SSS_Fail;
-    uint8_t macToAdd[16];
+    uint8_t macToAdd[16]={0};
     size_t macLen = 16;
     size_t i      = 0;
 

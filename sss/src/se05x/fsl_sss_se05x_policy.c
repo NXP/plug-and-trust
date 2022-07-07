@@ -183,7 +183,13 @@ static void sss_se05x_update_header_sym_key_policy(sss_policy_sym_key_u key_pol,
         LOG_W("can_Gen is not applied");
 #endif
     }
-
+    if (key_pol.can_KA) {
+#if (SSS_HAVE_APPLET_SE051_H && SSS_HAVE_SE05X_VER_07_02)
+        header |= POLICY_OBJ_ALLOW_KA;
+#else
+        LOG_W("can_KA is not applied");
+#endif
+    }
     sss_se05x_copy_uint32_to_u8_array(header, pbuffer);
 }
 
@@ -335,6 +341,7 @@ static void sss_se05x_update_header_pcr_policy(sss_policy_pcr_u pcr_pol, uint8_t
 
 static void sss_se05x_update_header_pcr_value_policy(sss_policy_common_pcr_value_u pcr_pol, uint8_t *pbuffer)
 {
+    AX_UNUSED_ARG(pcr_pol);
     uint32_t header = 0;
     header |= POLICY_OBJ_REQUIRE_PCR_VALUE;
     sss_se05x_copy_uint32_to_u8_array(header, pbuffer);
@@ -356,6 +363,7 @@ static void sss_se05x_update_ext_pcr_value_policy(
 static void sss_se05x_update_header_desfire_chg_authId_value_policy(
     sss_policy_desfire_changekey_authId_value_u pcr_pol, uint8_t *pbuffer)
 {
+    AX_UNUSED_ARG(pcr_pol);
 #if SSS_HAVE_SE05X_VER_GTE_07_02
     uint32_t header = 0;
     header |= POLICY_OBJ_ALLOW_DESFIRE_CHANGEKEY;
@@ -380,6 +388,7 @@ static void sss_se05x_update_ext_desfire_chg_authId_value_policy(
 static void sss_se05x_update_header_key_drv_masterId_value_policy(
     sss_policy_key_drv_master_keyid_value_u masterkey_pol, uint8_t *pbuffer)
 {
+    AX_UNUSED_ARG(masterkey_pol);
 #if SSS_HAVE_SE05X_VER_GTE_07_02
     uint32_t header = 0;
     header |= POLICY_OBJ_ALLOW_DERIVED_INPUT;
@@ -401,6 +410,25 @@ static void sss_se05x_update_ext_key_drv_masterId_value_policy(
 #endif
 }
 
+#endif
+
+#if SSS_HAVE_APPLET_SE051_H
+static void sss_se05x_update_header_internal_sign_value_policy(
+    sss_policy_internal_sign_tbs_value_u tbs_item, uint8_t *pbuffer)
+{
+    AX_UNUSED_ARG(tbs_item);
+    uint32_t header = 0;
+    header |= POLICY_OBJ_INTERNAL_SIGN;
+    sss_se05x_copy_uint32_to_u8_array(header, pbuffer);
+}
+
+static void sss_se05x_update_ext_internal_sign_tbsId_value_policy(
+    sss_policy_internal_sign_tbs_value_u tbs_item, uint8_t *pbuffer, uint32_t *ext_offset)
+{
+    /* copy 4 bytes tbsItemList_KeyId */
+    sss_se05x_copy_uint32_to_u8_array(tbs_item.tbsItemList_KeyId, pbuffer + *ext_offset);
+    *ext_offset += sizeof(tbs_item.tbsItemList_KeyId);
+}
 #endif
 
 static void sss_se05x_copy_uint32_to_u8_array(uint32_t u32, uint8_t *pbuffer)
@@ -526,6 +554,19 @@ sss_status_t sss_se05x_create_object_policy_buffer(sss_policy_t *policies, uint8
                     LOG_W("KPolicy_Derive_Master_Key_Id is not applied");
 #endif
                     break;
+                case KPolicy_Internal_Sign:
+#if SSS_HAVE_APPLET_SE051_H
+                    sss_se05x_update_header_internal_sign_value_policy(
+                        (policies->policies[indexArray[j]])->policy.tbsItemList,
+                        &temp_buffer[OBJ_POLICY_HEADER_OFFSET]);
+                    sss_se05x_update_ext_internal_sign_tbsId_value_policy(
+                        (policies->policies[indexArray[j]])->policy.tbsItemList,
+                        &temp_buffer[OBJ_POLICY_EXT_OFFSET],
+                        &ext_offset);
+                    temp_buffer[OBJ_POLICY_LENGTH_OFFSET] += OBJ_POLICY_OBJ_ID_SIZE;
+#else
+                    LOG_W("KPolicy_Internal_Sign is not applied");
+#endif
                 default:
                     break;
                 }

@@ -71,7 +71,7 @@ sss_status_t ex_sss_boot_open(ex_sss_boot_ctx_t *pCtx, const char *portName)
 
 #if SSS_HAVE_APPLET_A71CH || SSS_HAVE_APPLET_A71CH_SIM
     status = ex_sss_boot_a71ch_open(pCtx, portName);
-#elif SSS_HAVE_APPLET_A71CL || SSS_HAVE_SE050_L
+#elif SSS_HAVE_APPLET_A71CL || SSS_HAVE_APPLET_SE05X_L
     status = ex_sss_boot_a71cl_open(pCtx, portName);
 #elif SSS_HAVE_APPLET_SE05X_IOT
     status = ex_sss_boot_se05x_open(pCtx, portName);
@@ -106,7 +106,7 @@ sss_status_t ex_sss_boot_factory_reset(ex_sss_boot_ctx_t *pCtx)
         status = kStatus_SSS_Success;
     }
 
-#elif SSS_HAVE_APPLET_A71CL || SSS_HAVE_SE050_L
+#elif SSS_HAVE_APPLET_A71CL || SSS_HAVE_APPLET_SE05X_L
     status = kStatus_SSS_Success;
 
 #elif SSS_HAVE_APPLET_SE05X_IOT

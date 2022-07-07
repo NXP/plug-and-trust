@@ -67,26 +67,14 @@
 
 #if  1 /* Customer facing */
 
-#if SSS_HAVE_SE05X_VER_03_XX // Applet 3.0
-    #ifndef EX_SSS_AUTH_SE05X_KEY_ENC
-    #   define EX_SSS_AUTH_SE05X_KEY_ENC SSS_AUTH_SE050_DEVKIT_KEY_ENC
-    #endif
-    #ifndef EX_SSS_AUTH_SE05X_KEY_MAC
-    #   define EX_SSS_AUTH_SE05X_KEY_MAC SSS_AUTH_SE050_DEVKIT_KEY_MAC
-    #endif
-    #ifndef EX_SSS_AUTH_SE05X_KEY_DEK
-    #   define EX_SSS_AUTH_SE05X_KEY_DEK SSS_AUTH_SE050_DEVKIT_KEY_DEK
-    #endif
-#else
-    #ifndef EX_SSS_AUTH_SE05X_KEY_ENC
-    #   define EX_SSS_AUTH_SE05X_KEY_ENC SSS_AUTH_SE051C2_KEY_ENC
-    #endif
-    #ifndef EX_SSS_AUTH_SE05X_KEY_MAC
-    #   define EX_SSS_AUTH_SE05X_KEY_MAC SSS_AUTH_SE051C2_KEY_MAC
-    #endif
-    #ifndef EX_SSS_AUTH_SE05X_KEY_DEK
-    #   define EX_SSS_AUTH_SE05X_KEY_DEK SSS_AUTH_SE051C2_KEY_DEK
-    #endif
+#ifndef EX_SSS_AUTH_SE05X_KEY_ENC
+#   define EX_SSS_AUTH_SE05X_KEY_ENC SSS_AUTH_KEY_ENC
+#endif
+#ifndef EX_SSS_AUTH_SE05X_KEY_MAC
+#   define EX_SSS_AUTH_SE05X_KEY_MAC SSS_AUTH_KEY_MAC
+#endif
+#ifndef EX_SSS_AUTH_SE05X_KEY_DEK
+#   define EX_SSS_AUTH_SE05X_KEY_DEK SSS_AUTH_KEY_DEK
 #endif
 
 #else
