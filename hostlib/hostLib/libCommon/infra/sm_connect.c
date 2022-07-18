@@ -94,6 +94,7 @@
 /// @endcond
 
 #if defined(SMCOM_JRCP_V1) || defined(SMCOM_JRCP_V2)
+
 static U16 getSocketParams(const char *arg, U8 *szServer, U16 szServerLen, unsigned int *port)
 {
     // the IP address is in format a.b.c.d:port, e.g. 10.0.0.1:8080
@@ -150,7 +151,7 @@ exit:
 *
 * @retval ::SW_OK Upon successful execution
 */
-U16 SM_RjctConnectSocket(void **conn_ctx, const char *connectString, SmCommState_t *commState, U8 *atr, U16 *atrLen)
+static U16 SM_RjctConnectSocket(void **conn_ctx, const char *connectString, SmCommState_t *commState, U8 *atr, U16 *atrLen)
 {
     U8 szServer[128];
     U16 szServerLen = sizeof(szServer);
@@ -317,14 +318,15 @@ U16 SM_RjctConnectPCSC(void **conn_ctx, const char *connectString, SmCommState_t
 
 U16 SM_RjctConnect(void **conn_ctx, const char *connectString, SmCommState_t *commState, U8 *atr, U16 *atrLen)
 {
-#if RJCT_VCOM || SMCOM_JRCP_V1 || SMCOM_JRCP_V2 || SMCOM_RC663_VCOM
+#if (defined(RJCT_VCOM) && (RJCT_VCOM == 1)) || (defined(SMCOM_JRCP_V1) && (SMCOM_JRCP_V1==1))\
+    || (defined(SMCOM_JRCP_V2) && (SMCOM_JRCP_V2 == 1)) || (defined(SMCOM_RC663_VCOM) && (SMCOM_RC663_VCOM==1))
     bool is_socket = FALSE;
     bool is_vcom = FALSE;
     AX_UNUSED_ARG(is_socket);
     AX_UNUSED_ARG(is_vcom);
 #endif
 
-#if RJCT_VCOM || SMCOM_RC663_VCOM
+#if (defined(RJCT_VCOM) && (RJCT_VCOM == 1)) || (defined(SMCOM_RC663_VCOM) && (SMCOM_RC663_VCOM == 1))
     if (NULL == connectString) {
         is_vcom = FALSE;
     }
@@ -341,7 +343,7 @@ U16 SM_RjctConnect(void **conn_ctx, const char *connectString, SmCommState_t *co
         is_vcom = TRUE;
     }
 #endif
-#if SMCOM_JRCP_V1 || SMCOM_JRCP_V2
+#if (defined(SMCOM_JRCP_V1) && (SMCOM_JRCP_V1 == 1)) || (defined(SMCOM_JRCP_V2) && (SMCOM_JRCP_V2 == 1))
     if (NULL == connectString) {
         LOG_W("connectString is NULL. Aborting.");
         return ERR_NO_VALID_IP_PORT_PATTERN;
@@ -354,7 +356,7 @@ U16 SM_RjctConnect(void **conn_ctx, const char *connectString, SmCommState_t *co
     }
 #endif
 #endif
-#if RJCT_VCOM
+#if defined(RJCT_VCOM) && (RJCT_VCOM == 1)
     if (is_vcom) {
         return SM_RjctConnectVCOM(conn_ctx, connectString, commState, atr, atrLen);
     }
@@ -363,7 +365,7 @@ U16 SM_RjctConnect(void **conn_ctx, const char *connectString, SmCommState_t *co
         LOG_W("e.g. connectString are COM3, \\\\.\\COM5, /dev/tty.usbmodem1432301, etc.");
     }
 #endif
-#if SMCOM_RC663_VCOM
+#if defined(SMCOM_RC663_VCOM) && (SMCOM_RC663_VCOM == 1)
     if (is_vcom) {
         return SM_RjctConnectNxpNfcRdLib(conn_ctx, connectString, commState, atr, atrLen);
     }
@@ -372,12 +374,13 @@ U16 SM_RjctConnect(void **conn_ctx, const char *connectString, SmCommState_t *co
         LOG_W("e.g. connectString are COM3, \\\\.\\COM5, /dev/tty.usbmodem1432301, etc.");
     }
 #endif
-#if SMCOM_JRCP_V1 || SMCOM_JRCP_V2
+
+#if (defined(SMCOM_JRCP_V1) && (SMCOM_JRCP_V1 == 1)) || (defined(SMCOM_JRCP_V2) && (SMCOM_JRCP_V2 == 1))
     if (is_socket) {
         return SM_RjctConnectSocket(conn_ctx, connectString, commState, atr, atrLen);
     }
 #endif
-#if SMCOM_PCSC
+#if defined(SMCOM_PCSC) && (SMCOM_PCSC == 1)
     if (NULL != commState) {
         return SM_RjctConnectPCSC(conn_ctx, connectString, commState, atr, atrLen);
     }

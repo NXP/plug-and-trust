@@ -37,7 +37,7 @@ extern "C" {
 #   define SE_NAME  "A71CL"
 #endif
 
-#if SSS_HAVE_SE050_L
+#if SSS_HAVE_APPLET_SE05X_L
 #   define APPLET_NAME   \
 {   0xA0, 0x00, 0x00, 0x00,   0x41, 0x6C, 0x69, 0x59, \
     0x75, 0x6E, 0x2E, 0x49,   0x44, 0x32 \
@@ -75,12 +75,16 @@ extern "C" {
 #if SSS_HAVE_APPLET_SE05X_C
 #   define SE_NAME  "SE050:C"
 #endif
-#if SSS_HAVE_APPLET_SE051_CHIP
-#   define SE_NAME  "SE051:CHIP"
-#endif
 #if SSS_HAVE_APPLET_AUTH
 #   define SE_NAME  "AUTH"
 #endif
+#if SSS_HAVE_APPLET_SE050_E
+#   define SE_NAME  "SE050:E"
+#endif
+#if SSS_HAVE_APPLET_SE051_H
+#   define SE_NAME  "SE051:H"
+#endif
+
 
 #define A71CH_KEY_PAIR_MAX_A    2 //!< Maximum amount of ECC key pairs that can be stored in A71CH (A device)
 #define A71CH_PUBLIC_KEY_MAX_A  2 //!< Maximum amount of ECC public keys that can be stored in A71CH (A device)

@@ -14,6 +14,10 @@
 
 /* + more or less machine Generated */
 
+/** @addtogroup se05x_types
+ *
+ * @{ */
+
 /** Reserved idendntifiers of the Applet */
 typedef enum
 {
@@ -55,6 +59,18 @@ typedef enum
     /** An authentication object which grants access to the
     * SetLockState command */
     kSE05x_AppletResID_RESTRICT = 0x7FFF020A,
+    /** SPAKE2P_M_P256_UNCOMPRESSED KEY*/
+    kSE05x_AppletResID_SPAKE2P_M_P256_UNCOMPRESSED = 0x7FFF0210,
+    /** SPAKE2P_N_P256_UNCOMPRESSED KEY*/
+    kSE05x_AppletResID_SPAKE2P_N_P256_UNCOMPRESSED = 0x7FFF0211,
+    /** SPAKE2P_M_P384_UNCOMPRESSED KEY*/
+    kSE05x_AppletResID_SPAKE2P_M_P384_UNCOMPRESSED = 0x7FFF0212,
+    /** SPAKE2P_N_P384_UNCOMPRESSED KEY*/
+    kSE05x_AppletResID_SPAKE2P_N_P384_UNCOMPRESSED = 0x7FFF0213,
+    /** SPAKE2P_M_P521_UNCOMPRESSED KEY*/
+    kSE05x_AppletResID_SPAKE2P_M_P521_UNCOMPRESSED = 0x7FFF0214,
+    /** SPAKE2P_N_P521_UNCOMPRESSED KEY*/
+    kSE05x_AppletResID_SPAKE2P_N_P521_UNCOMPRESSED = 0x7FFF0215,
 
 } SE05x_AppletResID_t;
 
@@ -147,7 +163,7 @@ typedef enum
     /** Applet >= 4.4 */
     kSE05x_P1_AEAD_SP800_38D = 0x12,
 #endif /* SSS_HAVE_SE05X_VER_GTE_06_00 */
-    kSE05x_P1_SPAKE = 0x12,
+    kSE05x_P1_PAKE = 0x12,
 } SE05x_P1_t;
 
 /** Values for P2 in ISO7816 APDU */
@@ -463,13 +479,29 @@ typedef enum
     kSE05x_AeadCCMAlgo = 0xF4,
 } SE05x_AeadAlgo_t;
 
-/** SPAKE Algorithms */
+/** PAKE Mode */
 typedef enum
 {
     /** Invalid */
-    kSE05x_SpakeAlgo_NA = 0,
-    kSE05x_SpakeAlgo_P256_SHA256_HKDF_HMAC = 1,
-} SE05x_SpakeAlgo_t;
+    kSE05x_SPAKE2PLUS_NA = 0,
+    kSE05x_SPAKE2PLUS_P256_SHA256_HKDF_HMAC = 0x01,
+    kSE05x_SPAKE2PLUS_P256_SHA512_HKDF_HMAC = 0x02,
+    kSE05x_SPAKE2PLUS_P384_SHA256_HKDF_HMAC = 0x03,
+    kSE05x_SPAKE2PLUS_P384_SHA512_HKDF_HMAC = 0x04,
+    kSE05x_SPAKE2PLUS_P521_SHA512_HKDF_HMAC = 0x05,
+    //kSE05x_SPAKE2PLUS_ED25519_SHA256_HKDF_HMAC = 0x06, //Not supported
+    //kSE05x_SPAKE2PLUS_ED448_SHA512_HKDF_HMAC = 0x07, //Not supported
+    kSE05x_SPAKE2PLUS_P256_SHA256_HKDF_CMAC = 0x08,
+    kSE05x_SPAKE2PLUS_P256_SHA512_HKDF_CMAC = 0x09,
+} SE05x_PAKEMode_t;
+
+/** PAKE State */
+typedef enum
+{
+    kSE05x_PAKE_STATE_SETUP = 0,
+    kSE05x_PAKE_STATE_KEY_SHARE_GENERATED = 0xA5,
+    kSE05x_PAKE_STATE_SESSION_KEYS_GENERATED = 0x5A,
+} SE05x_PAKEState_t;
 
 /** HKDF Mode */
 typedef enum
@@ -480,16 +512,6 @@ typedef enum
     kSE05x_HkdfMode_ExpandOnly = 0x02,
 } SE05x_HkdfMode_t;
 
-/** PBKDF2 algorithms */
-typedef enum
-{
-    /** Invalid */
-    kSE05x_Pbkdf2_HMAC_NA = 0,
-    kSE05x_Pbkdf2_HMAC_SHA1 = 0x01,
-    kSE05x_Pbkdf2_HMAC_SHA256 = 0x03,
-    kSE05x_Pbkdf2_HMAC_SHA384 = 0x04,
-    kSE05x_Pbkdf2_HMAC_SHA512 = 0x05,
-} SE05x_Pbkdf2Algo_t;
 
 /** ECC Curve Identifiers */
 typedef enum
@@ -668,8 +690,8 @@ typedef enum
     kSE05x_CryptoContext_SIGNATURE = 0x03,
     /** For AEADInit/AEADUpdate/AEADFinal */
     kSE05x_CryptoContext_AEAD = 0x04,
-    /** For SPAKE */
-    kSE05x_CryptoContext_SPAKE = 0x05,
+    /** For PAKE */
+    kSE05x_CryptoContext_PAKE = 0x05,
 } SE05x_CryptoContext_t;
 
 /** Result of operations */
@@ -784,10 +806,10 @@ typedef enum
     kSE05x_CryptoObject_AES_GCM,
     kSE05x_CryptoObject_AES_GCM_INT_IV,
     kSE05x_CryptoObject_AES_CCM,
-	kSE05x_CryptoObject_AES_CCM_INT_IV,
-    kSE05x_CryptoObject_SPAKE_VERIFIER,
-    kSE05x_CryptoObject_SPAKE_PROVER,
-    kSE05x_CryptoObject_End,
+    kSE05x_CryptoObject_AES_CCM_INT_IV,
+	kSE05x_CryptoObject_PAKE_TYPE_A,
+    kSE05x_CryptoObject_PAKE_TYPE_B,
+	kSE05x_CryptoObject_End,
 } SE05x_CryptoObject_t;
 
 /** @copydoc SE05x_CryptoObject_t */
@@ -797,34 +819,12 @@ typedef enum
 typedef enum
 {
     /** Invalid */
-    kSE05x_SPAKEDevice_NA = 0,
+    kSE05x_SPAKE2PLUS_DEVICE_TYPE_UNKNOWN = 0,
     /** Spake device commionsioner */
-    SE05x_SPAKEDevice_A = 1,
+    SE05x_SPAKE2PLUS_DEVICE_TYPE_A = 1,
     /** Spake device Node/accessory */
-    SE05x_SPAKEDevice_B = 2,
-}SE05x_SPAKEDeviceType_t;
-
-
-/** PAKE state */
-typedef enum
-{
-    /** Invalid */
-    kSE05x_PAKE_STATE_NA = 0,
-    /** Pake State Uninitialized */
-    SE05x_PAKE_STATE_UNINITIALIZED = 1,
-    /** Pake State Protocol Initialized */
-    SE05x_PAKE_STATE_PROTOCOL_INITIALIZED = 2,
-    /** Pake State Device Configured */
-    SE05x_PAKE_STATE_DEVICE_CONFIGURED = 3,
-    /** Pake State Device Initialized */
-    SE05x_PAKE_STATE_DEVICE_INITIALIZED = 4,
-    /** Pake State Credentials Initialized */
-    SE05x_PAKE_STATE_CREDENTIALS_INITIALIZED = 5,
-    /** Pake State Key Share Generated */
-    SE05x_PAKE_STATE_KEY_SHARE_GENERATED = 6,
-    /** Pake State Session Keys Generated */
-    SE05x_PAKE_STATE_SESSION_KEYS_GENERATED = 7,
-}SE05x_PAKEState_t;
+    SE05x_SPAKE2PLUS_DEVICE_TYPE_B = 2,
+}SE05x_SPAKE2PlusDeviceType_t;
 
 
 /** Maximum number of session supported by SE050 */
@@ -1002,11 +1002,13 @@ typedef union {
     SE05x_MACAlgo_t mac;
     /** In case it's aead */
     SE05x_AeadAlgo_t aead;
-    /** In case it's spake */
-    SE05x_SpakeAlgo_t spakeAlgo;
+    /** In case it's pake */
+    SE05x_PAKEMode_t pakeMode;
     /** Accessing 8 bit value for APDUs */
     uint8_t union_8bit;
 } SE05x_CryptoModeSubType_t;
+
+/** @} */
 
 /** @addtogroup se050_i2cm
  *
@@ -1023,6 +1025,10 @@ typedef enum
 /*!
 *@}
 */ /* end of se050_i2cm */
+
+/** @addtogroup se05x_types
+ *
+ * @{ */
 
 /** Whether key is transient of persistent */
 typedef enum
@@ -1173,6 +1179,11 @@ typedef uint16_t SE05x_MaxAttemps_t;
 #define SE05X_RSA_NO_priv /* Skip */ NULL, 0
 #define SE05X_RSA_NO_pubMod /* Skip */ NULL, 0
 #endif // __DOXYGEN__
+
+
+/*!
+*@}
+*/ /* end of se05x_types */
 
 
 #endif /* SE05x_ENUMS_H */

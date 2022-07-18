@@ -17,9 +17,9 @@ extern "C" {
 #include "se05x_const.h"
 #include "se05x_APDU_apis.h"
 
-#if (SSS_HAVE_APPLET_SE051_CHIP && SSS_HAVE_SE05X_VER_GTE_16_01)
-#include "se05x_spake_APDU_apis.h"
-#endif
+/** @addtogroup se05x_apis
+ *
+ * @{ */
 
 /** Se05x_API_DeleteAll_Iterative
  *
@@ -69,6 +69,8 @@ smStatus_t Se05x_API_EC_CurveGetId(pSe05xSession_t session_ctx, uint32_t objectI
 
 /** Wrapper for @ref Se05x_API_DigestOneShot */
 #define Se05x_API_SHAOneShot Se05x_API_DigestOneShot
+
+/** @} */
 
 // For SIMW-656
 bool Se05x_IsInValidRangeOfUID(uint32_t uid);

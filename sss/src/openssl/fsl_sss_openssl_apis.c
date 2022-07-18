@@ -36,6 +36,7 @@
 #endif
 
 #include "nxLog_sss.h"
+#include "sm_types.h"
 
 #define MAX_KEY_OBJ_COUNT KS_N_ENTIRES
 #define MAX_FILE_NAME_SIZE 255
@@ -113,8 +114,6 @@ static int aead_update(sss_openssl_aead_t *context,
     size_t srcLen,
     uint8_t *destData,
     size_t *destLen);
-static sss_status_t sss_openssl_aead_ccm_init(
-    sss_openssl_aead_t *context, size_t nonceLen, size_t tagLen, size_t aadLen, size_t payloadLen);
 static sss_status_t sss_openssl_aead_ccm_final(
     sss_openssl_aead_t *context, uint8_t *destData, size_t *destLen, uint8_t *tag, size_t *tagLen);
 
@@ -134,6 +133,11 @@ sss_status_t sss_openssl_session_create(sss_openssl_session_t *session,
     sss_connection_type_t connection_type,
     void *connectionData)
 {
+    AX_UNUSED_ARG(session);
+    AX_UNUSED_ARG(subsystem);
+    AX_UNUSED_ARG(application_id);
+    AX_UNUSED_ARG(connection_type);
+    AX_UNUSED_ARG(connectionData);
     sss_status_t retval = kStatus_SSS_Success;
     /* Nothing special to be handled */
     return retval;
@@ -146,6 +150,9 @@ sss_status_t sss_openssl_session_open(sss_openssl_session_t *session,
     sss_connection_type_t connection_type,
     void *connectionData)
 {
+    AX_UNUSED_ARG(application_id);
+    AX_UNUSED_ARG(connection_type);
+
     sss_status_t retval = kStatus_SSS_InvalidArgument;
     memset(session, 0, sizeof(*session));
 
@@ -182,6 +189,9 @@ sss_status_t sss_openssl_session_open(sss_openssl_session_t *session,
 // LCOV_EXCL_START
 sss_status_t sss_openssl_session_prop_get_u32(sss_openssl_session_t *session, uint32_t property, uint32_t *pValue)
 {
+    AX_UNUSED_ARG(session);
+    AX_UNUSED_ARG(property);
+    AX_UNUSED_ARG(pValue);
     sss_status_t retval = kStatus_SSS_Fail;
     /* TBU */
     return retval;
@@ -190,6 +200,10 @@ sss_status_t sss_openssl_session_prop_get_u32(sss_openssl_session_t *session, ui
 sss_status_t sss_openssl_session_prop_get_au8(
     sss_openssl_session_t *session, uint32_t property, uint8_t *pValue, size_t *pValueLen)
 {
+    AX_UNUSED_ARG(session);
+    AX_UNUSED_ARG(property);
+    AX_UNUSED_ARG(pValue);
+    AX_UNUSED_ARG(pValueLen);
     sss_status_t retval = kStatus_SSS_Fail;
     /* TBU */
     return retval;
@@ -209,7 +223,7 @@ void sss_openssl_session_close(sss_openssl_session_t *session)
 
 void sss_openssl_session_delete(sss_openssl_session_t *session)
 {
-    ;
+    AX_UNUSED_ARG(session);
 }
 
 /* End: openssl_session */
@@ -352,6 +366,7 @@ cleanup:
 // LCOV_EXCL_START
 sss_status_t sss_openssl_key_object_set_user(sss_openssl_object_t *keyObject, uint32_t user, uint32_t options)
 {
+    AX_UNUSED_ARG(options);
     sss_status_t retval = kStatus_SSS_Success;
     if (!(keyObject->accessRights & kAccessPermission_SSS_ChangeAttributes)) {
         LOG_E(" Don't have access rights to change the attributes");
@@ -363,6 +378,7 @@ sss_status_t sss_openssl_key_object_set_user(sss_openssl_object_t *keyObject, ui
 
 sss_status_t sss_openssl_key_object_set_purpose(sss_openssl_object_t *keyObject, sss_mode_t purpose, uint32_t options)
 {
+    AX_UNUSED_ARG(options);
     sss_status_t retval = kStatus_SSS_Success;
     if (!(keyObject->accessRights & kAccessPermission_SSS_ChangeAttributes)) {
         LOG_E(" Don't have access rights to change the attributes");
@@ -374,18 +390,21 @@ sss_status_t sss_openssl_key_object_set_purpose(sss_openssl_object_t *keyObject,
 
 sss_status_t sss_openssl_key_object_set_access(sss_openssl_object_t *keyObject, uint32_t access, uint32_t options)
 {
+    AX_UNUSED_ARG(options);
     sss_status_t retval = kStatus_SSS_Success;
     if (!(keyObject->accessRights & kAccessPermission_SSS_ChangeAttributes)) {
         LOG_E(" Don't have access rights to use the key");
 
         return kStatus_SSS_Fail;
     }
-    keyObject->accessRights = access;
+    keyObject->accessRights = (sss_access_permission_t)access;
     return retval;
 }
 
 sss_status_t sss_openssl_key_object_set_eccgfp_group(sss_openssl_object_t *keyObject, sss_eccgfp_group_t *group)
 {
+    AX_UNUSED_ARG(keyObject);
+    AX_UNUSED_ARG(group);
     sss_status_t retval = kStatus_SSS_Success;
     /* TBU */
     return retval;
@@ -553,6 +572,8 @@ sss_status_t sss_openssl_derive_key_go(sss_openssl_derive_key_t *context,
     uint8_t *hkdfOutput,
     size_t *hkdfOutputLen)
 {
+    AX_UNUSED_ARG(hkdfOutput);
+    AX_UNUSED_ARG(hkdfOutputLen);
     sss_status_t retval = kStatus_SSS_Success;
     const EVP_MD *md    = NULL;
     uint8_t *secret     = NULL;
@@ -619,7 +640,7 @@ sss_status_t sss_openssl_derive_key_dh(sss_openssl_derive_key_t *context,
     EVP_PKEY *pKeyExt = NULL;
     EC_KEY *pEcpExt   = NULL;
 
-    size_t sharedSecretLen;
+    size_t sharedSecretLen = 0;
     int sharedSecretLen_Derived;
     EC_GROUP *pEC_Group = NULL;
     uint8_t *secret     = NULL;
@@ -652,23 +673,36 @@ sss_status_t sss_openssl_derive_key_dh(sss_openssl_derive_key_t *context,
         }
 
         secret                  = (uint8_t *)SSS_MALLOC(sharedSecretLen);
-        sharedSecretLen_Derived = sharedSecretLen;
-
-        if (EVP_PKEY_derive(ctx, secret, &sharedSecretLen) <= 0) {
+        if (secret == NULL) {
+            LOG_E("Could not allocate memory");
             return kStatus_SSS_Fail;
         }
-        EVP_PKEY_CTX_free(ctx);
+        else {
+            memset((void *)secret, 0, sharedSecretLen);
+            sharedSecretLen_Derived = sharedSecretLen;
+
+            if (EVP_PKEY_derive(ctx, secret, &sharedSecretLen) <= 0) {
+                SSS_FREE(secret);
+                return kStatus_SSS_Fail;
+            }
+            EVP_PKEY_CTX_free(ctx);
+        }
     }
     else {
         pEcpPrv         = EVP_PKEY_get1_EC_KEY(pKeyPrv);
         pEcpExt         = EVP_PKEY_get1_EC_KEY(pKeyExt);
         sharedSecretLen = (EC_GROUP_get_degree(EC_KEY_get0_group(pEcpExt)) + 7) / 8;
         secret          = (uint8_t *)SSS_MALLOC(sharedSecretLen);
-
-        sharedSecretLen_Derived =
-            ECDH_compute_key(secret, sharedSecretLen, EC_KEY_get0_public_key(pEcpExt), pEcpPrv, NULL);
+        if (secret == NULL) {
+            LOG_E("Could not allocate memory");
+            return kStatus_SSS_Fail;
+        }
+        else {
+            memset((void *)secret, 0, sharedSecretLen);
+            sharedSecretLen_Derived =
+                ECDH_compute_key(secret, sharedSecretLen, EC_KEY_get0_public_key(pEcpExt), pEcpPrv, NULL);
+        }
     }
-
     memcpy(derivedKeyObject->contents, secret, sharedSecretLen_Derived);
     derivedKeyObject->contents_size = sharedSecretLen_Derived;
 
@@ -676,6 +710,7 @@ sss_status_t sss_openssl_derive_key_dh(sss_openssl_derive_key_t *context,
     EC_KEY_free(pEcpPrv);
     EC_KEY_free(pEcpExt);
     SSS_FREE(secret);
+
     return retval;
 }
 
@@ -707,6 +742,7 @@ cleanup:
 
 sss_status_t sss_openssl_key_store_allocate(sss_openssl_key_store_t *keyStore, uint32_t keyStoreId)
 {
+    AX_UNUSED_ARG(keyStoreId);
     sss_status_t retval = kStatus_SSS_Fail;
     ENSURE_OR_GO_CLEANUP(keyStore);
     retval = kStatus_SSS_Success;
@@ -714,12 +750,12 @@ sss_status_t sss_openssl_key_store_allocate(sss_openssl_key_store_t *keyStore, u
     if (keyStore->objects == NULL) {
         keyStore->max_object_count = MAX_KEY_OBJ_COUNT;
         keyStore->objects = (sss_openssl_object_t **)SSS_MALLOC(MAX_KEY_OBJ_COUNT * sizeof(sss_openssl_object_t *));
-        memset(keyStore->objects, 0, (MAX_KEY_OBJ_COUNT * sizeof(sss_openssl_object_t *)));
         if (NULL == keyStore->objects) {
             LOG_E("Could not allocate key store");
             retval = kStatus_SSS_Fail;
         }
         else {
+            memset(keyStore->objects, 0, (MAX_KEY_OBJ_COUNT * sizeof(sss_openssl_object_t *)));
             ks_sw_fat_allocate(&keyStore->keystore_shadow);
             ks_sw_fat_load(keyStore->session->szRootPath, keyStore->keystore_shadow);
             retval = kStatus_SSS_Success;
@@ -788,6 +824,9 @@ sss_status_t sss_openssl_key_store_set_key(sss_openssl_key_store_t *keyStore,
     void *options,
     size_t optionsLen)
 {
+    AX_UNUSED_ARG(keyStore);
+    AX_UNUSED_ARG(options);
+    AX_UNUSED_ARG(optionsLen);
     sss_status_t retval      = kStatus_SSS_Fail;
     uint8_t opensslData[256] = {
         0,
@@ -829,9 +868,10 @@ cleanup:
 sss_status_t sss_openssl_key_store_generate_key(
     sss_openssl_key_store_t *keyStore, sss_openssl_object_t *keyObject, size_t keyBitLen, void *options)
 {
+    AX_UNUSED_ARG(options);
     sss_status_t retval = kStatus_SSS_Success;
 
-    sss_cipher_type_t cipher_type = keyObject->cipherType;
+    sss_cipher_type_t cipher_type = (sss_cipher_type_t)keyObject->cipherType;
     ENSURE_OR_GO_EXIT(keyStore);
     ENSURE_OR_GO_EXIT(keyObject);
 
@@ -859,6 +899,7 @@ sss_status_t sss_openssl_key_store_get_key(sss_openssl_key_store_t *keyStore,
     size_t *dataLen,
     size_t *pKeyBitLen)
 {
+    AX_UNUSED_ARG(keyStore);
     sss_status_t retval = kStatus_SSS_Fail;
     EVP_PKEY *pk        = NULL;
     int len             = 0;
@@ -908,12 +949,16 @@ sss_status_t sss_openssl_key_store_get_key_fromoffset(sss_openssl_key_store_t *k
 #endif
 sss_status_t sss_openssl_key_store_open_key(sss_openssl_key_store_t *keyStore, sss_openssl_object_t *keyObject)
 {
+    AX_UNUSED_ARG(keyStore);
+    AX_UNUSED_ARG(keyObject);
     sss_status_t retval = kStatus_SSS_Success;
     return retval;
 }
 
 sss_status_t sss_openssl_key_store_freeze_key(sss_openssl_key_store_t *keyStore, sss_openssl_object_t *keyObject)
 {
+    AX_UNUSED_ARG(keyStore);
+    AX_UNUSED_ARG(keyObject);
     sss_status_t retval = kStatus_SSS_Success;
     return retval;
 }
@@ -981,7 +1026,7 @@ void sss_openssl_key_store_context_free(sss_openssl_key_store_t *keyStore)
     memset(keyStore, 0, sizeof(*keyStore));
 }
 
-int openssl_get_padding(sss_algorithm_t algorithm)
+static int openssl_get_padding(sss_algorithm_t algorithm)
 {
     int padding = 0;
     switch (algorithm) {
@@ -1068,7 +1113,9 @@ sss_status_t sss_openssl_asymmetric_encrypt(
         retval = kStatus_SSS_Fail;
         ERR_load_crypto_strings();
         pErr = SSS_MALLOC(150);
-        ERR_error_string(ERR_get_error(), pErr);
+        if (pErr != NULL) {
+            ERR_error_string(ERR_get_error(), pErr);
+        }
         LOG_E("sss_openssl_asymmetric_encrypt");
         goto exit;
     }
@@ -1077,6 +1124,9 @@ sss_status_t sss_openssl_asymmetric_encrypt(
     }
 
 exit:
+    if (pErr != NULL) {
+        SSS_FREE(pErr);
+    }
     return retval;
 }
 
@@ -1107,7 +1157,9 @@ sss_status_t sss_openssl_asymmetric_decrypt(
         retval = kStatus_SSS_Fail;
         ERR_load_crypto_strings();
         pErr = SSS_MALLOC(150);
-        ERR_error_string(ERR_get_error(), pErr);
+        if (pErr != NULL) {
+            ERR_error_string(ERR_get_error(), pErr);
+        }
         LOG_E("sss_openssl_asymmetric_encrypt");
         goto exit;
     }
@@ -1116,10 +1168,13 @@ sss_status_t sss_openssl_asymmetric_decrypt(
     }
 
 exit:
+    if (pErr != NULL) {
+        SSS_FREE(pErr);
+    }
     return retval;
 }
 
-void *openssl_get_hash_ptr_set_padding(sss_algorithm_t algorithm, uint32_t cipherType, EVP_PKEY_CTX *pKey_Ctx)
+static void *openssl_get_hash_ptr_set_padding(sss_algorithm_t algorithm, uint32_t cipherType, EVP_PKEY_CTX *pKey_Ctx)
 {
     void *hashfPtr = NULL;
     switch (algorithm) {
@@ -1496,13 +1551,19 @@ sss_status_t sss_openssl_cipher_one_go(sss_openssl_symmetric_t *context,
 #endif
     case kAlgorithm_SSS_DES_CBC:
     case kAlgorithm_SSS_DES_ECB: {
+        int nRet = 0;
         if (context->keyObject->contents_size != DES_BLOCK_SIZE) {
             LOG_E("DES key length incorrect");
             retval = kStatus_SSS_Fail;
             goto exit;
         }
         memcpy(DESKey1, (const char *)context->keyObject->contents, context->keyObject->contents_size);
-        DES_set_key(&DESKey1, &scheduledKey1);
+        nRet = DES_set_key(&DESKey1, &scheduledKey1);
+        if (nRet != 0) {
+            LOG_E("DES_set_key failed");
+            retval = kStatus_SSS_Fail;
+            goto exit;
+        }
         break;
     }
     case kAlgorithm_SSS_DES3_CBC:
@@ -2374,6 +2435,7 @@ static int aead_update(sss_openssl_aead_t *context,
     uint8_t *destData,
     size_t *destLen)
 {
+    AX_UNUSED_ARG(mode);
     int ret = 0;
 #if SSS_HAVE_TESTCOUNTERPART
     int len = 0;
@@ -2625,7 +2687,6 @@ sss_status_t sss_openssl_mac_one_go(
     int ret             = 0;
     unsigned int iMacLen;
     const EVP_CIPHER *cipher_info = NULL;
-    uint8_t *key;
     size_t keylen;
 
     if ((context == NULL) || (message == NULL) || (mac == NULL) || (macLen == NULL)) {
@@ -2633,7 +2694,6 @@ sss_status_t sss_openssl_mac_one_go(
     }
 
     if (context->keyObject->contents) {
-        key    = context->keyObject->contents;
         keylen = context->keyObject->contents_size;
     }
     else {
@@ -2662,6 +2722,8 @@ sss_status_t sss_openssl_mac_one_go(
             case 256:
                 cipher_info = EVP_aes_256_cbc();
                 break;
+            default:
+                LOG_E("Key length not supported");
             }
 
             ret = CMAC_Init(
@@ -2774,13 +2836,11 @@ sss_status_t sss_openssl_mac_init(sss_openssl_mac_t *context)
     sss_status_t retval           = kStatus_SSS_Fail;
     const EVP_CIPHER *cipher_info = NULL;
     int ret;
-    uint8_t *key;
     size_t keylen;
 
     ENSURE_OR_GO_CLEANUP(context != NULL)
 
     if (context->keyObject->contents) {
-        key    = context->keyObject->contents;
         keylen = context->keyObject->contents_size;
     }
     else {
@@ -2804,6 +2864,8 @@ sss_status_t sss_openssl_mac_init(sss_openssl_mac_t *context)
         case 256:
             cipher_info = EVP_aes_256_cbc();
             break;
+        default:
+            LOG_E("Key length not supported");
         }
 
         if (context->cmac_ctx) {
@@ -3237,6 +3299,7 @@ cleanup:
 
 sss_status_t sss_openssl_rng_get_random(sss_openssl_rng_context_t *context, uint8_t *random_data, size_t dataLen)
 {
+    AX_UNUSED_ARG(context);
     sss_status_t retval = kStatus_SSS_Fail;
 
     if (random_data == NULL) {
@@ -3527,7 +3590,7 @@ exit:
     return retval;
 }
 
-sss_status_t openssl_convert_to_bio(sss_openssl_object_t *keyObject, char *base64_format, int base64_format_len)
+static sss_status_t openssl_convert_to_bio(sss_openssl_object_t *keyObject, char *base64_format, int base64_format_len)
 {
     BIO *pBio_Pem       = NULL;
     EVP_PKEY *pKey      = NULL;
@@ -3571,18 +3634,24 @@ sss_status_t openssl_convert_to_bio(sss_openssl_object_t *keyObject, char *base6
     }
 
     pem_format = (char *)SSS_CALLOC(1, base64_format_len + strlen(start) + strlen(end) + 1);
-    /* Convert Base64 to PEM format. */
-    snprintf(pem_format,
-        (strlen(base64_format) + strlen(start) + strlen(end) + 1),
-        "%s"
-        "%s"
-        "%s",
-        start,
-        base64_format,
-        end);
+    if (pem_format == NULL) {
+        LOG_E("Memory allocation failed");
+        goto exit;
+    }
+    else {
+        /* Convert Base64 to PEM format. */
+        snprintf(pem_format,
+            (strlen(base64_format) + strlen(start) + strlen(end) + 1),
+            "%s"
+            "%s"
+            "%s",
+            start,
+            base64_format,
+            end);
 
-    /* Assign the PEM_Format to BIO. */
-    pBio_Pem = BIO_new_mem_buf(pem_format, (int)strlen(pem_format));
+        /* Assign the PEM_Format to BIO. */
+        pBio_Pem = BIO_new_mem_buf(pem_format, (int)strlen(pem_format));
+    }
     if (pBio_Pem == NULL) {
         LOG_E("Unable to assign the PEM to BIO buffer.");
         goto exit;
@@ -3607,8 +3676,10 @@ sss_status_t openssl_convert_to_bio(sss_openssl_object_t *keyObject, char *base6
     ret = kStatus_SSS_Success;
 exit:
 
-    BIO_free(pBio_Pem);
-    pBio_Pem = NULL;
+    if (pBio_Pem) {
+        BIO_free(pBio_Pem);
+        pBio_Pem = NULL;
+    }
 
     if (pem_format) {
         SSS_FREE(pem_format);
@@ -3670,8 +3741,14 @@ static sss_status_t sss_openssl_set_key(
 
         BIO_get_mem_ptr(pBio_64, &pBufMem);
         base64_format = SSS_CALLOC(1, (pBufMem->length) + 1);
-        memcpy(base64_format, pBufMem->data, pBufMem->length);
-        base64_format[pBufMem->length] = '\0';
+        if (base64_format == NULL) {
+            LOG_E("sss_openssl_set_key: memory allocation failed");
+            goto exit;
+        }
+        else {
+            memcpy(base64_format, pBufMem->data, pBufMem->length);
+            base64_format[pBufMem->length] = '\0';
+        }
 
         ret = openssl_convert_to_bio(keyObject, base64_format, (int)pBufMem->length);
         if (ret != kStatus_SSS_Success) {
@@ -3744,7 +3821,7 @@ static sss_status_t sss_openssl_hkdf_expand(const EVP_MD *md,
 #else
     HMAC_CTX *hmac = NULL;
 #endif
-    unsigned char T[EVP_MAX_MD_SIZE];
+    unsigned char T[EVP_MAX_MD_SIZE] = {0};
     sss_status_t retval = kStatus_SSS_Success;
 
     if (info_len == 0 || okm_len == 0 || okm == NULL) {
@@ -3882,6 +3959,7 @@ static sss_status_t sss_openssl_aead_one_go_encrypt(sss_openssl_aead_t *context,
     uint8_t *tag,
     size_t *tagLen)
 {
+    AX_UNUSED_ARG(nonceLen);
     sss_status_t retval = kStatus_SSS_Fail;
     int ret             = 0;
     int len             = 0;
@@ -3926,6 +4004,8 @@ static sss_status_t sss_openssl_aead_one_go_decrypt(sss_openssl_aead_t *context,
     uint8_t *tag,
     size_t *tagLen)
 {
+    AX_UNUSED_ARG(nonceLen);
+    AX_UNUSED_ARG(tagLen);
     sss_status_t retval = kStatus_SSS_Fail;
     int ret             = 0;
     int len             = 0;

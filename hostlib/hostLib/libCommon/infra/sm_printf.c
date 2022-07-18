@@ -17,7 +17,7 @@ void sm_printf(uint8_t dev, const char * format, ...)
 {
     uint8_t  buffer[MAX_SER_BUF_SIZE + 1];
     va_list   vArgs;
-
+    AX_UNUSED_ARG(dev);
     //dev = dev; // avoids warning; dev can be used to determine output channel
 
     va_start(vArgs, format);

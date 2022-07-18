@@ -54,6 +54,8 @@ typedef struct _sss_user_impl_session
     /*! Indicates which security subsystem is selected to be used. */
     sss_type_t subsystem;
 
+    void *ptr;
+
 } sss_user_impl_session_t;
 
 struct _sss_user_impl_object;

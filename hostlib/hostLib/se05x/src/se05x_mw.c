@@ -81,6 +81,7 @@ cleanup:
 
 bool Se05x_IsInValidRangeOfUID(uint32_t uid)
 {
+    AX_UNUSED_ARG(uid);
 #if 0
     // For SIMW-656
     bool retVal = TRUE;

@@ -117,8 +117,13 @@ ESESTATUS phNxpEse_open(void **conn_ctx, phNxpEse_initParams initParams, const c
     }
     else {
         pnxpese_ctxt = (phNxpEse_Context_t*)phNxpEse_memalloc(sizeof(phNxpEse_Context_t));
-        phNxpEse_memset(pnxpese_ctxt, 0, sizeof(phNxpEse_Context_t));
-        *conn_ctx = pnxpese_ctxt;
+        if(pnxpese_ctxt != NULL){
+            phNxpEse_memset(pnxpese_ctxt, 0, sizeof(phNxpEse_Context_t));
+            *conn_ctx = pnxpese_ctxt;
+        }
+        else{
+            return ESESTATUS_FAILED;
+        }
     }
 
     /*When I2C channel is already opened return status as FAILED*/

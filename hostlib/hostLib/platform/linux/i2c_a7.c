@@ -51,7 +51,7 @@ i2c_error_t axI2CInit(void **conn_ctx, const char *pDevName)
             temp[strlen(pDevName)] = '\0';
         }
         else {
-            LOG_E("Connection string passed as argument is too long (%d).", strlen(pDevName));
+            LOG_E("Connection string passed as argument is too long (%zu).", strlen(pDevName));
             LOG_I("Pass i2c device address in the format <i2c_port>:<i2c_addr(optional. Default 0x48)>.");
             LOG_I("Example ./example /dev/i2c-1:0x48 OR ./example /dev/i2c-1");
         }
@@ -137,8 +137,16 @@ i2c_error_t axI2CInit(void **conn_ctx, const char *pDevName)
     }
 
     *conn_ctx = malloc(sizeof(int));
-    *(int*)(*conn_ctx) = axSmDevice;
-    return I2C_OK;
+    if(*conn_ctx == NULL)
+    {
+        LOG_E("I2C driver: Memory allocation failed!\n");
+        close(axSmDevice);
+        return I2C_FAILED;
+    }
+    else{
+        *(int*)(*conn_ctx) = axSmDevice;
+        return I2C_OK;
+    }
 }
 
 /**

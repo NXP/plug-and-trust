@@ -14,6 +14,7 @@
 #endif
 
 #include <fsl_sss_policy.h>
+#include <sm_types.h>
 
 #include "fsl_sss_types.h"
 
@@ -28,6 +29,10 @@
 #define SSS_DES_KEY_SIZE (8u)
 /** Size of a DES IV, in bytes */
 #define SSS_DES_IV_SIZE (8u)
+/**
+ * @addtogroup sss_types
+ * @{
+ */
 
 /** Status of the SSS APIs */
 typedef enum
@@ -389,6 +394,8 @@ typedef struct
     uint8_t *h;         /**< ECC parameter h */
 } sss_eccgfp_group_t;
 
+/** @} */
+
 /**
  * @addtogroup sss_session
  * @{
@@ -460,13 +467,6 @@ typedef enum
     kSSS_SessionProp_au8_Proprietary_Start = 0x01FFFFFFu,
 
 } sss_session_prop_au8_t;
-
-/** @} */
-
-/**
- * @addtogroup sss_session
- * @{
- */
 
 /** @brief Root session
  *
@@ -586,6 +586,11 @@ typedef struct
 } sss_symmetric_t;
 /** @} */
 
+/**
+ * @addtogroup sss_crypto_aead
+ * @{
+ */
+
 /** @brief Authenticated Encryption with Additional Data
  *
  */
@@ -608,6 +613,13 @@ typedef struct
     } extension;
 } sss_aead_t;
 
+/** @} */
+
+/**
+ * @addtogroup sss_crypto_digest
+ * @{
+ */
+
 /** Message Digest operations */
 typedef struct
 {
@@ -626,6 +638,13 @@ typedef struct
         uint8_t data[SSS_DIGEST_MAX_CONTEXT_SIZE];
     } extension;
 } sss_digest_t;
+
+/** @} */
+
+/**
+ * @addtogroup sss_crypto_mac
+ * @{
+ */
 
 /** @brief Message Authentication Code
  *
@@ -648,6 +667,14 @@ typedef struct
         uint8_t data[SSS_MAC_MAX_CONTEXT_SIZE];
     } extension;
 } sss_mac_t;
+
+/** @} */
+
+/**
+ * @addtogroup sss_crypto_asymmetric
+ * @{
+ */
+/** @} */
 
 /** @brief Asymmetric Cryptographic operations
  *
@@ -672,6 +699,7 @@ typedef struct
         uint8_t data[SSS_ASYMMETRIC_MAX_CONTEXT_SIZE];
     } extension;
 } sss_asymmetric_t;
+/** @} */
 
 /** Header for a IS716 APDU */
 
@@ -685,6 +713,11 @@ typedef struct
                 + 1 /* P2 */
     ];
 } tlvHeader_t;
+
+/**
+ * @addtogroup sss_crypto_tunnel
+ * @{
+ */
 
 /** Tunneling
  *
@@ -703,6 +736,8 @@ typedef struct
         uint8_t data[SSS_TUNNEL_MAX_CONTEXT_SIZE];
     } extension;
 } sss_tunnel_t;
+
+/** @} */
 
 /**
  * @addtogroup sss_crypto_derive_key
@@ -729,6 +764,11 @@ typedef struct
 } sss_derive_key_t;
 /** @} */
 
+/**
+ * @addtogroup sss_rng
+ * @{
+ */
+
 /** Random number generator context */
 typedef struct
 {
@@ -742,6 +782,8 @@ typedef struct
     } context;
 
 } sss_rng_context_t;
+
+/** @} */
 
 /*******************************************************************************
  * API

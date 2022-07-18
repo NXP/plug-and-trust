@@ -27,6 +27,10 @@
 #include <fsl_sss_openssl_apis.h>
 #endif /* SSS_HAVE_HOSTCRYPTO_OPENSSL */
 
+#if SSS_HAVE_HOSTCRYPTO_USER
+#include <fsl_sss_user_apis.h>
+#endif /* SSS_HAVE_HOSTCRYPTO_USER */
+
 #if defined(FLOW_VERBOSE)
 #define NX_LOG_ENABLE_SSS_DEBUG 1
 #endif
@@ -40,6 +44,11 @@ sss_status_t sss_session_create(sss_session_t *session,
     sss_connection_type_t connection_type,
     void *connectionData)
 {
+    AX_UNUSED_ARG(session);
+    AX_UNUSED_ARG(application_id);
+    AX_UNUSED_ARG(connection_type);
+    AX_UNUSED_ARG(connectionData);
+
     if (kType_SSS_Software == subsystem) {
 #if SSS_HAVE_HOSTCRYPTO_OPENSSL
         /* if I have openSSL */
@@ -132,6 +141,12 @@ sss_status_t sss_session_open(sss_session_t *session,
         return sss_openssl_session_open(openssl_session, subsystem, application_id, connection_type, connectionData);
     }
 #endif /* SSS_HAVE_HOSTCRYPTO_OPENSSL */
+#if SSS_HAVE_HOSTCRYPTO_USER
+    if (SSS_SUBSYSTEM_TYPE_IS_HOST(subsystem)) {
+        sss_user_impl_session_t *user_session = (sss_user_impl_session_t *)session;
+        return sss_user_impl_session_open(user_session, subsystem, application_id, connection_type, connectionData);
+    }
+#endif /* SSS_HAVE_HOSTCRYPTO_USER */
     return kStatus_SSS_InvalidArgument;
 }
 
@@ -219,6 +234,12 @@ void sss_session_close(sss_session_t *session)
         sss_openssl_session_close(openssl_session);
     }
 #endif /* SSS_HAVE_HOSTCRYPTO_OPENSSL */
+#if SSS_HAVE_HOSTCRYPTO_USER
+    if (SSS_SESSION_TYPE_IS_HOST(session)) {
+        sss_user_impl_session_t *user_session = (sss_user_impl_session_t *)session;
+        sss_user_impl_session_close(user_session);
+    }
+#endif /* SSS_HAVE_HOSTCRYPTO_USER */
 }
 
 void sss_session_delete(sss_session_t *session)
@@ -283,6 +304,15 @@ sss_status_t sss_key_object_init(sss_object_t *keyObject, sss_key_store_t *keySt
         return sss_openssl_key_object_init(openssl_keyObject, openssl_keyStore);
     }
 #endif /* SSS_HAVE_HOSTCRYPTO_OPENSSL */
+#if SSS_HAVE_HOSTCRYPTO_USER
+    if (SSS_KEY_STORE_TYPE_IS_HOST(keyStore)) {
+        sss_user_impl_object_t *user_keyObject   = (sss_user_impl_object_t *)keyObject;
+        sss_user_impl_key_store_t *user_keyStore = (sss_user_impl_key_store_t *)keyStore;
+        SSS_ASSERT(sizeof(*user_keyObject) <= sizeof(*keyObject));
+        SSS_ASSERT(sizeof(*user_keyStore) <= sizeof(*keyStore));
+        return sss_user_impl_key_object_init(user_keyObject, user_keyStore);
+    }
+#endif /* SSS_HAVE_HOSTCRYPTO_USER */
     return kStatus_SSS_InvalidArgument;
 }
 
@@ -320,6 +350,13 @@ sss_status_t sss_key_object_allocate_handle(sss_object_t *keyObject,
             openssl_keyObject, keyId, keyPart, cipherType, keyByteLenMax, options);
     }
 #endif /* SSS_HAVE_HOSTCRYPTO_OPENSSL */
+#if SSS_HAVE_HOSTCRYPTO_USER
+    if (SSS_OBJECT_TYPE_IS_HOST(keyObject)) {
+        sss_user_impl_object_t *user_keyObject = (sss_user_impl_object_t *)keyObject;
+        return sss_user_impl_key_object_allocate_handle(
+            user_keyObject, keyId, keyPart, cipherType, keyByteLenMax, options);
+    }
+#endif /* SSS_HAVE_HOSTCRYPTO_USER */
     return kStatus_SSS_InvalidArgument;
 }
 
@@ -581,6 +618,12 @@ void sss_key_object_free(sss_object_t *keyObject)
         sss_openssl_key_object_free(openssl_keyObject);
     }
 #endif /* SSS_HAVE_HOSTCRYPTO_OPENSSL */
+#if SSS_HAVE_HOSTCRYPTO_USER
+    if (SSS_OBJECT_TYPE_IS_HOST(keyObject)) {
+        sss_user_impl_object_t *user_keyObject = (sss_user_impl_object_t *)keyObject;
+        sss_user_impl_key_object_free(user_keyObject);
+    }
+#endif /* SSS_HAVE_HOSTCRYPTO_USER */
 }
 
 sss_status_t sss_derive_key_context_init(sss_derive_key_t *context,
@@ -907,6 +950,15 @@ sss_status_t sss_key_store_context_init(sss_key_store_t *keyStore, sss_session_t
         return sss_openssl_key_store_context_init(openssl_keyStore, openssl_session);
     }
 #endif /* SSS_HAVE_HOSTCRYPTO_OPENSSL */
+#if SSS_HAVE_HOSTCRYPTO_USER
+    if (SSS_SESSION_TYPE_IS_HOST(session)) {
+        sss_user_impl_key_store_t *user_keyStore = (sss_user_impl_key_store_t *)keyStore;
+        sss_user_impl_session_t *user_session    = (sss_user_impl_session_t *)session;
+        SSS_ASSERT(sizeof(*user_keyStore) <= sizeof(*keyStore));
+        SSS_ASSERT(sizeof(*user_session) <= sizeof(*session));
+        return sss_user_impl_key_store_context_init(user_keyStore, user_session);
+    }
+#endif /* SSS_HAVE_HOSTCRYPTO_USER */
     return kStatus_SSS_InvalidArgument;
 }
 
@@ -936,6 +988,12 @@ sss_status_t sss_key_store_allocate(sss_key_store_t *keyStore, uint32_t keyStore
         return sss_openssl_key_store_allocate(openssl_keyStore, keyStoreId);
     }
 #endif /* SSS_HAVE_HOSTCRYPTO_OPENSSL */
+#if SSS_HAVE_HOSTCRYPTO_USER
+    if (SSS_KEY_STORE_TYPE_IS_HOST(keyStore)) {
+        sss_user_impl_key_store_t *user_keyStore = (sss_user_impl_key_store_t *)keyStore;
+        return sss_user_impl_key_store_allocate(user_keyStore, keyStoreId);
+    }
+#endif /* SSS_HAVE_HOSTCRYPTO_USER */
     return kStatus_SSS_InvalidArgument;
 }
 
@@ -1040,6 +1098,14 @@ sss_status_t sss_key_store_set_key(sss_key_store_t *keyStore,
             openssl_keyStore, openssl_keyObject, data, dataLen, keyBitLen, options, optionsLen);
     }
 #endif /* SSS_HAVE_HOSTCRYPTO_OPENSSL */
+#if SSS_HAVE_HOSTCRYPTO_USER
+    if (SSS_KEY_STORE_TYPE_IS_HOST(keyStore)) {
+        sss_user_impl_key_store_t *user_keyStore = (sss_user_impl_key_store_t *)keyStore;
+        sss_user_impl_object_t *user_keyObject   = (sss_user_impl_object_t *)keyObject;
+        return sss_user_impl_key_store_set_key(
+            user_keyStore, user_keyObject, data, dataLen, keyBitLen, options, optionsLen);
+    }
+#endif /* SSS_HAVE_HOSTCRYPTO_USER */
     return kStatus_SSS_InvalidArgument;
 }
 
@@ -1112,6 +1178,13 @@ sss_status_t sss_key_store_get_key(
         return sss_openssl_key_store_get_key(openssl_keyStore, openssl_keyObject, data, dataLen, pKeyBitLen);
     }
 #endif /* SSS_HAVE_HOSTCRYPTO_OPENSSL */
+#if SSS_HAVE_HOSTCRYPTO_USER
+    if (SSS_KEY_STORE_TYPE_IS_HOST(keyStore)) {
+        sss_user_impl_key_store_t *user_keyStore = (sss_user_impl_key_store_t *)keyStore;
+        sss_user_impl_object_t *user_keyObject   = (sss_user_impl_object_t *)keyObject;
+        return sss_user_impl_key_store_get_key(user_keyStore, user_keyObject, data, dataLen, pKeyBitLen);
+    }
+#endif /* SSS_HAVE_HOSTCRYPTO_USER */
     return kStatus_SSS_InvalidArgument;
 }
 
@@ -2513,6 +2586,13 @@ sss_status_t sss_tunnel(sss_tunnel_t *context,
     uint32_t keyObjectCount,
     uint32_t tunnelType)
 {
+    AX_UNUSED_ARG(context);
+    AX_UNUSED_ARG(data);
+    AX_UNUSED_ARG(dataLen);
+    AX_UNUSED_ARG(keyObjects);
+    AX_UNUSED_ARG(keyObjectCount);
+    AX_UNUSED_ARG(tunnelType);
+
 #if 0 && SSS_HAVE_SSCP
     if (SSS_TUNNEL_TYPE_IS_SSCP(context)) {
         sss_sscp_tunnel_t *sscp_context = (sss_sscp_tunnel_t *)context;

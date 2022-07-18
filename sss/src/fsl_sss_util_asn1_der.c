@@ -235,6 +235,7 @@ sss_status_t sss_util_asn1_rsa_parse_private(const uint8_t *key,
     uint8_t tag;
     int ret;
     sss_status_t status = kStatus_SSS_Fail;
+    AX_UNUSED_ARG(cipher_type);
     /* Parse ASN.1 Sequence */
     /* Example:
         0x30, 0x82, 0x02, 0x77,     ;SEQUENCE
@@ -587,6 +588,7 @@ sss_status_t sss_util_asn1_rsa_parse_private_allow_invalid_key(const uint8_t *ke
     uint8_t tag;
     int ret;
     sss_status_t status = kStatus_SSS_Fail;
+    AX_UNUSED_ARG(cipher_type);
     /* Parse ASN.1 Sequence */
     /* Example:
         0x30, 0x82, 0x02, 0x77,     ;SEQUENCE
@@ -1749,8 +1751,8 @@ sss_status_t sss_util_openssl_read_pkcs12(
     int status = 0;
     FILE *pkcs12_cert_file;
     PKCS12 *p12_cert;
-    X509 *x509_cert;
-    EVP_PKEY *p_key;
+    X509 *x509_cert = NULL;
+    EVP_PKEY *p_key = NULL;
     BIO *pem_key_bio                 = BIO_new(BIO_s_mem());
     BIO *cert_bio                    = BIO_new(BIO_s_mem());
     STACK_OF(X509) *additional_certs = NULL;
@@ -1784,9 +1786,15 @@ sss_status_t sss_util_openssl_read_pkcs12(
     // Dump certificate to buffer
     PEM_write_bio_X509(cert_bio, x509_cert);
     BIO_read(cert_bio, cert, 20000);
-
-exit:
+#else
+    AX_UNUSED_ARG(pkcs12_cert);
+    AX_UNUSED_ARG(password);
+    AX_UNUSED_ARG(private_key);
+    AX_UNUSED_ARG(cert);
+    retval = kStatus_SSS_Fail;
+    goto exit;
 #endif
+exit:
     return retval;
 }
 
@@ -1856,8 +1864,17 @@ sss_status_t sss_util_openssl_write_pkcs12(const char *pkcs12_cert,
     if (pkcs12_file != NULL) {
         fclose(pkcs12_file);
     }
-exit:
+#else
+    AX_UNUSED_ARG(pkcs12_cert);
+    AX_UNUSED_ARG(password);
+    AX_UNUSED_ARG(ref_key);
+    AX_UNUSED_ARG(ref_key_length);
+    AX_UNUSED_ARG(cert);
+    AX_UNUSED_ARG(cert_length);
+    retval = kStatus_SSS_Fail;
+    goto exit;
 #endif
 
+exit:
     return retval;
 }

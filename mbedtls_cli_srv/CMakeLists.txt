@@ -72,7 +72,6 @@ FILE(
     ../ext/mbedtls/library/ssl_srv.c
     ../ext/mbedtls/library/ssl_ticket.c
     ../ext/mbedtls/library/ssl_tls.c
-    ../ext/mbedtls/library/threading.c
     ../ext/mbedtls/library/timing.c
     ../ext/mbedtls/library/version.c
     ../ext/mbedtls/library/version_features.c
@@ -84,6 +83,9 @@ FILE(
     ../ext/mbedtls/library/x509write_crt.c
     ../ext/mbedtls/library/x509write_csr.c
     ../ext/mbedtls/library/xtea.c
+    ../ext/mbedtls/library/ssl_msg.c
+    ../ext/mbedtls/tests/src/helpers.c
+    ../ext/mbedtls/programs/ssl/ssl_test_lib.c
     )
 
 FILE(
@@ -158,6 +160,8 @@ FILE(
     ../hostlib/hostLib/libCommon/smCom
     ../sss/plugin/mbedtls
     ../ext/mbedtls/include
+    ../ext/mbedtls/tests/include
+    ../ext/mbedtls/programs/ssl
 )
 
 TARGET_INCLUDE_DIRECTORIES(
@@ -179,16 +183,13 @@ ADD_DEFINITIONS(-DSMCOM_T1oI2C)
 ADD_DEFINITIONS(-DT1oI2C)
 ADD_DEFINITIONS(-DT1oI2C_UM11225)
 
-
-
 #########################################################################################
-
 
 project (ssl2_server)
 
 add_executable( ${PROJECT_NAME}
     ../ext/mbedtls/programs/ssl/ssl_server2.c
-    ../ext/mbedtls/programs/ssl/query_config.c
+    ../ext/mbedtls/programs/test/query_config.c
     ${SE_SOURCES}
     ${MBEDTLS_SOURCES}
     )

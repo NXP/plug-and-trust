@@ -38,12 +38,18 @@
 *
 */
 
-#include <fsl_sss_se05x_apis.h>
+#if defined(SSS_USE_FTR_FILE)
+#include "fsl_sss_ftr.h"
+#else
+#include "fsl_sss_ftr_default.h"
+#endif
+
 #include <nxLog_sss.h>
 #include <stdlib.h>
 #include <string.h>
 
 #if SSS_HAVE_APPLET_SE05X_IOT && SSSFTR_RSA
+#include "fsl_sss_util_rsa_sign_utils.h"
 
 #include "se05x_APDU.h"
 
@@ -445,7 +451,7 @@ uint8_t emsa_decode_and_compare(
 {
     uint8_t *p;
     uint8_t *hash_start;
-    uint8_t result[512];
+    uint8_t result[512] = {0};
     uint8_t ret = 1;
     uint32_t hlen;
     uint8_t zeros[8];
@@ -559,4 +565,4 @@ exit:
     return ret;
 }
 
-#endif
+#endif // SSS_HAVE_APPLET_SE05X_IOT && SSSFTR_RSA

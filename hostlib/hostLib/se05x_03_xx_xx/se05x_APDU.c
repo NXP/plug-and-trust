@@ -46,8 +46,8 @@ extern "C" {
 #include "se05x_04_xx_APDU_impl.h"
 #endif
 
-#if (SSS_HAVE_APPLET_SE051_CHIP && SSS_HAVE_SE05X_VER_GTE_16_01)
-#include "se05x_spake_APDU_impl.h"
+#if (SSS_HAVE_APPLET_SE051_H && SSS_HAVE_SE05X_VER_GTE_07_02)
+#include "se05x_pake_APDU_impl.h"
 #endif
 
 smStatus_t Se05x_API_I2CM_Send(
@@ -56,12 +56,12 @@ smStatus_t Se05x_API_I2CM_Send(
     smStatus_t retStatus  = SM_NOT_OK;
     const tlvHeader_t hdr = {{kSE05x_CLA, kSE05x_INS_CRYPTO, kSE05x_P1_DEFAULT, kSE05x_P2_I2CM}};
     uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
-    uint8_t *pCmdbuf = &cmdbuf[0];
-    size_t cmdbufLen = 0;
-    int tlvRet       = 0;
-    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP];
-    uint8_t *pRspbuf = &rspbuf[0];
-    size_t rspbufLen = ARRAY_SIZE(rspbuf);
+    uint8_t *pCmdbuf                       = &cmdbuf[0];
+    size_t cmdbufLen                       = 0;
+    int tlvRet                             = 0;
+    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP] = {0};
+    uint8_t *pRspbuf                       = &rspbuf[0];
+    size_t rspbufLen                       = ARRAY_SIZE(rspbuf);
 
 #if VERBOSE_APDU_LOGS
     NEWLINE();
@@ -87,7 +87,7 @@ smStatus_t Se05x_API_I2CM_Send(
             goto cleanup;
         }
         if ((rspIndex + 2) == rspbufLen) {
-            retStatus = (pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]);
+            retStatus = (smStatus_t)((pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]));
         }
     }
 cleanup:

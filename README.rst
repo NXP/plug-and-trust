@@ -25,8 +25,6 @@ Change Log
 -------------------------------------------------------------
 Refer ChangeLog.md
 
-THIS BRANCH CONTAINS ADDITIONAL FILES TO SUPPORT PAKE PROTOCOL APIs.
-
 
 Folder structure of the Mini Pacakge
 -------------------------------------------------------------
@@ -235,7 +233,7 @@ example - ``sss/ex/mbedtls/ex_sss_ssl2.c``
 
 Prerequisite for the demo:
 
-- Copy mbedtls (``mbedtls-2.16.2``) stack to ``ext/`` location,
+- Copy mbedtls (``mbedtls-2.26.0``) stack to ``ext/`` location,
 - client key provisoned inside SE050 with key id ``0x20181001``,
 - client certificate provisoned inside SE050 with key id ``0x20181002``,
 - Root CA public key provisoned inside SE050 with key id ``0x7DCCBB22``,

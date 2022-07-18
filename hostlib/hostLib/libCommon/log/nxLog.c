@@ -15,7 +15,7 @@ extern "C" {
 
 #include "sm_printf.h"
 
-#if USE_RTOS
+#if defined(USE_RTOS) && (USE_RTOS == 1)
 #include "FreeRTOS.h"
 #include "semphr.h"
 #endif
@@ -89,7 +89,7 @@ static void ansi_reSetColor(void);
 /* Set this to 1 if you want colored logs with GCC based compilers */
 #define USE_COLORED_LOGS 1
 
-#if NX_LOG_SHORT_PREFIX
+#if defined(NX_LOG_SHORT_PREFIX) && (NX_LOG_SHORT_PREFIX == 1)
 static const char *szLevel[] = {"E", "W", "I", "D"};
 #else
 static const char *szLevel[] = {"ERROR", "WARN ", "INFO ", "DEBUG"};
@@ -105,7 +105,7 @@ static const char *szLevel[] = {"ERROR", "WARN ", "INFO ", "DEBUG"};
 #include "smCom.h"
 #endif
 
-#if USE_RTOS
+#if defined(USE_RTOS) && (USE_RTOS == 1)
 static SemaphoreHandle_t gLogginglock;
 #elif (__GNUC__ && !AX_EMBEDDED)
 #include<pthread.h>
@@ -121,7 +121,7 @@ static void nLog_AcquireLock()
 {
 #if USE_LOCK
     if (lockInitialised) {
-#if USE_RTOS
+#if defined(USE_RTOS) && (USE_RTOS == 1)
         if (xSemaphoreTake(gLogginglock, portMAX_DELAY) != pdTRUE) {
             PRINTF("Acquiring logging semaphore failed");
         }
@@ -138,7 +138,7 @@ static void nLog_ReleaseLock()
 {
 #if USE_LOCK
     if (lockInitialised) {
-#if USE_RTOS
+#if defined(USE_RTOS) && (USE_RTOS == 1)
         if (xSemaphoreGive(gLogginglock) != pdTRUE) {
             PRINTF("Releasing logging semaphore failed");
         }
@@ -154,7 +154,7 @@ static void nLog_ReleaseLock()
 uint8_t nLog_Init()
 {
 #if USE_LOCK
-#if USE_RTOS
+#if defined(USE_RTOS) && (USE_RTOS == 1)
     gLogginglock = xSemaphoreCreateMutex();
     if (gLogginglock == NULL) {
         PRINTF("xSemaphoreCreateMutex failed");
@@ -174,7 +174,7 @@ uint8_t nLog_Init()
 void nLog_DeInit()
 {
 #if USE_LOCK
-#if USE_RTOS
+#if defined(USE_RTOS) && (USE_RTOS == 1)
     if (gLogginglock != NULL) {
     	vSemaphoreDelete(gLogginglock);
         gLogginglock = NULL;

@@ -12,6 +12,10 @@
 #include "se05x_enums.h"
 #include "se05x_tlv.h"
 
+/** @addtogroup se05x_apis
+ *
+ * @{ */
+
 /* Enable compilation of deprecated API Se05x_API_WritePCR
  * Deprecated from Q1 2021.
  * Support will be removed by Q1 2022
@@ -1485,7 +1489,7 @@ smStatus_t Se05x_API_ReadObject(
  * @return     The sm status.
  */
 
-#if SSS_HAVE_SE05X_VER_GTE_07_02
+#if SSS_HAVE_SE05X_VER_GTE_07_02 || defined(__DOXYGEN__)
 smStatus_t Se05x_API_ReadObject_W_Attst_V2(pSe05xSession_t session_ctx,
     uint32_t objectID,
     uint16_t offset,
@@ -1507,7 +1511,8 @@ smStatus_t Se05x_API_ReadObject_W_Attst_V2(pSe05xSession_t session_ctx,
     size_t *pObjLen,
     uint8_t *signature,
     size_t *psignatureLen);
-#else
+#endif // SSS_HAVE_SE05X_VER_GTE_07_02
+#if !SSS_HAVE_SE05X_VER_GTE_07_02 || defined(__DOXYGEN__)
 smStatus_t Se05x_API_ReadObject_W_Attst(pSe05xSession_t session_ctx,
     uint32_t objectID,
     uint16_t offset,
@@ -4382,7 +4387,6 @@ smStatus_t Se05x_API_HKDF_Extended(pSe05xSession_t session_ctx,
  *
  * @param[in] session_ctx Session Context [0:kSE05x_pSession]
  * @param[in] objectID 4-byte password identifier (object type must be HMACKey) [1:kSE05x_TAG_1]
- * @param[in] Pbkdf2 Algorithm [kSE05x_TAG_5]
  * @param[in] salt salt [2:kSE05x_TAG_2]
  * @param[in] saltLen Length of salt
  * @param[in] count count [3:kSE05x_TAG_3]
@@ -4392,9 +4396,6 @@ smStatus_t Se05x_API_HKDF_Extended(pSe05xSession_t session_ctx,
  */
 smStatus_t Se05x_API_PBKDF2(pSe05xSession_t session_ctx,
     uint32_t objectID,
-#if SSS_HAVE_SE05X_VER_GTE_16_03
-    SE05x_Pbkdf2Algo_t algorithm,
-#endif
     const uint8_t *salt,
     size_t saltLen,
     uint16_t count,
@@ -4728,7 +4729,7 @@ smStatus_t Se05x_API_DFAuthenticateFirstPart2(pSe05xSession_t session_ctx,
  * +=============+======================================+
  * | SW_NO_ERROR | The command is handled successfully. |
  * +-------------+--------------------------------------+
- *
+ * @endrst
  *
  *
  * @param[in] session_ctx Session Context [0:kSE05x_pSession]
@@ -6027,8 +6028,14 @@ smStatus_t Se05x_API_GetRandom(pSe05xSession_t session_ctx, uint16_t size, uint8
  */
 smStatus_t Se05x_API_DeleteAll(pSe05xSession_t session_ctx);
 
+/** @} */
+
 #if SSS_HAVE_SE05X_VER_GTE_06_00
 #include "se05x_04_xx_APDU_apis.h"
+#endif
+
+#if (SSS_HAVE_APPLET_SE051_H && SSS_HAVE_SE05X_VER_GTE_07_02)
+#include "se05x_pake_APDU_apis.h"
 #endif
 
 #endif /* SE050X_APDU_APIS_H_INC */

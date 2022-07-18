@@ -258,8 +258,8 @@ sss_status_t ks_mbedtls_load_key(sss_mbedtls_object_t *sss_key, keyStoreTable_t 
             fclose(fp);
             retval = ks_mbedtls_key_object_create(sss_key,
                 shadowEntry->extKeyId,
-                (shadowEntry->keyPart & 0x0F),
-                shadowEntry->cipherType,
+                (sss_key_part_t)(shadowEntry->keyPart & 0x0F),
+                (sss_cipher_type_t)(shadowEntry->cipherType),
                 size,
                 kKeyObject_Mode_Persistent);
             if (retval == kStatus_SSS_Success) {
@@ -306,6 +306,8 @@ sss_status_t ks_mbedtls_store_key(const sss_mbedtls_object_t *sss_key)
         case kSSS_KeyPart_Public:
             ret = mbedtls_pk_write_pubkey_der(pk, key_buf, sizeof(key_buf));
             break;
+        default:
+            LOG_E("Invalid objectType");
         }
         if (ret > 0 && retval != kStatus_SSS_Success) {
             c = key_buf + sizeof(key_buf) - ret;

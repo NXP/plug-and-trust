@@ -98,13 +98,13 @@ sss_status_t ex_sss_boot_connectstring(int argc, const char *argv[], const char 
     }
 
     if (portName == NULL) {
-#if RJCT_VCOM
+#if defined(RJCT_VCOM) && (RJCT_VCOM == 1)
         portName = gszCOMPortDefault;
         LOG_I("Using PortName='%s' (gszCOMPortDefault)", portName);
-#elif SMCOM_JRCP_V1 || SMCOM_JRCP_V2
+#elif (defined(SMCOM_JRCP_V1) && (SMCOM_JRCP_V1 == 1)) || (defined(SMCOM_JRCP_V2) && (SMCOM_JRCP_V2 == 1))
         portName = gszSocketPortDefault;
         LOG_I("Using PortName='%s' (gszSocketPortDefault)", portName);
-#elif SMCOM_PCSC
+#elif defined(SMCOM_PCSC) && (SMCOM_PCSC == 1)
         portName = gszReaderDefault;
 #else
         status = kStatus_SSS_Success;
@@ -128,8 +128,9 @@ sss_status_t ex_sss_boot_connectstring(int argc, const char *argv[], const char 
 
 bool ex_sss_boot_isSerialPortName(const char *portName)
 {
+    AX_UNUSED_ARG(portName);
     bool is_vcom = FALSE;
-#if RJCT_VCOM
+#if defined(RJCT_VCOM) && (RJCT_VCOM == 1)
     if (portName == NULL) {
         is_vcom = FALSE;
     }
@@ -155,7 +156,7 @@ bool ex_sss_boot_isSocketPortName(const char *portName)
     return TRUE;
 #else
     bool is_socket = FALSE;
-#if SMCOM_JRCP_V1 || SMCOM_JRCP_V2
+#if (defined(SMCOM_JRCP_V1) && (SMCOM_JRCP_V1 == 1)) || (defined(SMCOM_JRCP_V2) && (SMCOM_JRCP_V2 == 1))
     if (portName == NULL) {
         is_socket = FALSE;
     }

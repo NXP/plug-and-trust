@@ -30,9 +30,9 @@
 /* Only for base session with os */
 #endif
 /* FreeRTOS includes. */
-#if USE_RTOS
+#if defined(USE_RTOS) && (USE_RTOS == 1)
 #include "FreeRTOS.h"
-//#include "FreeRTOSIPConfig.h"
+#include "FreeRTOSIPConfig.h"
 #include "semphr.h"
 #include "task.h"
 #endif
@@ -99,7 +99,7 @@ typedef struct _sss_se05x_tunnel_context
     /** Where exactly this tunnel terminates to */
     sss_tunnel_dest_t tunnelDest;
 /** For systems where we potentially have multi-threaded operations, have a lock */
-#if USE_RTOS
+#if defined(USE_RTOS) && (USE_RTOS == 1)
     SemaphoreHandle_t channelLock;
 #elif (__GNUC__ && !AX_EMBEDDED)
     pthread_mutex_t channelLock;
@@ -339,6 +339,12 @@ typedef struct
     uint8_t EXTCFG_FORBID_HKDF_EXTRACT : 1;
 } SE05x_Applet_Feature_Disable_t;
 
+/** @} */
+
+/** @addtogroup se05x_attest
+ *
+ * @{ */
+
 /** Attestation data */
 typedef struct
 {
@@ -523,12 +529,23 @@ typedef struct _SE05x_I2CM_cmd
 /* Functions                                                                  */
 /* ************************************************************************** */
 
+/**
+ * @addtogroup sss_se05x_mac
+ * @{
+ */
+
 /** MAC Validate
  *
  */
 sss_status_t sss_se05x_mac_validate_one_go(
     sss_se05x_mac_t *context, const uint8_t *message, size_t messageLen, uint8_t *mac, size_t macLen);
 
+/*! @} */ /* end of : sss_se05x_mac */
+
+/**
+ * @addtogroup sss_se05x_asym
+ * @{
+ */
 /** Similar to @ref sss_se05x_asymmetric_sign_digest,
  *
  * but hashing/digest done by SE
@@ -543,6 +560,12 @@ sss_status_t sss_se05x_asymmetric_sign(
 sss_status_t sss_se05x_asymmetric_verify(
     sss_se05x_asymmetric_t *context, uint8_t *srcData, size_t srcLen, uint8_t *signature, size_t signatureLen);
 
+/*! @} */ /* end of : sss_se05x_asym */
+
+/** @addtogroup se05x_attest
+ *
+ * @{ */
+
 /** Read with attestation
  *
  */
@@ -556,6 +579,10 @@ sss_status_t sss_se05x_key_store_get_key_attst(sss_se05x_key_store_t *keyStore,
     uint8_t *random_attst,
     size_t randomLen_attst,
     sss_se05x_attst_data_t *attst_data);
+
+/*!
+ *@}
+ */ /* end of se05x_attest */
 
 uint32_t se05x_sssKeyTypeLenToCurveId(sss_cipher_type_t keyType, size_t keyBits);
 

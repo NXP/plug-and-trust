@@ -16,6 +16,9 @@
 #include <se05x_tlv.h>
 #include <string.h>
 
+int add_taglength_to_data(
+    uint8_t **buf, size_t *bufLen, SE05x_TAG_t tag, const uint8_t *cmd, size_t cmdLen, bool extendedLength);
+
 uint32_t se05x_sssKeyTypeLenToCurveId(sss_cipher_type_t cipherType, size_t keyBits)
 {
     uint32_t u32_curve_id = 0;

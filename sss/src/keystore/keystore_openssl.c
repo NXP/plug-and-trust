@@ -93,8 +93,8 @@ sss_status_t ks_openssl_load_key(sss_openssl_object_t *sss_key, keyStoreTable_t 
             fclose(fp);
             retval = sss_openssl_key_object_allocate(sss_key,
                 shadowEntry->extKeyId,
-                (shadowEntry->keyPart & 0x0F),
-                shadowEntry->cipherType,
+                (sss_key_part_t)(shadowEntry->keyPart & 0x0F),
+                (sss_cipher_type_t)(shadowEntry->cipherType),
                 size,
                 kKeyObject_Mode_Persistent);
             if (retval == kStatus_SSS_Success) {
@@ -199,6 +199,8 @@ sss_status_t ks_openssl_store_key(const sss_openssl_object_t *sss_key)
                 goto exit;
             }
             break;
+        default:
+            LOG_E("Invalid objectType");
         }
         if (len > 0 && retval != kStatus_SSS_Success) {
             fwrite(Buffer, len, 1, fp);
