@@ -33,6 +33,9 @@ FILE(
     ../hostlib/hostLib/libCommon/smCom/T1oI2C/*.c
     ../hostlib/hostLib/platform/linux/i2c_a7.c
 
+    # Required for T4T interface
+    ../hostlib/hostLib/platform/generic/se05x_t4t_utils.cpp
+
     ##### Openssl Host crypto support
     #../sss/src/openssl/fsl_sss_openssl_apis.c
     #../sss/src/keystore/keystore_cmn.c

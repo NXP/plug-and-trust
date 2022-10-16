@@ -1130,6 +1130,67 @@ typedef enum
 
 } SE05x_AttestationAlgo_t;
 
+
+/** Values for INS in ISO7816 APDU */
+typedef enum
+{
+    /** Invalid */
+    kSE05x_T4T_INS_NA = 0,
+    /** INS Select */
+    kSE05x_T4T_INS_SELECT = 0xA4,
+    /** INS Read Binary */
+    kSE05x_T4T_INS_READ_BINARY = 0xB0,
+    /** INS Update Binary */
+    kSE05x_T4T_INS_UPDATE_BINARY = 0xD6,
+    /** INS Get Data */
+    kSE05x_T4T_GET_DATA = 0xCA,
+    /** INS Configure access control */
+    kSE05x_T4T_INS_CONFIGURE_ACCESS_CTRL = 0x41,
+    /** INS Manage read counter */
+    kSE05x_T4T_INS_MANAGE_READ_CTR = 0x42,
+} SE05x_T4T_INS_t;
+
+/** T4T Access Control constants */
+typedef enum
+{
+    /** Access_Control_Granted */
+    kSE05x_T4T_AccessCtrl_Granted = 0x00,
+    /** Access_Control_Denied */
+    kSE05x_T4T_AccessCtrl_Denied = 0xFF,
+    /** Access_Control_Locked */
+    kSE05x_T4T_AccessCtrl_Locked = 0x80,
+} SE05x_T4T_Access_Ctrl_t;
+
+/** T4T Interface constants */
+typedef enum
+{
+    /** Interface contact */
+    kSE05x_T4T_Interface_Contact = 0x00,
+    /** Interface contactless */
+    kSE05x_T4T_Interface_Contactless = 0xFF,
+} SE05x_T4T_Interface_Const_t;
+
+/** T4T Operation constants */
+typedef enum
+{
+    /** Operation read */
+    kSE05x_T4T_Operation_Read = 0x00,
+    /** Operation Wrire */
+    kSE05x_T4T_Operation_Write = 0xFF,
+} SE05x_T4T_Operation_Const_t;
+
+/** T4T Read counter operation */
+typedef enum
+{
+    /** Read Counter Reset */
+    kSE05x_T4T_Read_Counter_Reset = 0x01,
+    /** Read Counter Enable */
+    kSE05x_T4T_Read_Counter_Enable = 0x02,
+    /** Read Counter Disable */
+    kSE05x_T4T_Read_Counter_Disable = 0x03,
+} SE05x_T4T_Read_Ctr_Operation_t;
+
+
 /** RSA Key format */
 typedef enum
 {

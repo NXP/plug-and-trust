@@ -33,6 +33,7 @@ extern "C" {
 #if defined(SMCOM_JRCP_V1_AM)
 #include "sm_timer.h"
 #endif
+#include "se05x_t4t_utils.h"
 
 #if defined(USE_RTOS) && (USE_RTOS == 1)
 #define LOCK_TXN(lock)                                   \
@@ -365,6 +366,8 @@ sss_status_t sss_se05x_session_open(sss_se05x_session_t *session,
 
     ENSURE_OR_GO_EXIT(connectionData);
     pAuthCtx = (SE05x_Connect_Ctx_t *)connectionData;
+
+    ENSURE_OR_RETURN_ON_ERROR(se05x_enable_contact_interface() == 0, kStatus_SSS_Fail);
 
     if (pAuthCtx->connType != kType_SE_Conn_Type_Channel) {
         uint8_t atr[100];
@@ -2515,7 +2518,7 @@ smStatus_t sss_se05x_create_curve_if_needed(Se05xSession_t *pSession, uint32_t c
 #endif
     ) {
 #if SSS_HAVE_SE05X_VER_GTE_06_00
-        status = Se05x_API_CreateECCurve(pSession, curve_id);
+        status = Se05x_API_CreateECCurve(pSession, (SE05x_ECCurve_t)curve_id);
         /* If curve is already created, Se05x_API_CreateECCurve fails. Ignore this error */
         return SM_OK;
 #else
@@ -7853,7 +7856,7 @@ SE05x_DigestMode_t se05x_get_sha_algo(sss_algorithm_t algorithm)
         break;
 #endif
     default:
-        sha_type = 0x00;
+        sha_type = kSE05x_DigestMode_NA;
     }
 
     return sha_type;

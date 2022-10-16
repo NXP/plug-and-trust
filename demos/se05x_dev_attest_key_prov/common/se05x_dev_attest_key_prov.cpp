@@ -107,39 +107,27 @@ const uint8_t cert_declaration[541] = {
 /* clang-format on */
 
 /* Device attestation key ids */
-#define DEV_ATTESTATION_KEY_SE05X_ID 0x7D300000
-#define DEV_ATTESTATION_CERT_SE05X_ID 0x7D300001
+#define DEV_ATTESTATION_KEY_SE05X_ID      0x7D300000
+#define DEV_ATTESTATION_CERT_SE05X_ID     0x7D300001
+#define CERT_DECLARATION_DATA_SE05X_ID    0x7D300002
 
 /* Device attestation key ids (Used with internal sign) */
-#define CD_DEV_ATTESTATION_KEY_SE05X_ID 0x7D300002
-#define CD_ATTEST_INTERNAL_SIGN_TBS_ID 0x7D300003
-#define NOCSR_DEV_ATTESTATION_KEY_SE05X_ID 0x7D300004
-#define NOCSR_ATTEST_INTERNAL_SIGN_TBS_ID 0x7D300005
+#define DEV_ATTESTATION_KEY_SE05X_ID_IS       0x7D300003
+#define DEV_ATTESTATION_KEY_SE05X_ID_IS_TBS   0x7D300004
 
-/* Device attestation data ids (for Cert decl) */
-#define CD_START_CONTAINER_SE05X_ID 0x7D300006
-#define CD_CERT_DECLARATION_TAG_SE05X_ID 0x7D300007
-#define CD_CERT_DECLARATION_LEN_SE05X_ID 0x7D300008
-#define CD_CERT_DECLARATION_DATA_SE05X_ID 0x7D300009
-#define CD_ATTEST_NONCE_TAG_SE05X_ID 0x7D30000A
-#define CD_ATTEST_NONCE_LEN_SE05X_ID 0x7D30000B
-#define CD_ATTEST_NONCE_DATA_SE05X_ID 0x7D30000C
-#define CD_TIME_STAMP_TAG_SE05X_ID 0x7D30000D
-#define CD_TIME_STAMP_LEN_SE05X_ID 0x7D30000E
-#define CD_TIME_STAMP_DATA_SE05X_ID 0x7D30000F
-#define CD_END_CONTAINER_SE05X_ID 0x7D300010
-#define CD_ATTEST_CHALLENGE_SE05X_ID 0x7D300011
+#define TAG1_ID       0x7D300005
+#define TAG1_LEN_ID   0x7D300006
+#define TAG1_VALUE_ID 0x7D300007
+#define TAG2_ID       0x7D300008
+#define TAG2_LEN_ID   0x7D300009
+#define TAG2_VALUE_ID 0x7D30000A
+#define TAG3_ID       0x7D30000B
+#define TAG3_LEN_ID   0x7D30000C
+#define TAG3_VALUE_ID 0x7D30000D
+#define ATTEST_CHALLENGE_ID 0x7D30000E
 
-/* Device attestation data ids (for CSR) */
-#define NOCSR_START_CONTAINER_SE05X_ID 0x7D300012
-#define NOCSR_CSR_TAG_SE05X_ID 0x7D300013
-#define NOCSR_CSR_LEN_SE05X_ID 0x7D300014
-#define NOCSR_CSR_DATA_SE05X_ID 0x7D300015
-#define NOCSR_CSR_NONCE_TAG_SE05X_ID 0x7D300016
-#define NOCSR_CSR_NONCE_LEN_SE05X_ID 0x7D300017
-#define NOCSR_CSR_NONCE_DATA_SE05X_ID 0x7D300018
-#define NOCSR_END_CONTAINER_SE05X_ID 0x7D300019
-#define NOCSR_ATTEST_CHALLENGE_SE05X_ID 0x7D30001A
+#define START_CONTAINER_SE05X_ID 0x7D30000F
+#define END_CONTAINER_SE05X_ID 0x7D300010
 
 ex_sss_boot_ctx_t gex_sss_chip_ctx;
 
@@ -231,13 +219,7 @@ void se05x_dev_attest_key_prov(void) {
   /* Set Device attestation keyPair, cert (Used for internal signing) */
 #if SSS_HAVE_APPLET_SE051_H
   {
-    uint8_t tempBuf[2] = {
-        0,
-    };
-    uint8_t cd_tbsData[128] = {
-        0,
-    };
-    uint8_t csr_tbsData[128] = {
+    uint8_t tbsData[128] = {
         0,
     };
     uint8_t offset = 0;
@@ -250,17 +232,11 @@ void se05x_dev_attest_key_prov(void) {
     commonPol.policy.common.can_Read = 0;
     commonPol.policy.common.can_Write = 1;
 
-    static sss_policy_u cd_intSign_withPol;
-    cd_intSign_withPol.type = KPolicy_Internal_Sign;
-    cd_intSign_withPol.auth_obj_id = 0;
-    cd_intSign_withPol.policy.tbsItemList.tbsItemList_KeyId =
-        CD_ATTEST_INTERNAL_SIGN_TBS_ID;
-
-    static sss_policy_u csr_intSign_withPol;
-    csr_intSign_withPol.type = KPolicy_Internal_Sign;
-    csr_intSign_withPol.auth_obj_id = 0;
-    csr_intSign_withPol.policy.tbsItemList.tbsItemList_KeyId =
-        NOCSR_ATTEST_INTERNAL_SIGN_TBS_ID;
+    static sss_policy_u intSign_withPol;
+    intSign_withPol.type = KPolicy_Internal_Sign;
+    intSign_withPol.auth_obj_id = 0;
+    intSign_withPol.policy.tbsItemList.tbsItemList_KeyId =
+        DEV_ATTESTATION_KEY_SE05X_ID_IS_TBS;
 
     static sss_policy_u asymmkey_withPol;
     asymmkey_withPol.type = KPolicy_Asym_Key;
@@ -268,41 +244,35 @@ void se05x_dev_attest_key_prov(void) {
     asymmkey_withPol.policy.asymmkey.can_Sign = 1;
     asymmkey_withPol.policy.asymmkey.can_Verify = 1;
 
-    sss_policy_t cd_policy_for_ec_key;
-    cd_policy_for_ec_key.nPolicies = 3;
-    cd_policy_for_ec_key.policies[0] = &commonPol;
-    cd_policy_for_ec_key.policies[1] = &cd_intSign_withPol;
-    cd_policy_for_ec_key.policies[2] = &asymmkey_withPol;
-
-    sss_policy_t csr_policy_for_ec_key;
-    csr_policy_for_ec_key.nPolicies = 3;
-    csr_policy_for_ec_key.policies[0] = &commonPol;
-    csr_policy_for_ec_key.policies[1] = &csr_intSign_withPol;
-    csr_policy_for_ec_key.policies[2] = &asymmkey_withPol;
+    sss_policy_t policy_for_ec_key;
+    policy_for_ec_key.nPolicies = 3;
+    policy_for_ec_key.policies[0] = &commonPol;
+    policy_for_ec_key.policies[1] = &intSign_withPol;
+    policy_for_ec_key.policies[2] = &asymmkey_withPol;
 
     printf("Start provisioning data for DA internal sign (to be used only with "
            "SE051H) \n");
 
-    /* Create tbs binFile data (CD signing) */
-    fill_tbs_buffer(cd_tbsData, CD_START_CONTAINER_SE05X_ID, &offset);
-    fill_tbs_buffer(cd_tbsData, CD_CERT_DECLARATION_TAG_SE05X_ID, &offset);
-    fill_tbs_buffer(cd_tbsData, CD_CERT_DECLARATION_LEN_SE05X_ID, &offset);
-    fill_tbs_buffer(cd_tbsData, CD_CERT_DECLARATION_DATA_SE05X_ID, &offset);
-    fill_tbs_buffer(cd_tbsData, CD_ATTEST_NONCE_TAG_SE05X_ID, &offset);
-    fill_tbs_buffer(cd_tbsData, CD_ATTEST_NONCE_LEN_SE05X_ID, &offset);
-    fill_tbs_buffer(cd_tbsData, CD_ATTEST_NONCE_DATA_SE05X_ID, &offset);
-    fill_tbs_buffer(cd_tbsData, CD_TIME_STAMP_TAG_SE05X_ID, &offset);
-    fill_tbs_buffer(cd_tbsData, CD_TIME_STAMP_LEN_SE05X_ID, &offset);
-    // fill_tbs_buffer(cd_tbsData, CD_TIME_STAMP_DATA_SE05X_ID, &offset);
-    fill_tbs_buffer(cd_tbsData, CD_END_CONTAINER_SE05X_ID, &offset);
-    fill_tbs_buffer(cd_tbsData, CD_ATTEST_CHALLENGE_SE05X_ID, &offset);
+    /* Create tbs binFile data */
+    fill_tbs_buffer(tbsData, START_CONTAINER_SE05X_ID, &offset);
+    fill_tbs_buffer(tbsData, TAG1_ID, &offset);
+    fill_tbs_buffer(tbsData, TAG1_LEN_ID, &offset);
+    fill_tbs_buffer(tbsData, TAG1_VALUE_ID, &offset);
+    fill_tbs_buffer(tbsData, TAG2_ID, &offset);
+    fill_tbs_buffer(tbsData, TAG2_LEN_ID, &offset);
+    fill_tbs_buffer(tbsData, TAG2_VALUE_ID, &offset);
+    fill_tbs_buffer(tbsData, TAG3_ID, &offset);
+    fill_tbs_buffer(tbsData, TAG3_LEN_ID, &offset);
+    fill_tbs_buffer(tbsData, TAG3_VALUE_ID, &offset);
+    fill_tbs_buffer(tbsData, END_CONTAINER_SE05X_ID, &offset);
+    fill_tbs_buffer(tbsData, ATTEST_CHALLENGE_ID, &offset);
 
     /* Set tbs binFile */
     printf("Set TBS item list binFile at location - %02x \n",
-           CD_ATTEST_INTERNAL_SIGN_TBS_ID);
-    status = se05x_set_key(cd_tbsData, offset, offset * 8, kSSS_KeyPart_Default,
+           DEV_ATTESTATION_KEY_SE05X_ID_IS_TBS);
+    status = se05x_set_key(tbsData, offset, offset * 8, kSSS_KeyPart_Default,
                            kSSS_CipherType_Certificate,
-                           CD_ATTEST_INTERNAL_SIGN_TBS_ID, NULL, 0);
+                           DEV_ATTESTATION_KEY_SE05X_ID_IS_TBS, NULL, 0);
     if (status != kStatus_SSS_Success) {
       printf("Error in se05x_set_key \n");
       return;
@@ -310,229 +280,28 @@ void se05x_dev_attest_key_prov(void) {
 
     /* Set device attestation keyPair (For internal sign) */
     printf("Set device attestation keyPair (For internal sign) - %02x \n",
-           CD_DEV_ATTESTATION_KEY_SE05X_ID);
+           DEV_ATTESTATION_KEY_SE05X_ID_IS);
     status = se05x_set_key(keyPairData, sizeof(keyPairData), 256,
                            kSSS_KeyPart_Pair, kSSS_CipherType_EC_NIST_P,
-                           CD_DEV_ATTESTATION_KEY_SE05X_ID,
-                           &cd_policy_for_ec_key, sizeof(cd_policy_for_ec_key));
+                           DEV_ATTESTATION_KEY_SE05X_ID_IS,
+                           &policy_for_ec_key, sizeof(policy_for_ec_key));
     if (status != kStatus_SSS_Success) {
       printf("Error in se05x_set_key \n");
       return;
     }
 
-    /* Create tbs binFile data (NOCSR signing) */
-    offset = 0;
-    fill_tbs_buffer(csr_tbsData, NOCSR_START_CONTAINER_SE05X_ID, &offset);
-    fill_tbs_buffer(csr_tbsData, NOCSR_CSR_TAG_SE05X_ID, &offset);
-    fill_tbs_buffer(csr_tbsData, NOCSR_CSR_LEN_SE05X_ID, &offset);
-    fill_tbs_buffer(csr_tbsData, NOCSR_CSR_DATA_SE05X_ID, &offset);
-    fill_tbs_buffer(csr_tbsData, NOCSR_CSR_NONCE_TAG_SE05X_ID, &offset);
-    fill_tbs_buffer(csr_tbsData, NOCSR_CSR_NONCE_LEN_SE05X_ID, &offset);
-    fill_tbs_buffer(csr_tbsData, NOCSR_CSR_NONCE_DATA_SE05X_ID, &offset);
-    fill_tbs_buffer(csr_tbsData, NOCSR_END_CONTAINER_SE05X_ID, &offset);
-    fill_tbs_buffer(csr_tbsData, NOCSR_ATTEST_CHALLENGE_SE05X_ID, &offset);
-
-    /* Set tbs binFile */
-    printf("Set TBS item list binFile at location - %02x \n",
-           NOCSR_ATTEST_INTERNAL_SIGN_TBS_ID);
-    status = se05x_set_key(csr_tbsData, offset, offset * 8,
-                           kSSS_KeyPart_Default, kSSS_CipherType_Certificate,
-                           NOCSR_ATTEST_INTERNAL_SIGN_TBS_ID, NULL, 0);
-    if (status != kStatus_SSS_Success) {
-      printf("Error in se05x_set_key \n");
-      return;
-    }
-
-    /* Set device attestation keyPair (For internal sign) */
-    printf("Set device attestation keyPair (For internal sign) - %02x \n",
-           NOCSR_DEV_ATTESTATION_KEY_SE05X_ID);
-    status = se05x_set_key(
-        keyPairData, sizeof(keyPairData), 256, kSSS_KeyPart_Pair,
-        kSSS_CipherType_EC_NIST_P, NOCSR_DEV_ATTESTATION_KEY_SE05X_ID,
-        &csr_policy_for_ec_key, sizeof(csr_policy_for_ec_key));
-    if (status != kStatus_SSS_Success) {
-      printf("Error in se05x_set_key \n");
-      return;
-    }
-
-    /* Attestation sign message (CD) - Create required binary objects for DA
-     * sign */
-
-    /* Set start container */
-    printf("Create binary file for start container at location - %02x \n",
-           CD_START_CONTAINER_SE05X_ID);
-    tempBuf[0] = 0x15;
-    status = se05x_set_key(tempBuf, 1, 1 * 8, kSSS_KeyPart_Default,
-                           kSSS_CipherType_Certificate,
-                           CD_START_CONTAINER_SE05X_ID, NULL, 0);
-    if (status != kStatus_SSS_Success) {
-      printf("Error in se05x_set_key \n");
-      return;
-    }
-
-    /* Set cert declaration tag */
-    printf("Create binary file for cert decl tag at location - %02x \n",
-           CD_CERT_DECLARATION_TAG_SE05X_ID);
-    tempBuf[0] = 0x31; /* Control Byte */
-    tempBuf[1] = 0x01; /* Tag */
-    status = se05x_set_key(tempBuf, 2, 2 * 8, kSSS_KeyPart_Default,
-                           kSSS_CipherType_Certificate,
-                           CD_CERT_DECLARATION_TAG_SE05X_ID, NULL, 0);
-    if (status != kStatus_SSS_Success) {
-      printf("Error in se05x_set_key \n");
-      return;
-    }
-    /* Set cert declaration length */
-    printf("Create binary file for cert decl length at location - %02x \n",
-           CD_CERT_DECLARATION_LEN_SE05X_ID);
-    tempBuf[0] = (uint8_t)(sizeof(cert_declaration) & 0xFF);
-    tempBuf[1] = (uint8_t)((sizeof(cert_declaration) >> 8) & 0xFF);
-    status = se05x_set_key(tempBuf, 2, 2 * 8, kSSS_KeyPart_Default,
-                           kSSS_CipherType_Certificate,
-                           CD_CERT_DECLARATION_LEN_SE05X_ID, NULL, 0);
-    if (status != kStatus_SSS_Success) {
-      printf("Error in se05x_set_key \n");
-      return;
-    }
-    /* Set cert declaration data */
+        /* Set cert declaration data */
     printf("Create binary file for cert decl data at location - %02x \n",
-           CD_CERT_DECLARATION_DATA_SE05X_ID);
+           CERT_DECLARATION_DATA_SE05X_ID);
     status = se05x_set_key(cert_declaration, sizeof(cert_declaration),
                            sizeof(cert_declaration) * 8, kSSS_KeyPart_Default,
                            kSSS_CipherType_Certificate,
-                           CD_CERT_DECLARATION_DATA_SE05X_ID, NULL, 0);
+                           CERT_DECLARATION_DATA_SE05X_ID, NULL, 0);
     if (status != kStatus_SSS_Success) {
       printf("Error in se05x_set_key \n");
       return;
     }
 
-    /* Set attestation nonce tag */
-    printf("Create binary file for attestation nonce tag at location - %02x \n",
-           CD_ATTEST_NONCE_TAG_SE05X_ID);
-    tempBuf[0] = 0x30; /* Control Byte */
-    tempBuf[1] = 0x02; /* Tag */
-    status = se05x_set_key(tempBuf, 2, 2 * 8, kSSS_KeyPart_Default,
-                           kSSS_CipherType_Certificate,
-                           CD_ATTEST_NONCE_TAG_SE05X_ID, NULL, 0);
-    if (status != kStatus_SSS_Success) {
-      printf("Error in se05x_set_key \n");
-      return;
-    }
-    /* Set attestation nonce length */
-    printf(
-        "Create binary file for attestation nonce length at location - %02x \n",
-        CD_ATTEST_NONCE_LEN_SE05X_ID);
-    tempBuf[0] = 32; /* Nonce length */
-    status = se05x_set_key(tempBuf, 1, 1 * 8, kSSS_KeyPart_Default,
-                           kSSS_CipherType_Certificate,
-                           CD_ATTEST_NONCE_LEN_SE05X_ID, NULL, 0);
-    if (status != kStatus_SSS_Success) {
-      printf("Error in se05x_set_key \n");
-      return;
-    }
-    /* Attestation nonce data is set during runtime at location -
-     * ATTEST_NONCE_DATA_SE05X_ID */
-
-    /* Set time stamp tag */
-    printf("Create binary file for time stamp tag at location - %02x \n",
-           CD_TIME_STAMP_TAG_SE05X_ID);
-    tempBuf[0] = 0x24; /* Control Byte */
-    tempBuf[1] = 0x03; /* Tag */
-    status = se05x_set_key(tempBuf, 2, 2 * 8, kSSS_KeyPart_Default,
-                           kSSS_CipherType_Certificate,
-                           CD_TIME_STAMP_TAG_SE05X_ID, NULL, 0);
-    if (status != kStatus_SSS_Success) {
-      printf("Error in se05x_set_key \n");
-      return;
-    }
-    /* Time stamp length and data is set during runtime at location -
-     * CD_TIME_STAMP_LEN_SE05X_ID and CD_TIME_STAMP_DATA_SE05X_ID*/
-
-    /* Set end container */
-    printf("Create binary file for end container at location - %02x \n",
-           CD_END_CONTAINER_SE05X_ID);
-    tempBuf[0] = 0x18;
-    status = se05x_set_key(tempBuf, 1, 1 * 8, kSSS_KeyPart_Default,
-                           kSSS_CipherType_Certificate,
-                           CD_END_CONTAINER_SE05X_ID, NULL, 0);
-    if (status != kStatus_SSS_Success) {
-      printf("Error in se05x_set_key \n");
-      return;
-    }
-
-    /* Attestation challeng is set during run time at location
-     * CD_ATTEST_CHALLENGE_SE05X_ID */
-
-    /* Attestation sign message - Create required binary objects for NOCSR sign
-     */
-
-    /* Set start container */
-    printf("Create binary file for start container at location - %02x \n",
-           NOCSR_START_CONTAINER_SE05X_ID);
-    tempBuf[0] = 0x15;
-    status = se05x_set_key(tempBuf, 1, 1 * 8, kSSS_KeyPart_Default,
-                           kSSS_CipherType_Certificate,
-                           NOCSR_START_CONTAINER_SE05X_ID, NULL, 0);
-    if (status != kStatus_SSS_Success) {
-      printf("Error in se05x_set_key \n");
-      return;
-    }
-
-    /* Set NOCSR tag */
-    printf("Create binary file for CSR tag at location - %02x \n",
-           NOCSR_CSR_TAG_SE05X_ID);
-    tempBuf[0] = 0x30; /* Control Byte */
-    tempBuf[1] = 0x01; /* Tag */
-    status = se05x_set_key(tempBuf, 2, 2 * 8, kSSS_KeyPart_Default,
-                           kSSS_CipherType_Certificate, NOCSR_CSR_TAG_SE05X_ID,
-                           NULL, 0);
-    if (status != kStatus_SSS_Success) {
-      printf("Error in se05x_set_key \n");
-      return;
-    }
-    /* NOCSR length and data will be updated at runtime at location -
-     * NOCSR_CSR_LEN_SE05X_ID and NOCSR_CSR_DATA_SE05X_ID */
-
-    /* Set nocsr nonce tag */
-    printf("Create binary file for CSR nonce tag at location - %02x \n",
-           NOCSR_CSR_NONCE_TAG_SE05X_ID);
-    tempBuf[0] = 0x30; /* Control Byte */
-    tempBuf[1] = 0x02; /* Tag */
-    status = se05x_set_key(tempBuf, 2, 2 * 8, kSSS_KeyPart_Default,
-                           kSSS_CipherType_Certificate,
-                           NOCSR_CSR_NONCE_TAG_SE05X_ID, NULL, 0);
-    if (status != kStatus_SSS_Success) {
-      printf("Error in se05x_set_key \n");
-      return;
-    }
-    /* Set nocsr nonce length */
-    printf("Create binary file for CSR nonce length at location - %02x \n",
-           NOCSR_CSR_NONCE_LEN_SE05X_ID);
-    tempBuf[0] = 32; /* Nonce length */
-    status = se05x_set_key(tempBuf, 1, 1 * 8, kSSS_KeyPart_Default,
-                           kSSS_CipherType_Certificate,
-                           NOCSR_CSR_NONCE_LEN_SE05X_ID, NULL, 0);
-    if (status != kStatus_SSS_Success) {
-      printf("Error in se05x_set_key \n");
-      return;
-    }
-    /* NOCSR nonce data is set during runtime at location -
-     * ATTEST_NONCE_DATA_SE05X_ID */
-
-    /* Set end container */
-    printf("Create binary file for end container at location - %02x \n",
-           NOCSR_END_CONTAINER_SE05X_ID);
-    tempBuf[0] = 0x18;
-    status = se05x_set_key(tempBuf, 1, 1 * 8, kSSS_KeyPart_Default,
-                           kSSS_CipherType_Certificate,
-                           NOCSR_END_CONTAINER_SE05X_ID, NULL, 0);
-    if (status != kStatus_SSS_Success) {
-      printf("Error in se05x_set_key \n");
-      return;
-    }
-
-    /* Attestation challeng is set during run time at location
-     * CSR_ATTEST_CHALLENGE_SE05X_ID */
   }
 #endif
 

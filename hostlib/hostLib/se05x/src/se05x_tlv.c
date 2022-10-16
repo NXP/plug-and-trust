@@ -153,15 +153,19 @@ int tlvSet_u8bufOptional_ByteShift(uint8_t **buf, size_t *bufLen, SE05x_TAG_t ta
         ret = 0;
     }
     else if (0 == (cmdLen & 1)) {
-        /* LSB is 0 */
-        ret = tlvSet_u8buf(buf, bufLen, tag, cmd, cmdLen);
+        if (cmd != NULL){
+            /* LSB is 0 */
+            ret = tlvSet_u8buf(buf, bufLen, tag, cmd, cmdLen);
+        }
     }
     else {
-        uint8_t localBuff[SE05X_MAX_BUF_SIZE_CMD];
-        ENSURE_OR_GO_CLEANUP((cmdLen + 1) < sizeof(localBuff));
-        localBuff[0] = '\0';
-        memcpy(localBuff + 1, cmd, cmdLen);
-        ret = tlvSet_u8buf(buf, bufLen, tag, localBuff, cmdLen + 1);
+        if (cmd != NULL){
+            uint8_t localBuff[SE05X_MAX_BUF_SIZE_CMD];
+            ENSURE_OR_GO_CLEANUP((cmdLen + 1) < sizeof(localBuff));
+            localBuff[0] = '\0';
+            memcpy(localBuff + 1, cmd, cmdLen);
+            ret = tlvSet_u8buf(buf, bufLen, tag, localBuff, cmdLen + 1);
+        }
     }
 
 cleanup:
@@ -660,10 +664,10 @@ smStatus_t se05x_DeCrypt(
 {
     AX_UNUSED_ARG(cmd_cmacLen);
     AX_UNUSED_ARG(hasle);
-    U16 rv = SM_NOT_OK;
+    smStatus_t rv = SM_NOT_OK;
 
     if (*rspLength >= 2) {
-        rv = rsp[(*rspLength) - 2] << 8 | rsp[(*rspLength) - 1];
+        rv = (smStatus_t)(rsp[(*rspLength) - 2] << 8 | rsp[(*rspLength) - 1]);
         if ((rv == SM_OK) && (pSessionCtx->pdynScp03Ctx != NULL)) {
 #if SSS_HAVE_SCP_SCP03_SSS
             rv = nxpSCP03_Decrypt_ResponseAPDU(pSessionCtx->pdynScp03Ctx, cmd_cmacLen, rsp, rspLength, hasle);
