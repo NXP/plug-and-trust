@@ -232,7 +232,8 @@ smStatus_t Se05x_API_PAKEComputeSessionKeys(pSe05xSession_t session_ctx,
         size_t rspIndex = 0;
         tlvRet          = tlvGet_u8buf(pRspbuf, &rspIndex, rspbufLen, kSE05x_TAG_1, pShSecret, pShSecretLen);
         if (0 != tlvRet) {
-            goto cleanup;
+            LOG_W("Session keys not returned.");
+            *pShSecretLen = 0;
         }
 
         tlvRet = tlvGet_u8buf(pRspbuf, &rspIndex, rspbufLen, kSE05x_TAG_2, pKeyConfMessage, pkeyConfMessageLen);
@@ -527,6 +528,49 @@ smStatus_t Se05x_API_EdDSA_Internal_Sign(pSe05xSession_t session_ctx,
             retStatus = (smStatus_t)((pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]));
         }
     }
+
+cleanup:
+    return retStatus;
+}
+
+smStatus_t Se05x_API_CreateCryptoObject_WithTargetSecObj(pSe05xSession_t session_ctx,
+    SE05x_CryptoObjectID_t cryptoObjectID,
+    SE05x_CryptoContext_t cryptoContext,
+    SE05x_CryptoModeSubType_t subtype,
+    uint32_t targetSecureObjectID)
+{
+    smStatus_t retStatus = SM_NOT_OK;
+    tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_WRITE, kSE05x_P1_CRYPTO_OBJ, kSE05x_P2_DEFAULT}};
+    uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
+    size_t cmdbufLen = 0;
+    uint8_t *pCmdbuf = &cmdbuf[0];
+    int tlvRet       = 0;
+#if VERBOSE_APDU_LOGS
+    NEWLINE();
+    nLog("APDU", NX_LEVEL_DEBUG, "CreateCryptoObject []");
+#endif /* VERBOSE_APDU_LOGS */
+    tlvRet = TLVSET_CryptoObjectID("cryptoObjectID", &pCmdbuf, &cmdbufLen, kSE05x_TAG_1, cryptoObjectID);
+    if (0 != tlvRet) {
+        goto cleanup;
+    }
+    tlvRet = TLVSET_CryptoContext("cryptoContext", &pCmdbuf, &cmdbufLen, kSE05x_TAG_2, cryptoContext);
+    if (0 != tlvRet) {
+        goto cleanup;
+    }
+    tlvRet = TLVSET_CryptoModeSubType(
+        "1-byte Crypto Object subtype, either from DigestMode, CipherMode or MACAlgo (depending on TAG_2).",
+        &pCmdbuf,
+        &cmdbufLen,
+        kSE05x_TAG_3,
+        subtype);
+    if (0 != tlvRet) {
+        goto cleanup;
+    }
+    tlvRet = TLVSET_U32("objectID", &pCmdbuf, &cmdbufLen, kSE05x_TAG_4, targetSecureObjectID);
+    if (0 != tlvRet) {
+        goto cleanup;
+    }
+    retStatus = DoAPDUTx_s_Case3(session_ctx, &hdr, cmdbuf, cmdbufLen);
 
 cleanup:
     return retStatus;

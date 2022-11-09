@@ -146,3 +146,15 @@ smStatus_t Se05x_API_EdDSA_Internal_Sign(pSe05xSession_t session_ctx,
     size_t *psignatureLen,
     uint8_t *hashData,
     size_t *phashDataLen);
+
+/** Se05x_API_CreateCryptoObject_WithTargetSecObj
+ *
+ * See @ref Se05x_API_CreateCryptoObject_WithTargetSecObj.
+ * Create crypto object with target Secure Object.
+ * Target Secure Object needs to be an HMACKey of the expected length to store the result.
+ */
+smStatus_t Se05x_API_CreateCryptoObject_WithTargetSecObj(pSe05xSession_t session_ctx,
+    SE05x_CryptoObjectID_t cryptoObjectID,
+    SE05x_CryptoContext_t cryptoContext,
+    SE05x_CryptoModeSubType_t subtype,
+    uint32_t targetSecureObjectID);
