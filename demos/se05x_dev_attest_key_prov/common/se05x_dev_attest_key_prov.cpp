@@ -115,6 +115,8 @@ const uint8_t cert_declaration[541] = {
 #define DEV_ATTESTATION_KEY_SE05X_ID_IS       0x7D300003
 #define DEV_ATTESTATION_KEY_SE05X_ID_IS_TBS   0x7D300004
 
+#define DEV_ATTESTATION_KEY_SE05X_ID_IS_TBS_TP 0x7FFF2031
+
 #define TAG1_ID       0x7D300005
 #define TAG1_LEN_ID   0x7D300006
 #define TAG1_VALUE_ID 0x7D300007
@@ -277,6 +279,19 @@ void se05x_dev_attest_key_prov(void) {
       printf("Error in se05x_set_key \n");
       return;
     }
+
+#if 1
+    /* Set tbs binFile */
+    printf("Set TBS item list binFile at location - %02x \n",
+           DEV_ATTESTATION_KEY_SE05X_ID_IS_TBS_TP);
+    status = se05x_set_key(tbsData, offset, offset * 8, kSSS_KeyPart_Default,
+                           kSSS_CipherType_Certificate,
+                           DEV_ATTESTATION_KEY_SE05X_ID_IS_TBS_TP, NULL, 0);
+    if (status != kStatus_SSS_Success) {
+      printf("Error in se05x_set_key \n");
+      return;
+    }
+#endif
 
     /* Set device attestation keyPair (For internal sign) */
     printf("Set device attestation keyPair (For internal sign) - %02x \n",

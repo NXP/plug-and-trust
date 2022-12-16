@@ -238,7 +238,7 @@ int main(int argc, const char *argv[])
         ENSURE_OR_GO_CLEANUP(sw == SW_OK);
         LOG_I("** Establish SCP03 session: End **");
     }
-#endif // SSS_HAVE_A71CH && SSS_HAVE_A71CH_AUTH_SCP03
+#endif // SSS_HAVE_APPLET_A71CH && SSS_HAVE_A71CH_AUTH_SCP03
 
 #if !AX_EMBEDDED
 before_ex_sss_entry:

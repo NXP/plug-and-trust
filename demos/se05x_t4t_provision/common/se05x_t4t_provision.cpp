@@ -45,19 +45,19 @@ void se05x_t4t_provision(void)
   status = ex_sss_boot_connectstring(0, NULL, &portName);
   if (kStatus_SSS_Success != status) {
     printf("se05x error: %s\n", "ex_sss_boot_connectstring failed");
-    return;
+    goto exit;
   }
 
   status = ex_sss_boot_open(&gex_sss_chip_ctx, portName);
   if (kStatus_SSS_Success != status) {
     printf("se05x error: %s\n", "ex_sss_boot_open failed");
-    return;
+    goto exit;
   }
 
   status = ex_sss_key_store_and_object_init(&gex_sss_chip_ctx);
   if (kStatus_SSS_Success != status) {
     printf("se05x error: %s\n", "ex_sss_key_store_and_object_init failed");
-    return;
+    goto exit;
   }
 
   pCtx = (sss_se05x_session_t *)&gex_sss_chip_ctx.session;
@@ -65,36 +65,39 @@ void se05x_t4t_provision(void)
   smStatus = Se05x_T4T_API_SelectT4TApplet(&(pCtx->s_ctx));
   if (SM_OK != smStatus) {
     printf("se05x error: %s\n", "Se05x_T4T_API_SelectT4TApplet failed");
-    return;
+    goto exit;
   }
 
   smStatus = Se05x_T4T_API_ConfigureAccessCtrl(
       &(pCtx->s_ctx), kSE05x_T4T_Interface_Contactless, kSE05x_T4T_Operation_Write, kSE05x_T4T_AccessCtrl_Granted);
   if (SM_OK != smStatus) {
     printf("se05x error: %s\n", "Se05x_T4T_API_ConfigureAccessCtrl failed");
-    return;
+    goto exit;
   }
 
   smStatus = Se05x_T4T_API_SelectFile(&(pCtx->s_ctx), ndeffileId, ndeffileIdLen);
   if (SM_OK != smStatus) {
     printf("se05x error: %s\n", "NDEF Se05x_T4T_API_SelectFile failed");
-    return;
+    goto exit;
   }
 
   smStatus = Se05x_T4T_API_UpdateBinary(&(pCtx->s_ctx), provisionData, provisionDatalen);
   if (SM_OK != smStatus) {
     printf("se05x error: %s\n", "Se05x_T4T_API_UpdateBinary failed");
-    return;
+    goto exit;
   }
 
   smStatus = Se05x_T4T_API_ConfigureAccessCtrl(
       &(pCtx->s_ctx), kSE05x_T4T_Interface_Contactless, kSE05x_T4T_Operation_Write, kSE05x_T4T_AccessCtrl_Denied);
   if (SM_OK != smStatus) {
     printf("se05x error: %s\n", "Se05x_T4T_API_ConfigureAccessCtrl failed");
-    return;
+    goto exit;
   }
 
   printf("T4T Provision successful \n");
+
+exit:
+  ex_sss_session_close(&gex_sss_chip_ctx);
   return;
 }
 

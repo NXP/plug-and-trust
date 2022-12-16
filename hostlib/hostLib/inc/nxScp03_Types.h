@@ -35,6 +35,10 @@
 #include "fsl_sscp_a71ch.h"
 #endif
 
+/** @addtogroup se05x_scp03
+ *
+ * @{ */
+
 typedef enum
 {
     kSSS_AuthType_None = 0,
@@ -68,10 +72,16 @@ typedef enum
     kSSS_SIZE = 0x7FFFFFFF,
 } SE_AuthType_t;
 
+/** @} */
+
 #define kSSS_AuthType_INT_FastSCP_Counter kSSS_AuthType_INT_ECKey_Counter
 #define kSSS_AuthType_FastSCP_Counter kSSS_AuthType_INT_ECKey_Counter
 #define kSSS_AuthType_FastSCP         kSSS_AuthType_ECKey
 #define kSSS_AuthType_AppletSCP03     kSSS_AuthType_AESKey
+
+/** @addtogroup se05x_scp03
+ *
+ * @{ */
 
 /**
  * Dynamic SCP03 Context.
@@ -292,6 +302,8 @@ typedef struct
         uint8_t data[SSS_CONNECT_MAX_CONTEXT_SIZE];
     } extension;
 } sss_connect_ctx_t;
+
+/** @} */
 
 /* Deprecated */
 

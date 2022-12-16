@@ -36,7 +36,7 @@
 #include <fsl_sss_mbedtls_apis.h>
 #endif
 
-/** @ingroup ax_mbed_tls */
+/** @addtogroup ax_mbed_tls */
 /** @{ */
 
 #include "fsl_sss_api.h"
