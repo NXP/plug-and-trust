@@ -176,7 +176,7 @@ sss_status_t ex_sss_boot_direct(void);
  * @param[out] pPortName Possible port name
  * @return 0 if successful.
  */
-sss_status_t ex_sss_boot_connectstring(int argc, const char *argv[], const char **pPortName);
+sss_status_t ex_sss_boot_connectstring(int argc, const char *argv[], char **pPortName);
 
 /**
  * For the case where few activities have to be performed

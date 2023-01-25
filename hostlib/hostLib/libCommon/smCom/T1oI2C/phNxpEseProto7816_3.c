@@ -18,6 +18,8 @@
 #include <phEseTypes.h>
 #include "sm_types.h"
 #include "sm_timer.h"
+#include "se05x_const.h"
+#include <limits.h>
 
 #ifdef FLOW_VERBOSE
 #define NX_LOG_ENABLE_SMCOM_DEBUG 1
@@ -174,6 +176,10 @@ static bool_t phNxpEseProto7816_CheckCRC(uint32_t data_len, uint8_t *p_data)
     ENSURE_OR_GO_EXIT(p_data != NULL);
     status = TRUE;
 
+    if(data_len < 2)
+    {
+        return status;
+    }
     recv_crc = p_data[data_len - 2] <<8 | p_data[data_len - 1] ; //combine 2 byte CRC
 
     /* calculate the CRC after excluding Recieved CRC  */
@@ -526,6 +532,10 @@ static bool_t phNxpEseProto7816_SetNextIframeContxt(void)
     phNxpEseProto7816_3_Var.phNxpEseProto7816_nextTransceiveState = SEND_IFRAME;
 
     pNextTx_IframeInfo->seqNo = pLastTx_IframeInfo->seqNo ^ 1;
+    if((UINT_MAX - pLastTx_IframeInfo->dataOffset) < pLastTx_IframeInfo->maxDataLen)
+    {
+        return FALSE;
+    }
     pNextTx_IframeInfo->dataOffset = pLastTx_IframeInfo->dataOffset + pLastTx_IframeInfo->maxDataLen;
     pNextTx_IframeInfo->p_data = pLastTx_IframeInfo->p_data;
     pNextTx_IframeInfo->maxDataLen = pLastTx_IframeInfo->maxDataLen;
@@ -563,6 +573,13 @@ static bool_t phNxpEseProro7816_SaveRxframeData(uint8_t *p_data, uint32_t data_l
     phNxpEseRx_Cntx_t *pRx_EseCntx = &phNxpEseProto7816_3_Var.phNxpEseRx_Cntx;
     LOG_D("Data[0]=0x%x len=%ld Data[%ld]=0x%x Data[%ld]=0x%x ", p_data[0], data_len,data_len-1, p_data[data_len-2],p_data[data_len-1]);
     if (pRx_EseCntx->pRsp != NULL) {
+        if((UINT_MAX - pRx_EseCntx->pRsp->len) < data_len)
+        {
+            return FALSE;
+        }
+        if (data_len + pRx_EseCntx->pRsp->len > SE05X_MAX_BUF_SIZE_RSP) {
+            return FALSE;
+        }
         offset = pRx_EseCntx->pRsp->len;
         phNxpEse_memcpy((pRx_EseCntx->pRsp->p_data + offset), p_data, data_len);
         pRx_EseCntx->pRsp->len += data_len;
@@ -699,6 +716,10 @@ static bool_t phNxpEseProto7816_DecodeFrame(uint8_t *p_data, uint32_t data_len)
     pcb = p_data[PH_PROPTO_7816_PCB_OFFSET];
     phNxpEse_memset(&pcb_bits, 0x00, sizeof(phNxpEseProto7816_PCB_bits_t));
     phNxpEse_memcpy(&pcb_bits, &pcb, sizeof(uint8_t));
+    if(data_len < PH_PROTO_7816_INF_FILED)
+    {
+        return FALSE;
+    }
 
     if (0x00 == pcb_bits.msb) /* I-FRAME decoded should come here */
     {
@@ -921,6 +942,10 @@ static bool_t phNxpEseProto7816_DecodeFrame(uint8_t *p_data, uint32_t data_len)
             case INTF_RESET_RSP:
                 if(p_data[PH_PROPTO_7816_FRAME_LENGTH_OFFSET] > 0) {
                     phNxpEseProto7816_DecodeSFrameData(p_data);
+                }
+                if(data_len < PH_PROTO_7816_INF_FILED)
+                {
+                    return FALSE;
                 }
                 phNxpEseProro7816_SaveRxframeData(&p_data[PH_PROPTO_7816_INF_BYTE_OFFSET], data_len - PH_PROTO_7816_INF_FILED);
                 if(phNxpEseProto7816_3_Var.recoveryCounter > PH_PROTO_7816_FRAME_RETRY_COUNT){

@@ -97,10 +97,19 @@ sss_status_t nxECKey_AuthenticateChannel(
     */
     hostEckaPub[offset++] = GPCS_KEY_TYPE_ECC_NIST256; //Tag EC public key
     hostEckaPub[offset++] = 0x41;                      // public key len
+    if (hostEckaPubLen < ASN_ECC_NIST_256_HEADER_LEN) {
+        status = kStatus_SSS_Fail;
+        goto exit;
+    }
     memcpy(
         hostEckaPub + offset, hostPubkey + ASN_ECC_NIST_256_HEADER_LEN, hostEckaPubLen - ASN_ECC_NIST_256_HEADER_LEN);
+    if ((UINT_MAX - offset) < (hostEckaPubLen - ASN_ECC_NIST_256_HEADER_LEN)) {
+        goto exit;
+    }
     offset += hostEckaPubLen - ASN_ECC_NIST_256_HEADER_LEN;
-    hostEckaPub[offset++] = KEY_PARAMETER_REFERENCE_TAG;
+    if (offset < hostEckaPubLen) {
+        hostEckaPub[offset++] = KEY_PARAMETER_REFERENCE_TAG;
+    }
     hostEckaPub[offset++] = KEY_PARAMETER_REFERENCE_VALUE_LEN;
     hostEckaPub[offset++] = KEY_PARAMETER_REFERENCE_VALUE;
     hostEckaPubLen        = offset;
@@ -145,11 +154,11 @@ static sss_status_t nxECKey_Calculate_Initial_Mac_Chaining_Value(SE05x_AuthCtx_E
 {
     sss_status_t status = kStatus_SSS_Fail;
     uint8_t ddA[128];
-    uint16_t ddALen = sizeof(ddA);
-    uint8_t iniMacChaining[AES_KEY_LEN_nBYTE]={0};
-    uint32_t signatureLen              = AES_KEY_LEN_nBYTE;
-    NXECKey03_StaticCtx_t *pStatic_ctx = pAuthFScp->pStatic_ctx;
-    NXSCP03_DynCtx_t *pDyn_ctx         = pAuthFScp->pDyn_ctx;
+    uint16_t ddALen                           = sizeof(ddA);
+    uint8_t iniMacChaining[AES_KEY_LEN_nBYTE] = {0};
+    uint32_t signatureLen                     = AES_KEY_LEN_nBYTE;
+    NXECKey03_StaticCtx_t *pStatic_ctx        = pAuthFScp->pStatic_ctx;
+    NXSCP03_DynCtx_t *pDyn_ctx                = pAuthFScp->pDyn_ctx;
 
     // Set the Derviation data
     nxScp03_setDerivationData(
@@ -168,13 +177,13 @@ static sss_status_t nxECKey_HostLocal_CalculateSessionKeys(SE05x_AuthCtx_ECKey_t
 {
     sss_status_t status = kStatus_SSS_Fail;
     uint8_t ddA[128];
-    uint16_t ddALen = sizeof(ddA);
-    uint8_t sessionEncKey[AES_KEY_LEN_nBYTE]={0};
-    uint8_t sessionMacKey[AES_KEY_LEN_nBYTE]={0};
-    uint8_t sessionRmacKey[AES_KEY_LEN_nBYTE]={0};
-    uint32_t signatureLen              = AES_KEY_LEN_nBYTE;
-    NXECKey03_StaticCtx_t *pStatic_ctx = pAuthFScp->pStatic_ctx;
-    NXSCP03_DynCtx_t *pDyn_ctx         = pAuthFScp->pDyn_ctx;
+    uint16_t ddALen                           = sizeof(ddA);
+    uint8_t sessionEncKey[AES_KEY_LEN_nBYTE]  = {0};
+    uint8_t sessionMacKey[AES_KEY_LEN_nBYTE]  = {0};
+    uint8_t sessionRmacKey[AES_KEY_LEN_nBYTE] = {0};
+    uint32_t signatureLen                     = AES_KEY_LEN_nBYTE;
+    NXECKey03_StaticCtx_t *pStatic_ctx        = pAuthFScp->pStatic_ctx;
+    NXSCP03_DynCtx_t *pDyn_ctx                = pAuthFScp->pDyn_ctx;
 
     /* Generation and Creation of Session ENC SSS Key Object */
 
@@ -232,14 +241,27 @@ static sss_status_t nxECKey_calculate_master_secret(
 
     if (pAuthFScp->pDyn_ctx->authType == kSSS_AuthType_INT_ECKey_Counter) {
         const uint8_t kdf_counter[] = {0x00, 0x00, 0x00, 0x01};
-        memcpy(&derivationInput[derivationInputLen], kdf_counter, sizeof(kdf_counter));
-        derivationInputLen += sizeof(kdf_counter);
+        if (derivationInputLen < sizeof(derivationInput)) {
+            memcpy(&derivationInput[derivationInputLen], kdf_counter, sizeof(kdf_counter));
+            derivationInputLen += sizeof(kdf_counter);
+        }
     }
     memcpy(&derivationInput[derivationInputLen], sharedSecret, sharedSecretLen);
+    if ((UINT_MAX - derivationInputLen) < sharedSecretLen) {
+        goto cleanup;
+    }
     derivationInputLen += sharedSecretLen;
+    if (derivationInputLen > sizeof(derivationInput)) {
+        goto cleanup;
+    }
+    ENSURE_OR_GO_CLEANUP(rndLen <= (sizeof(derivationInput) - derivationInputLen));
     memcpy(&derivationInput[derivationInputLen], rnd, rndLen);
+    if ((UINT_MAX - derivationInputLen) < rndLen) {
+        goto cleanup;
+    }
     derivationInputLen += rndLen;
 
+    ENSURE_OR_GO_CLEANUP(derivationInputLen <= (sizeof(derivationInput) - 4))
     derivationInput[derivationInputLen++] = SCP_CONFIG;
     derivationInput[derivationInputLen++] = SECURITY_LEVEL;
     derivationInput[derivationInputLen++] = GPCS_KEY_TYPE_AES;
@@ -291,12 +313,12 @@ sss_status_t nxECKey_InternalAuthenticate(pSe05xSession_t se05xSession,
     smStatus_t retStatus = SM_NOT_OK;
     int tlvRet           = 0;
     uint8_t cmdbuf[256];
-    size_t cmdbufLen = 0;
-    uint8_t *pCmdbuf = NULL;
-    uint8_t rspbuf[256]={0};
-    uint8_t *pRspbuf = &rspbuf[0];
-    size_t rspbufLen = ARRAY_SIZE(rspbuf);
-    size_t rspIndex  = 0;
+    size_t cmdbufLen    = 0;
+    uint8_t *pCmdbuf    = NULL;
+    uint8_t rspbuf[256] = {0};
+    uint8_t *pRspbuf    = &rspbuf[0];
+    size_t rspbufLen    = ARRAY_SIZE(rspbuf);
+    size_t rspIndex     = 0;
     sss_digest_t md;
     uint8_t md_host5F37[32];
     size_t md_host5F37Len              = sizeof(md_host5F37);
@@ -309,15 +331,15 @@ sss_status_t nxECKey_InternalAuthenticate(pSe05xSession_t se05xSession,
     uint8_t scpParms[3]                 = {0xAB, SCP_CONFIG, SECURITY_LEVEL};
     uint8_t appletName[APPLET_NAME_LEN] = APPLET_NAME;
     sss_asymmetric_t asym;
-    uint8_t sig_host5F37[100]={0};
-    size_t sig_host5F37Len = sizeof(sig_host5F37);
+    uint8_t sig_host5F37[100] = {0};
+    size_t sig_host5F37Len    = sizeof(sig_host5F37);
 
     size_t cntrlRefTemp_Len = 0 + 1 + 1 + APPLET_NAME_LEN /*TLV AID */ + 1 + 1 + sizeof(scpParms) /* TLV SCP Params */ +
                               1 + 1 + 1 /* TLV Keytype */ + 1 + 1 + 1 /* TLV KeyLEN */;
 
 #if NX_LOG_ENABLE_SCP_DEBUG
     nLog("APDU", NX_LEVEL_DEBUG, "ECKey Internal authenticate []");
-#endif                                         /* VERBOSE_APDU_LOGS */
+#endif /* VERBOSE_APDU_LOGS */
     cmdbuf[0] = kSE05x_TAG_GP_CONTRL_REF_PARM; // Tag Control reference template
     cmdbuf[1] = (uint8_t)cntrlRefTemp_Len;
     cmdbufLen = 2;
@@ -339,6 +361,9 @@ sss_status_t nxECKey_InternalAuthenticate(pSe05xSession_t se05xSession,
     *pCmdbuf++ = (uint8_t)hostEckaPubKeyLen;
     cmdbufLen++;
     memcpy(pCmdbuf, hostEckaPubKey, hostEckaPubKeyLen);
+    if ((UINT_MAX - cmdbufLen) < hostEckaPubKeyLen) {
+        goto cleanup;
+    }
     cmdbufLen += hostEckaPubKeyLen;
 
     /* Get the sha256 hash of Control_refernce_template + host ECKA Pub key */
@@ -360,7 +385,11 @@ sss_status_t nxECKey_InternalAuthenticate(pSe05xSession_t se05xSession,
     ENSURE_OR_GO_CLEANUP(status == kStatus_SSS_Success);
     sss_host_asymmetric_context_free(&asym);
 
-    /* Put the Control refernce template Value signiture*/
+    /* Put the Control refernce template Value signature*/
+    if (cmdbufLen > sizeof(cmdbuf) - 3 - sig_host5F37Len) {
+        status = kStatus_SSS_Fail;
+        goto cleanup;
+    }
     pCmdbuf    = &cmdbuf[cmdbufLen];
     *pCmdbuf++ = tagSigSeEcka[0];
     cmdbufLen++;
@@ -369,6 +398,10 @@ sss_status_t nxECKey_InternalAuthenticate(pSe05xSession_t se05xSession,
     *pCmdbuf++ = (uint8_t)sig_host5F37Len;
     cmdbufLen++;
     memcpy(pCmdbuf, sig_host5F37, sig_host5F37Len);
+    if ((UINT_MAX - cmdbufLen) < sig_host5F37Len) {
+        status = kStatus_SSS_Fail;
+        goto cleanup;
+    }
     cmdbufLen += sig_host5F37Len;
     status    = kStatus_SSS_Fail;
     retStatus = DoAPDUTxRx_s_Case4(se05xSession, &hdr, cmdbuf, cmdbufLen, rspbuf, &rspbufLen);
@@ -390,14 +423,22 @@ cleanup:
 
 int get_u8buf_2bTag(uint8_t *buf, size_t *pBufIndex, const size_t bufLen, uint16_t tag, uint8_t *rsp, size_t *pRspLen)
 {
-    int retVal    = 1;
-    uint8_t *pBuf = buf + (*pBufIndex);
-    uint16_t got_tag;
-    got_tag = ((*pBuf++) << 8) & 0xFFFF;
-    got_tag |= ((*pBuf++)) & 0xFFFF;
+    int retVal       = 1;
+    uint8_t *pBuf    = buf + (*pBufIndex);
+    uint16_t got_tag = 0;
     size_t extendedLen;
     size_t rspLen;
-    //size_t len;
+
+    if (bufLen < 3) {
+        goto cleanup;
+    }
+    if ((*pBufIndex) > bufLen - 3 /* 2 byte Tag + len */) {
+        goto cleanup;
+    }
+
+    got_tag = ((*pBuf++) << 8) & 0xFFFF;
+    got_tag |= ((*pBuf++)) & 0xFFFF;
+
     if (got_tag != tag) {
         goto cleanup;
     }
@@ -408,10 +449,16 @@ int get_u8buf_2bTag(uint8_t *buf, size_t *pBufIndex, const size_t bufLen, uint16
         *pBufIndex += (2 + 1);
     }
     else if (rspLen == 0x81) {
+        if ((*pBufIndex) > bufLen - 1 /* Ext len */) {
+            goto cleanup;
+        }
         extendedLen = *pBuf++;
         *pBufIndex += (2 + 1 + 1);
     }
     else if (rspLen == 0x82) {
+        if ((*pBufIndex) > bufLen - 2 /* Ext len */) {
+            goto cleanup;
+        }
         extendedLen = *pBuf++;
         extendedLen = (extendedLen << 8) | *pBuf++;
         *pBufIndex += (2 + 1 + 2);
@@ -423,7 +470,7 @@ int get_u8buf_2bTag(uint8_t *buf, size_t *pBufIndex, const size_t bufLen, uint16
     if (extendedLen > *pRspLen) {
         goto cleanup;
     }
-    if (extendedLen > bufLen) {
+    if (extendedLen > (bufLen - *pBufIndex)) {
         goto cleanup;
     }
 

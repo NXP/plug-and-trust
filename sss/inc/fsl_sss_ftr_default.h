@@ -104,13 +104,13 @@
  */
 
 /** SE050 */
-#define SSS_HAVE_SE05X_VER_03_XX 1
+#define SSS_HAVE_SE05X_VER_03_XX 0
 
 /** SE051 */
 #define SSS_HAVE_SE05X_VER_06_00 0
 
 /** SE051 */
-#define SSS_HAVE_SE05X_VER_07_02 0
+#define SSS_HAVE_SE05X_VER_07_02 1
 
 #if (( 0                             \
     + SSS_HAVE_SE05X_VER_03_XX       \
@@ -411,6 +411,35 @@
     + SSS_HAVE_A71CH_AUTH_SCP03      \
     ) == 0)
 #        error "Enable at-least one of 'PTMW_A71CH_AUTH'"
+#endif
+
+
+
+/** PTMW_OpenSSL : For PC, which OpenSSL to pick up
+ *
+ * On Linux based builds, this option has no impact, because the build system
+ * picks up the default available/installed OpenSSL from the system directly.
+ */
+
+/** Use 1.1.1 version (Only applicable on PC) */
+#define SSS_HAVE_OPENSSL_1_1_1 1
+
+/** Use 3.0 version (Only applicable on PC) */
+#define SSS_HAVE_OPENSSL_3_0 0
+
+#if (( 0                             \
+    + SSS_HAVE_OPENSSL_1_1_1         \
+    + SSS_HAVE_OPENSSL_3_0           \
+    ) > 1)
+#        error "Enable only one of 'PTMW_OpenSSL'"
+#endif
+
+
+#if (( 0                             \
+    + SSS_HAVE_OPENSSL_1_1_1         \
+    + SSS_HAVE_OPENSSL_3_0           \
+    ) == 0)
+// #        error "Enable at-least one of 'PTMW_OpenSSL'"
 #endif
 
 

@@ -360,7 +360,7 @@ typedef enum
     kSSS_CipherType_EC_TWISTED_ED = 51,
     /** Brainpool form elliptic curve public key */
     kSSS_CipherType_EC_BRAINPOOL = 52,
-    /** Barreto Naehrig curve */
+    /** Barreto Naehrig curve (BARRETO NAEHRIG is deprecated. This will be removed in next release) */
     kSSS_CipherType_EC_BARRETO_NAEHRIG = 53,
 
     kSSS_CipherType_UserID = 70,

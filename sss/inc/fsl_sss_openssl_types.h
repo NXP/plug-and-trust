@@ -148,8 +148,12 @@ typedef struct
     sss_openssl_object_t *keyObject; /*!< Reference to key and it's properties. */
     sss_algorithm_t algorithm;       /*!  */
     sss_mode_t mode;                 /*!  */
+#if (OPENSSL_VERSION_NUMBER >= 0x30000000)
+    EVP_MAC_CTX *mac_ctx;
+#else
     CMAC_CTX *cmac_ctx;
     HMAC_CTX *hmac_ctx;
+#endif
 } sss_openssl_mac_t;
 
 typedef struct _sss_openssl_aead

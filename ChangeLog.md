@@ -1,6 +1,25 @@
 # Plug-And-Trust Mini Package Change Log
 
 
+## Release v04.03.00
+
+- OpenSSL 3.0 support in SSS OpenSSL layer. Added OpenSSL version selection (1.1 and 3.0) in feature file.
+
+- API :cpp:func:`Se05x_API_ECDAASign`  marked as deprecated. This will be removed in next release.
+
+- Cipher type :cpp:enumerator:`kSSS_CipherType_EC_BARRETO_NAEHRIG` marked as deprecated. This will be removed in next release.
+
+- enum ``SE05x_ECDAASignatureAlgo_t`` marked as deprecated. This will be removed in next release.
+
+- Private key generation marked as deprecated for :cpp:func:`Se05x_API_WriteECKey` and :cpp:func:`Se05x_API_WriteRSAKey`. This will be removed in next release.
+
+- T4T APDUs added in hostlib
+
+- :cpp:func:`sss_se05x_asymmetric_sign_digest` implementation changed to use digest from host crypto for RSA sign / verify. Please enable one of host crypto (`SSS_HAVE_HOSTCRYPTO_OPENSSL` or `SSS_HAVE_HOSTCRYPTO_MBEDTLS` in fsl_sss_ftr.h) and required build changes to use the RSA sign / verify feature.
+
+- Added a check to prevent a potential buffer overflow issue in T=1OI2C stack
+
+
 ## Release v04.02.00
 
 - SE050E applet support added. Default applet in feature file 'fsl_sss_ftr.h' changed to SE050E.

@@ -1094,10 +1094,6 @@ smStatus_t Se05x_API_WriteRSAKey_Ver(pSe05xSession_t session_ctx,
     uint8_t *pCmdbuf = &cmdbuf[0];
     int tlvRet       = 0;
 
-    if (Se05x_IsInValidRangeOfUID(objectID)) {
-        return SM_NOT_OK;
-    }
-
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "Se05x_API_WriteRSAKey_Ver []");
@@ -1176,10 +1172,6 @@ smStatus_t Se05x_API_WriteECKey_Ver(pSe05xSession_t session_ctx,
     uint8_t *pCmdbuf = &cmdbuf[0];
     int tlvRet       = 0;
 
-    if (Se05x_IsInValidRangeOfUID(objectID)) {
-        return SM_NOT_OK;
-    }
-
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "Se05x_API_WriteECKey_Ver []");
@@ -1235,10 +1227,6 @@ smStatus_t Se05x_API_WriteSymmKey_Ver(pSe05xSession_t session_ctx,
     size_t cmdbufLen = 0;
     uint8_t *pCmdbuf = &cmdbuf[0];
     int tlvRet       = 0;
-
-    if (Se05x_IsInValidRangeOfUID(objectID)) {
-        return SM_NOT_OK;
-    }
 
 #if VERBOSE_APDU_LOGS
     NEWLINE();
@@ -1298,10 +1286,6 @@ smStatus_t Se05x_API_WriteBinary_Ver(pSe05xSession_t session_ctx,
     size_t cmdbufLen = 0;
     uint8_t *pCmdbuf = &cmdbuf[0];
     int tlvRet       = 0;
-
-    if (Se05x_IsInValidRangeOfUID(objectID)) {
-        return SM_NOT_OK;
-    }
 
 #if VERBOSE_APDU_LOGS
     NEWLINE();
@@ -1468,10 +1452,6 @@ smStatus_t Se05x_API_UpdateRSAKey_Ver(pSe05xSession_t session_ctx,
     uint8_t *pCmdbuf = &cmdbuf[0];
     int tlvRet       = 0;
 
-    if (Se05x_IsInValidRangeOfUID(objectID)) {
-        return SM_NOT_OK;
-    }
-
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "Se05x_API_UpdateRSAKey_Ver []");
@@ -1553,10 +1533,6 @@ smStatus_t Se05x_API_UpdateECKey_Ver(pSe05xSession_t session_ctx,
     uint8_t *pCmdbuf = &cmdbuf[0];
     int tlvRet       = 0;
 
-    if (Se05x_IsInValidRangeOfUID(objectID)) {
-        return SM_NOT_OK;
-    }
-
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "Se05x_API_UpdateECKey_Ver []");
@@ -1616,10 +1592,6 @@ smStatus_t Se05x_API_UpdateBinary_Ver(pSe05xSession_t session_ctx,
     uint8_t *pCmdbuf = &cmdbuf[0];
     int tlvRet       = 0;
 
-    if (Se05x_IsInValidRangeOfUID(objectID)) {
-        return SM_NOT_OK;
-    }
-
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "Se05x_API_UpdateBinary_Ver []");
@@ -1672,10 +1644,6 @@ smStatus_t Se05x_API_UpdateSymmKey_Ver(pSe05xSession_t session_ctx,
     uint8_t *pCmdbuf = &cmdbuf[0];
     int tlvRet       = 0;
 
-    if (Se05x_IsInValidRangeOfUID(objectID)) {
-        return SM_NOT_OK;
-    }
-
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "Se05x_API_UpdateSymmKey_Ver []");
@@ -1720,10 +1688,6 @@ smStatus_t Se05x_API_UpdatePCR(
     uint8_t *pCmdbuf = &cmdbuf[0];
     int tlvRet       = 0;
 
-    if (Se05x_IsInValidRangeOfUID(pcrID)) {
-        return SM_NOT_OK;
-    }
-
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "Se05x_API_UpdatePCR []");
@@ -1755,10 +1719,6 @@ smStatus_t Se05x_API_UpdateCounter(
     size_t cmdbufLen = 0;
     uint8_t *pCmdbuf = &cmdbuf[0];
     int tlvRet       = 0;
-
-    if (Se05x_IsInValidRangeOfUID(objectID)) {
-        return SM_NOT_OK;
-    }
 
 #if VERBOSE_APDU_LOGS
     NEWLINE();
@@ -1810,10 +1770,6 @@ smStatus_t Se05x_API_WriteSymmKey_Ver_extended(pSe05xSession_t session_ctx,
     size_t cmdbufLen = 0;
     uint8_t *pCmdbuf = &cmdbuf[0];
     int tlvRet       = 0;
-
-    if (Se05x_IsInValidRangeOfUID(objectID)) {
-        return SM_NOT_OK;
-    }
 
 #if VERBOSE_APDU_LOGS
     NEWLINE();
@@ -1994,7 +1950,7 @@ smStatus_t Se05x_API_ECDHGenerateSharedSecret_InObject_extended(pSe05xSession_t 
     if (retStatus == SM_OK) {
         retStatus = SM_NOT_OK;
         if (2 == rspbufLen) {
-            retStatus =(smStatus_t)((pRspbuf[0] << 8) | (pRspbuf[1]));
+            retStatus = (smStatus_t)((pRspbuf[0] << 8) | (pRspbuf[1]));
         }
     }
 

@@ -616,12 +616,19 @@ void sss_se05x_tunnel_context_free(sss_se05x_tunnel_context_t *context);
 
 /*! @} */ /* end of : sss_se05x_tunnel */
 
+/**
+ * @addtogroup se05x_other
+ * @{
+ */
+
 /** Set features of the Applet.
  *
  * See @ref Se05x_API_SetAppletFeatures
  */
 sss_status_t sss_se05x_set_feature(
     sss_se05x_session_t *session, SE05x_Applet_Feature_t feature, SE05x_Applet_Feature_Disable_t disable_features);
+
+/*! @} */
 
 SE05x_DigestMode_t se05x_get_sha_algo(sss_algorithm_t algorithm);
 
@@ -786,6 +793,7 @@ sss_status_t sss_se05x_key_store_create_curve(Se05xSession_t *pSession, uint32_t
             sss_se05x_tunnel_context_free(((sss_se05x_tunnel_context_t * ) context))
 #   endif /* (SSS_HAVE_SSS == 1) */
 /* clang-format on */
+
 #endif /* SSS_HAVE_APPLET_SE05X_IOT */
 #ifdef __cplusplus
 } // extern "C"

@@ -27,6 +27,7 @@
 #include <sm_types.h>
 #include <stdio.h>
 #include <string.h>
+#include <limits.h>
 
 #include <fsl_sss_util_asn1_der.h>
 
@@ -890,6 +891,7 @@ sss_status_t sss_mbedtls_key_store_get_key(sss_mbedtls_key_store_t *keyStore,
                     *pKeyBitLen = 448;
                 }
                 header_size = der_ecc_mont_dh_448_header_len;
+                ENSURE_OR_GO_CLEANUP((UINT_MAX - pubKey_size) >= header_size);
                 ENSURE_OR_GO_CLEANUP(*dataLen >= (pubKey_size + header_size));
                 memcpy(data, gecc_der_header_mont_dh_448, header_size);
             }
@@ -1303,6 +1305,7 @@ sss_status_t sss_mbedtls_cipher_one_go(sss_mbedtls_symmetric_t *context,
 #endif //SSS_HAVE_TESTCOUNTERPART
     case kAlgorithm_SSS_AES_CBC:
         mbedtls_aes_init(&aes_ctx);
+        ENSURE_OR_GO_EXIT(context->keyObject->contents_size <= (SIZE_MAX / 8));
         if (context->mode == kMode_SSS_Encrypt) {
             mbedtls_ret = mbedtls_aes_setkey_enc(
                 &aes_ctx, context->keyObject->contents, (unsigned int)(context->keyObject->contents_size * 8));
@@ -1315,6 +1318,7 @@ sss_status_t sss_mbedtls_cipher_one_go(sss_mbedtls_symmetric_t *context,
 #if SSS_HAVE_TESTCOUNTERPART
     case kAlgorithm_SSS_AES_CTR: {
         mbedtls_aes_init(&aes_ctx);
+        ENSURE_OR_GO_EXIT(context->keyObject->contents_size <= (SIZE_MAX / 8));
         mbedtls_ret = mbedtls_aes_setkey_enc(
             &aes_ctx, context->keyObject->contents, (unsigned int)(context->keyObject->contents_size * 8));
     } break;
@@ -1575,12 +1579,12 @@ sss_status_t sss_mbedtls_cipher_init(sss_mbedtls_symmetric_t *context, uint8_t *
                     goto exit;
                 }
             }
-             ret = mbedtls_cipher_reset(context->cipher_ctx);
-             if (ret < 0) {
-                 SSS_FREE(context->cipher_ctx);
-                 retval = kStatus_SSS_Fail;
-                 goto exit;
-             }
+            ret = mbedtls_cipher_reset(context->cipher_ctx);
+            if (ret < 0) {
+                SSS_FREE(context->cipher_ctx);
+                retval = kStatus_SSS_Fail;
+                goto exit;
+            }
         }
     }
 
@@ -1609,7 +1613,7 @@ sss_status_t sss_mbedtls_cipher_update(
         context->algorithm == kAlgorithm_SSS_DES3_ECB || context->algorithm == kAlgorithm_SSS_DES3_CBC) {
         cipherBlockSize = DES_BLOCK_SIZE;
     }
-
+    ENSURE_OR_GO_EXIT((UINT_MAX - context->cache_data_len) >= srcLen);
     if ((context->cache_data_len + srcLen) < cipherBlockSize) {
         /* Insufficinet data to process . Cache the data */
         memcpy((context->cache_data + context->cache_data_len), srcData, srcLen);
@@ -1632,11 +1636,15 @@ sss_status_t sss_mbedtls_cipher_update(
             context->cipher_ctx, inputData, inputData_len, (destData + output_offset), &blockoutLen);
         ENSURE_OR_GO_EXIT(retMbedtlsVal == 0);
 
+        ENSURE_OR_GO_EXIT(outBuffSize >= blockoutLen);
         outBuffSize -= blockoutLen;
         output_offset += blockoutLen;
-
+        if (srcLen < src_offset) {
+            goto exit;
+        }
         while (srcLen - src_offset >= cipherBlockSize) {
             memcpy(inputData, (srcData + src_offset), cipherBlockSize);
+            ENSURE_OR_GO_EXIT((UINT_MAX - src_offset) >= cipherBlockSize);
             src_offset += cipherBlockSize;
 
             blockoutLen   = outBuffSize;
@@ -1645,8 +1653,11 @@ sss_status_t sss_mbedtls_cipher_update(
             retMbedtlsVal = mbedtls_cipher_update(
                 context->cipher_ctx, inputData, inputData_len, (destData + output_offset), &blockoutLen);
             ENSURE_OR_GO_EXIT(retMbedtlsVal == 0);
-
+            if (outBuffSize < blockoutLen) {
+                goto exit;
+            }
             outBuffSize -= blockoutLen;
+            ENSURE_OR_GO_EXIT((UINT_MAX - output_offset) >= blockoutLen);
             output_offset += blockoutLen;
         }
 
@@ -1727,7 +1738,11 @@ sss_status_t sss_mbedtls_cipher_finish(
             context->cipher_ctx, srcdata_updated, cipherBlockSize, (destData + output_offset), &blockoutLen);
         ENSURE_OR_GO_EXIT(retMbedtlsVal == 0);
         *destLen = blockoutLen;
+        if (outBuffSize < blockoutLen) {
+            goto exit;
+        }
         outBuffSize -= blockoutLen;
+        ENSURE_OR_GO_EXIT((UINT_MAX - output_offset) >= blockoutLen);
         output_offset += blockoutLen;
     }
 
@@ -1742,6 +1757,7 @@ sss_status_t sss_mbedtls_cipher_finish(
         ENSURE_OR_GO_EXIT(retMbedtlsVal == 0);
         *destLen += blockoutLen;
         outBuffSize -= blockoutLen;
+        ENSURE_OR_GO_EXIT((UINT_MAX - output_offset) >= blockoutLen);
         output_offset += blockoutLen;
     }
 
@@ -1753,6 +1769,7 @@ sss_status_t sss_mbedtls_cipher_finish(
     if (context->mode == kMode_SSS_Decrypt) {
         blockoutLen = outBuffSize;
         mbedtls_cipher_update(context->cipher_ctx, temp, temp_len, destData + output_offset, &blockoutLen);
+        ENSURE_OR_GO_EXIT((UINT_MAX - *destLen) >= blockoutLen);
         *destLen += blockoutLen;
     }
     mbedtls_cipher_finish(context->cipher_ctx, temp, &temp_len);
@@ -1992,6 +2009,9 @@ sss_status_t sss_mbedtls_aead_update(
     size_t outBuffSize   = *destLen;
     size_t blockoutLen   = 0;
     int ret              = 1;
+
+    ENSURE_OR_GO_CLEANUP((UINT_MAX - (context->cache_data_len)) >= srcLen);
+
     if (context->algorithm == kAlgorithm_SSS_AES_CCM) {
         if ((srcData != NULL) && (srcLen > 0)) {
             retval = sss_mbedtls_aead_ccm_update(context, srcData, srcLen);
@@ -2020,11 +2040,16 @@ sss_status_t sss_mbedtls_aead_update(
             ret = mbedtls_gcm_update(context->gcm_ctx, inputData_len, inputData, (destData + output_offset));
             ENSURE_OR_GO_CLEANUP(ret == 0);
             blockoutLen = inputData_len;
+
+            ENSURE_OR_GO_CLEANUP(outBuffSize >= blockoutLen);
             outBuffSize -= blockoutLen;
             output_offset += blockoutLen;
-
+            if (srcLen < src_offset) {
+                goto cleanup;
+            }
             while (srcLen - src_offset >= CIPHER_BLOCK_SIZE) {
                 memcpy(inputData, (srcData + src_offset), 16);
+                ENSURE_OR_GO_CLEANUP((UINT_MAX - src_offset) >= CIPHER_BLOCK_SIZE);
                 src_offset += CIPHER_BLOCK_SIZE;
 
                 blockoutLen = outBuffSize;
@@ -2034,6 +2059,7 @@ sss_status_t sss_mbedtls_aead_update(
                 ENSURE_OR_GO_CLEANUP(ret == 0);
                 blockoutLen = inputData_len;
                 outBuffSize -= blockoutLen;
+                ENSURE_OR_GO_CLEANUP((UINT_MAX - output_offset) >= blockoutLen);
                 output_offset += blockoutLen;
             }
             *destLen = output_offset;
@@ -2055,8 +2081,12 @@ cleanup:
 static sss_status_t sss_mbedtls_aead_ccm_update(sss_mbedtls_aead_t *context, const uint8_t *srcData, size_t srcLen)
 {
     sss_status_t retval = kStatus_SSS_Fail;
+
+    ENSURE_OR_GO_EXIT((UINT_MAX - context->ccm_dataoffset) >= srcLen);
+
     if ((context->ccm_dataoffset + srcLen) <= (context->ccm_dataTotalLen)) {
         memcpy(context->pCcm_data + context->ccm_dataoffset, srcData, srcLen);
+        ENSURE_OR_GO_EXIT((UINT_MAX - context->ccm_dataoffset) >= srcLen);
         context->ccm_dataoffset = context->ccm_dataoffset + srcLen;
         retval                  = kStatus_SSS_Success;
     }
@@ -2067,6 +2097,10 @@ static sss_status_t sss_mbedtls_aead_ccm_update(sss_mbedtls_aead_t *context, con
             context->pCcm_data = NULL;
         }
     }
+    if (context->ccm_dataoffset + srcLen < context->ccm_dataoffset || context->ccm_dataoffset + srcLen < srcLen) {
+        goto exit;
+    }
+exit:
     return retval;
 }
 #endif //#if SSS_HAVE_TESTCOUNTERPART
@@ -2823,6 +2857,8 @@ sss_status_t sss_mbedtls_digest_finish(sss_mbedtls_digest_t *context, uint8_t *d
         goto exit;
     }
 
+    mbedtls_md_free(&context->md_ctx);
+
     retval = kStatus_SSS_Success;
 exit:
 #endif //SSS_HAVE_TESTCOUNTERPART
@@ -2831,9 +2867,6 @@ exit:
 
 void sss_mbedtls_digest_context_free(sss_mbedtls_digest_t *context)
 {
-    // if (context->md_ctx) {
-    //     mbedtls_md_free(&context->md_ctx);
-    // }
     memset(context, 0, sizeof(*context));
 }
 
@@ -2886,7 +2919,7 @@ sss_status_t sss_mbedtls_rng_get_random(sss_mbedtls_rng_context_t *context, uint
 
         ret = mbedtls_ctr_drbg_random(context->session->ctr_drbg, (random_data + offset), chunk);
         ENSURE_OR_GO_EXIT(ret == 0);
-
+        ENSURE_OR_GO_EXIT((UINT_MAX - offset) >= chunk);
         offset += chunk;
         dataLen -= chunk;
     }
@@ -2974,6 +3007,7 @@ static sss_status_t sss_mbedtls_set_key(
                 }
 
                 while (i < publicKeyLen) {
+                    ENSURE_OR_GO_EXIT((UINT_MAX - publicKeyIndex) >= publicKeyLen);
                     pubKeyReversed[i] = data[publicKeyIndex + publicKeyLen - i - 1];
                     i++;
                 }
@@ -2981,6 +3015,7 @@ static sss_status_t sss_mbedtls_set_key(
 
                 i = 0;
                 while (i < privateKeyLen) {
+                    ENSURE_OR_GO_EXIT((UINT_MAX - publicKeyIndex) >= publicKeyLen);
                     prvKeyReversed[i] = data[privateKeyIndex + privateKeyLen - i - 1];
                     i++;
                 }
@@ -3056,6 +3091,7 @@ static sss_status_t sss_mbedtls_set_key(
 // #define TMP_ENDIAN_VERBOSE
 #ifdef TMP_ENDIAN_VERBOSE
                 printf("Pub Key Before Reverse & header strip:\n");
+                ENSURE_OR_GO_EXIT(dataLen >= (publicKeyIndex + publicKeyLen));
                 for (size_t z = 0; z < publicKeyLen; z++) {
                     printf("%02X.", data[publicKeyIndex + z]);
                 }
@@ -3064,6 +3100,7 @@ static sss_status_t sss_mbedtls_set_key(
 #endif
                 if (keyBitLen == 256) {
                     publicKeyIndex = der_ecc_mont_dh_25519_header_len;
+                    ENSURE_OR_GO_EXIT(publicKeyLen >= der_ecc_mont_dh_25519_header_len);
                     publicKeyLen -= der_ecc_mont_dh_25519_header_len;
                 }
                 else {
@@ -3071,7 +3108,8 @@ static sss_status_t sss_mbedtls_set_key(
                     publicKeyIndex = der_ecc_mont_dh_448_header_len;
                     publicKeyLen -= der_ecc_mont_dh_448_header_len;
                 }
-
+                ENSURE_OR_GO_EXIT((UINT_MAX - publicKeyIndex) >= publicKeyLen);
+                ENSURE_OR_GO_EXIT(dataLen >= (publicKeyIndex + publicKeyLen));
                 while (i < nByteKey) {
                     pubKeyReversed[i] = data[publicKeyIndex + publicKeyLen - i - 1];
                     i++;
@@ -3088,7 +3126,7 @@ static sss_status_t sss_mbedtls_set_key(
                 ret = mbedtls_mpi_read_binary(&pEcpPub->Q.X, pPublicKey, publicKeyLen);
             }
 #else
-            ret    = mbedtls_mpi_read_binary(&pEcpPub->Q.X, data, dataLen);
+            ret = mbedtls_mpi_read_binary(&pEcpPub->Q.X, data, dataLen);
 #endif // Reverse Endianess
 
             (ret == 0) ? (retval = kStatus_SSS_Success) : (retval = kStatus_SSS_Fail);
@@ -3287,8 +3325,8 @@ static sss_status_t sss_mbedtls_hkdf_expand(const mbedtls_md_info_t *md,
     size_t N;
     size_t T_len = 0, where = 0, i, ret;
     mbedtls_md_context_t ctx;
-    unsigned char T[MBEDTLS_MD_MAX_SIZE]={0};
-    sss_status_t retval = kStatus_SSS_Success;
+    unsigned char T[MBEDTLS_MD_MAX_SIZE] = {0};
+    sss_status_t retval                  = kStatus_SSS_Success;
 
     if (okm == NULL) {
         retval = kStatus_SSS_InvalidArgument;

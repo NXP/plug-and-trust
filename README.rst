@@ -194,7 +194,7 @@ Include the below file for mbedtls host crypto support,
 
 Mbedtls applications depend on the following files to use se05x for crypto
 operations. Include the following files for compilation along with the mbedtls
-stack. (Tested with mbedtls-2.16.2). Mbedtls client server example using the
+stack. (Tested with mbedtls-2.26.0). Mbedtls client server example using the
 below files is expalined in the next section,
 
 - ``/hostlib/hostLib/mbedtls/src/ecdh_alt.c``
@@ -305,28 +305,28 @@ Memory Details
 
 Memory details of ex_ecc example on Raspberry Pi built with,
 
-- No hostcrypto
+- Openssl hostcrypto
 - Plain session
-- Applet - 03_XX
+- Applet - 07_02
 
 ::
 
-    Text segment -- 204900 Bytes
-    Data segment -- 420 Bytes
+    Text segment -- 232780 Bytes
+    Data segment -- 416 Bytes
     Bss segment --- 3028 Bytes
-    Total  -------- 208348 Bytes
+    Total  -------- 236224 Bytes
 
 
 Memory details of ex_ecc example on Raspberry Pi built with
 
 - Openssl hostcrypto
 - PlatformSCP + ECKey (SSS_HAVE_SE05X_AUTH_ECKEY_PLATFSCP03) session
-- Applet - 03_XX
+- Applet - 07_02
 
 ::
 
-    Text segment -- 319078 Bytes
+    Text segment -- 356455 Bytes
     Data segment -- 1036 Bytes
     Bss segment --- 4136 Bytes
-    Total  -------- 324250 Bytes
+    Total  -------- 361627 Bytes
 

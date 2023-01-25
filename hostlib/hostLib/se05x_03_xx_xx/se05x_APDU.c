@@ -26,14 +26,15 @@ extern "C" {
 #define VERBOSE_APDU_LOGS 0
 #endif
 
-#ifndef ARRAY_SIZE
-#define ARRAY_SIZE(array) (sizeof(array) / (sizeof(array[0])))
-#endif
-
 #include "nxLog_hostLib.h"
 
 /* TLV APIs */
 #include "se05x_tlv.h"
+
+#ifndef ARRAY_SIZE
+#define ARRAY_SIZE(array) (sizeof(array) / (sizeof(array[0])))
+#endif
+
 /* Used constants */
 #include "se05x_const.h"
 
@@ -48,6 +49,7 @@ extern "C" {
 
 #if (SSS_HAVE_APPLET_SE051_H && SSS_HAVE_SE05X_VER_GTE_07_02)
 #include "se05x_pake_APDU_impl.h"
+#include "se05x_T4T_APDU_impl.h"
 #endif
 
 smStatus_t Se05x_API_I2CM_Send(

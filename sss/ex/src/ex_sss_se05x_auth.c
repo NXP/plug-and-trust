@@ -363,6 +363,9 @@ static sss_status_t ex_sss_se05x_prepare_host_userid(
     size_t dataLen   = sizeof(data);
     size_t keyBitLen = sizeof(data) * 8;
 
+    if ((size_t)authKeyLen > (size_t)(1 << ((sizeof(size_t) * 4) - 1))) {
+        goto cleanup;
+    }
     if (pObj->keyId != keyId) {
         status = sss_host_key_object_init(pObj, pKs);
         if (status != kStatus_SSS_Success) {
@@ -387,6 +390,10 @@ static sss_status_t ex_sss_se05x_prepare_host_userid(
     else {
         status = sss_host_key_store_get_key(pObj->keyStore, pObj, data, &dataLen, &keyBitLen);
         if (status == kStatus_SSS_Success) {
+            if (authKeyLen > dataLen) {
+                status = kStatus_SSS_Fail;
+                goto cleanup;
+            }
             if (memcmp(data, se050Authkey, authKeyLen) != 0) {
                 status = kStatus_SSS_Fail;
                 LOG_E("UserID: Key Value is different");

@@ -994,7 +994,7 @@ smStatus_t Se05x_API_ECDHGenerateSharedSecret_InObject(pSe05xSession_t session_c
     uint8_t invertEndianness);
 
 /** Se05x_API_TLSCalculateRsaPreMasterSecret
- *
+ * 
  * @param[in] session_ctx Session Context[0:kSE05x_pSession]
  * @param[in] keyPairId keyPairId[1:kSE05x_TAG_1]
  * @param[in] pskId pskId[2:kSE05x_TAG_2]
@@ -1003,7 +1003,7 @@ smStatus_t Se05x_API_ECDHGenerateSharedSecret_InObject(pSe05xSession_t session_c
  * @param[in] inputDataLen Length of inputData
  * @param[in] clientVersion client version[6:kSE05x_TAG_6]
  * @param[in] clientVersionLen Length of client version
- *
+ * 
  */
 
 smStatus_t Se05x_API_TLSCalculateRsaPreMasterSecret(pSe05xSession_t session_ctx,

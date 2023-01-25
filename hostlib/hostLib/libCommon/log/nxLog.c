@@ -190,8 +190,13 @@ void nLog_DeInit()
 void nLog(const char *comp, int level, const char *format, ...)
 {
     nLog_AcquireLock();
+    if (level > (int)(sizeof(szLevel) / sizeof(char*))) {
+        return;
+    }
     setColor(level);
-    PRINTF("%-6s:%s:", comp, szLevel[level-1]);
+    if (level >= 1) {
+        PRINTF("%-6s:%s:", comp, szLevel[level-1]);
+    }
     if (format == NULL) {
         /* Nothing */
 #ifdef SMCOM_JRCP_V2
@@ -225,8 +230,13 @@ void nLog_au8(const char *comp, int level, const char *message, const unsigned c
 {
     size_t i;
     nLog_AcquireLock();
+    if (level > (int)(sizeof(szLevel) / sizeof(char*))) {
+        return;
+    }
     setColor(level);
-    PRINTF("%-6s:%s:%s (Len=%" PRId32 ")", comp, szLevel[level-1], message, (int32_t)array_len);
+    if (level >= 1) {
+        PRINTF("%-6s:%s:%s (Len=%" PRId32 ")", comp, szLevel[level-1], message, (int32_t)array_len);
+    }
     for (i = 0; i < array_len; i++) {
         if (0 == (i % 16)) {
             PRINTF(szEOL);

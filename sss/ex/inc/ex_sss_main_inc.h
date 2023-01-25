@@ -46,13 +46,15 @@
  *
  */
 
-#if defined(FRDM_KW41Z) || defined(FRDM_K64F) || defined(IMX_RT) || defined(LPC_55x) || defined(QN9090DK6)
+#if defined(FRDM_KW41Z) || defined(FRDM_K64F) || defined(IMX_RT) || defined(LPC_55x) || defined(QN9090DK6) || \
+    defined(NORDIC_MCU)
 #define HAVE_KSDK
 #endif
 
 #ifdef HAVE_KSDK
 #include "ex_sss_main_inc_ksdk.h"
 #endif
+#include "ex_sss_ports.h"
 
 #if defined(__linux__) && defined(T1oI2C)
 #if SSS_HAVE_APPLET_SE05X_IOT
@@ -127,7 +129,7 @@ int main(int argc, const char *argv[])
 {
     int ret;
     sss_status_t status = kStatus_SSS_Fail;
-    const char *portName;
+    char *portName;
 
 #if EX_SSS_BOOT_EXPOSE_ARGC_ARGV
     gex_sss_argc = argc;
@@ -292,6 +294,18 @@ cleanup:
         ex_sss_main_ksdk_failure();
 #endif
     }
+#if defined(_MSC_VER)
+    if (portName) {
+        char *dummy_portName = NULL;
+        size_t dummy_sz      = 0;
+        _dupenv_s(&dummy_portName, &dummy_sz, EX_SSS_BOOT_SSS_PORT);
+        if (NULL != dummy_portName) {
+            free(dummy_portName);
+            free(portName);
+        }
+    }
+#endif // _MSC_VER
+
     return ret;
 }
 

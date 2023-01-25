@@ -240,14 +240,19 @@ smStatus_t Se05x_API_WriteECKey(pSe05xSession_t session_ctx,
     uint8_t *pCmdbuf = &cmdbuf[0];
     int tlvRet       = 0;
 
-    if (Se05x_IsInValidRangeOfUID(objectID)) {
-        return SM_NOT_OK;
-    }
-
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "WriteECKey []");
 #endif /* VERBOSE_APDU_LOGS */
+
+    if ((privKey == NULL) && (pubKey == NULL)) {
+        if (key_part == kSE05x_KeyPart_Private) {
+            LOG_W(
+                "Private key generation is deprecated. This will be removed in next release. Use Key-Pair option to "
+                "generate the key");
+        }
+    }
+
     tlvRet = TLVSET_Se05xPolicy("policy", &pCmdbuf, &cmdbufLen, kSE05x_TAG_POLICY, policy);
     if (0 != tlvRet) {
         goto cleanup;
@@ -309,14 +314,20 @@ smStatus_t Se05x_API_WriteRSAKey(pSe05xSession_t session_ctx,
     uint8_t *pCmdbuf = &cmdbuf[0];
     int tlvRet       = 0;
 
-    if (Se05x_IsInValidRangeOfUID(objectID)) {
-        return SM_NOT_OK;
-    }
-
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "WriteRSAKey []");
 #endif /* VERBOSE_APDU_LOGS */
+
+    if ((p == NULL) && (q == NULL) && (dp == NULL) && (dq == NULL) && (qInv == NULL) && (pubExp == NULL) &&
+        (priv == NULL) && (pubMod == NULL)) {
+        if (key_part == kSE05x_KeyPart_Private) {
+            LOG_W(
+                "Private key generation is deprecated. This will be removed in next release. Use Key-Pair option to "
+                "generate the key");
+        }
+    }
+
     tlvRet = TLVSET_Se05xPolicy("To be Checked(last 3 not pdf)", &pCmdbuf, &cmdbufLen, kSE05x_TAG_POLICY, policy);
     if (0 != tlvRet) {
         goto cleanup;
@@ -384,10 +395,6 @@ smStatus_t Se05x_API_WriteSymmKey(pSe05xSession_t session_ctx,
     uint8_t *pCmdbuf = &cmdbuf[0];
     int tlvRet       = 0;
 
-    if (Se05x_IsInValidRangeOfUID(objectID)) {
-        return SM_NOT_OK;
-    }
-
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "WriteSymmKey []");
@@ -433,10 +440,6 @@ smStatus_t Se05x_API_WriteBinary(pSe05xSession_t session_ctx,
     uint8_t *pCmdbuf = &cmdbuf[0];
     int tlvRet       = 0;
 
-    if (Se05x_IsInValidRangeOfUID(objectID)) {
-        return SM_NOT_OK;
-    }
-
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "WriteBinary []");
@@ -476,18 +479,11 @@ smStatus_t Se05x_API_WriteUserID(pSe05xSession_t session_ctx,
     const SE05x_AttestationType_t attestation_type)
 {
     smStatus_t retStatus = SM_NOT_OK;
-    if (Se05x_IsInValidRangeOfUID(objectID)) {
-        return SM_NOT_OK;
-    }
-    tlvHeader_t hdr = {{kSE05x_CLA, kSE05x_INS_WRITE | attestation_type, kSE05x_P1_UserID, kSE05x_P2_DEFAULT}};
+    tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_WRITE | attestation_type, kSE05x_P1_UserID, kSE05x_P2_DEFAULT}};
     uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
     size_t cmdbufLen = 0;
     uint8_t *pCmdbuf = &cmdbuf[0];
     int tlvRet       = 0;
-
-    if (Se05x_IsInValidRangeOfUID(objectID)) {
-        return SM_NOT_OK;
-    }
 
 #if VERBOSE_APDU_LOGS
     NEWLINE();
@@ -524,10 +520,6 @@ smStatus_t Se05x_API_CreateCounter(pSe05xSession_t session_ctx, pSe05xPolicy_t p
     uint8_t *pCmdbuf = &cmdbuf[0];
     int tlvRet       = 0;
 
-    if (Se05x_IsInValidRangeOfUID(objectID)) {
-        return SM_NOT_OK;
-    }
-
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "Se05x_API_CreateCounter []");
@@ -562,10 +554,6 @@ smStatus_t Se05x_API_SetCounterValue(pSe05xSession_t session_ctx, uint32_t objec
     size_t cmdbufLen = 0;
     uint8_t *pCmdbuf = &cmdbuf[0];
     int tlvRet       = 0;
-
-    if (Se05x_IsInValidRangeOfUID(objectID)) {
-        return SM_NOT_OK;
-    }
 
 #if VERBOSE_APDU_LOGS
     NEWLINE();
@@ -603,10 +591,6 @@ smStatus_t Se05x_API_IncCounter(pSe05xSession_t session_ctx, uint32_t objectID)
     size_t cmdbufLen = 0;
     uint8_t *pCmdbuf = &cmdbuf[0];
     int tlvRet       = 0;
-
-    if (Se05x_IsInValidRangeOfUID(objectID)) {
-        return SM_NOT_OK;
-    }
 
 #if VERBOSE_APDU_LOGS
     NEWLINE();
@@ -652,10 +636,6 @@ smStatus_t Se05x_API_WritePCR_WithType(pSe05xSession_t session_ctx,
     size_t cmdbufLen = 0;
     uint8_t *pCmdbuf = &cmdbuf[0];
     int tlvRet       = 0;
-
-    if (Se05x_IsInValidRangeOfUID(pcrID)) {
-        return SM_NOT_OK;
-    }
 
 #if VERBOSE_APDU_LOGS
     NEWLINE();
@@ -1884,6 +1864,7 @@ smStatus_t Se05x_API_ECDAASign(pSe05xSession_t session_ctx,
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "ECDAASign []");
 #endif /* VERBOSE_APDU_LOGS */
+    LOG_W("BARRETO NAEHRIG curve is deprecated. This will be removed in next release");
     tlvRet = TLVSET_U32("objectID", &pCmdbuf, &cmdbufLen, kSE05x_TAG_1, objectID);
     if (0 != tlvRet) {
         goto cleanup;
@@ -1942,6 +1923,7 @@ smStatus_t Se05x_API_ECDAASign(pSe05xSession_t session_ctx,
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "ECDAASign []");
 #endif /* VERBOSE_APDU_LOGS */
+    LOG_W("BARRETO NAEHRIG curve is deprecated. This will be removed in next release");
     tlvRet = TLVSET_U32("objectID", &pCmdbuf, &cmdbufLen, kSE05x_TAG_1, objectID);
     if (0 != tlvRet) {
         goto cleanup;
