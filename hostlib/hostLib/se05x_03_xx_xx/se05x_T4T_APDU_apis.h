@@ -50,7 +50,8 @@ smStatus_t Se05x_T4T_API_GetVersion(pSe05xSession_t session_ctx, uint8_t *versio
  * See @ref Se05x_T4T_API_ManageReadCounter.
  * Get Reset / Enable / Disable read counter.
  */
-smStatus_t Se05x_T4T_API_ManageReadCounter(pSe05xSession_t session_ctx, SE05x_T4T_Read_Ctr_Operation_t readCtrOperation);
+smStatus_t Se05x_T4T_API_ManageReadCounter(
+    pSe05xSession_t session_ctx, SE05x_T4T_Read_Ctr_Operation_t readCtrOperation);
 
 /** Se05x_T4T_API_ReadCounterValue
  *

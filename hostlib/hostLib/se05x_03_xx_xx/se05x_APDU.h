@@ -72,9 +72,6 @@ smStatus_t Se05x_API_EC_CurveGetId(pSe05xSession_t session_ctx, uint32_t objectI
 
 /** @} */
 
-// For SIMW-656
-bool Se05x_IsInValidRangeOfUID(uint32_t uid);
-
 #ifdef __cplusplus
 }
 #endif

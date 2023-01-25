@@ -3,7 +3,7 @@
 NXP Software Content Register
 
 Package: Plug&Trust Mini Package
-Version: 04.02.00
+Version: 04.03.00
 
 -----------------------------------
 

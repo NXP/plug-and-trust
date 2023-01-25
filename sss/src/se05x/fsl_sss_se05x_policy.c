@@ -447,7 +447,7 @@ static void sss_se05x_copy_uint16_to_u8_array(uint16_t u16, uint8_t *pbuffer)
 static int sss_se05x_find_authId_instances(uint32_t authId, uint8_t *pindices, sss_policy_t *policies)
 {
     int count = 0;
-    for (uint32_t i = 0; i <= policies->nPolicies - 1; i++) {
+    for (uint32_t i = 0; (i <= policies->nPolicies - 1) && (i <= MAX_OBJ_POLICY_TYPES); i++) {
         if (policies->policies[i] != NULL && policies->policies[i]->auth_obj_id == authId) {
             *pindices++ = i;
             count++;
@@ -478,6 +478,9 @@ sss_status_t sss_se05x_create_object_policy_buffer(sss_policy_t *policies, uint8
     memset(pbuff, 0x00, MAX_POLICY_BUFFER_SIZE);
     for (uint32_t i = 0; i < policies->nPolicies && policiesCopied < policies->nPolicies; i++) {
         if (policies->policies[i] != NULL) {
+            if (offset >= MAX_POLICY_BUFFER_SIZE) {
+                return kStatus_SSS_InvalidArgument;
+            }
             auth_id_count =
                 sss_se05x_find_authId_instances(policies->policies[i]->auth_obj_id, &indexArray[0], policies);
             /*length is initialized with default length

@@ -346,7 +346,7 @@ typedef enum
     kSE05x_EDSignatureAlgo_ED25519PURE_SHA_512 = 0xA3,
 } SE05x_EDSignatureAlgo_t;
 
-/** Different signature algorithms for ECDAA */
+/** Different signature algorithms for ECDAA (This is deprecated. This will be removed in next release)*/
 typedef enum
 {
     /** Invalid */

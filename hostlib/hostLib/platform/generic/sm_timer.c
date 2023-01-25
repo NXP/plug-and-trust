@@ -13,6 +13,7 @@
 *****************************************************************************/
 
 #include <stdint.h>
+#include <limits.h>
 #if defined(__gnu_linux__) || defined(__clang__)
 #include <unistd.h>
 #endif

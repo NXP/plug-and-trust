@@ -156,7 +156,7 @@
  * Note, this is unsecure and only provided for experimentation
  * on platforms that do not have an mbedTLS PORT
  * Many :ref:`sssftr-control` have to be disabled to have a valid build. */
-#define SSS_HAVE_HOSTCRYPTO_NONE 0
+#define SSS_HAVE_HOSTCRYPTO_NONE 1
 
 #if (( 0                             \
     + SSS_HAVE_HOSTCRYPTO_MBEDTLS    \
@@ -393,6 +393,35 @@
     + SSS_HAVE_A71CH_AUTH_SCP03      \
     ) == 0)
 #        error "Enable at-least one of 'PTMW_A71CH_AUTH'"
+#endif
+
+
+
+/** PTMW_OpenSSL : For PC, which OpenSSL to pick up
+ *
+ * On Linux based builds, this option has no impact, because the build system
+ * picks up the default available/installed OpenSSL from the system directly.
+ */
+
+/** Use 1.1.1 version (Only applicable on PC) */
+#define SSS_HAVE_OPENSSL_1_1_1 0
+
+/** Use 3.0 version (Only applicable on PC) */
+#define SSS_HAVE_OPENSSL_3_0 0
+
+#if (( 0                             \
+    + SSS_HAVE_OPENSSL_1_1_1         \
+    + SSS_HAVE_OPENSSL_3_0           \
+    ) > 1)
+#        error "Enable only one of 'PTMW_OpenSSL'"
+#endif
+
+
+#if (( 0                             \
+    + SSS_HAVE_OPENSSL_1_1_1         \
+    + SSS_HAVE_OPENSSL_3_0           \
+    ) == 0)
+// #        error "Enable at-least one of 'PTMW_OpenSSL'"
 #endif
 
 

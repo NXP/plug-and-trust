@@ -53,7 +53,7 @@ const char gszReaderDefault[]     = EX_SSS_BOOT_SSS_PCSC_READER_DEFAULT;
  * Public Functions
  * ***************************************************************************************************************** */
 
-sss_status_t ex_sss_boot_connectstring(int argc, const char *argv[], const char **pPortName)
+sss_status_t ex_sss_boot_connectstring(int argc, const char *argv[], char **pPortName)
 {
     const char *portName = NULL;
     sss_status_t status  = kStatus_SSS_Success;
@@ -76,7 +76,7 @@ sss_status_t ex_sss_boot_connectstring(int argc, const char *argv[], const char 
         }
     }
     if (TRUE == last_is_help) {
-        *pPortName = argv[argc - 1]; /* --help */
+        *pPortName = (char *)argv[argc - 1]; /* --help */
         return kStatus_SSS_Success;
     }
     if (argc > 1                    /* Alteast 1 cli argument */
@@ -90,7 +90,13 @@ sss_status_t ex_sss_boot_connectstring(int argc, const char *argv[], const char 
     else
 #endif
     {
+#if defined(_MSC_VER)
+        char *portName_env = NULL;
+        size_t sz          = 0;
+        _dupenv_s(&portName_env, &sz, EX_SSS_BOOT_SSS_PORT);
+#else
         const char *portName_env = getenv(EX_SSS_BOOT_SSS_PORT);
+#endif
         if (portName_env != NULL) {
             portName = portName_env;
             LOG_I("Using PortName='%s' (ENV: %s=%s)", portName, EX_SSS_BOOT_SSS_PORT, portName);
@@ -121,7 +127,7 @@ sss_status_t ex_sss_boot_connectstring(int argc, const char *argv[], const char 
     }
 
     if (status == kStatus_SSS_Success && pPortName != NULL) {
-        *pPortName = portName;
+        *pPortName = (char *)portName;
     }
     return status;
 }

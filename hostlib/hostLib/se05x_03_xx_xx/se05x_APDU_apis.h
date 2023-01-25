@@ -2879,6 +2879,8 @@ smStatus_t Se05x_API_EdDSASign(pSe05xSession_t session_ctx,
 
 /** Se05x_API_ECDAASign
  *
+ * WARNING - Se05x_API_ECDAASign is deprecated. This will be removed in next release.
+ *
  * The ECDAASign command signs external data using the indicated key pair or
  * private key. This is performed according to ECDAA. The generated signature is:
  *

@@ -17,6 +17,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <limits.h>
 
 
 #if defined(SSS_USE_FTR_FILE)
@@ -584,6 +585,9 @@ U16 smApduAppendCmdData(apdu_t *pApdu, const U8 *data, U16 dataLen)
     else
 #endif // SSS_HAVE_APPLET_A71CH_SIM
     {
+        if ((SHRT_MAX - pApdu->lc) < dataLen) {
+            goto exit;
+        }
         pApdu->lc += dataLen;
     }
 
@@ -608,6 +612,9 @@ U16 smApduAppendCmdData(apdu_t *pApdu, const U8 *data, U16 dataLen)
     }
 #else // defined(TGT_A71CH) || defined(TGT_A71CL)
     memcpy(&pApdu->pBuf[pApdu->offset], data, dataLen);
+    if ((SHRT_MAX - pApdu->offset) < dataLen) {
+        goto exit;
+    }
     pApdu->offset += dataLen;
 #endif // defined(TGT_A71CH) || defined(TGT_A71CL)
 

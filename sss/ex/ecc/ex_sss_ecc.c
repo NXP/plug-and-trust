@@ -81,6 +81,10 @@ static ex_sss_boot_ctx_t gex_sss_ecc_boot_ctx;
 #define EX_SSS_BOOT_DO_ERASE 1
 #define EX_SSS_BOOT_EXPOSE_ARGC_ARGV 0
 
+/* ************************************************************************** */
+/* Include "main()" with the platform specific startup code for Plug & Trust  */
+/* MW examples which will call ex_sss_entry()                                 */
+/* ************************************************************************** */
 #include <ex_sss_main_inc.h>
 
 sss_status_t ex_sss_entry(ex_sss_boot_ctx_t *pCtx)

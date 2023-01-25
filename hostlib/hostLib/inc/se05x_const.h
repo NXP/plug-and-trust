@@ -186,6 +186,10 @@ example : B1b8 : 0x80000000
 #define POLICY_SESSION_ALLOW_REFRESH    0x2000
 /**/
 
+#else // !SSS_HAVE_APPLET_SE05X_IOT
+
+#define SE05X_MAX_BUF_SIZE_RSP (892)
+
 #endif /* SSS_HAVE_APPLET_SE05X_IOT */
 
 #endif /* FSL_SSS_SE05X_CONST_H */

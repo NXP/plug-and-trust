@@ -120,7 +120,7 @@ int main(int argc, const char *argv[])
 {
     int ret;
     sss_status_t status = kStatus_SSS_Fail;
-    const char *portName;
+    char *portName;
 
 #if EX_SSS_BOOT_EXPOSE_ARGC_ARGV
     gex_sss_argc = argc;
@@ -275,6 +275,18 @@ cleanup:
         ex_sss_main_ksdk_failure();
 #endif
     }
+#if defined(_MSC_VER)
+    if (portName) {
+        char *dummy_portName = NULL;
+        size_t dummy_sz      = 0;
+        _dupenv_s(&dummy_portName, &dummy_sz, EX_SSS_BOOT_SSS_PORT);
+        if (NULL != dummy_portName) {
+            free(dummy_portName);
+            free(portName);
+        }
+    }
+#endif // _MSC_VER
+
     return ret;
 }
 

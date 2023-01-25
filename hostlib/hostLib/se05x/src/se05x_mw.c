@@ -78,30 +78,3 @@ cleanup:
 }
 
 #endif
-
-bool Se05x_IsInValidRangeOfUID(uint32_t uid)
-{
-    AX_UNUSED_ARG(uid);
-#if 0
-    // For SIMW-656
-    bool retVal = TRUE;
-    if (uid >= EX_SSS_OBJID_DEMO_START && uid <= EX_SSS_OBJID_DEMO_END)
-    {
-        retVal = FALSE;
-    }
-    else if (uid >= SE05X_OBJID_SE05X_APPLET_RES_START && uid <= SE05X_OBJID_SE05X_APPLET_RES_END)
-    {
-        retVal = FALSE;
-    }
-    else if (uid >= EX_SSS_OBJID_TEST_START && uid <= EX_SSS_OBJID_TEST_END)
-    {
-        retVal = FALSE;
-    }
-    if (retVal == TRUE) {
-        LOG_E("Not allowing 0x%X uid", uid);
-    }
-    return retVal;
-#else
-    return FALSE;
-#endif
-}

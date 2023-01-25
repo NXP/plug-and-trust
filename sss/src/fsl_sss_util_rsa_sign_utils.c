@@ -48,9 +48,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-#if SSS_HAVE_APPLET_SE05X_IOT && SSSFTR_RSA
+#if SSS_HAVE_APPLET_SE05X_IOT && SSSFTR_RSA && !SSS_HAVE_HOSTCRYPTO_NONE
 #include "fsl_sss_util_rsa_sign_utils.h"
 
+#include "nxEnsure.h"
 #include "se05x_APDU.h"
 
 uint8_t pkcs1_v15_encode(
@@ -202,8 +203,15 @@ uint8_t pkcs1_v15_encode_no_hash(
     uint16_t key_size_bytes = 0;
     smStatus_t ret_val      = SM_NOT_OK;
 
+    if ((out == NULL) || (outLen == NULL)) {
+        return 1;
+    }
+    if (*outLen < 2) {
+        return 1;
+    }
+
     ret_val = Se05x_API_ReadSize(&context->session->s_ctx, context->keyObject->keyId, &key_size_bytes);
-    if (ret_val != SM_OK) {
+    if ((ret_val != SM_OK) || (key_size_bytes == 0)) {
         return 1;
     }
 
@@ -216,11 +224,15 @@ uint8_t pkcs1_v15_encode_no_hash(
     }
 
     memset(out, 0xFF, *outLen);
-    out[0]                            = 0x00;
-    out[1]                            = 0x01;
+    out[0] = 0x00;
+    out[1] = 0x01;
+
+    if ((key_size_bytes > *outLen) || (key_size_bytes <= hashlen)) {
+        return 1;
+    }
+
     out[key_size_bytes - hashlen - 1] = 0x00;
     memcpy(&out[key_size_bytes - hashlen], hash, hashlen);
-
     *outLen = key_size_bytes;
 
     return 0;
@@ -233,20 +245,38 @@ uint8_t sss_mgf_mask_func(uint8_t *dst,
     sss_algorithm_t sha_algorithm,
     sss_se05x_asymmetric_t *context)
 {
-    uint8_t mask[64]; /* MAX - SHA512*/
-    uint8_t counter[4];
-    uint8_t *p;
+    uint8_t mask[64] = {
+        0,
+    }; /* MAX - SHA512*/
+    uint8_t counter[4] = {
+        0,
+    };
+    ;
+    uint8_t *p = NULL;
     size_t i, use_len;
     uint8_t ret         = 1;
     sss_status_t status = kStatus_SSS_Fail;
     sss_digest_t digest;
-    size_t digestLen  = 512; /* MAX - SHA512*/
-    size_t hashlength = slen;
+    size_t digestLen           = 512; /* MAX - SHA512*/
+    size_t hashlength          = slen;
+    sss_session_t host_session = {0};
+#if SSS_HAVE_HOSTCRYPTO_MBEDTLS
+    const sss_type_t host_crypto = kType_SSS_mbedTLS;
+#elif SSS_HAVE_HOSTCRYPTO_OPENSSL
+    const sss_type_t host_crypto = kType_SSS_OpenSSL;
+#else
+    const sss_type_t host_crypto = kType_SSS_SubSystem_NONE;
+#endif
 
     memset(mask, 0, 64);
     memset(counter, 0, 4);
 
-    status = sss_digest_context_init(&digest, (sss_session_t *)context->session, sha_algorithm, kMode_SSS_Digest);
+    status = sss_host_session_open(&host_session, host_crypto, 0, kSSS_ConnectionType_Plain, NULL);
+    if (kStatus_SSS_Success != status) {
+        goto exit;
+    }
+
+    status = sss_digest_context_init(&digest, &host_session, sha_algorithm, kMode_SSS_Digest);
     if (status != kStatus_SSS_Success) {
         goto exit;
     }
@@ -280,8 +310,9 @@ uint8_t sss_mgf_mask_func(uint8_t *dst,
             goto exit;
         }
 
-        for (i = 0; i < use_len; ++i)
+        for (i = 0; i < use_len; ++i) {
             *p++ ^= mask[i];
+        }
 
         counter[3]++;
 
@@ -293,6 +324,8 @@ uint8_t sss_mgf_mask_func(uint8_t *dst,
     ret = 0;
 
 exit:
+    sss_host_session_close(&host_session);
+
     return ret;
 }
 
@@ -323,6 +356,19 @@ uint8_t emsa_encode(sss_se05x_asymmetric_t *context, const uint8_t *hash, size_t
     sss_status_t status           = kStatus_SSS_Fail;
     uint16_t key_size_bytes       = 0;
     smStatus_t ret_val            = SM_NOT_OK;
+    sss_session_t host_session    = {0};
+#if SSS_HAVE_HOSTCRYPTO_MBEDTLS
+    const sss_type_t host_crypto = kType_SSS_mbedTLS;
+#elif SSS_HAVE_HOSTCRYPTO_OPENSSL
+    const sss_type_t host_crypto = kType_SSS_OpenSSL;
+#else
+    const sss_type_t host_crypto = kType_SSS_SubSystem_NONE;
+#endif
+
+    status = sss_host_session_open(&host_session, host_crypto, 0, kSSS_ConnectionType_Plain, NULL);
+    if (kStatus_SSS_Success != status) {
+        goto exit;
+    }
 
     ret_val = Se05x_API_ReadSize(&context->session->s_ctx, context->keyObject->keyId, &key_size_bytes);
     if (ret_val != SM_OK) {
@@ -330,6 +376,7 @@ uint8_t emsa_encode(sss_se05x_asymmetric_t *context, const uint8_t *hash, size_t
     }
 
     outlength = key_size_bytes;
+    ENSURE_OR_GO_EXIT(*outLen >= outlength);
 
     switch (context->algorithm) {
     case kAlgorithm_SSS_RSASSA_PKCS1_PSS_MGF1_SHA1:
@@ -377,7 +424,7 @@ uint8_t emsa_encode(sss_se05x_asymmetric_t *context, const uint8_t *hash, size_t
     *outLen    = outlength;
 
     /* Generate salt of length saltlength */
-    status = sss_rng_context_init(&rng, (sss_session_t *)context->session /* session */);
+    status = sss_rng_context_init(&rng, &host_session /* session */);
     if (status != kStatus_SSS_Success) {
         goto exit;
     }
@@ -393,7 +440,7 @@ uint8_t emsa_encode(sss_se05x_asymmetric_t *context, const uint8_t *hash, size_t
     memcpy(p, salt, saltlength);
     p += saltlength;
 
-    status = sss_digest_context_init(&digest, (sss_session_t *)context->session, sha_algorithm, kMode_SSS_Digest);
+    status = sss_digest_context_init(&digest, &host_session, sha_algorithm, kMode_SSS_Digest);
     if (status != kStatus_SSS_Success) {
         goto exit;
     }
@@ -443,6 +490,8 @@ uint8_t emsa_encode(sss_se05x_asymmetric_t *context, const uint8_t *hash, size_t
     ret = 0;
 
 exit:
+    sss_host_session_close(&host_session);
+
     return ret;
 }
 
@@ -452,17 +501,34 @@ uint8_t emsa_decode_and_compare(
     uint8_t *p;
     uint8_t *hash_start;
     uint8_t result[512] = {0};
-    uint8_t ret = 1;
+    uint8_t ret         = 1;
     uint32_t hlen;
     uint8_t zeros[8];
     uint32_t observed_salt_len, msb;
     uint8_t buf[1024];
     sss_algorithm_t sha_algorithm = kAlgorithm_None;
     sss_digest_t digest;
-    size_t digestLen    = 512; /* MAX - SHA512*/
-    sss_status_t status = kStatus_SSS_Fail;
+    size_t digestLen           = 512; /* MAX - SHA512*/
+    sss_status_t status        = kStatus_SSS_Fail;
+    sss_session_t host_session = {0};
+#if SSS_HAVE_HOSTCRYPTO_MBEDTLS
+    const sss_type_t host_crypto = kType_SSS_mbedTLS;
+#elif SSS_HAVE_HOSTCRYPTO_OPENSSL
+    const sss_type_t host_crypto = kType_SSS_OpenSSL;
+#else
+    const sss_type_t host_crypto = kType_SSS_SubSystem_NONE;
+#endif
+
+    ENSURE_OR_GO_EXIT(sig != NULL);
+    ENSURE_OR_GO_EXIT(siglen > 0);
+    ENSURE_OR_GO_EXIT(hash != NULL);
 
     memcpy(buf, sig, siglen);
+
+    status = sss_host_session_open(&host_session, host_crypto, 0, kSSS_ConnectionType_Plain, NULL);
+    if (kStatus_SSS_Success != status) {
+        goto exit;
+    }
 
     switch (context->algorithm) {
     case kAlgorithm_SSS_RSASSA_PKCS1_PSS_MGF1_SHA1:
@@ -523,7 +589,7 @@ uint8_t emsa_decode_and_compare(
 
     observed_salt_len = hash_start - p;
 
-    status = sss_digest_context_init(&digest, (sss_session_t *)context->session, sha_algorithm, kMode_SSS_Digest);
+    status = sss_digest_context_init(&digest, &host_session, sha_algorithm, kMode_SSS_Digest);
     if (status != kStatus_SSS_Success) {
         goto exit;
     }
@@ -562,6 +628,8 @@ uint8_t emsa_decode_and_compare(
     ret = 0;
 
 exit:
+    sss_host_session_close(&host_session);
+
     return ret;
 }
 

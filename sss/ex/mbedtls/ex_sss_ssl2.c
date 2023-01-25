@@ -69,7 +69,6 @@ int main(void)
 #include "mbedtls/ssl.h"
 #include "mbedtls/timing.h"
 #include "mbedtls/x509.h"
-#include "ssl_test_lib.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -107,6 +106,10 @@ ex_sss_cloud_ctx_t *pex_sss_demo_tls_ctx = &gex_sss_demo_tls_ctx;
 #define EX_SSS_BOOT_EXPOSE_ARGC_ARGV 1
 #define EX_SSS_BOOT_DO_ERASE 0
 
+/* ************************************************************************** */
+/* Include "main()" with the platform specific startup code for Plug & Trust  */
+/* MW examples which will call ex_sss_entry()                                 */
+/* ************************************************************************** */
 #include <ex_sss_main_inc.h>
 
 #define SSS_PUBKEY_INDEX_CA 0x7DCCBB22 //(1u)
@@ -407,6 +410,22 @@ struct options
 
 } opt;
 
+static void my_debug( void *ctx, int level,
+                      const char *file, int line,
+                      const char *str )
+{
+    const char *p, *basename;
+
+    /* Extract basename from file */
+    for (p = basename = file; *p != '\0'; p++)
+        if (*p == '/' || *p == '\\')
+            basename = p + 1;
+
+    mbedtls_fprintf( (FILE *) ctx, "%s:%04d: |%d| %s",
+                     basename, line, level, str );
+    fflush((FILE *)ctx);
+}
+
 /*
 * Test recv/send functions that make sure each try returns
 * WANT_READ/WANT_WRITE at least once before sucesseding
@@ -492,6 +511,59 @@ static int ssl_sig_hashes_for_test[] = {
 
 };
 #endif /* MBEDTLS_X509_CRT_PARSE_C */
+
+#if 0
+/*
+ * Wait for an event from the underlying transport or the timer
+ * (Used in event-driven IO mode).
+ */
+#if !defined(MBEDTLS_TIMING_C)
+int idle( mbedtls_net_context *fd,
+          int idle_reason )
+#else
+int idle( mbedtls_net_context *fd,
+          mbedtls_timing_delay_context *timer,
+          int idle_reason )
+#endif
+{
+
+    int ret;
+    int poll_type = 0;
+
+    if( idle_reason == MBEDTLS_ERR_SSL_WANT_WRITE )
+        poll_type = MBEDTLS_NET_POLL_WRITE;
+    else if( idle_reason == MBEDTLS_ERR_SSL_WANT_READ )
+        poll_type = MBEDTLS_NET_POLL_READ;
+#if !defined(MBEDTLS_TIMING_C)
+    else
+        return( 0 );
+#endif
+
+    while( 1 )
+    {
+        /* Check if timer has expired */
+#if defined(MBEDTLS_TIMING_C)
+        if( timer != NULL &&
+            mbedtls_timing_get_delay( timer ) == 2 )
+        {
+            break;
+        }
+#endif /* MBEDTLS_TIMING_C */
+
+        /* Check if underlying transport became available */
+        if( poll_type != 0 )
+        {
+            ret = mbedtls_net_poll( fd, poll_type, 0 );
+            if( ret < 0 )
+                return( ret );
+            if( ret == poll_type )
+                break;
+        }
+    }
+
+    return( 0 );
+}
+#endif
 
 sss_status_t ex_sss_entry(ex_sss_boot_ctx_t *pCtx)
 {
