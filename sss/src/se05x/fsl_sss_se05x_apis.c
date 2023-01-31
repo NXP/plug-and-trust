@@ -985,8 +985,8 @@ sss_status_t sss_se05x_key_object_get_handle(sss_se05x_object_t *keyObject, uint
 
     if (0 == CheckIfKeyIdExists(keyId, &keyObject->keyStore->session->s_ctx)) {
         /* Object does not exist  */
-        LOG_D("keyId does not exist");
-        LOG_U32_D(keyId);
+        LOG_E("keyId does not exist");
+        LOG_U32_E(keyId);
         return retval;
     }
 
