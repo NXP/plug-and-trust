@@ -189,13 +189,18 @@ void nLog_DeInit()
 /* Used for scenarios other than LPC55S_NS */
 void nLog(const char *comp, int level, const char *format, ...)
 {
-    nLog_AcquireLock();
     if (level > (int)(sizeof(szLevel) / sizeof(char*))) {
         return;
     }
+    nLog_AcquireLock();
     setColor(level);
     if (level >= 1) {
         PRINTF("%-6s:%s:", comp, szLevel[level-1]);
+    }
+    else {
+        reSetColor();
+        nLog_ReleaseLock();
+        return;
     }
     if (format == NULL) {
         /* Nothing */
@@ -229,13 +234,18 @@ void nLog(const char *comp, int level, const char *format, ...)
 void nLog_au8(const char *comp, int level, const char *message, const unsigned char *array, size_t array_len)
 {
     size_t i;
-    nLog_AcquireLock();
     if (level > (int)(sizeof(szLevel) / sizeof(char*))) {
         return;
     }
+    nLog_AcquireLock();
     setColor(level);
     if (level >= 1) {
         PRINTF("%-6s:%s:%s (Len=%" PRId32 ")", comp, szLevel[level-1], message, (int32_t)array_len);
+    }
+    else {
+        reSetColor();
+        nLog_ReleaseLock();
+        return;
     }
     for (i = 0; i < array_len; i++) {
         if (0 == (i % 16)) {

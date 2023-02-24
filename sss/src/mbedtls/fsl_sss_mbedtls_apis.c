@@ -1493,6 +1493,8 @@ sss_status_t sss_mbedtls_cipher_init(sss_mbedtls_symmetric_t *context, uint8_t *
             break;
         default:
             LOG_E("Invalid kAlgorithm_SSS_AES_ECB keyBitLen");
+            retval = kStatus_SSS_Fail;
+            goto exit;
         }
     }
     else if (context->algorithm == kAlgorithm_SSS_AES_CBC) {
@@ -1508,6 +1510,8 @@ sss_status_t sss_mbedtls_cipher_init(sss_mbedtls_symmetric_t *context, uint8_t *
             break;
         default:
             LOG_E("Invalid kAlgorithm_SSS_AES_CBC keyBitLen");
+            retval = kStatus_SSS_Fail;
+            goto exit;
         }
     }
     else if (context->algorithm == kAlgorithm_SSS_AES_CTR) {
@@ -1523,6 +1527,8 @@ sss_status_t sss_mbedtls_cipher_init(sss_mbedtls_symmetric_t *context, uint8_t *
             break;
         default:
             LOG_E("Invalid kAlgorithm_SSS_AES_CTR keyBitLen");
+            retval = kStatus_SSS_Fail;
+            goto exit;
         }
     }
     else if (context->algorithm == kAlgorithm_SSS_DES_ECB) {

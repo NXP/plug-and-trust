@@ -107,9 +107,9 @@ sss_status_t nxECKey_AuthenticateChannel(
         goto exit;
     }
     offset += hostEckaPubLen - ASN_ECC_NIST_256_HEADER_LEN;
-    if (offset < hostEckaPubLen) {
-        hostEckaPub[offset++] = KEY_PARAMETER_REFERENCE_TAG;
-    }
+
+    ENSURE_OR_GO_EXIT(offset + 3 <= hostEckaPubLen);
+    hostEckaPub[offset++] = KEY_PARAMETER_REFERENCE_TAG;
     hostEckaPub[offset++] = KEY_PARAMETER_REFERENCE_VALUE_LEN;
     hostEckaPub[offset++] = KEY_PARAMETER_REFERENCE_VALUE;
     hostEckaPubLen        = offset;
@@ -241,21 +241,21 @@ static sss_status_t nxECKey_calculate_master_secret(
 
     if (pAuthFScp->pDyn_ctx->authType == kSSS_AuthType_INT_ECKey_Counter) {
         const uint8_t kdf_counter[] = {0x00, 0x00, 0x00, 0x01};
-        if (derivationInputLen < sizeof(derivationInput)) {
-            memcpy(&derivationInput[derivationInputLen], kdf_counter, sizeof(kdf_counter));
-            derivationInputLen += sizeof(kdf_counter);
-        }
+        ENSURE_OR_GO_CLEANUP(sizeof(kdf_counter) <= sizeof(derivationInput) - derivationInputLen);
+        memcpy(&derivationInput[derivationInputLen], kdf_counter, sizeof(kdf_counter));
+        derivationInputLen += sizeof(kdf_counter);
     }
+
+    ENSURE_OR_GO_CLEANUP(sharedSecretLen <= sizeof(derivationInput) - derivationInputLen);
     memcpy(&derivationInput[derivationInputLen], sharedSecret, sharedSecretLen);
+
     if ((UINT_MAX - derivationInputLen) < sharedSecretLen) {
         goto cleanup;
     }
     derivationInputLen += sharedSecretLen;
-    if (derivationInputLen > sizeof(derivationInput)) {
-        goto cleanup;
-    }
     ENSURE_OR_GO_CLEANUP(rndLen <= (sizeof(derivationInput) - derivationInputLen));
     memcpy(&derivationInput[derivationInputLen], rnd, rndLen);
+
     if ((UINT_MAX - derivationInputLen) < rndLen) {
         goto cleanup;
     }

@@ -614,6 +614,10 @@ ESESTATUS phNxpEse_WriteFrame(void* conn_ctx, uint32_t data_len, const uint8_t *
 
     /* Create local copy of cmd_data */
     LOG_D("%s Enter ..", __FUNCTION__);
+
+    if (data_len > MAX_DATA_LEN){
+        return ESESTATUS_FAILED;
+    }
     phNxpEse_memcpy(nxpese_ctxt->p_cmd_data, p_data, data_len);
     nxpese_ctxt->cmd_len = data_len;
     if(nxpese_ctxt->EseLibStatus != ESE_STATUS_CLOSE)
