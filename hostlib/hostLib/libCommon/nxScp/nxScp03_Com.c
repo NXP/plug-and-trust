@@ -191,6 +191,9 @@ uint16_t nxpSCP03_Decrypt_ResponseAPDU(
             memcpy(response, rspBuf, (*pRspBufLen) - (SCP_COMMAND_MAC_SIZE + SCP_GP_SW_LEN));
             //LOG_MAU8_D(" EncResponse", response, (*pRspBufLen) - 10);
         }
+        else {
+            goto exit;
+        }
         memcpy(sw, &(rspBuf[*pRspBufLen - SCP_GP_SW_LEN]), SCP_GP_SW_LEN);
         LOG_MAU8_D("Status Word: ", sw, 2);
 

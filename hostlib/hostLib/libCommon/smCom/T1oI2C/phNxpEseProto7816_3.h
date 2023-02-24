@@ -214,6 +214,7 @@ typedef struct phNxpEseRx_Cntx
   sFrameInfo_t lastRcvdSframeInfo; /*!< S-frame: Last received frame */
   phNxpEseProto7816_FrameTypes_t lastRcvdFrameType; /*!< Last received frame type */
   phNxpEse_data *pRsp;
+  size_t responseBytesRcvd;
 }phNxpEseRx_Cntx_t;
 
 /*!

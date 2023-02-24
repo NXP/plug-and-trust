@@ -17,9 +17,12 @@ platforms.
 It also includes other api usage examples, ssscli (command line tool to use
 SE05x), cloud connectivity examples, openssl engine, pkcs11 interface, AWS
 Greengrass, OPCUA and more. More details regarding SE05x and other detailed
-application notes can be found at https://www.nxp.com/products/:SE050 /
+application notes can be found at https://www.nxp.com/products/:SE050 &
 https://www.nxp.com/products/:SE051.
 
+To contact NXP or to report issues, please use https://www.nxp.com/support/support:SUPPORTHOME
+
+It is recommended to use the latest version of this software available at https://github.com/NXP/plug-and-trust/
 
 Change Log
 -------------------------------------------------------------

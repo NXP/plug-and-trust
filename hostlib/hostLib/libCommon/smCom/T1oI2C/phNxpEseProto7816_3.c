@@ -465,6 +465,9 @@ static bool_t phNxpEseProto7816_SendIframe(void* conn_ctx, iFrameInfo_t iFrameDa
     p_framebuff[PH_PROPTO_7816_LEN_LOWER_OFFSET] =(((uint16_t)iFrameData.sendDataLen) & 0xff);
 #endif
     /* store I frame */
+    if (iFrameData.sendDataLen > (MAX_DATA_LEN - PH_PROPTO_7816_INF_BYTE_OFFSET)){
+        return FALSE;
+    }
     phNxpEse_memcpy(&(p_framebuff[PH_PROPTO_7816_INF_BYTE_OFFSET]), iFrameData.p_data + iFrameData.dataOffset, iFrameData.sendDataLen);
     calc_crc = phNxpEseProto7816_ComputeCRC(p_framebuff, 0, (frame_len - 2));
 
@@ -496,7 +499,7 @@ static bool_t phNxpEseProto7816_SetFirstIframeContxt(void)
     phNxpEseProto7816_3_Var.phNxpEseNextTx_Cntx.FrameType = IFRAME;
     pNextTx_IframeInfo->seqNo = pLastTx_IframeInfo->seqNo ^ 1;
     phNxpEseProto7816_3_Var.phNxpEseProto7816_nextTransceiveState = SEND_IFRAME;
-    pRx_EseCntx->pRsp->len = 0;
+    pRx_EseCntx->responseBytesRcvd = 0;
     if (pNextTx_IframeInfo->totalDataLen > pNextTx_IframeInfo->maxDataLen) {
         pNextTx_IframeInfo->isChained = TRUE;
         pNextTx_IframeInfo->sendDataLen = pNextTx_IframeInfo->maxDataLen;
@@ -569,20 +572,25 @@ static bool_t phNxpEseProto7816_SetNextIframeContxt(void)
  ******************************************************************************/
 static bool_t phNxpEseProro7816_SaveRxframeData(uint8_t *p_data, uint32_t data_len)
 {
-    uint32_t offset = 0;
     phNxpEseRx_Cntx_t *pRx_EseCntx = &phNxpEseProto7816_3_Var.phNxpEseRx_Cntx;
-    LOG_D("Data[0]=0x%x len=%ld Data[%ld]=0x%x Data[%ld]=0x%x ", p_data[0], data_len,data_len-1, p_data[data_len-2],p_data[data_len-1]);
+
+    if (p_data == NULL) {
+        return FALSE;
+    }
+    LOG_D("Data[0]=0x%x len=%ld Data[%ld]=0x%x Data[%ld]=0x%x", p_data[0], data_len, data_len-1, p_data[data_len-2], data_len, p_data[data_len-1]);
     if (pRx_EseCntx->pRsp != NULL) {
-        if((UINT_MAX - pRx_EseCntx->pRsp->len) < data_len)
-        {
+        if (pRx_EseCntx->pRsp->p_data == NULL) {
             return FALSE;
         }
-        if (data_len + pRx_EseCntx->pRsp->len > SE05X_MAX_BUF_SIZE_RSP) {
+        if (pRx_EseCntx->responseBytesRcvd > (UINT_MAX - data_len)) {
             return FALSE;
         }
-        offset = pRx_EseCntx->pRsp->len;
-        phNxpEse_memcpy((pRx_EseCntx->pRsp->p_data + offset), p_data, data_len);
-        pRx_EseCntx->pRsp->len += data_len;
+        if ((pRx_EseCntx->responseBytesRcvd + data_len) > pRx_EseCntx->pRsp->len) {
+            // LOG_W("Need '%ld' bytes. Got '%ld' to copy.", (size_t)(pRx_EseCntx->responseBytesRcvd + data_len), pRx_EseCntx->pRsp->len);
+            return FALSE;
+        }
+        phNxpEse_memcpy((pRx_EseCntx->pRsp->p_data + pRx_EseCntx->responseBytesRcvd), p_data, data_len);
+        pRx_EseCntx->responseBytesRcvd += data_len;
         return TRUE;
     }
     else {
@@ -738,14 +746,21 @@ static bool_t phNxpEseProto7816_DecodeFrame(uint8_t *p_data, uint32_t data_len)
                 pRx_lastRcvdIframeInfo->isChained = TRUE;
                 phNxpEseProto7816_3_Var.phNxpEseNextTx_Cntx.FrameType = RFRAME;
                 pNextTx_RframeInfo->errCode = NO_ERROR;
-                phNxpEseProro7816_SaveRxframeData(&p_data[PH_PROPTO_7816_INF_BYTE_OFFSET], data_len - PH_PROTO_7816_INF_FILED);
+                if (FALSE == phNxpEseProro7816_SaveRxframeData(&p_data[PH_PROPTO_7816_INF_BYTE_OFFSET], data_len - PH_PROTO_7816_INF_FILED)) {
+                    phNxpEseProto7816_3_Var.phNxpEseProto7816_nextTransceiveState = IDLE_STATE;
+                    LOG_E("phNxpEseProro7816_SaveRxframeData Failed");
+                    return FALSE;
+                }
                 phNxpEseProto7816_3_Var.phNxpEseProto7816_nextTransceiveState = SEND_R_ACK ;
             }
             else
             {
                 pRx_lastRcvdIframeInfo->isChained = FALSE;
                 phNxpEseProto7816_3_Var.phNxpEseProto7816_nextTransceiveState = IDLE_STATE;
-                phNxpEseProro7816_SaveRxframeData(&p_data[PH_PROPTO_7816_INF_BYTE_OFFSET], data_len - PH_PROTO_7816_INF_FILED);
+                if (FALSE == phNxpEseProro7816_SaveRxframeData(&p_data[PH_PROPTO_7816_INF_BYTE_OFFSET], data_len - PH_PROTO_7816_INF_FILED)) {
+                    LOG_E("phNxpEseProro7816_SaveRxframeData Failed");
+                    return FALSE;
+                }
             }
         }
         else
@@ -947,7 +962,12 @@ static bool_t phNxpEseProto7816_DecodeFrame(uint8_t *p_data, uint32_t data_len)
                 {
                     return FALSE;
                 }
-                phNxpEseProro7816_SaveRxframeData(&p_data[PH_PROPTO_7816_INF_BYTE_OFFSET], data_len - PH_PROTO_7816_INF_FILED);
+                if (FALSE == phNxpEseProro7816_SaveRxframeData(&p_data[PH_PROPTO_7816_INF_BYTE_OFFSET], data_len - PH_PROTO_7816_INF_FILED))
+                {
+                    phNxpEseProto7816_3_Var.phNxpEseProto7816_nextTransceiveState = IDLE_STATE;
+                    LOG_E("phNxpEseProro7816_SaveRxframeData Failed");
+                    return FALSE;
+                }
                 if(phNxpEseProto7816_3_Var.recoveryCounter > PH_PROTO_7816_FRAME_RETRY_COUNT){
                     /*Max recovery counter reached, send failure to APDU layer  */
                     LOG_E("%s Max retry count reached!!! ", __FUNCTION__);
@@ -974,7 +994,12 @@ static bool_t phNxpEseProto7816_DecodeFrame(uint8_t *p_data, uint32_t data_len)
                 if(p_data[PH_PROPTO_7816_FRAME_LENGTH_OFFSET] > 0) {
                     phNxpEseProto7816_DecodeSFrameData(p_data);
                 }
-                phNxpEseProro7816_SaveRxframeData(&p_data[PH_PROPTO_7816_INF_BYTE_OFFSET], data_len - PH_PROTO_7816_INF_FILED);
+                if (FALSE == phNxpEseProro7816_SaveRxframeData(&p_data[PH_PROPTO_7816_INF_BYTE_OFFSET], data_len - PH_PROTO_7816_INF_FILED))
+                {
+                    phNxpEseProto7816_3_Var.phNxpEseProto7816_nextTransceiveState = IDLE_STATE;
+                    LOG_E("phNxpEseProro7816_SaveRxframeData Failed");
+                    return FALSE;
+                }
                 phNxpEseProto7816_3_Var.phNxpEseNextTx_Cntx.FrameType= UNKNOWN;
                 phNxpEseProto7816_3_Var.phNxpEseProto7816_nextTransceiveState = IDLE_STATE;
                 break;
@@ -1018,7 +1043,12 @@ static bool_t phNxpEseProto7816_DecodeFrame(uint8_t *p_data, uint32_t data_len)
                 if(p_data[PH_PROPTO_7816_FRAME_LENGTH_OFFSET] > 0) {
                     phNxpEseProto7816_DecodeSFrameData(p_data);
                 }
-                phNxpEseProro7816_SaveRxframeData(&p_data[PH_PROPTO_7816_INF_BYTE_OFFSET], data_len - PH_PROTO_7816_INF_FILED);
+                if (FALSE == phNxpEseProro7816_SaveRxframeData(&p_data[PH_PROPTO_7816_INF_BYTE_OFFSET], data_len - PH_PROTO_7816_INF_FILED))
+                {
+                    phNxpEseProto7816_3_Var.phNxpEseProto7816_nextTransceiveState = IDLE_STATE;
+                    LOG_E("phNxpEseProro7816_SaveRxframeData Failed");
+                    return FALSE;
+                }
                 phNxpEseProto7816_3_Var.phNxpEseNextTx_Cntx.FrameType= UNKNOWN;
                 phNxpEseProto7816_3_Var.phNxpEseProto7816_nextTransceiveState = IDLE_STATE;
                 break;
@@ -1286,7 +1316,6 @@ static bool_t TransceiveProcess(void* conn_ctx)
 bool_t phNxpEseProto7816_Transceive(void* conn_ctx, phNxpEse_data *pCmd, phNxpEse_data *pRsp)
 {
     bool_t status = FALSE;
-    uint32_t reqDataLen = 0;
     phNxpEseRx_Cntx_t *pRx_EseCntx = &phNxpEseProto7816_3_Var.phNxpEseRx_Cntx;
     iFrameInfo_t *pNextTx_IframeInfo = &phNxpEseProto7816_3_Var.phNxpEseNextTx_Cntx.IframeInfo;
 
@@ -1294,7 +1323,6 @@ bool_t phNxpEseProto7816_Transceive(void* conn_ctx, phNxpEse_data *pCmd, phNxpEs
     if((NULL == pCmd) || (NULL == pRsp) ||
             (phNxpEseProto7816_3_Var.phNxpEseProto7816_CurrentState != PH_NXP_ESE_PROTO_7816_IDLE))
         return status;
-    reqDataLen = pRsp->len;
     /* Updating the transceive information to the protocol stack */
     phNxpEseProto7816_3_Var.phNxpEseProto7816_CurrentState = PH_NXP_ESE_PROTO_7816_TRANSCEIVE;
     pNextTx_IframeInfo->p_data = pCmd->p_data;
@@ -1308,12 +1336,7 @@ bool_t phNxpEseProto7816_Transceive(void* conn_ctx, phNxpEse_data *pCmd, phNxpEs
         /* ESE hard reset to be done */
         LOG_E("%s Transceive failed, hard reset to proceed ",__FUNCTION__);
     }
-    else if(pRsp->len > reqDataLen )
-    {
-        LOG_W("Need '%d' bytes. Got '%d' to copy.", pRsp->len, reqDataLen);
-        pRsp->len = 0;
-        status = FALSE;
-    }
+    pRsp->len = pRx_EseCntx->responseBytesRcvd;
     phNxpEseProto7816_3_Var.phNxpEseProto7816_CurrentState = PH_NXP_ESE_PROTO_7816_IDLE;
     return status;
 }
@@ -1435,7 +1458,8 @@ bool_t phNxpEseProto7816_Open(void* conn_ctx, phNxpEseProto7816InitParam_t initP
     /*Intialise the buffers before hand so that we are able to receive data
     if RSync goes to recovery handling*/
     pRx_EseCntx->pRsp = AtrRsp;
-    pRx_EseCntx->pRsp->len = 0;
+    pRx_EseCntx->pRsp->len = AtrRsp->len;
+    pRx_EseCntx->responseBytesRcvd = 0;
     if(initParam.interfaceReset) /* Do interface reset */
     {
         /*After power ON , initialization state takes 5ms after which slave enters active
@@ -1463,6 +1487,7 @@ bool_t phNxpEseProto7816_Open(void* conn_ctx, phNxpEseProto7816InitParam_t initP
     {
         status = phNxpEseProto7816_RSync(conn_ctx);
     }
+    AtrRsp->len = pRx_EseCntx->responseBytesRcvd;
     return status;
 }
 
@@ -1535,9 +1560,11 @@ bool_t phNxpEseProto7816_IntfReset(void* conn_ctx, phNxpEse_data *AtrRsp)
     pNextTx_SframeInfo->sFrameType = INTF_RESET_REQ;
     phNxpEseProto7816_3_Var.phNxpEseProto7816_nextTransceiveState = SEND_S_INTF_RST;
     pRx_EseCntx->pRsp = AtrRsp;
-    pRx_EseCntx->pRsp->len = 0;
+    pRx_EseCntx->pRsp->len = AtrRsp->len;
+    pRx_EseCntx->responseBytesRcvd = 0;
     phNxpEse_clearReadBuffer(conn_ctx);
     status = TransceiveProcess(conn_ctx);
+    AtrRsp->len = pRx_EseCntx->responseBytesRcvd;
     if(FALSE == status)
     {
         /* reset all the structures */
@@ -1563,11 +1590,13 @@ bool_t phNxpEseProto7816_ChipReset(void* conn_ctx)
 {
     bool_t status = FALSE;
     sFrameInfo_t *pNextTx_SframeInfo = &phNxpEseProto7816_3_Var.phNxpEseNextTx_Cntx.SframeInfo;
+    phNxpEseRx_Cntx_t *pRx_EseCntx = &phNxpEseProto7816_3_Var.phNxpEseRx_Cntx;
 
     phNxpEseProto7816_3_Var.phNxpEseProto7816_CurrentState = PH_NXP_ESE_PROTO_7816_TRANSCEIVE;
     phNxpEseProto7816_3_Var.phNxpEseNextTx_Cntx.FrameType= SFRAME;
     pNextTx_SframeInfo->sFrameType = CHIP_RESET_REQ;
     phNxpEseProto7816_3_Var.phNxpEseProto7816_nextTransceiveState = SEND_S_CHIP_RST;
+    pRx_EseCntx->pRsp = NULL;
     status = TransceiveProcess(conn_ctx);
     if(FALSE == status)
     {
@@ -1594,11 +1623,13 @@ bool_t phNxpEseProto7816_SoftReset(void* conn_ctx)
 {
     bool_t status = FALSE;
     sFrameInfo_t *pNextTx_SframeInfo = &phNxpEseProto7816_3_Var.phNxpEseNextTx_Cntx.SframeInfo;
+    phNxpEseRx_Cntx_t *pRx_EseCntx = &phNxpEseProto7816_3_Var.phNxpEseRx_Cntx;
 
     phNxpEseProto7816_3_Var.phNxpEseProto7816_CurrentState = PH_NXP_ESE_PROTO_7816_TRANSCEIVE;
     phNxpEseProto7816_3_Var.phNxpEseNextTx_Cntx.FrameType= SFRAME;
     pNextTx_SframeInfo->sFrameType = SWR_REQ;
     phNxpEseProto7816_3_Var.phNxpEseProto7816_nextTransceiveState = SEND_S_SWR;
+    pRx_EseCntx->pRsp = NULL;
     phNxpEse_clearReadBuffer(conn_ctx);
     status = TransceiveProcess(conn_ctx);
     if(FALSE == status)
@@ -1625,11 +1656,13 @@ bool_t phNxpEseProto7816_ColdReset(void* conn_ctx)
 {
     bool_t status = FALSE;
     sFrameInfo_t *pNextTx_SframeInfo = &phNxpEseProto7816_3_Var.phNxpEseNextTx_Cntx.SframeInfo;
+    phNxpEseRx_Cntx_t *pRx_EseCntx = &phNxpEseProto7816_3_Var.phNxpEseRx_Cntx;
 
     phNxpEseProto7816_3_Var.phNxpEseProto7816_CurrentState = PH_NXP_ESE_PROTO_7816_TRANSCEIVE;
     phNxpEseProto7816_3_Var.phNxpEseNextTx_Cntx.FrameType= SFRAME;
     pNextTx_SframeInfo->sFrameType = COLD_RESET_REQ;
     phNxpEseProto7816_3_Var.phNxpEseProto7816_nextTransceiveState = SEND_S_COLD_RST;
+    pRx_EseCntx->pRsp = NULL;
     status = TransceiveProcess(conn_ctx);
     if(FALSE == status)
     {
@@ -1681,8 +1714,10 @@ bool_t phNxpEseProto7816_GetAtr(void* conn_ctx, phNxpEse_data *pRsp)
     pNextTx_SframeInfo->sFrameType = ATR_REQ;
     phNxpEseProto7816_3_Var.phNxpEseProto7816_nextTransceiveState = SEND_S_ATR;
     pRx_EseCntx->pRsp = pRsp;
-    pRx_EseCntx->pRsp->len = 0;
+    pRx_EseCntx->pRsp->len = pRsp->len;
+    pRx_EseCntx->responseBytesRcvd = 0;
     status = TransceiveProcess(conn_ctx);
+    pRsp->len = pRx_EseCntx->responseBytesRcvd;
     if(FALSE == status)
     {
         /* reset all the structures */
@@ -1717,8 +1752,10 @@ bool_t phNxpEseProto7816_GetCip(void* conn_ctx, phNxpEse_data *pRsp)
     pNextTx_SframeInfo->sFrameType = CIP_REQ;
     phNxpEseProto7816_3_Var.phNxpEseProto7816_nextTransceiveState = SEND_S_CIP;
     pRx_EseCntx->pRsp = pRsp;
-    pRx_EseCntx->pRsp->len = 0;
+    pRx_EseCntx->pRsp->len = pRsp->len;
+    pRx_EseCntx->responseBytesRcvd = 0;
     status = TransceiveProcess(conn_ctx);
+    pRsp->len = pRx_EseCntx->responseBytesRcvd;
     if(FALSE == status)
     {
         /* reset all the structures */

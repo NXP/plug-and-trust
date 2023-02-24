@@ -1562,6 +1562,9 @@ sss_status_t sss_se05x_derive_key_dh(
     if (pubkeylen > publicKeyIndex) {
         pPublicKey = &pubkey[publicKeyIndex];
     }
+    else {
+        goto exit;
+    }
 #if SSS_HAVE_SE05X_VER_GTE_06_00
 #if SSS_HAVE_EC_MONT
     if (otherPartyKeyObject->cipherType == kSSS_CipherType_EC_MONTGOMERY) {
@@ -5240,6 +5243,9 @@ sss_status_t sss_se05x_asymmetric_sign(
             if (offset + (*destLen >> 1) - 1 - keyValueIdx < *destLen) {
                 destData[offset + (*destLen >> 1) - 1 - keyValueIdx] = swapByte;
             }
+            else {
+                return kStatus_SSS_Fail;
+            }
         }
 
         offset = *destLen >> 1;
@@ -5521,6 +5527,9 @@ sss_status_t sss_se05x_asymmetric_verify(
                 signature[offset + keyValueIdx] = signature[offset + (signatureLen >> 1) - 1 - keyValueIdx];
                 signature[offset + (signatureLen >> 1) - 1 - keyValueIdx] = swapByte;
             }
+            else {
+                return kStatus_SSS_Fail;
+            }
         }
 
         offset = signatureLen >> 1;
@@ -5533,6 +5542,9 @@ sss_status_t sss_se05x_asymmetric_verify(
             signature[offset + keyValueIdx] = signature[offset + (signatureLen >> 1) - 1 - keyValueIdx];
             if (offset + (signatureLen >> 1) - 1 - keyValueIdx < signatureLen) {
                 signature[offset + (signatureLen >> 1) - 1 - keyValueIdx] = swapByte;
+            }
+            else {
+                return kStatus_SSS_Fail;
             }
         }
 

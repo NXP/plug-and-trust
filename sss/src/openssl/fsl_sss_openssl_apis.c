@@ -3163,6 +3163,8 @@ sss_status_t sss_openssl_mac_one_go(
                 break;
             default:
                 LOG_E("Key length not supported");
+                retval = kStatus_SSS_Fail;
+                goto cleanup;
             }
 
             ret = CMAC_Init(
@@ -3363,6 +3365,8 @@ sss_status_t sss_openssl_mac_init(sss_openssl_mac_t *context)
             break;
         default:
             LOG_E("Key length not supported");
+            retval = kStatus_SSS_Fail;
+            goto cleanup;
         }
 
         if (context->cmac_ctx) {

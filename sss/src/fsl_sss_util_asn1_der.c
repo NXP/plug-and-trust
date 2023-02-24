@@ -379,6 +379,7 @@ sss_status_t sss_util_asn1_rsa_parse_private(const uint8_t *key,
         }
     }
     else {
+        ENSURE_OR_GO_EXIT((UINT_MAX - bufIndex) >= taglen);
         bufIndex += taglen;
     }
 

@@ -1,6 +1,12 @@
 # Plug-And-Trust Mini Package Change Log
 
 
+## Release v04.03.01
+
+**Important Security Updates**
+
+- Added security fixes on 24 Feb 2023 to prevent buffer overflow on the T=IoI2C stack. It is important to use the updated "hostlib\hostLib\libCommon\smCom\T1oI2C\” and smCom module.
+
 ## Release v04.03.00
 
 - OpenSSL 3.0 support in SSS OpenSSL layer. Added OpenSSL version selection (1.1 and 3.0) in feature file.
