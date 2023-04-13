@@ -24,7 +24,7 @@ ex_sss_boot_ctx_t gex_sss_chip_ctx;
 void se05x_read_cert(void)
 {
   sss_status_t status = kStatus_SSS_Success;
-  const char *portName = nullptr;
+  char *portName = nullptr;
   sss_object_t keyObject = { 0 };
   uint8_t buf[CERT_BUFFER_LEN] = {0};
   size_t buflen = sizeof(buf);
