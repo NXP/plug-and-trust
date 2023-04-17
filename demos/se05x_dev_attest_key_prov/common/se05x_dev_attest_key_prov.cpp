@@ -175,7 +175,7 @@ void fill_tbs_buffer(uint8_t *buffer, uint32_t keyid, uint8_t *offset) {
 
 void se05x_dev_attest_key_prov(void) {
   sss_status_t status = kStatus_SSS_Success;
-  const char *portName = nullptr;
+  char *portName = nullptr;
 
   memset(&gex_sss_chip_ctx, 0, sizeof(gex_sss_chip_ctx));
 

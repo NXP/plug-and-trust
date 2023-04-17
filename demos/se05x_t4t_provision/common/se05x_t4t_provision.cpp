@@ -31,7 +31,7 @@ ex_sss_boot_ctx_t gex_sss_chip_ctx;
 void se05x_t4t_provision(void)
 {
   sss_status_t status = kStatus_SSS_Success;
-  const char *portName = nullptr;
+  char *portName = nullptr;
   smStatus_t smStatus       = SM_NOT_OK;
   sss_se05x_session_t *pCtx = NULL;
   uint8_t ndeffileId[2]     = NDEF_FILE_ID;
