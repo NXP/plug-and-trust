@@ -168,6 +168,14 @@
 #endif
 
 
+#if (( 0                             \
+    + SSS_HAVE_HOSTCRYPTO_MBEDTLS    \
+    + SSS_HAVE_HOSTCRYPTO_OPENSSL    \
+    + SSS_HAVE_HOSTCRYPTO_USER       \
+    + SSS_HAVE_HOSTCRYPTO_NONE       \
+    ) == 0)
+#        error "Enable at-least one of 'PTMW_HostCrypto'"
+#endif
 
 
 
@@ -178,7 +186,7 @@
  */
 
 /** Use SSS Layer ALT implementation */
-#define SSS_HAVE_MBEDTLS_ALT_SSS 1
+#define SSS_HAVE_MBEDTLS_ALT_SSS 0
 
 /** Legacy implementation */
 #define SSS_HAVE_MBEDTLS_ALT_A71CH 0
@@ -189,7 +197,7 @@
 /** Not using any mbedTLS_ALT
  *
  * When this is selected, cloud demos can not work with mbedTLS */
-#define SSS_HAVE_MBEDTLS_ALT_NONE 0
+#define SSS_HAVE_MBEDTLS_ALT_NONE 1
 
 #if (( 0                             \
     + SSS_HAVE_MBEDTLS_ALT_SSS       \
@@ -218,7 +226,7 @@
  */
 
 /**  */
-#define SSS_HAVE_SCP_NONE 0
+#define SSS_HAVE_SCP_NONE 1
 
 /** Use SSS Layer for SCP.  Used for SE050 family. */
 #define SSS_HAVE_SCP_SCP03_SSS 0
@@ -233,6 +241,16 @@
     ) > 1)
 #        error "Enable only one of 'PTMW_SCP'"
 #endif
+
+
+#if (( 0                             \
+    + SSS_HAVE_SCP_NONE              \
+    + SSS_HAVE_SCP_SCP03_SSS         \
+    + SSS_HAVE_SCP_SCP03_HOSTCRYPTO  \
+    ) == 0)
+#        error "Enable at-least one of 'PTMW_SCP'"
+#endif
+
 
 
 /** PTMW_FIPS : Enable or disable FIPS
