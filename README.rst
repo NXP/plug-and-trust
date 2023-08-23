@@ -43,8 +43,6 @@ The folder structure of mini package is as under::
     │       │   ├───nxScp
     │       │   └───smCom
     │       │       └───T1oI2C
-    │       ├───mbedtls
-    │       │   └───src
     │       ├───platform
     │       │   ├───generic
     │       │   ├───inc
@@ -59,8 +57,6 @@ The folder structure of mini package is as under::
         │   ├───inc
         │   └───src
         ├───inc
-        ├───plugin
-        │   └───mbedtls
         ├───port
         │   └───default
         └───src
@@ -71,7 +67,7 @@ The folder structure of mini package is as under::
 
 Important folders are as under:
 
-:ecc_example:  ecc sign and verify example. (Tested on Raspberry Pi with openssl 1.1.1)
+:ecc_example:  ECC sign and verify example. (Tested on Raspberry Pi)
 
 :hostlib:  This folder contains the common part of host library e.g. ``T=1oI2C`` communication
            protocol stack, SE050 APIs, etc.
@@ -90,8 +86,9 @@ ECC example
 -------------------------------------------------------------
 
 This example demonstrates Elliptic Curve Cryptography sign and verify
-operation using SSS APIs. (``/sss/ex/ecc/ex_sss_ecc.c``) Execute the command
-below to test the ecc example::
+operation using SSS APIs (``/sss/ex/ecc/ex_sss_ecc.c``).
+
+Execute the command below to test the ecc example ::
 
     cd ecc_example
     mkdir build
@@ -100,195 +97,117 @@ below to test the ecc example::
     cmake --build .
     ./ex_ecc
 
+Refer **`CMAKE Options` section** to configure the middleware for different applets / session authentication / host crypto.
+
 
 Build Applications using Mini Package
 -------------------------------------------------------------
 
-Use the source file in `sss/ex` folder to open the session to se05x.
-Applications code should start with function `ex_sss_entry`::
+Before using the SE05x for any crypto operarions, applications are required to open a session.
+Use the following APIs (from ``sss\ex\inc\ex_sss_boot.h``) to do a session open.
+Refer **`CMAKE Options` section** for more details on Session Authentication).
+
+..  code-block:: c
+
+    sss_status_t ex_sss_boot_connectstring(int argc, const char *argv[], char **pPortName);
+
+    sss_status_t ex_sss_boot_open(ex_sss_boot_ctx_t *pCtx, const char *portName);
+
+    sss_status_t ex_sss_key_store_and_object_init(ex_sss_boot_ctx_t *pCtx);
+
+The above apis will abstract all the necessary actions required to perform a session open to SE05x.
+
+Alternatively, you can simply inlcude the header file ``ex_sss_main_inc.h`` which uses the above APIs to perform the session open to se05x.
+
+Refer ecc example - ``/sss/ex/ecc/ex_sss_ecc.c``.
+
+Applications code can start with function `ex_sss_entry`.
+
+..  code-block:: c
 
     sss_status_t ex_sss_entry(ex_sss_boot_ctx_t *pCtx)
 
-Refer the example `ecc_example`.
-Example File - `/sss/ex/ecc/ex_sss_ecc.c`
 
+CMAKE Options
+--------------
 
-Use the below macros in ``fsl_sss_ftr.h`` file to enable support for either SE050 or SE051. ::
+PTMW_Applet
+************
+::
 
-    /** SE050 */
-    #define SSS_HAVE_SE05X_VER_03_XX 1
+    Secure Element Applet
 
-    /** SE051 */
-    #define SSS_HAVE_SE05X_VER_06_00 0
+    You can compile middleware library for different Applets listed below.
 
-    /** SE051 */
-    #define SSS_HAVE_SE05X_VER_07_02 0
+    ``-DPTMW_Applet=SE05X_A``: SE050 Type A (ECC)
 
+    ``-DPTMW_Applet=SE05X_B``: SE050 Type B (RSA)
 
-To enable authenticated session to SE05x, make the following changes,
+    ``-DPTMW_Applet=SE05X_C``: SE050 (Super set of A + B)
 
-1. Enable any host crypto (Mbedtls or openssl or User crypto) in
-   ``fsl_sss_ftr.h`` file. Refer,
+    ``-DPTMW_Applet=SE051_H``: SE051 with SPAKE Support
 
-- For Openssl:     Refer section - *Openssl host crypto in mini package*
-- For Mbedtls:     Refer section - *Mbedtls host crypto in mini package*
-- For User Crypto: Refer section - *User host crypto in mini package*
+    ``-DPTMW_Applet=AUTH``: AUTH
 
+    ``-DPTMW_Applet=SE050_E``: SE050E
 
-2. Enable the below macros in ``fsl_sss_ftr.h`` file:
+PTMW_SE05X_Ver
+**************
+::
 
-- ``#define SSS_HAVE_SCP_SCP03_SSS 1``
-- ``#define SSSFTR_SE05X_AuthSession 1``
+    SE05X Applet version.
 
-3. Below settings can be used to authenticate with SE (Refer SE050 - User
-   Guidelines in https://www.nxp.com/products/:SE050 for more details on session
-   authentication)
+    Selection of Applet version 03_XX enables SE050 features.
+    Selection of Applet version 06_00 and 07_00 enables SE051 features.
 
-- ``SSS_HAVE_SE05X_AUTH_USERID``
-- ``SSS_HAVE_SE05X_AUTH_AESKEY``
-- ``SSS_HAVE_SE05X_AUTH_ECKEY``
-- ``SSS_HAVE_SE05X_AUTH_PLATFSCP03``
-- ``SSS_HAVE_SE05X_AUTH_USERID_PLATFSCP03``
-- ``SSS_HAVE_SE05X_AUTH_AESKEY_PLATFSCP03``
-- ``SSS_HAVE_SE05X_AUTH_ECKEY_PLATFSCP03``
+    ``-DPTMW_SE05X_Ver=03_XX``: SE050
 
+    ``-DPTMW_SE05X_Ver=06_00``: SE051
 
-4. Include the below source files for autheticated session open,
+    ``-DPTMW_SE05X_Ver=07_02``: SE051
 
-- ``sss/ex/src/ex_sss_scp03_auth.c``
-- ``sss/src/se05x/fsl_sss_se05x_eckey.c``
-- ``sss/src/se05x/fsl_sss_se05x_scp03.c``
-- ``hostlib/hostLib/libCommon/nxScp/nxScp03_Com.c``
+PTMW_HostCrypto
+***************
+::
 
+    Counterpart Crypto on Host
 
-Openssl host crypto in mini package
--------------------------------------------------------------
+    What is being used as a cryptographic library on the host.
+    As of now only OpenSSL / mbedTLS is supported
 
-Enable/disable the openssl host crypto by changing the below definition in
-``fsl_sss_ftr.h`` file::
+    ``-DPTMW_HostCrypto=MBEDTLS``: Use mbedTLS as host crypto
 
-    /** Use OpenSSL as host crypto */
-    #define SSS_HAVE_HOSTCRYPTO_OPENSSL 1
+    ``-DPTMW_HostCrypto=OPENSSL``: Use OpenSSL as host crypto
 
-Include the below files for openssl host crypto support
-- ``sss/src/openssl/fsl_sss_openssl_apis.c``
-- ``sss/src/keystore/keystore_cmn.c``
-- ``sss/src/keystore/keystore_openssl.c``
-- ``sss/src/keystore/keystore_pc.c``
+    ``-DPTMW_HostCrypto=None``: NO Host Crypto
 
-Link the openssl library (version 1.1) as,
-    TARGET_LINK_LIBRARIES(${PROJECT_NAME} ssl crypto)
+PTMW_SE05X_Auth
+***************
+::
 
+    SE05x Authentication
 
-Mbedtls host crypto in mini package
--------------------------------------------------------------
+    This settings is used by examples to connect using various options
+    to authenticate with the Applet.
+    Make sure you set PTMW_HostCrypto to Openssl / Mbedtls to use any Authentication.
 
-Enable/disable the mbedtls host crypto by changing the below definition in
-``fsl_sss_ftr.h`` file::
+    ``-DPTMW_SE05X_Auth=None``: Use the default session (i.e. session less) login
 
-    /** Use mbedTLS as host crypto */
-    #define SSS_HAVE_HOSTCRYPTO_MBEDTLS 1
+    ``-DPTMW_SE05X_Auth=UserID``: Do User Authentication with UserID
 
-Include the below file for mbedtls host crypto support,
+    ``-DPTMW_SE05X_Auth=PlatfSCP03``: Use Platform SCP for connection to SE
 
-- ``sss/src/mbedtls/fsl_sss_mbedtls_apis.c``
-- ``sss/src/keystore/keystore_pc.c``
-- ``sss/src/keystore/keystore_cmn.c``
+    ``-DPTMW_SE05X_Auth=AESKey``: Do User Authentication with AES Key
+        Earlier this was called AppletSCP03
 
-Mbedtls applications depend on the following files to use se05x for crypto
-operations. Include the following files for compilation along with the mbedtls
-stack. (Tested with mbedtls-2.26.0). Mbedtls client server example using the
-below files is expalined in the next section,
+    ``-DPTMW_SE05X_Auth=ECKey``: Do User Authentication with EC Key
+        Earlier this was called FastSCP
 
-- ``/hostlib/hostLib/mbedtls/src/ecdh_alt.c``
-- ``/hostlib/hostLib/mbedtls/src/rsa_alt.c``
-- ``/sss/plugin/mbedtls/ecdh_alt_ax.c``
-- ``/sss/plugin/mbedtls/sss_mbedtls.c``
-- ``/sss/plugin/mbedtls/sss_mbedtls_rsa.c``
-- ``/sss/plugin/mbedtls/port/ksdk/ecp_curves_alt.c``
-- ``/sss/plugin/mbedtls/port/ksdk/ecp_alt.c``
+    ``-DPTMW_SE05X_Auth=UserID_PlatfSCP03``: UserID and PlatfSCP03
 
-Note: Exclude the file ``mbedtls/library/ecdh.c`` from mbedtls stack for compilation.
+    ``-DPTMW_SE05X_Auth=AESKey_PlatfSCP03``: AESKey and PlatfSCP03
 
-Also add compile defination ``MBEDTLS_CONFIG_FILE`` to use the correct mbedtls config file::
-
-    TARGET_COMPILE_DEFINITIONS(
-        ${PROJECT_NAME}
-        PUBLIC
-        MBEDTLS_USER_CONFIG_FILE=\"sss_mbedtls_x86_config.h\"
-    )
-
-.. note::
-
-    Remove linking the openssl library in ``ecc_example/CMakeLists.txt``, if
-    the example is built for mbedtls, ``TARGET_LINK_LIBRARIES(${PROJECT_NAME}
-    ssl crypto)``
-
-
-
-TLS Client Server Example using MbedTLS stack
--------------------------------------------------------------
-
-This example demonstrates TLS client server connection using mbedtls stack.
-(``mbedtls_cli_srv``). Mbedtls client example is modified to use the
-client key and certificates from secure element. Modified mbedtls client
-example - ``sss/ex/mbedtls/ex_sss_ssl2.c``
-
-Prerequisite for the demo:
-
-- Copy mbedtls (``mbedtls-2.26.0``) stack to ``ext/`` location,
-- client key provisoned inside SE050 with key id ``0x20181001``,
-- client certificate provisoned inside SE050 with key id ``0x20181002``,
-- Root CA public key provisoned inside SE050 with key id ``0x7DCCBB22``,
-
-Enable mbedtls host crypto in ``fsl_sss_ftr.h`` file.  Execute the command
-below to build mbedtls client and server examples::
-
-    cd mbedtls_cli_srv
-    mkdir build
-    cd build
-    cmake ..
-    cmake --build .
-
-
-Run mbedtls server as::
-
-    ./ssl2_server exchanges=1 \
-        force_version=tls1_2 \
-        debug_level=1 \
-        ca_file=<ROOT_CA_CERT> \
-        auth_mode=required \
-        key_file=<SERVER_KEY> \
-        crt_file=<SERVER_CERT>
-
-Run mbedtls client as::
-
-    ./ssl2_client server_name=localhost \
-        exchanges=1 \
-        force_version=tls1_2 \
-        debug_level=1 \
-        ca_file=<ROOT_CA_CERT> \
-        auth_mode=required \
-        key_file=none \
-        crt_file=none \
-        force_ciphersuite=TLS-ECDH-ECDSA-WITH-AES-128-CBC-SHA \
-        curves=secp256r1 none
-
-
-
-User host crypto in mini package
--------------------------------------------------------------
-
-Enable/disable the user host crypto by changing the below definition in ``fsl_sss_ftr.h`` file::
-
-    #define SSS_HAVE_HOSTCRYPTO_USER 1
-
-On enabling HOSTCRYPTO_USER, the user has to implement the required cryptographic function.
-Implement the functions declared in file ``sss/inc/fsl_sss_user_apis.h``.
-
-Refer Openssl host crypto implementation in - ``sss/src/mbedtls/fsl_sss_openssl_apis.c``.
-Refer Mbedtls host crypto implementation in - ``sss/src/mbedtls/fsl_sss_mbedtls_apis.c``.
-
+    ``-DPTMW_SE05X_Auth=ECKey_PlatfSCP03``: ECKey and PlatfSCP03
 
 
 Port Mini package to different platform
@@ -300,36 +219,3 @@ ported. Exsisting implementation for i2c read/write on Raspberry Pi is in -
 
 Other file that may require porting is -
 ``hostlib/hostLib/platform/generic/sm_timer.c``
-
-
-
-Memory Details
--------------------------------------------------------------
-
-Memory details of ex_ecc example on Raspberry Pi built with,
-
-- Openssl hostcrypto
-- Plain session
-- Applet - 07_02
-
-::
-
-    Text segment -- 232780 Bytes
-    Data segment -- 416 Bytes
-    Bss segment --- 3028 Bytes
-    Total  -------- 236224 Bytes
-
-
-Memory details of ex_ecc example on Raspberry Pi built with
-
-- Openssl hostcrypto
-- PlatformSCP + ECKey (SSS_HAVE_SE05X_AUTH_ECKEY_PLATFSCP03) session
-- Applet - 07_02
-
-::
-
-    Text segment -- 356455 Bytes
-    Data segment -- 1036 Bytes
-    Bss segment --- 4136 Bytes
-    Total  -------- 361627 Bytes
-

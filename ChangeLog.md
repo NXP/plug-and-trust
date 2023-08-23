@@ -1,6 +1,21 @@
 # Plug-And-Trust Mini Package Change Log
 
 
+## Release v04.04.00
+
+- Fixes for compilation warnings and static analysis findings.
+
+- Feature configurations via cmake​. Refer readme for more details.
+
+- Memory leak fixes in SSS OpenSSL APIs.
+
+- T1OI2C read retry ON I2C_FAILED error. Also retry count is increased.
+
+- added optional workaround for SE050A/B/C/F for I2C communication. Enabled via define T1OI2C_SEND_SHORT_APDU.
+
+- Mbedtls ALT files and Mbedtls client server example removed.
+
+
 ## Release v04.03.01
 
 **Important Security Updates**
