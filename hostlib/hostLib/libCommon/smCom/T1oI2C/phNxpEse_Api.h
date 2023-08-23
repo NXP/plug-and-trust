@@ -28,6 +28,10 @@
 
 #include "phEseStatus.h"
 
+
+// Workaround for SE050 I2C errata I2C.1 and I2C.2 (https://www.nxp.com/docs/en/errata/SE050_Erratasheet.pdf)
+// #define T1OI2C_SEND_SHORT_APDU
+
 /**
  *
  * \brief Ese data buffer
