@@ -52,7 +52,7 @@
 /*!
  * \brief Max retry count for Write
  */
-#define MAX_RETRY_COUNT   3
+#define MAX_RETRY_COUNT   8
 
 /*!
  * \brief ESE wakeup delay in case of write error retry

@@ -130,8 +130,8 @@ retry:
 *******************************************************************************/
 int phPalEse_i2c_read(void *pDevHandle, uint8_t *pBuffer, int nNbBytesToRead)
 {
-    int ret = -1, retryCount = 0;
-    ;
+    int ret = -1;
+    int retryCount = 0;
     int numRead = 0;
     LOG_D("%s Read Requested %d bytes ", __FUNCTION__, nNbBytesToRead);
     //sm_sleep(ESE_POLL_DELAY_MS);
@@ -139,7 +139,13 @@ int phPalEse_i2c_read(void *pDevHandle, uint8_t *pBuffer, int nNbBytesToRead)
         ret = axI2CRead(pDevHandle, I2C_BUS_0, SMCOM_I2C_ADDRESS, pBuffer, nNbBytesToRead);
         if (ret != I2C_OK) {
             LOG_D("_i2c_read() error : %d ", ret);
+            /* if platform returns different error codes, modify the check below.*/
+            /* Also adjust the retry count based on the platform */
+#ifdef T1OI2C_RETRY_ON_I2C_FAILED
+            if (((ret == I2C_FAILED) || (ret == I2C_NACK_ON_ADDRESS)) && (retryCount < MAX_RETRY_COUNT)) {
+#else
             if ((ret == I2C_NACK_ON_ADDRESS) && (retryCount < MAX_RETRY_COUNT)) {
+#endif
                 retryCount++;
                 /* 1ms delay to give ESE polling delay */
                 /*i2c driver back off delay is providing 1ms wait time so ignoring waiting time at this level*/
