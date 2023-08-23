@@ -25,7 +25,10 @@ void axReset_HostConfigure()
         return;
     }
     /* Export GPIO pin to toggle */
-    snprintf(buf, sizeof(buf), "%d", EN_PIN);
+    if (snprintf(buf, sizeof(buf), "%d", EN_PIN) < 0) {
+        perror("snprintf failed");
+        return;
+    }
     if (write(fd, buf, strlen(buf)) < 1) {
         perror("Failed to export Enable pin ");
         goto exit;
@@ -33,7 +36,10 @@ void axReset_HostConfigure()
     close(fd);
 
     /* Open direction file to configure GPIO direction */
-    snprintf(buf, sizeof(buf), "/sys/class/gpio/gpio%d/direction", EN_PIN);
+    if (snprintf(buf, sizeof(buf), "/sys/class/gpio/gpio%d/direction", EN_PIN) < 0) {
+        perror("snprintf failed");
+        return;
+    }
     fd = open(buf, O_WRONLY);
     if (fd < 0) {
         sm_usleep(1000 * 1000);
@@ -66,7 +72,10 @@ void axReset_HostUnconfigure()
         return;
     }
 
-    snprintf(buf, sizeof(buf), "%d", EN_PIN);
+    if (snprintf(buf, sizeof(buf), "%d", EN_PIN) < 0) {
+        perror("snprintf error");
+        return;
+    }
     if (write(fd, buf, strlen(buf)) < 1) {
         perror("Failed to unexport GPIO ");
     }
@@ -98,7 +107,10 @@ void axReset_PowerDown()
     int fd;
     char buf[50];
     char logic[10];
-    snprintf(buf, sizeof(buf), "/sys/class/gpio/gpio%d/value", EN_PIN);
+    if (snprintf(buf, sizeof(buf), "/sys/class/gpio/gpio%d/value", EN_PIN) < 0) {
+        perror("snprintf failed");
+        return;
+    }
     fd = open(buf, O_WRONLY);
     if (fd < 0) {
         perror("Failed to open GPIO value file ");
@@ -106,7 +118,10 @@ void axReset_PowerDown()
         return;
     }
 
-    snprintf(logic, sizeof(logic), "%d", !SE_RESET_LOGIC);
+    if (snprintf(logic, sizeof(logic), "%d", !SE_RESET_LOGIC) < 0) {
+        perror("snprintf failed");
+        return;
+    }
     if (write(fd, logic, 1) < 1) {
         perror("Failed to toggle GPIO high ");
         axReset_HostUnconfigure();
@@ -125,7 +140,10 @@ void axReset_PowerUp()
     int fd;
     char buf[50];
     char logic[10];
-    snprintf(buf, sizeof(buf), "/sys/class/gpio/gpio%d/value", EN_PIN);
+    if (snprintf(buf, sizeof(buf), "/sys/class/gpio/gpio%d/value", EN_PIN) < 0) {
+        perror("snprintf failed");
+        return;
+    }
     fd = open(buf, O_WRONLY);
     if (fd < 0) {
         perror("Failed to open GPIO value file ");
@@ -133,7 +151,10 @@ void axReset_PowerUp()
         return;
     }
 
-    snprintf(logic, sizeof(logic), "%d", SE_RESET_LOGIC);
+    if (snprintf(logic, sizeof(logic), "%d", SE_RESET_LOGIC) < 0) {
+        perror("snprintf failed");
+        return;
+    }
     if (write(fd, logic, 1) < 1) {
         perror("Failed to toggle GPIO high ");
         axReset_HostUnconfigure();

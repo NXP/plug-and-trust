@@ -57,12 +57,16 @@ static SemaphoreHandle_t gSmComlock;
 #elif (__GNUC__ && !AX_EMBEDDED)
 #define LOCK_TXN()                                               \
     LOG_D("Trying to Acquire Lock thread: %ld", pthread_self()); \
-    pthread_mutex_lock(&gSmComlock);                             \
+    if (pthread_mutex_lock(&gSmComlock) != 0) {                  \
+        LOG_W("pthread_mutex_lock failed");                      \
+    }                                                            \
     LOG_D("LOCK Acquired by thread: %ld", pthread_self());
 
 #define UNLOCK_TXN()                                                 \
     LOG_D("Trying to Released Lock by thread: %ld", pthread_self()); \
-    pthread_mutex_unlock(&gSmComlock);                               \
+    if (pthread_mutex_unlock(&gSmComlock) != 0) {                    \
+        LOG_W("pthread_mutex_unlock failed");                        \
+    }                                                                \
     LOG_D("LOCK Released by thread: %ld", pthread_self());
 #else
 #define LOCK_TXN() LOG_D("no lock mode");
@@ -106,7 +110,9 @@ void smCom_DeInit(void)
         gSmComlock = NULL;
     }
 #elif (__GNUC__ && !AX_EMBEDDED)
-    pthread_mutex_destroy(&gSmComlock);
+    if (pthread_mutex_destroy(&gSmComlock) != 0) {
+        return;
+    }
 #endif
     pSmCom_Transceive = NULL;
     pSmCom_TransceiveRaw = NULL;

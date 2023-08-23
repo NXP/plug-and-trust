@@ -44,6 +44,9 @@ U16 smComT1oI2C_Close(void *conn_ctx, U8 mode)
      * Since the port information is contained in the conn_ctx,
      * the application must pass conn_ctx to close the connection.
      */
+
+    (void)mode;
+
     if (conn_ctx) {
         status=phNxpEse_EndOfApdu(conn_ctx);
         //status=phNxpEse_chipReset();
@@ -113,6 +116,9 @@ U16 smComT1oI2C_Open(void *conn_ctx, U8 mode, U8 seqCnt, U8 *T1oI2Catr, U16 *T1o
     initParams.initMode = ESE_MODE_NORMAL;
     AtrRsp.len = *T1oI2CatrLen;
     AtrRsp.p_data = T1oI2Catr;
+
+    (void)mode;
+    (void)seqCnt;
 
     if (conn_ctx == NULL) {
         // Connection context is stored in global variable contained in phNxpEse_Api.c

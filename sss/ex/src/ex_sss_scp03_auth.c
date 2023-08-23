@@ -58,6 +58,11 @@ static sss_status_t read_platfscp03_keys_from_file(
 /* *****************************************************************************************************************
 * Public Functions
 * ***************************************************************************************************************** */
+static sss_status_t read_platfscp03_keys_from_file_temp(uint8_t *penc, size_t enc_len, uint8_t *pmac, size_t mac_len)
+{
+    const char *filename = EX_SSS_SCP03_FILE_PATH;
+    return read_platfscp03_keys_from_file(filename, penc, enc_len, pmac, mac_len);
+}
 
 sss_status_t scp03_keys_from_path(uint8_t *penc, size_t enc_len, uint8_t *pmac, size_t mac_len)
 {
@@ -74,8 +79,10 @@ sss_status_t scp03_keys_from_path(uint8_t *penc, size_t enc_len, uint8_t *pmac, 
     if (fp != NULL) {
         // File exists. Get keys from file
         LOG_W("Using SCP03 keys from:'%s' (FILE=%s)", filename, EX_SSS_SCP03_FILE_PATH);
-        fclose(fp);
-        status = read_platfscp03_keys_from_file(filename, penc, enc_len, pmac, mac_len);
+        if (fclose(fp) != 0) {
+            LOG_E("fclose Error");
+        }
+        status = read_platfscp03_keys_from_file_temp(penc, enc_len, pmac, mac_len);
     }
     else {
         // File does not exist. Check env variable
@@ -103,8 +110,11 @@ static sss_status_t read_platfscp03_keys_from_file(
     const char *scp03_file_path, uint8_t *enc, size_t enc_len, uint8_t *mac, size_t mac_len)
 {
     sss_status_t status = kStatus_SSS_Fail;
-
-    FILE *scp_file = fopen(scp03_file_path, "r");
+    FILE *scp_file      = fopen(scp03_file_path, "r");
+    char file_data[1024];
+    char *pdata = &file_data[0];
+    bool hasEnc = false;
+    bool hasMac = false;
 
     if (strstr(scp03_file_path, "..") != NULL) {
         LOG_W("Potential directory traversal");
@@ -115,10 +125,6 @@ static sss_status_t read_platfscp03_keys_from_file(
         status = kStatus_SSS_Fail;
         return status;
     }
-    char file_data[1024];
-    char *pdata = &file_data[0];
-    bool hasEnc = false;
-    bool hasMac = false;
 
     while (fgets(pdata, sizeof(file_data), scp_file)) {
         size_t i = 0, j = 0;
@@ -150,7 +156,9 @@ static sss_status_t read_platfscp03_keys_from_file(
 #endif
             status = Scp03_KeyString_to_Keybuffer(hasEnc, &pdata[i], enc, enc_len);
             if (status != kStatus_SSS_Success) {
-                fclose(scp_file);
+                if (fclose(scp_file) != 0) {
+                    LOG_E("fclose error");
+                }
                 return status;
             }
             hasEnc = true;
@@ -162,7 +170,9 @@ static sss_status_t read_platfscp03_keys_from_file(
 #endif
             status = Scp03_KeyString_to_Keybuffer(hasMac, &pdata[i], mac, mac_len);
             if (status != kStatus_SSS_Success) {
-                fclose(scp_file);
+                if (fclose(scp_file) != 0) {
+                    LOG_E("fclose error");
+                }
                 return status;
             }
             hasMac = true;
@@ -183,12 +193,16 @@ static sss_status_t read_platfscp03_keys_from_file(
         else {
             LOG_E("Unknown key type %s", &pdata[i]);
             status = kStatus_SSS_Fail;
-            fclose(scp_file);
+            if (fclose(scp_file) != 0) {
+                LOG_E("fclose error");
+            }
             return status;
         }
     }
 
-    fclose(scp_file);
+    if (fclose(scp_file) != 0) {
+        LOG_E("fclose error");
+    }
 
     return kStatus_SSS_Success;
 }

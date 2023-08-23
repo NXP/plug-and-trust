@@ -12,13 +12,16 @@
 #include "fsl_sss_ftr_default.h"
 #endif
 
-void ex_sss_main_linux_conf()
+void ex_sss_main_linux_conf(void);
+void ex_sss_main_linux_unconf(void);
+
+void ex_sss_main_linux_conf(void)
 {
     axReset_HostConfigure();
     axReset_PowerUp();
 }
 
-void ex_sss_main_linux_unconf()
+void ex_sss_main_linux_unconf(void)
 {
     axReset_PowerDown();
     axReset_HostUnconfigure();

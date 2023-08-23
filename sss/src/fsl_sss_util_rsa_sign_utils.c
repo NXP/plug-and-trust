@@ -61,7 +61,7 @@ uint8_t pkcs1_v15_encode(
     size_t nb_pad    = 0;
     unsigned char *p = out;
     /* clang-format off */
-    char oid1[16] = { 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, };
+    unsigned char oid1[16] = { 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, };
     /* clang-format on */
     size_t outlength        = 0;
     uint16_t key_size_bytes = 0;
@@ -238,12 +238,7 @@ uint8_t pkcs1_v15_encode_no_hash(
     return 0;
 }
 
-uint8_t sss_mgf_mask_func(uint8_t *dst,
-    size_t dlen,
-    uint8_t *src,
-    size_t slen,
-    sss_algorithm_t sha_algorithm,
-    sss_se05x_asymmetric_t *context)
+uint8_t sss_mgf_mask_func(uint8_t *dst, size_t dlen, uint8_t *src, size_t slen, sss_algorithm_t sha_algorithm)
 {
     uint8_t mask[64] = {
         0,
@@ -251,12 +246,13 @@ uint8_t sss_mgf_mask_func(uint8_t *dst,
     uint8_t counter[4] = {
         0,
     };
-    ;
     uint8_t *p = NULL;
     size_t i, use_len;
     uint8_t ret         = 1;
     sss_status_t status = kStatus_SSS_Fail;
-    sss_digest_t digest;
+    sss_digest_t digest = {
+        0,
+    };
     size_t digestLen           = 512; /* MAX - SHA512*/
     size_t hashlength          = slen;
     sss_session_t host_session = {0};
@@ -276,11 +272,6 @@ uint8_t sss_mgf_mask_func(uint8_t *dst,
         goto exit;
     }
 
-    status = sss_digest_context_init(&digest, &host_session, sha_algorithm, kMode_SSS_Digest);
-    if (status != kStatus_SSS_Success) {
-        goto exit;
-    }
-
     /* Generate and apply dbMask */
     p = dst;
 
@@ -288,6 +279,11 @@ uint8_t sss_mgf_mask_func(uint8_t *dst,
         use_len = hashlength;
         if (dlen < hashlength) {
             use_len = dlen;
+        }
+
+        status = sss_digest_context_init(&digest, &host_session, sha_algorithm, kMode_SSS_Digest);
+        if (status != kStatus_SSS_Success) {
+            goto exit;
         }
 
         status = sss_digest_init(&digest);
@@ -310,6 +306,8 @@ uint8_t sss_mgf_mask_func(uint8_t *dst,
             goto exit;
         }
 
+        sss_digest_context_free(&digest);
+
         for (i = 0; i < use_len; ++i) {
             *p++ ^= mask[i];
         }
@@ -319,11 +317,12 @@ uint8_t sss_mgf_mask_func(uint8_t *dst,
         dlen -= use_len;
     }
 
-    sss_digest_context_free(&digest);
-
     ret = 0;
 
 exit:
+    if (digest.session != NULL) {
+        sss_digest_context_free(&digest);
+    }
     sss_host_session_close(&host_session);
 
     return ret;
@@ -477,8 +476,7 @@ uint8_t emsa_encode(sss_se05x_asymmetric_t *context, const uint8_t *hash, size_t
     }
 
     /* Apply MGF Mask */
-    if (0 !=
-        sss_mgf_mask_func(out + offset, outlength - hashlength - 1 - offset, p, hashlength, sha_algorithm, context)) {
+    if (0 != sss_mgf_mask_func(out + offset, outlength - hashlength - 1 - offset, p, hashlength, sha_algorithm)) {
         goto exit;
     }
 
@@ -574,7 +572,7 @@ uint8_t emsa_decode_and_compare(
     }
     hash_start = p + siglen - hlen - 1;
 
-    if (0 != sss_mgf_mask_func(p, siglen - hlen - 1, hash_start, hlen, sha_algorithm, context)) {
+    if (0 != sss_mgf_mask_func(p, siglen - hlen - 1, hash_start, hlen, sha_algorithm)) {
         goto exit;
     }
 

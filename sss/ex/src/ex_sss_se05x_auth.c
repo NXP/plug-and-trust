@@ -27,9 +27,6 @@
 #include "ex_sss_boot_int.h"
 #include "nxLog_App.h"
 #include "nxScp03_Types.h"
-#if defined(SECURE_WORLD)
-#include "fsl_sss_lpc55s_apis.h"
-#endif
 /* *****************************************************************************************************************
 * Internal Definitions
 * ***************************************************************************************************************** */
@@ -96,12 +93,24 @@ sss_status_t ex_sss_se05x_prepare_host(sss_session_t *host_session,
 {
     sss_status_t status = kStatus_SSS_Fail;
 
+#if SSSFTR_SE05X_AuthSession
+    uint8_t authKey[] = EX_SSS_AUTH_SE05X_UserID_VALUE;
+#endif
+
+#if SSS_HAVE_SCP_SCP03_SSS
+#if SSSFTR_SE05X_AuthECKey
+    uint8_t authEcKey[] = EX_SSS_AUTH_SE05X_KEY_HOST_ECDSA_KEY;
+#endif
+#if SSSFTR_SE05X_AuthSession
+    uint8_t authAESKey[] = EX_SSS_AUTH_SE05X_APPLETSCP_VALUE;
+#endif
+#endif //#if SSS_HAVE_SCP_SCP03_SSS
+
     switch (auth_type) {
     case kSSS_AuthType_ID: {
         se05x_open_ctx->auth.ctx.idobj.pObj = &se05x_auth_ctx->id.ex_id;
 #if SSSFTR_SE05X_AuthSession
-        uint8_t authKey[] = EX_SSS_AUTH_SE05X_UserID_VALUE;
-        status            = ex_sss_se05x_prepare_host_with_key(
+        status = ex_sss_se05x_prepare_host_with_key(
             host_session, host_ks, se05x_open_ctx, se05x_auth_ctx, auth_type, authKey, sizeof(authKey));
 #endif
     } break;
@@ -112,16 +121,14 @@ sss_status_t ex_sss_se05x_prepare_host(sss_session_t *host_session,
         break;
 #if SSSFTR_SE05X_AuthECKey
     case kSSS_AuthType_ECKey: {
-        uint8_t authKey[] = EX_SSS_AUTH_SE05X_KEY_HOST_ECDSA_KEY;
-        status            = ex_sss_se05x_prepare_host_with_key(
-            host_session, host_ks, se05x_open_ctx, se05x_auth_ctx, auth_type, authKey, sizeof(authKey));
+        status = ex_sss_se05x_prepare_host_with_key(
+            host_session, host_ks, se05x_open_ctx, se05x_auth_ctx, auth_type, authEcKey, sizeof(authEcKey));
     } break;
 #endif
     case kSSS_AuthType_AESKey: {
 #if SSSFTR_SE05X_AuthSession
-        uint8_t authKey[] = EX_SSS_AUTH_SE05X_APPLETSCP_VALUE;
-        status            = ex_sss_se05x_prepare_host_with_key(
-            host_session, host_ks, se05x_open_ctx, se05x_auth_ctx, auth_type, authKey, sizeof(authKey));
+        status = ex_sss_se05x_prepare_host_with_key(
+            host_session, host_ks, se05x_open_ctx, se05x_auth_ctx, auth_type, authAESKey, sizeof(authAESKey));
 #endif
     } break;
 #endif
@@ -145,6 +152,9 @@ sss_status_t ex_sss_se05x_prepare_host_with_key(sss_session_t *host_session,
     size_t authKeyLen)
 {
     sss_status_t status = kStatus_SSS_Fail;
+
+    (void)authKey;
+    (void)authKeyLen;
 
     if (host_session->subsystem == kType_SSS_SubSystem_NONE) {
         sss_type_t hostsubsystem = kType_SSS_SubSystem_NONE;
@@ -234,6 +244,14 @@ sss_status_t ex_sss_se05x_prepare_host_keys(sss_session_t *pHostSession,
 {
     sss_status_t status      = kStatus_SSS_Fail;
     sss_type_t hostsubsystem = kType_SSS_SubSystem_NONE;
+#if SSSFTR_SE05X_AuthSession
+    uint8_t *se050Authkey = NULL;
+    size_t authKeyLen;
+    uint8_t Authkey1[] = EX_SSS_AUTH_SE05X_UserID_VALUE;
+    uint8_t Authkey2[] = EX_SSS_AUTH_SE05X_UserID_VALUE2;
+#endif
+
+    (void)Id;
 
 #if SSS_HAVE_HOSTCRYPTO_MBEDTLS
     hostsubsystem = kType_SSS_mbedTLS;
@@ -264,10 +282,6 @@ sss_status_t ex_sss_se05x_prepare_host_keys(sss_session_t *pHostSession,
     case kSSS_AuthType_ID: {
         pConnectCtx->auth.ctx.idobj.pObj = &se05x_auth_ctx->id.ex_id;
 #if SSSFTR_SE05X_AuthSession
-        uint8_t *se050Authkey = NULL;
-        size_t authKeyLen;
-        uint8_t Authkey1[] = EX_SSS_AUTH_SE05X_UserID_VALUE;
-        uint8_t Authkey2[] = EX_SSS_AUTH_SE05X_UserID_VALUE2;
         if (Id == kEX_SSS_ObjID_UserID_Auth) {
             authKeyLen   = sizeof(Authkey1);
             se050Authkey = &Authkey1[0];
@@ -363,7 +377,7 @@ static sss_status_t ex_sss_se05x_prepare_host_userid(
     size_t dataLen   = sizeof(data);
     size_t keyBitLen = sizeof(data) * 8;
 
-    if ((size_t)authKeyLen > (size_t)(1 << ((sizeof(size_t) * 4) - 1))) {
+    if ((size_t)authKeyLen >= (size_t)(1UL << ((sizeof(size_t) * 4) - 1))) {
         goto cleanup;
     }
     if (pObj->keyId != keyId) {
@@ -419,6 +433,8 @@ static sss_status_t ex_sss_se05x_prepare_host_platformscp(
     uint8_t KEY_ENC[]   = EX_SSS_AUTH_SE05X_KEY_ENC;
     uint8_t KEY_MAC[]   = EX_SSS_AUTH_SE05X_KEY_MAC;
     //uint8_t KEY_DEK[]   = EX_SSS_AUTH_SE05X_KEY_DEK;
+    NXSCP03_StaticCtx_t *pStatic_ctx = NULL;
+    NXSCP03_DynCtx_t *pDyn_ctx       = NULL;
 
 #ifdef EX_SSS_SCP03_FILE_PATH
 
@@ -437,10 +453,10 @@ static sss_status_t ex_sss_se05x_prepare_host_platformscp(
 
 #endif // EX_SSS_SCP03_FILE_PATH
 
-    pAuthCtx->pStatic_ctx            = &pEx_auth->scp03.ex_static;
-    pAuthCtx->pDyn_ctx               = &pEx_auth->scp03.ex_dyn;
-    NXSCP03_StaticCtx_t *pStatic_ctx = pAuthCtx->pStatic_ctx;
-    NXSCP03_DynCtx_t *pDyn_ctx       = pAuthCtx->pDyn_ctx;
+    pAuthCtx->pStatic_ctx = &pEx_auth->scp03.ex_static;
+    pAuthCtx->pDyn_ctx    = &pEx_auth->scp03.ex_dyn;
+    pStatic_ctx           = pAuthCtx->pStatic_ctx;
+    pDyn_ctx              = pAuthCtx->pDyn_ctx;
 
     pStatic_ctx->keyVerNo = EX_SSS_AUTH_SE05X_KEY_VERSION_NO;
 
@@ -531,12 +547,16 @@ static sss_status_t ex_sss_se05x_prepare_host_eckey(SE05x_AuthCtx_ECKey_t *pAuth
     uint8_t *hostEcdsakey,
     size_t keylen)
 {
-    sss_status_t status   = kStatus_SSS_Fail;
+    sss_status_t status = kStatus_SSS_Fail;
+
+    NXECKey03_StaticCtx_t *pStatic_ctx = NULL;
+    NXSCP03_DynCtx_t *pDyn_ctx         = NULL;
+
     pAuthCtx->pStatic_ctx = &pEx_auth->eckey.ex_static;
     pAuthCtx->pDyn_ctx    = &pEx_auth->eckey.ex_dyn;
 
-    NXECKey03_StaticCtx_t *pStatic_ctx = pAuthCtx->pStatic_ctx;
-    NXSCP03_DynCtx_t *pDyn_ctx         = pAuthCtx->pDyn_ctx;
+    pStatic_ctx = pAuthCtx->pStatic_ctx;
+    pDyn_ctx    = pAuthCtx->pDyn_ctx;
 
     /* Init allocate Host ECDSA Key pair */
     status = Alloc_ECKeykey_toSE05xAuthctx(&pStatic_ctx->HostEcdsaObj, pKs, MAKE_TEST_ID(__LINE__), kSSS_KeyPart_Pair);
@@ -589,10 +609,12 @@ static sss_status_t ex_sss_se05x_prepare_host_AppletScp03Keys(
     NXSCP03_AuthCtx_t *pAuthCtx, ex_SE05x_authCtx_t *pEx_auth, sss_key_store_t *host_k, uint8_t *authkey)
 {
     sss_status_t status              = kStatus_SSS_Fail;
+    NXSCP03_StaticCtx_t *pStatic_ctx = NULL;
+    NXSCP03_DynCtx_t *pDyn_ctx       = NULL;
     pAuthCtx->pStatic_ctx            = &pEx_auth->scp03.ex_static;
     pAuthCtx->pDyn_ctx               = &pEx_auth->scp03.ex_dyn;
-    NXSCP03_StaticCtx_t *pStatic_ctx = pAuthCtx->pStatic_ctx;
-    NXSCP03_DynCtx_t *pDyn_ctx       = pAuthCtx->pDyn_ctx;
+    pStatic_ctx                      = pAuthCtx->pStatic_ctx;
+    pDyn_ctx                         = pAuthCtx->pDyn_ctx;
 
     /* Init Allocate ENC Static Key */
     status = Alloc_AppletScp03key_toSE05xAuthctx(&pStatic_ctx->Enc, MAKE_TEST_ID(__LINE__), host_k);

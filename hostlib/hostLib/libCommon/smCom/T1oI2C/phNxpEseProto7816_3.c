@@ -178,7 +178,7 @@ static bool_t phNxpEseProto7816_CheckCRC(uint32_t data_len, uint8_t *p_data)
 
     if(data_len < 2)
     {
-        return status;
+        return FALSE;
     }
     recv_crc = p_data[data_len - 2] <<8 | p_data[data_len - 1] ; //combine 2 byte CRC
 
@@ -716,6 +716,7 @@ static bool_t phNxpEseProto7816_DecodeFrame(uint8_t *p_data, uint32_t data_len)
     sFrameInfo_t *pLastTx_SframeInfo = &phNxpEseProto7816_3_Var.phNxpEseLastTx_Cntx.SframeInfo;
     rFrameInfo_t *pRx_lastRcvdRframeInfo = &phNxpEseProto7816_3_Var.phNxpEseRx_Cntx.lastRcvdRframeInfo;
     sFrameInfo_t *pRx_lastRcvdSframeInfo = &phNxpEseProto7816_3_Var.phNxpEseRx_Cntx.lastRcvdSframeInfo;
+    int32_t frameType = 0;
 
     LOG_D("Retry Counter = %d ", phNxpEseProto7816_3_Var.recoveryCounter);
 
@@ -881,7 +882,7 @@ static bool_t phNxpEseProto7816_DecodeFrame(uint8_t *p_data, uint32_t data_len)
     else if ((0x01 == pcb_bits.msb) && (0x01 == pcb_bits.bit7)) /* S-FRAME decoded should come here */
     {
         LOG_D("%s S-Frame Received ", __FUNCTION__);
-        int32_t frameType = (int32_t)(pcb & 0x3F); /*discard upper 2 bits */
+        frameType = (int32_t)(pcb & 0x3F); /*discard upper 2 bits */
         phNxpEseProto7816_3_Var.phNxpEseRx_Cntx.lastRcvdFrameType = SFRAME;
         if(frameType!=WTX_REQ)
         {
@@ -1335,6 +1336,9 @@ bool_t phNxpEseProto7816_Transceive(void* conn_ctx, phNxpEse_data *pCmd, phNxpEs
     {
         /* ESE hard reset to be done */
         LOG_E("%s Transceive failed, hard reset to proceed ",__FUNCTION__);
+    }
+    if (pRx_EseCntx->responseBytesRcvd > UINT32_MAX) {
+        return FALSE;
     }
     pRsp->len = pRx_EseCntx->responseBytesRcvd;
     phNxpEseProto7816_3_Var.phNxpEseProto7816_CurrentState = PH_NXP_ESE_PROTO_7816_IDLE;

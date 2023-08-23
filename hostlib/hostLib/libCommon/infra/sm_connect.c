@@ -318,6 +318,12 @@ U16 SM_RjctConnectPCSC(void **conn_ctx, const char *connectString, SmCommState_t
 
 U16 SM_RjctConnect(void **conn_ctx, const char *connectString, SmCommState_t *commState, U8 *atr, U16 *atrLen)
 {
+    AX_UNUSED_ARG(conn_ctx);
+    AX_UNUSED_ARG(connectString);
+    AX_UNUSED_ARG(commState);
+    AX_UNUSED_ARG(atr);
+    AX_UNUSED_ARG(atrLen);
+
 #if (defined(RJCT_VCOM) && (RJCT_VCOM == 1)) || (defined(SMCOM_JRCP_V1) && (SMCOM_JRCP_V1==1))\
     || (defined(SMCOM_JRCP_V2) && (SMCOM_JRCP_V2 == 1)) || (defined(SMCOM_RC663_VCOM) && (SMCOM_RC663_VCOM==1))
     bool is_socket = FALSE;
@@ -660,6 +666,10 @@ U16 SM_SendAPDU(U8 *cmd, U16 cmdLen, U8 *resp, U16 *respLen)
     respLenLocal = *respLen;
 
     status = smCom_TransceiveRaw(NULL, cmd, cmdLen, resp, &respLenLocal);
+    if (respLenLocal > UINT16_MAX) {
+        LOG_E("respLenLocal should be 2 bytes");
+        return ERR_GENERAL_ERROR;
+    }
     *respLen = (U16)respLenLocal;
 
     return (U16)status;

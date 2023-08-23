@@ -16,9 +16,6 @@
 #include "ex_sss_boot.h"
 #include "ex_sss_objid.h"
 #include "ex_sss_scp03_keys.h"
-#if defined(SECURE_WORLD)
-#include "ex_scp03_puf.h"
-#endif /* SECURE_WORLD */
 /* ************************************************************************** */
 /* Includes                                                                   */
 /* ************************************************************************** */

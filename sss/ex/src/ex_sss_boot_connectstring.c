@@ -134,8 +134,8 @@ sss_status_t ex_sss_boot_connectstring(int argc, const char *argv[], char **pPor
 
 bool ex_sss_boot_isSerialPortName(const char *portName)
 {
-    AX_UNUSED_ARG(portName);
     bool is_vcom = FALSE;
+    AX_UNUSED_ARG(portName);
 #if defined(RJCT_VCOM) && (RJCT_VCOM == 1)
     if (portName == NULL) {
         is_vcom = FALSE;
@@ -159,6 +159,7 @@ bool ex_sss_boot_isSerialPortName(const char *portName)
 bool ex_sss_boot_isSocketPortName(const char *portName)
 {
 #ifdef ACCESS_MGR_UNIX_SOCKETS
+    AX_UNUSED_ARG(portName);
     return TRUE;
 #else
     bool is_socket = FALSE;
@@ -170,6 +171,7 @@ bool ex_sss_boot_isSocketPortName(const char *portName)
         is_socket = TRUE;
     }
 #endif
+    AX_UNUSED_ARG(portName);
     return is_socket;
 #endif
 }

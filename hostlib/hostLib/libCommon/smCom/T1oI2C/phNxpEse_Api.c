@@ -158,6 +158,10 @@ ESESTATUS phNxpEse_open(void **conn_ctx, phNxpEse_initParams initParams, const c
         phNxpEse_memset (pnxpese_ctxt, 0x00, sizeof (phNxpEse_Context_t));
     }
     pnxpese_ctxt->EseLibStatus = ESE_STATUS_CLOSE;
+    if (conn_ctx != NULL) {
+        phNxpEse_free(pnxpese_ctxt);
+        *conn_ctx = NULL;
+    }
     return ESESTATUS_FAILED;
 }
 

@@ -32,7 +32,7 @@ int tlvSet_U8(uint8_t **buf, size_t *bufLen, SE05x_TAG_t tag, uint8_t value)
 {
     uint8_t *pBuf            = *buf;
     const size_t size_of_tlv = 1 + 1 + 1;
-    if ((UINT_MAX - (*bufLen)) < size_of_tlv) {
+    if ((UINT_MAX - size_of_tlv) < (*bufLen)) {
         return 1;
     }
     if (((*bufLen) + size_of_tlv) > SE05X_TLV_BUF_SIZE_CMD) {
@@ -60,7 +60,7 @@ int tlvSet_U16(uint8_t **buf, size_t *bufLen, SE05x_TAG_t tag, uint16_t value)
 {
     const size_t size_of_tlv = 1 + 1 + 2;
     uint8_t *pBuf            = *buf;
-    if ((UINT_MAX - (*bufLen)) < size_of_tlv) {
+    if ((UINT_MAX - size_of_tlv) < (*bufLen)) {
         return 1;
     }
     if (((*bufLen) + size_of_tlv) > SE05X_TLV_BUF_SIZE_CMD) {
@@ -79,7 +79,7 @@ int tlvSet_U32(uint8_t **buf, size_t *bufLen, SE05x_TAG_t tag, uint32_t value)
 {
     const size_t size_of_tlv = 1 + 1 + 4;
     uint8_t *pBuf            = *buf;
-    if ((UINT_MAX - (*bufLen)) < size_of_tlv) {
+    if ((UINT_MAX - size_of_tlv) < (*bufLen)) {
         return 1;
     }
     if (((*bufLen) + size_of_tlv) > SE05X_TLV_BUF_SIZE_CMD) {
@@ -98,8 +98,7 @@ int tlvSet_U32(uint8_t **buf, size_t *bufLen, SE05x_TAG_t tag, uint32_t value)
 
 int tlvSet_U64_size(uint8_t **buf, size_t *bufLen, SE05x_TAG_t tag, uint64_t value, uint16_t size)
 {
-    int8_t pos               = 0;
-    pos                      = (uint8_t)size;
+    int8_t pos               = (uint8_t)size;
     const size_t size_of_tlv = 1 + 1 + size;
     uint8_t *pBuf            = *buf;
     if ((UINT_MAX - (*bufLen)) < size_of_tlv) {
@@ -121,8 +120,8 @@ int tlvSet_U64_size(uint8_t **buf, size_t *bufLen, SE05x_TAG_t tag, uint64_t val
 
 int tlvSet_Se05xPolicy(const char *description, uint8_t **buf, size_t *bufLen, SE05x_TAG_t tag, Se05xPolicy_t *policy)
 {
-    AX_UNUSED_ARG(description);
     int tlvRet = 0;
+    AX_UNUSED_ARG(description);
     if ((policy != NULL) && (policy->value != NULL)) {
         tlvRet = tlvSet_u8buf(buf, bufLen, tag, policy->value, policy->value_len);
 #if VERBOSE_APDU_LOGS
@@ -476,11 +475,12 @@ cleanup:
 
 int tlvGet_TimeStamp(uint8_t *buf, size_t *pBufIndex, const size_t bufLen, SE05x_TAG_t tag, SE05x_TimeStamp_t *pTs)
 {
-    int retVal = 1;
+    int retVal        = 1;
+    size_t rspBufSize = 0;
     if (pTs == NULL) {
         return retVal;
     }
-    size_t rspBufSize = sizeof(pTs->ts);
+    rspBufSize = sizeof(pTs->ts);
     return tlvGet_u8buf(buf, pBufIndex, bufLen, tag, pTs->ts, &rspBufSize);
 }
 
@@ -716,9 +716,9 @@ smStatus_t se05x_Transform(struct Se05xSession *pSession,
 smStatus_t se05x_DeCrypt(
     struct Se05xSession *pSessionCtx, size_t cmd_cmacLen, uint8_t *rsp, size_t *rspLength, uint8_t hasle)
 {
+    U16 rv = SM_NOT_OK;
     AX_UNUSED_ARG(cmd_cmacLen);
     AX_UNUSED_ARG(hasle);
-    U16 rv = SM_NOT_OK;
 
     if (*rspLength >= 2) {
         rv = rsp[(*rspLength) - 2] << 8 | rsp[(*rspLength) - 1];
@@ -736,7 +736,7 @@ smStatus_t se05x_DeCrypt(
             if ((rv != SM_OK) && (pSessionCtx->pdynScp03Ctx != NULL)) {
                 if (((pSessionCtx->pdynScp03Ctx->authType == kSSS_AuthType_AESKey) ||
                         (pSessionCtx->pdynScp03Ctx->authType == kSSS_AuthType_ECKey)) ||
-                    ((pSessionCtx->pdynScp03Ctx->authType == kSSS_AuthType_SCP03) && (cmd_cmacLen - 8) > 0)) {
+                    ((pSessionCtx->pdynScp03Ctx->authType == kSSS_AuthType_SCP03) && (cmd_cmacLen != 8))) {
                     nxpSCP03_Inc_CommandCounter(pSessionCtx->pdynScp03Ctx);
                 }
             }
@@ -765,8 +765,11 @@ smStatus_t se05x_Transform_scp(struct Se05xSession *pSession,
     uint8_t macToAdd[16]    = {0};
     size_t macLen           = 16;
     size_t i                = 0;
+    Se05xApdu_t se05xApdu   = {0};
 
-    Se05xApdu_t se05xApdu = {0};
+#if SSSFTR_SE05X_AuthECKey || SSSFTR_SE05X_AuthSession
+    uint8_t *wsCmd = NULL;
+#endif
 
     se05xApdu.se05xTxBuf    = txBuf;
     se05xApdu.se05xTxBufLen = *ptxBufLen;
@@ -797,7 +800,7 @@ smStatus_t se05x_Transform_scp(struct Se05xSession *pSession,
                                                                            3);
 
         se05xApdu.wsSe05x_cmd = se05xApdu.se05xTxBuf;
-        uint8_t *wsCmd        = se05xApdu.wsSe05x_cmd;
+        wsCmd                 = se05xApdu.wsSe05x_cmd;
 
         wsCmd[i++] = kSE05x_TAG_SESSION_ID;
         wsCmd[i++] = sizeof(pSession->value);
@@ -823,6 +826,8 @@ smStatus_t se05x_Transform_scp(struct Se05xSession *pSession,
             goto cleanup;
         }
         se05xApdu.wsSe05x_tag1Cmd = &wsCmd[i];
+        ENSURE_OR_GO_CLEANUP(
+            (UINT_MAX - sizeof(*(se05xApdu.se05xCmd_hdr)) - se05xApdu.se05xCmdLCW) >= se05xApdu.se05xCmdLen);
         se05xApdu.wsSe05x_tag1CmdLen =
             sizeof(*(se05xApdu.se05xCmd_hdr)) + se05xApdu.se05xCmdLCW + se05xApdu.se05xCmdLen;
 
@@ -862,7 +867,9 @@ smStatus_t se05x_Transform_scp(struct Se05xSession *pSession,
         se05xApdu.se05xCmdLCW = (se05xApdu.se05xCmdLC == 0) ? 0 : (((se05xApdu.se05xCmdLC < 0xFF) && !(hasle)) ? 1 : 3);
 
         se05xApdu.dataToMac = &txBuf[i]; /* Mac is calculated from this data */
-        ENSURE_OR_GO_CLEANUP((UINT_MAX - se05xApdu.se05xCmdLCW) >= se05xApdu.se05xCmdLC);
+        ENSURE_OR_GO_CLEANUP((sizeof(*(se05xApdu.se05xCmd_hdr)) + se05xApdu.se05xCmdLCW + se05xApdu.se05xCmdLC) >=
+                             SCP_GP_IU_CARD_CRYPTOGRAM_LEN);
+        ENSURE_OR_GO_CLEANUP((SIZE_MAX - se05xApdu.se05xCmdLCW) >= se05xApdu.se05xCmdLC);
         se05xApdu.dataToMacLen = sizeof(*(se05xApdu.se05xCmd_hdr)) + se05xApdu.se05xCmdLCW + se05xApdu.se05xCmdLC -
                                  SCP_GP_IU_CARD_CRYPTOGRAM_LEN;
         ENSURE_OR_GO_CLEANUP(se05xApdu.dataToMacLen > 0);
@@ -883,6 +890,9 @@ smStatus_t se05x_Transform_scp(struct Se05xSession *pSession,
                 txBuf[i++] = 0xFFu & (se05xApdu.se05xCmdLC >> 8);
                 txBuf[i++] = 0xFFu & (se05xApdu.se05xCmdLC);
             }
+        }
+        if (i > (*ptxBufLen)) {
+            goto cleanup;
         }
         memcpy(&txBuf[i], se05xApdu.se05xCmd, se05xApdu.se05xCmdLen);
         i += se05xApdu.se05xCmdLen;

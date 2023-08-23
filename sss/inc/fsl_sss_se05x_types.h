@@ -639,7 +639,7 @@ smStatus_t Se05x_i2c_master_attst_txn(sss_session_t *sess,
 /**
  * Returns the applet version compiled by MW
  */
-uint32_t se05x_GetAppletVersion();
+uint32_t se05x_GetAppletVersion(void);
 #endif /* SSS_HAVE_APPLET_SE05X_IOT */
 
 #endif /* SSS_APIS_INC_FSL_SSS_SE05X_TYPES_H_ */

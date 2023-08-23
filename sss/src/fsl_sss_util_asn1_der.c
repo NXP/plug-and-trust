@@ -275,6 +275,7 @@ sss_status_t sss_util_asn1_rsa_parse_private(const uint8_t *key,
         if (ret != 0) {
             goto exit;
         }
+        ENSURE_OR_GO_EXIT(bufIndex < keylen);
         if (tag == ASN_TAG_SEQUENCE && pBuf[bufIndex] != ASN_TAG_INT) {
             ENSURE_OR_GO_EXIT(UINT_MAX - bufIndex >= taglen);
             bufIndex += taglen;
@@ -1035,7 +1036,6 @@ sss_status_t sss_util_asn1_rsa_parse_public_nomalloc_complete_modulus(
     //int tag = (key[1] == 0x82) ? 4 : 3;
     /* Parse Header Information
     Public Key contains 3 Sequences as header */
-    ENSURE_OR_GO_EXIT(keylen < (size_t)(1 << ((sizeof(size_t) * 4) - 1)));
     ENSURE_OR_GO_EXIT(bufIndex < keylen);
     ret = asn_1_parse_tlv(pBuf, &taglen, &bufIndex); /* ASN.1 Sequence */
     if (ret != 0) {
@@ -1198,7 +1198,7 @@ sss_status_t sss_util_asn1_rsa_get_public(
     size_t intModLEn    = modlen + 1; // RSA Key has null byte before moduls start
 
     ENSURE_OR_GO_EXIT(
-        (modlen + pubExplen + sizeof(grsa1kPubHeader) + 3U + 3U) < (size_t)(1 << ((sizeof(size_t) * 4) - 1)));
+        (modlen + pubExplen + sizeof(grsa1kPubHeader) + 3U + 3U) < (size_t)(1UL << ((sizeof(size_t) * 4) - 1)));
     ENSURE_OR_GO_EXIT(key != NULL);
     ENSURE_OR_GO_EXIT(keylen != NULL);
     ENSURE_OR_GO_EXIT(modulus != NULL);
@@ -1257,6 +1257,7 @@ sss_status_t sss_util_asn1_rsa_get_public(
     }
     else {
         ENSURE_OR_GO_EXIT(index + 3 <= *keylen);
+        ENSURE_OR_GO_EXIT((intModLEn >> 8) <= UINT8_MAX);
         key[index++] = 0x82;
         key[index++] = (uint8_t)(intModLEn >> 8);
         key[index++] = (uint8_t)intModLEn & 0xFF;
@@ -1399,9 +1400,9 @@ int asn_1_parse_tlv(uint8_t *pbuf, size_t *taglen, size_t *bufindex)
     size_t Len;
     uint8_t *buf = pbuf + *bufindex;
     int tag;
+    int ret = 0;
     tag     = (int)*buf++; /*Exclude The Tag*/
     Len     = *buf++;
-    int ret = 0;
     if (check_tag(tag)) {
         ret = 1;
         goto exit;
@@ -1461,7 +1462,6 @@ sss_status_t sss_util_asn1_get_oid_from_header(uint8_t *input, size_t inLen, uin
     ENSURE_OR_GO_EXIT(input != NULL);
     ENSURE_OR_GO_EXIT(output != NULL);
     ENSURE_OR_GO_EXIT(outLen != NULL);
-    ENSURE_OR_GO_EXIT(inLen < (size_t)(1 << ((sizeof(size_t) * 4) - 1)));
 
     for (;;) {
         ENSURE_OR_GO_EXIT(i < inLen);
@@ -1570,6 +1570,7 @@ sss_status_t sss_util_pkcs8_asn1_get_ec_public_key_index(
     size_t taglen       = 0;
     sss_status_t status = kStatus_SSS_Fail;
     uint8_t value_index = 0;
+    int tag             = 0;
 
     ENSURE_OR_GO_EXIT(input != NULL);
     ENSURE_OR_GO_EXIT(outkeyIndex != NULL);
@@ -1577,7 +1578,7 @@ sss_status_t sss_util_pkcs8_asn1_get_ec_public_key_index(
 
     for (;;) {
         ENSURE_OR_GO_EXIT(i < inLen);
-        int tag = input[i++];
+        tag = input[i++];
         if (IS_VALID_TAG(tag)) {
             ENSURE_OR_GO_EXIT(i < inLen);
             taglen = input[i++];
@@ -1613,6 +1614,7 @@ sss_status_t sss_util_pkcs8_asn1_get_ec_public_key_index(
                 *publicKeyLen = taglen;
                 ENSURE_OR_GO_EXIT(value_index < inLen);
                 if (input[value_index] == 0x00 || input[value_index] == 0x01) {
+                    ENSURE_OR_GO_EXIT((UINT16_MAX - 1) >= (*outkeyIndex));
                     *outkeyIndex  = *outkeyIndex + 1;
                     *publicKeyLen = *publicKeyLen - 1;
                 }
@@ -1642,6 +1644,7 @@ sss_status_t sss_util_pkcs8_asn1_get_ec_pair_key_index(const uint8_t *input,
     size_t i            = 0;
     size_t taglen       = 0;
     sss_status_t status = kStatus_SSS_Fail;
+    int tag             = 0;
     //uint8_t octate_string_start = 0;
 
     ENSURE_OR_GO_EXIT(input != NULL);
@@ -1652,7 +1655,7 @@ sss_status_t sss_util_pkcs8_asn1_get_ec_pair_key_index(const uint8_t *input,
 
     for (;;) {
         ENSURE_OR_GO_EXIT(i < inLen);
-        int tag = input[i++];
+        tag = input[i++];
         if (IS_VALID_TAG(tag)) {
             ENSURE_OR_GO_EXIT(i < inLen);
             taglen = input[i++];
@@ -1687,6 +1690,7 @@ sss_status_t sss_util_pkcs8_asn1_get_ec_pair_key_index(const uint8_t *input,
                 *publicKeyLen = taglen;
                 ENSURE_OR_GO_EXIT(i < inLen);
                 if (input[i] == 0x00 || input[i] == 0x01) {
+                    ENSURE_OR_GO_EXIT((UINT16_MAX - 1) >= (*pubkeyIndex));
                     *pubkeyIndex  = *pubkeyIndex + 1;
                     *publicKeyLen = *publicKeyLen - 1;
                 }
@@ -1726,6 +1730,7 @@ sss_status_t sss_util_rfc8410_asn1_get_ec_pair_key_index(const uint8_t *input,
     size_t i            = 0;
     size_t taglen       = 0;
     sss_status_t status = kStatus_SSS_Fail;
+    int tag             = 0;
     //uint8_t octate_string_start = 0;
 
     ENSURE_OR_GO_EXIT(input != NULL);
@@ -1736,7 +1741,7 @@ sss_status_t sss_util_rfc8410_asn1_get_ec_pair_key_index(const uint8_t *input,
 
     for (;;) {
         ENSURE_OR_GO_EXIT(i < inLen);
-        int tag = input[i++];
+        tag = input[i++];
         if (IS_VALID_RFC8410_TAG(tag)) {
             ENSURE_OR_GO_EXIT(i < inLen);
             taglen = input[i++];
@@ -1773,6 +1778,7 @@ sss_status_t sss_util_rfc8410_asn1_get_ec_pair_key_index(const uint8_t *input,
                 *publicKeyLen = taglen;
                 ENSURE_OR_GO_EXIT(i < inLen);
                 if (input[i] == 0x00 || input[i] == 0x01) {
+                    ENSURE_OR_GO_EXIT((UINT16_MAX - 1) >= (*pubkeyIndex));
                     *pubkeyIndex  = *pubkeyIndex + 1;
                     *publicKeyLen = *publicKeyLen - 1;
                 }
@@ -1804,7 +1810,7 @@ exit:
 sss_status_t sss_util_openssl_read_pkcs12(
     const char *pkcs12_cert, const char *password, uint8_t *private_key, uint8_t *cert)
 {
-    sss_status_t retval = kStatus_SSS_Success;
+    sss_status_t retval = kStatus_SSS_Fail;
 
 #if SSS_HAVE_HOSTCRYPTO_OPENSSL
     int status = 0;
@@ -1823,12 +1829,10 @@ sss_status_t sss_util_openssl_read_pkcs12(
 
     // Open PKCS12 certificate file
     pkcs12_cert_file = fopen(pkcs12_cert, "rb");
-    if (pkcs12_cert_file == NULL) {
-        retval = kStatus_SSS_Fail;
-        goto exit;
-    }
+    ENSURE_OR_GO_EXIT(pkcs12_cert_file != NULL);
+
     p12_cert = d2i_PKCS12_fp(pkcs12_cert_file, NULL);
-    fclose(pkcs12_cert_file);
+    ENSURE_OR_GO_EXIT((fclose(pkcs12_cert_file)) == 0);
 
     // Parse PKCS12 key and certificates to seperate pem and certificates
     status = PKCS12_parse(p12_cert, password, &p_key, &x509_cert, &additional_certs);
@@ -1845,6 +1849,7 @@ sss_status_t sss_util_openssl_read_pkcs12(
     // Dump certificate to buffer
     PEM_write_bio_X509(cert_bio, x509_cert);
     BIO_read(cert_bio, cert, 20000);
+    retval = kStatus_SSS_Success;
 #else
     AX_UNUSED_ARG(pkcs12_cert);
     AX_UNUSED_ARG(password);
@@ -1864,7 +1869,7 @@ sss_status_t sss_util_openssl_write_pkcs12(const char *pkcs12_cert,
     const char *cert,
     long cert_length)
 {
-    sss_status_t retval = kStatus_SSS_Success;
+    sss_status_t retval = kStatus_SSS_Fail;
 
 #if SSS_HAVE_HOSTCRYPTO_OPENSSL
     FILE *pkcs12_file;
@@ -1880,19 +1885,15 @@ sss_status_t sss_util_openssl_write_pkcs12(const char *pkcs12_cert,
     ENSURE_OR_GO_EXIT(cert != NULL);
 
     // Parse Private key
+    ENSURE_OR_GO_EXIT(ref_key_length <= INT_MAX);
     BIO_write(pem_key_bio, ref_key, ref_key_length);
     PEM_read_bio_PrivateKey(pem_key_bio, &p_key, NULL, NULL);
-    if (p_key == NULL) {
-        retval = kStatus_SSS_Fail;
-        goto exit;
-    }
+    ENSURE_OR_GO_EXIT(p_key != NULL);
 
+    ENSURE_OR_GO_EXIT(cert_length <= INT_MAX);
     BIO_write(pem_cert_bio, cert, cert_length);
     PEM_read_bio_X509(pem_cert_bio, &x509_cert, NULL, NULL);
-    if (x509_cert == NULL) {
-        retval = kStatus_SSS_Fail;
-        goto exit;
-    }
+    ENSURE_OR_GO_EXIT(x509_cert != NULL);
 
     // Generate PKCS12 key and certificate
 #if (OPENSSL_VERSION_NUMBER < 0x10100000L)
@@ -1921,8 +1922,11 @@ sss_status_t sss_util_openssl_write_pkcs12(const char *pkcs12_cert,
     }
 
     if (pkcs12_file != NULL) {
-        fclose(pkcs12_file);
+        if (fclose(pkcs12_file) != 0) {
+            LOG_E("fclose error");
+        }
     }
+    retval = kStatus_SSS_Success;
 #else
     AX_UNUSED_ARG(pkcs12_cert);
     AX_UNUSED_ARG(password);

@@ -418,8 +418,6 @@ static sss_status_t nxScp03_GP_InitializeUpdate(pSe05xSession_t se05xSession,
     uint16_t *pSeqCounterLen,
     uint8_t keyVerNo)
 {
-    AX_UNUSED_ARG(seqCounter);
-    AX_UNUSED_ARG(pSeqCounterLen);
     smStatus_t st = SM_NOT_OK;
     uint8_t response[64];
     size_t responseLen          = 64;
@@ -432,6 +430,12 @@ static sss_status_t nxScp03_GP_InitializeUpdate(pSe05xSession_t se05xSession,
     sss_status_t status = kStatus_SSS_Fail;
     /* Default Key version no for applet scp is 0x00*/
     uint8_t keyVersion = 0x00;
+    tlvHeader_t hdr    = {{CLA_GP_7816, INS_GP_INITIALIZE_UPDATE, keyVersion, 0x00}};
+    uint8_t cmdBuf[60];
+
+    AX_UNUSED_ARG(seqCounter);
+    AX_UNUSED_ARG(pSeqCounterLen);
+
     if (se05xSession->authType == kSSS_AuthType_SCP03) {
         /* Key version no. for Platform SCP03 passed by user*/
         keyVersion = keyVerNo;
@@ -440,9 +444,8 @@ static sss_status_t nxScp03_GP_InitializeUpdate(pSe05xSession_t se05xSession,
         se05xSession->authType = kSSS_AuthType_None;
     }
 
-    tlvHeader_t hdr = {{CLA_GP_7816, INS_GP_INITIALIZE_UPDATE, keyVersion, 0x00}};
+    hdr.hdr[2] = keyVersion;
 
-    uint8_t cmdBuf[60];
     ENSURE_OR_GO_CLEANUP(hostChallengeLen == SCP_GP_HOST_CHALLENGE_LEN);
     ENSURE_OR_GO_CLEANUP(*pKeyDivDataLen == SCP_GP_IU_KEY_DIV_DATA_LEN);
     ENSURE_OR_GO_CLEANUP(*pKeyInfoLen == SCP_GP_IU_KEY_INFO_LEN);

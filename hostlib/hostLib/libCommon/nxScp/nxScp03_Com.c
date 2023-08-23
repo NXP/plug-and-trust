@@ -120,7 +120,6 @@ cleanup:
 uint16_t nxpSCP03_Decrypt_ResponseAPDU(
     NXSCP03_DynCtx_t *pdySCP03SessCtx, size_t cmdBufLen, uint8_t *rspBuf, size_t *pRspBufLen, uint8_t hasle)
 {
-    AX_UNUSED_ARG(hasle);
     sss_status_t sss_status = kStatus_SSS_Fail;
     uint16_t status = SCP_FAIL;
     sss_algorithm_t algorithm = kAlgorithm_SSS_CMAC_AES;
@@ -139,6 +138,8 @@ uint16_t nxpSCP03_Decrypt_ResponseAPDU(
     sss_mode_t mode_aes = kMode_SSS_Decrypt;
     sss_symmetric_t symm;
     size_t actualRespLen = 0;
+
+    AX_UNUSED_ARG(hasle);
 
     ENSURE_OR_GO_EXIT(pRspBufLen != NULL);
     ENSURE_OR_GO_EXIT(pdySCP03SessCtx != NULL);
@@ -439,7 +440,7 @@ static void nxSCP03_PadCommandAPDU(uint8_t *cmdBuf, size_t *pCmdBufLen)
     *pCmdBufLen += 1;
     zeroBytesToPad = (SCP_KEY_SIZE - ((*pCmdBufLen) % SCP_KEY_SIZE)) % SCP_KEY_SIZE;
 
-    while ((zeroBytesToPad > 0) && ((size_t)(*pCmdBufLen) < (size_t)(1 << ((sizeof(size_t) * 4) - 1)))) {
+    while ((zeroBytesToPad > 0) && ((size_t)(*pCmdBufLen) < (size_t)(1UL << ((sizeof(size_t) * 4) - 1)))) {
         cmdBuf[(*pCmdBufLen)] = 0x00;
         *pCmdBufLen += 1;
         zeroBytesToPad--;

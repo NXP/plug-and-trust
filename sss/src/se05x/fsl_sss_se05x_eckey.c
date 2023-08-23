@@ -296,6 +296,9 @@ static void set_secp256r1nist_header(uint8_t *pbKey, size_t *pbKeyByteLen)
         temp[26 + i] = pbKey[i];
     }
 
+    if ((UINT_MAX - (*pbKeyByteLen)) < 26) {
+        return;
+    }
     *pbKeyByteLen = *pbKeyByteLen + 26;
     memcpy(pbKey, temp, *pbKeyByteLen);
 }
@@ -354,6 +357,7 @@ sss_status_t nxECKey_InternalAuthenticate(pSe05xSession_t se05xSession,
     ENSURE_OR_GO_CLEANUP(tlvRet == 0);
 
     /*Put the ephemral host ECKA pub key */
+    ENSURE_OR_GO_CLEANUP(hostEckaPubKeyLen <= UINT8_MAX);
     *pCmdbuf++ = tagEpkSeEcka[0]; //Tag is 2 byte */
     cmdbufLen++;
     *pCmdbuf++ = tagEpkSeEcka[1];
@@ -487,9 +491,9 @@ cleanup:
 sss_status_t nxECKey_Calculate_Shared_secret(
     SE05x_AuthCtx_ECKey_t *pAuthFScp, uint8_t *sharedSecret, size_t *sharedSecretLen)
 {
-    sss_status_t status = kStatus_SSS_Fail;
-    sss_derive_key_t dervCtx;
-    sss_object_t shsSecret = {0};
+    sss_status_t status      = kStatus_SSS_Fail;
+    sss_derive_key_t dervCtx = {0};
+    sss_object_t shsSecret   = {0};
 
     NXECKey03_StaticCtx_t *pStatic_ctx = pAuthFScp->pStatic_ctx;
     size_t sharedSecBitLen             = 0;

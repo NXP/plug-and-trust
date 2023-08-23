@@ -42,7 +42,7 @@ i2c_error_t axI2CInit(void **conn_ctx, const char *pDevName)
     int axSmDevice = 0;
     char *pdev_name = NULL;
     char *pdev_addr_str = NULL;
-    U32 dev_addr = 0x00;
+    long int dev_addr = 0x00;
     char temp[DEV_NAME_BUFFER_SIZE] = { 0, };
 
     if (pDevName != NULL && (strcasecmp("none", pDevName) != 0) ) {
@@ -67,6 +67,10 @@ i2c_error_t axI2CInit(void **conn_ctx, const char *pDevName)
         pdev_addr_str = strtok(NULL, ":");
         if (pdev_addr_str != NULL) {
             dev_addr = strtol(pdev_addr_str, NULL, 0);
+            if (dev_addr == 0) {
+                LOG_E("strtol failed");
+                return I2C_FAILED;
+            }
         }
         else {
             dev_addr = default_axSmDevice_addr;

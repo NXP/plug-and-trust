@@ -101,17 +101,6 @@ typedef struct
 } ex_sss_platf_ctx_t;
 #endif
 
-typedef struct
-{
-    sss_object_t pub_obj;
-    sss_object_t obj;
-    sss_object_t dev_cert;
-    sss_object_t interCaCert;
-    sss_key_store_t *pHost_ks;
-    uint32_t client_keyPair_index;
-    uint32_t client_cert_index;
-} ex_sss_cloud_ctx_t;
-
 /* *****************************************************************************************************************
  *   Extern Variables
  * ***************************************************************************************************************** */
@@ -152,24 +141,13 @@ sss_status_t ex_sss_se_prepare_host(sss_session_t *host_session,
     SE_AuthType_t auth_type);
 #endif
 
-/** The case where we connect to the cyrptogrpahic system directly.
- *
- * e.g. when running form an embedded sytem, without any choice of Port Numbers, etc.
- */
-sss_status_t ex_sss_boot_direct(void);
+
 
 /** The case where we connect to the cyrptogrpahic system in-directly.
  *
- * This function is a similar to @ref ex_sss_boot_direct.
  *
  * This function expects that the last argument in argv is the
  * expected/probable port name.
- *
- * e.g. when running form PC, where we are connected
- * to secure element via a COM Port/Socket Port.  In such cases,
- * taking the Port number from a Command Line Argument,
- * or Environment Variable would make sense and examples
- * would become more portable.
  *
  * @param argc count of parameters, as received by main
  * @param argv Array of argv, as received by main
@@ -177,15 +155,6 @@ sss_status_t ex_sss_boot_direct(void);
  * @return 0 if successful.
  */
 sss_status_t ex_sss_boot_connectstring(int argc, const char *argv[], char **pPortName);
-
-/**
- * For the case where few activities have to be performed
- * after RTOS initialization, this API would be executed
- * as an RTOS Task.
- *
- * @return
- */
-sss_status_t ex_sss_boot_rtos(void *);
 
 /** Is this a serail port */
 bool ex_sss_boot_isSerialPortName(const char *portName);
@@ -214,8 +183,6 @@ sss_status_t ex_sss_entry(ex_sss_boot_ctx_t *pCtx);
 #define ex_sss_kestore_and_object_init ex_sss_key_store_and_object_init
 
 sss_status_t ex_sss_key_store_and_object_init(ex_sss_boot_ctx_t *pCtx);
-
-int ex_sss_boot_rtos_init(void);
 
 #if SSS_HAVE_HOSTCRYPTO_ANY
 sss_status_t ex_sss_boot_open_host_session(ex_sss_boot_ctx_t *pCtx);

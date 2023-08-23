@@ -181,16 +181,27 @@ static void free_auth_objects(SE_Connect_Ctx_t *pConnectCtx)
 void ex_sss_session_close(ex_sss_boot_ctx_t *pCtx)
 {
 #if SSS_HAVE_APPLET_SE05X_IOT || SSS_HAVE_SSCP
+#if SSS_HAVE_APPLET_SE05X_IOT
+#if ((SSS_HAVE_HOSTCRYPTO_ANY) &&                                                           \
+     ((SSS_HAVE_SE05X_AUTH_USERID_PLATFSCP03) || (SSS_HAVE_SE05X_AUTH_AESKEY_PLATFSCP03) || \
+         (SSS_HAVE_SE05X_AUTH_ECKEY_PLATFSCP03)))
+    SE_Connect_Ctx_t *pConnectCtx = NULL;
+#endif
+#endif
+#endif
+
     if (pCtx->session.subsystem != kType_SSS_SubSystem_NONE) {
         sss_session_close(&pCtx->session);
         sss_session_delete(&pCtx->session);
     }
 
+#if SSS_HAVE_APPLET_SE05X_IOT || SSS_HAVE_SSCP
+
 #if SSS_HAVE_APPLET_SE05X_IOT
 #if ((SSS_HAVE_HOSTCRYPTO_ANY) &&                                                           \
      ((SSS_HAVE_SE05X_AUTH_USERID_PLATFSCP03) || (SSS_HAVE_SE05X_AUTH_AESKEY_PLATFSCP03) || \
          (SSS_HAVE_SE05X_AUTH_ECKEY_PLATFSCP03)))
-    SE_Connect_Ctx_t *pConnectCtx = &pCtx->se05x_open_ctx;
+    pConnectCtx = &pCtx->se05x_open_ctx;
     free_auth_objects(pConnectCtx);
 #endif /* SSS_HAVE_HOSTCRYPTO_ANY */
 
