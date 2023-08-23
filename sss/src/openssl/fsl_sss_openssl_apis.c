@@ -707,6 +707,9 @@ sss_status_t sss_openssl_derive_key_dh(sss_openssl_derive_key_t *context,
     EVP_PKEY_CTX_free(ctx);
 
 exit:
+    if (secret != NULL) {
+        SSS_FREE(secret);
+    }
     return retval;
 }
 #else
@@ -1211,6 +1214,9 @@ sss_status_t sss_openssl_asymmetric_encrypt(
     }
 
 exit:
+    if (pKey_Ctx != NULL) {
+        EVP_PKEY_CTX_free(pKey_Ctx);
+    }
     return retval;
 }
 #else
@@ -1255,6 +1261,9 @@ exit:
     if (pErr != NULL) {
         SSS_FREE(pErr);
     }
+    if (pRSA != NULL) {
+        RSA_free(pRSA);
+    }
     return retval;
 }
 #endif
@@ -1298,6 +1307,9 @@ sss_status_t sss_openssl_asymmetric_decrypt(
     }
 
 exit:
+    if (pKey_Ctx != NULL) {
+        EVP_PKEY_CTX_free(pKey_Ctx);
+    }
     return retval;
 }
 #else
@@ -1341,6 +1353,9 @@ sss_status_t sss_openssl_asymmetric_decrypt(
 exit:
     if (pErr != NULL) {
         SSS_FREE(pErr);
+    }
+    if (pRSA != NULL) {
+        RSA_free(pRSA);
     }
     return retval;
 }
@@ -1489,8 +1504,9 @@ sss_status_t sss_openssl_asymmetric_sign_digest(
     }
 
 exit:
-    EVP_PKEY_CTX_free(pKey_Ctx);
-    pKey_Ctx = NULL;
+    if (pKey_Ctx != NULL) {
+        EVP_PKEY_CTX_free(pKey_Ctx);
+    }
     return retval;
 }
 
@@ -1564,8 +1580,9 @@ sss_status_t sss_openssl_asymmetric_verify_digest(
     }
 
 exit:
-    EVP_PKEY_CTX_free(pKey_Ctx);
-    pKey_Ctx = NULL;
+    if (pKey_Ctx != NULL) {
+        EVP_PKEY_CTX_free(pKey_Ctx);
+    }
     return retval;
 }
 
@@ -1597,6 +1614,12 @@ sss_status_t sss_openssl_asymmetric_sign(
     retval = kStatus_SSS_Success;
 #endif
 exit:
+#if (OPENSSL_VERSION_NUMBER < 0x10100000L)
+#else
+    if (pKey_md_Ctx != NULL) {
+        EVP_MD_CTX_free(pKey_md_Ctx);
+    }
+#endif
     return retval;
 }
 
@@ -1627,7 +1650,14 @@ sss_status_t sss_openssl_asymmetric_verify(
 
     retval = kStatus_SSS_Success;
 #endif
+
 exit:
+#if (OPENSSL_VERSION_NUMBER < 0x10100000L)
+#else
+    if (pKey_md_Ctx != NULL) {
+        EVP_MD_CTX_free(pKey_md_Ctx);
+    }
+#endif
     return retval;
 }
 
@@ -2339,6 +2369,9 @@ sss_status_t sss_openssl_cipher_crypt_ctr(sss_openssl_symmetric_t *context,
 
     retval = kStatus_SSS_Success;
 exit:
+    if (ctx != NULL) {
+        EVP_CIPHER_CTX_free(ctx);
+    }
     return retval;
 }
 #else
@@ -2985,9 +3018,13 @@ sss_status_t sss_openssl_mac_context_init(sss_openssl_mac_t *context,
         context->keyObject = keyObject;
         context->mode      = mode;
         context->algorithm = algorithm;
+        context->lib_ctx   = library_context;
         retval             = kStatus_SSS_Success;
     }
 cleanup:
+    if (mac != NULL) {
+        EVP_MAC_free(mac);
+    }
     return retval;
 }
 #else
@@ -3591,6 +3628,9 @@ void sss_openssl_mac_context_free(sss_openssl_mac_t *context)
         context->algorithm == kAlgorithm_SSS_HMAC_SHA384 || context->algorithm == kAlgorithm_SSS_HMAC_SHA512) {
         if (context->mac_ctx != NULL) {
             EVP_MAC_CTX_free(context->mac_ctx);
+        }
+        if (context->lib_ctx != NULL) {
+            OSSL_LIB_CTX_free(context->lib_ctx);
         }
         memset(context, 0, sizeof(*context));
     }
@@ -4300,18 +4340,14 @@ static sss_status_t sss_openssl_generate_rsa_key(sss_openssl_object_t *keyObject
 #if (OPENSSL_VERSION_NUMBER < 0x10100000L)
             ERR_free_strings();
 #endif
-            BN_free(pBigNum);
             goto exit;
         }
-        BN_clear_free(pBigNum);
 
         /* Assign the EC Key to generic Key context. */
         pKey = (EVP_PKEY *)keyObject->contents;
         if (!EVP_PKEY_set1_RSA(pKey, pRSA)) {
             retval = kStatus_SSS_Fail;
             LOG_E("Unable to assigning RSA key to EVP_PKEY context.");
-            BN_free(pBigNum);
-            RSA_free(pRSA);
             goto exit;
         }
     }
@@ -4320,7 +4356,12 @@ static sss_status_t sss_openssl_generate_rsa_key(sss_openssl_object_t *keyObject
         retval = kStatus_SSS_Fail;
     }
 exit:
-    RSA_free(pRSA);
+    if (pBigNum != NULL) {
+        BN_clear_free(pBigNum);
+    }
+    if (pRSA != NULL) {
+        RSA_free(pRSA);
+    }
     return retval;
 }
 #endif
@@ -4583,6 +4624,9 @@ static sss_status_t sss_openssl_hkdf_expand(const EVP_MD *md,
 
     retval = kStatus_SSS_Success;
 exit:
+    if (pctx != NULL) {
+        EVP_PKEY_CTX_free(pctx);
+    }
     return retval;
 }
 #else
