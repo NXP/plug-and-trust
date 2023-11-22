@@ -22,3 +22,21 @@ sss
 - Description: Contains the SSS API interface to the Application Layer.
 - Origin: NXP(Apache-2.0)
 - Location: sss
+
+MbedTLS
+- Name: MbedTLS
+- Version: 2.26.0
+- License: Apache 2.0
+- Type of content: source code
+- Description: MbedTLS stack.
+- Origin: https://github.com/Mbed-TLS/mbedtls
+- Location: sss/src/fsl_sss_util_rsa_sign_utils.c
+
+openssl
+- Name: openssl
+- Version: OpenSSL 1.1
+- License: OpenSSL License
+- Type of content: Source Code
+- Description: Openssl  stack
+- Origin: https://github.com/openssl/openssl/tree/OpenSSL_1_1_1-stable
+- Location: hostlib/hostLib/inc/se05x_ecc_curves_values.h
