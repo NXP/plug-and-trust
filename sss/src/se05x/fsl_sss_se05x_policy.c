@@ -89,7 +89,7 @@ static void sss_se05x_update_header_sym_key_policy(sss_policy_sym_key_u key_pol,
         header |= POLICY_OBJ_ALLOW_IMPORT_EXPORT;
     }
     if (key_pol.forbid_Derived_Output) {
-#if SSS_HAVE_SE05X_VER_GTE_06_00
+#if SSS_HAVE_SE05X_VER_GTE_07_02
         header |= POLICY_OBJ_FORBID_DERIVED_OUTPUT;
 #else
         LOG_W("forbid_Derived_Output is not applied");
@@ -103,7 +103,7 @@ static void sss_se05x_update_header_sym_key_policy(sss_policy_sym_key_u key_pol,
 #endif
     }
     if (key_pol.allow_kdf_ext_rnd) {
-#if SSS_HAVE_SE05X_VER_GTE_06_00
+#if SSS_HAVE_SE05X_VER_GTE_07_02
         header |= POLICY_OBJ_ALLOW_KDF_EXT_RANDOM;
 #else
         LOG_W("allow_kdf_ext_rnd is not applied");
@@ -212,7 +212,7 @@ static void sss_se05x_update_header_asym_key_policy(sss_policy_asym_key_u key_po
         header |= POLICY_OBJ_ALLOW_IMPORT_EXPORT;
     }
     if (key_pol.forbid_Derived_Output) {
-#if SSS_HAVE_SE05X_VER_GTE_06_00
+#if SSS_HAVE_SE05X_VER_GTE_07_02
         header |= POLICY_OBJ_FORBID_DERIVED_OUTPUT;
 #else
         LOG_W("forbid_Derived_Output is not applied");
@@ -460,12 +460,13 @@ static uint8_t sss_se05x_find_authId_instances(uint32_t authId, uint8_t *pindice
 
 sss_status_t sss_se05x_create_object_policy_buffer(sss_policy_t *policies, uint8_t *pbuff, size_t *buf_len)
 {
-    uint8_t temp_buffer[MAX_OBJ_POLICY_SIZE] = {0};
-    uint8_t indexArray[MAX_OBJ_POLICY_TYPES] = {0};
-    uint8_t auth_id_count                    = 0;
-    uint8_t policiesCopied                   = 0;
-    uint32_t ext_offset                      = 0;
-    uint32_t offset                          = 0;
+    uint8_t temp_buffer[MAX_OBJ_POLICY_SIZE]           = {0};
+    uint8_t indexArray[MAX_OBJ_POLICY_TYPES]           = {0};
+    uint8_t policyCompletedArray[SSS_POLICY_COUNT_MAX] = {0};
+    uint8_t auth_id_count                              = 0;
+    uint8_t policiesCopied                             = 0;
+    uint32_t ext_offset                                = 0;
+    uint32_t offset                                    = 0;
 
     if ((policies == NULL) || (pbuff == NULL) || (buf_len == NULL)) {
         return kStatus_SSS_InvalidArgument;
@@ -479,7 +480,7 @@ sss_status_t sss_se05x_create_object_policy_buffer(sss_policy_t *policies, uint8
     /*Reinitialize policy buffer for every Secure object*/
     memset(pbuff, 0x00, MAX_POLICY_BUFFER_SIZE);
     for (uint32_t i = 0; i < policies->nPolicies && policiesCopied < policies->nPolicies; i++) {
-        if (policies->policies[i] != NULL) {
+        if (policyCompletedArray[i] != 1) { //(policies->policies[i] != NULL) {
             if (offset >= MAX_POLICY_BUFFER_SIZE) {
                 return kStatus_SSS_InvalidArgument;
             }
@@ -575,7 +576,8 @@ sss_status_t sss_se05x_create_object_policy_buffer(sss_policy_t *policies, uint8
                 default:
                     break;
                 }
-                policies->policies[indexArray[j]] = NULL;
+                //policies->policies[indexArray[j]] = NULL;
+                policyCompletedArray[indexArray[j]] = 1;
             }
             memcpy(pbuff + offset, temp_buffer, (temp_buffer[0] + 1));
             *buf_len += (temp_buffer[0] + 1);
