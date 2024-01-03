@@ -34,8 +34,35 @@ extern "C" {
 #if defined(SMCOM_JRCP_V1_AM)
 #include "sm_timer.h"
 #endif
+#if defined(USE_THREADX_RTOS)
+#include "tx_api.h"
+#endif
 
-#if defined(USE_RTOS) && (USE_RTOS == 1)
+/*
+    Disabled by default.
+    Enable in case of multiple applications access platform SCP03 session
+    Also make sure to uncomment, scp03_lock and scp03_lock_init variable declaration
+    in Se05xSession_t struct (hostlib\hostLib\inc\se05x_tlv.h)
+*/
+//#define SSS_USE_SCP03_THREAD_SAFETY
+
+#if defined(USE_THREADX_RTOS)
+
+#define LOCK_TXN(lock)                                      \
+    LOG_D("Trying to Acquire Lock");                        \
+    if (tx_mutex_get(&lock, TX_WAIT_FOREVER) == TX_SUCCESS) \
+        LOG_D("LOCK Acquired");                             \
+    else                                                    \
+        LOG_D("LOCK Acquisition failed");
+
+#define UNLOCK_TXN(lock)                   \
+    LOG_D("Trying to Released Lock");      \
+    if (tx_mutex_put(&lock) == TX_SUCCESS) \
+        LOG_D("LOCK Released");            \
+    else                                   \
+        LOG_D("LOCK Releasing failed");
+
+#elif (defined(USE_RTOS) && (USE_RTOS == 1))
 #define LOCK_TXN(lock)                                   \
     LOG_D("Trying to Acquire Lock");                     \
     if (xSemaphoreTake(lock, portMAX_DELAY) == pdTRUE) { \
@@ -68,7 +95,7 @@ extern "C" {
     LOG_D("LOCK Released by thread: %ld", pthread_self());
 #endif
 
-#if (__GNUC__ && !AX_EMBEDDED) || (USE_RTOS)
+#if (__GNUC__ && !AX_EMBEDDED) || (USE_RTOS) || defined(USE_THREADX_RTOS)
 #define USE_LOCK 1
 #else
 #define USE_LOCK 0
@@ -118,7 +145,7 @@ static SE05x_RSASignatureAlgo_t se05x_get_rsa_sign_hash_mode(sss_algorithm_t alg
 static SE05x_CipherMode_t se05x_get_cipher_mode(sss_algorithm_t algorithm);
 static SE05x_MACAlgo_t se05x_get_mac_algo(sss_algorithm_t algorithm);
 #if SSSFTR_SE05X_KEY_SET || SSSFTR_SE05X_KEY_GET
-static uint8_t CheckIfKeyIdExists(uint32_t keyId, pSe05xSession_t session_ctx);
+static uint8_t CheckIfKeyIdExists(uint32_t keyId, pSe05xSession_t session_ctx, smStatus_t *apduStatus);
 #endif
 static smStatus_t sss_se05x_channel_txn(void *conn_ctx,
     struct _sss_se05x_tunnel_context *pChannelCtx,
@@ -160,7 +187,7 @@ static sss_status_t sss_se05x_key_store_set_rsa_key(sss_se05x_key_store_t *keySt
 static sss_status_t se05x_check_input_len(size_t inLen, sss_algorithm_t algorithm);
 #endif
 
-#if SSS_HAVE_SE05X_VER_GTE_06_00
+#if SSS_HAVE_SE05X_VER_GTE_07_02
 static sss_status_t sss_se05x_aead_CCMfinish(sss_se05x_aead_t *context,
     const uint8_t *srcData,
     size_t srcLen,
@@ -184,7 +211,7 @@ static smStatus_t sss_se05x_LL_set_ec_key(pSe05xSession_t session_ctx,
     const SE05x_KeyPart_t key_part,
     SE05x_Result_t obj_exists);
 
-#if SSS_HAVE_SE05X_VER_GTE_06_00
+#if SSS_HAVE_SE05X_VER_GTE_07_02
 typedef smStatus_t (*fp_Ec_KeyWrite_t)(pSe05xSession_t session_ctx,
     pSe05xPolicy_t policy,
     SE05x_MaxAttemps_t maxAttempt,
@@ -197,7 +224,7 @@ typedef smStatus_t (*fp_Ec_KeyWrite_t)(pSe05xSession_t session_ctx,
     const SE05x_INS_t ins_type,
     const SE05x_KeyPart_t key_part,
     uint32_t version);
-#endif //SSS_HAVE_SE05X_VER_GTE_06_00
+#endif //SSS_HAVE_SE05X_VER_GTE_07_02
 #endif //SSSFTR_SE05X_ECC && SSSFTR_SE05X_KEY_SET
 
 #if SSSFTR_SE05X_KEY_SET
@@ -212,7 +239,7 @@ static smStatus_t sss_se05x_LL_set_symm_key(pSe05xSession_t session_ctx,
     const SE05x_SymmKeyType_t type,
     SE05x_Result_t obj_exists);
 
-#if SSS_HAVE_SE05X_VER_GTE_06_00
+#if SSS_HAVE_SE05X_VER_GTE_07_02
 typedef smStatus_t (*fp_Symm_KeyWrite_t)(pSe05xSession_t session_ctx,
     pSe05xPolicy_t policy,
     SE05x_MaxAttemps_t maxAttempt,
@@ -223,7 +250,7 @@ typedef smStatus_t (*fp_Symm_KeyWrite_t)(pSe05xSession_t session_ctx,
     const SE05x_INS_t ins_type,
     const SE05x_SymmKeyType_t type,
     uint32_t version);
-#endif //SSS_HAVE_SE05X_VER_GTE_06_00
+#endif //SSS_HAVE_SE05X_VER_GTE_07_02
 #endif //SSSFTR_SE05X_AES && SSSFTR_SE05X_KEY_SET
 
 #if SSSFTR_SE05X_RSA && SSSFTR_SE05X_KEY_SET && SSS_HAVE_RSA
@@ -252,7 +279,7 @@ static smStatus_t sss_se05x_LL_set_RSA_key(pSe05xSession_t session_ctx,
     const SE05x_RSAKeyFormat_t rsa_format,
     SE05x_Result_t obj_exists);
 
-#if SSS_HAVE_SE05X_VER_GTE_06_00
+#if SSS_HAVE_SE05X_VER_GTE_07_02
 typedef smStatus_t (*fp_RSA_KeyWrite_t)(pSe05xSession_t session_ctx,
     pSe05xPolicy_t policy,
     uint32_t objectID,
@@ -277,29 +304,13 @@ typedef smStatus_t (*fp_RSA_KeyWrite_t)(pSe05xSession_t session_ctx,
     const SE05x_KeyPart_t key_part,
     const SE05x_RSAKeyFormat_t rsa_format,
     uint32_t version);
-#endif //SSS_HAVE_SE05X_VER_GTE_06_00
+#endif //SSS_HAVE_SE05X_VER_GTE_07_02
 #endif //SSSFTR_SE05X_RSA && SSSFTR_SE05X_KEY_SET && SSS_HAVE_RSA
 
 #define SSS_SE05X_RESID_ATTESTATION_KEY 0xF0000012
 #if SSS_HAVE_SE05X_VER_GTE_07_02
 extern int add_taglength_to_data(
     uint8_t **buf, size_t *bufLen, SE05x_TAG_t tag, const uint8_t *cmd, size_t cmdLen, bool extendedLength);
-
-#if SSS_HAVE_TPM_BN && SSS_HAVE_ECDAA
-#define ECDAA_RANDOM_KEY_OBJ_AUTH_ID 0x00000000
-#define SSS_SE05X_RESID_ECDAA_RANDOM_KEY_START 0x7DB00000
-#define SSS_SE05X_RESID_ECDAA_RANDOM_KEY_NUMBER 0x00010000
-#define SSS_SE05X_RESID_ECDAA_RANDOM_KEY_MASK 0xFFFF0000
-#define SSS_SE05X_OBJ_ATTR_ORIG_REV_OFFSET 5
-#define SSS_SE05X_OBJ_ATTR_TYPE_OFFSET 4
-
-#if SSS_HAVE_SE05X_VER_GTE_07_02
-#if SSSFTR_SE05X_ECC
-static sss_status_t sss_se05x_generate_ecdaa_random_key(Se05xSession_t *context, uint32_t *random_keyId);
-static sss_status_t sss_se05x_get_ecdaa_random_key_id(Se05xSession_t *context, uint32_t *random_keyId);
-#endif // SSSFTR_SE05X_ECC
-#endif // SSS_HAVE_SE05X_VER_GTE_07_02
-#endif // SSS_HAVE_TPM_BN
 
 #endif // SSS_HAVE_SE05X_VER_GTE_07_02
 
@@ -411,6 +422,11 @@ sss_status_t sss_se05x_session_open(sss_se05x_session_t *session,
 #else
         /* AX_EMBEDDED Or Native */
         lReturn = SM_I2CConnect(&(se05xSession->conn_ctx), &CommState, atr, &atrLen, pAuthCtx->portName);
+        if (lReturn == ERR_APDU_THROUGHPUT) {
+            LOG_E("SM_I2CConnect Failed. Status %04X", lReturn);
+            retval = kStatus_SSS_ApduThroughputError;
+            goto exit;
+        }
         if (lReturn != SW_OK) {
             LOG_E("SM_I2CConnect Failed. Status %04X", lReturn);
             retval = kStatus_SSS_Fail;
@@ -427,6 +443,7 @@ sss_status_t sss_se05x_session_open(sss_se05x_session_t *session,
             /* Not selecting the applet, so we don't know whether it's old or new */
         }
         else {
+            se05xSession->applet_version = (0xFFFFFF00 & CommState.appletVersion);
 #if ENABLE_APPLET_VERSION_CHECK
             if (HEX_EXPECTED_APPLET_VERSION == (0xFFFFFF00 & CommState.appletVersion)) {
                 /* Fine */
@@ -462,6 +479,33 @@ sss_status_t sss_se05x_session_open(sss_se05x_session_t *session,
         }
     }
 
+#ifdef SSS_USE_SCP03_THREAD_SAFETY /* Disabled by default. Enable in case of multiple applications access platform SCP03 session */
+#if SSS_HAVE_SCP_SCP03_SSS
+    if (pAuthCtx->auth.authType == kSSS_AuthType_SCP03) {
+#if defined(USE_RTOS) && (USE_RTOS == 1)
+        se05xSession->scp03_lock = xSemaphoreCreateMutex();
+        if (se05xSession->scp03_lock == NULL) {
+            LOG_E("xSemaphoreCreateMutex failed");
+            return kStatus_SSS_Fail;
+        }
+        else {
+            se05xSession->scp03_lock_init = 1;
+            LOG_D("Mutex Init successfull");
+        }
+#elif (__GNUC__ && !AX_EMBEDDED)
+        if (pthread_mutex_init(&se05xSession->scp03_lock, NULL) != 0) {
+            LOG_E("\n mutex init has failed");
+            return kStatus_SSS_Fail;
+        }
+        else {
+            se05xSession->scp03_lock_init = 1;
+            LOG_D("Mutex Init successfull");
+        }
+#endif
+    }
+#endif //#if SSS_HAVE_SCP_SCP03_SSS
+#endif //#if SSS_USE_SCP03_THREAD_SAFETY
+
     if (pAuthCtx->auth.authType == kSSS_AuthType_ECKey) {
         ENSURE_OR_GO_EXIT(pAuthCtx->auth.ctx.eckey.pDyn_ctx);
         if (CommState.appletVersion == 0) {
@@ -471,6 +515,10 @@ sss_status_t sss_se05x_session_open(sss_se05x_session_t *session,
             size_t appletVersionLen            = sizeof(appletVersion);
             sss_se05x_session_t *se05x_session = (sss_se05x_session_t *)pAuthCtx->tunnelCtx->session;
             status = Se05x_API_GetVersion(&se05x_session->s_ctx, appletVersion, &appletVersionLen);
+            if (status == SM_ERR_APDU_THROUGHPUT) {
+                retval = kStatus_SSS_ApduThroughputError;
+                goto exit;
+            }
             if (status != SM_OK) {
                 LOG_E("Unable to retrive applet version");
                 retval = kStatus_SSS_Fail;
@@ -547,6 +595,9 @@ sss_status_t sss_se05x_session_open(sss_se05x_session_t *session,
 #if SSSFTR_SE05X_AuthECKey || SSSFTR_SE05X_AuthSession
     if (pAuthCtx->connType == kType_SE_Conn_Type_Channel) {
         se05xSession->pChannelCtx = (struct _sss_se05x_tunnel_context *)pAuthCtx->tunnelCtx;
+        if (se05xSession->pChannelCtx->se05x_session->subsystem == kType_SSS_SE_SE05x) {
+            se05xSession->applet_version = se05xSession->pChannelCtx->se05x_session->s_ctx.applet_version;
+        }
     }
 
     if ((application_id != 0) &&
@@ -613,7 +664,10 @@ sss_status_t sss_se05x_session_open(sss_se05x_session_t *session,
         retval             = kStatus_SSS_Success;
     }
     else {
-        retval = kStatus_SSS_Fail;
+        /* Retain the APDU throughput error. Any other error, pass generic kStatus_SSS_Fail */
+        if (retval != kStatus_SSS_ApduThroughputError) {
+            retval = kStatus_SSS_Fail;
+        }
     }
 exit:
     if (retval != kStatus_SSS_Success) {
@@ -634,8 +688,9 @@ static sss_status_t sss_session_auth_open(sss_se05x_session_t *session,
     sss_connection_type_t connect_type,
     void *connectionData)
 {
-    sss_status_t retval = kStatus_SSS_Fail;
-    void *conn_ctx      = session->s_ctx.conn_ctx;
+    sss_status_t retval     = kStatus_SSS_Fail;
+    void *conn_ctx          = session->s_ctx.conn_ctx;
+    uint32_t applet_version = session->s_ctx.applet_version;
     SE05x_Connect_Ctx_t *pAuthCtx;
     smStatus_t status = SM_NOT_OK;
 #if SSSFTR_SE05X_AuthSession
@@ -652,7 +707,8 @@ static sss_status_t sss_session_auth_open(sss_se05x_session_t *session,
     se05xSession = &session->s_ctx;
 
     /* Restore connection context */
-    se05xSession->conn_ctx = conn_ctx;
+    se05xSession->conn_ctx       = conn_ctx;
+    se05xSession->applet_version = applet_version;
 
     ENSURE_OR_GO_EXIT(connectionData != NULL);
     pAuthCtx = (SE05x_Connect_Ctx_t *)connectionData;
@@ -751,10 +807,16 @@ static sss_status_t sss_session_auth_open(sss_se05x_session_t *session,
     }
     else {
         memset(session, 0x00, sizeof(*session));
-        retval = kStatus_SSS_Fail;
+        if (status == SM_ERR_APDU_THROUGHPUT) {
+            retval = kStatus_SSS_ApduThroughputError;
+        }
+        else {
+            retval = kStatus_SSS_Fail;
+        }
     }
     /* Restore connection context */
-    session->s_ctx.conn_ctx = conn_ctx;
+    session->s_ctx.conn_ctx       = conn_ctx;
+    session->s_ctx.applet_version = applet_version;
 
 exit:
     return retval;
@@ -793,6 +855,9 @@ sss_status_t sss_se05x_refresh_session(sss_se05x_session_t *session, void *conne
         retval = kStatus_SSS_Success;
     }
 exit:
+    if (status == SM_ERR_APDU_THROUGHPUT) {
+        retval = kStatus_SSS_ApduThroughputError;
+    }
     return retval;
 }
 
@@ -909,12 +974,40 @@ cleanup:
     if (sm_status == SM_OK) {
         retval = kStatus_SSS_Success;
     }
+    else if (sm_status == SM_ERR_APDU_THROUGHPUT) {
+        retval = kStatus_SSS_ApduThroughputError;
+    }
     return retval;
 }
 
 void sss_se05x_session_close(sss_se05x_session_t *session)
 {
-    Se05x_API_CloseSession(&session->s_ctx);
+    smStatus_t sm_status = SM_NOT_OK;
+
+#ifdef SSS_USE_SCP03_THREAD_SAFETY
+#if SSS_HAVE_SCP_SCP03_SSS
+#if defined(USE_RTOS) && (USE_RTOS == 1)
+    if (session->s_ctx.scp03_lock_init) {
+        LOG_D("scp03_lock pthread_mutex_destroy");
+        vSemaphoreDelete(session->s_ctx.scp03_lock);
+        session->s_ctx.scp03_lock_init = 0;
+    }
+#elif (__GNUC__ && !AX_EMBEDDED)
+    if (session->s_ctx.scp03_lock_init) {
+        LOG_D("scp03_lock pthread_mutex_destroy");
+        if (pthread_mutex_destroy(&session->s_ctx.scp03_lock) != 0) {
+            LOG_E("pthread_mutex_destroy failed");
+        }
+        session->s_ctx.scp03_lock_init = 0;
+    }
+#endif //#if defined(USE_RTOS) && (USE_RTOS == 1)
+#endif //#if SSS_HAVE_SCP_SCP03_SSS
+#endif //#ifdef SSS_USE_SCP03_THREAD_SAFETY
+
+    sm_status = Se05x_API_CloseSession(&session->s_ctx);
+    if (sm_status == SM_ERR_APDU_THROUGHPUT) {
+        LOG_E("6a66 Error");
+    }
     if (session->s_ctx.pChannelCtx == NULL) {
         SM_Close(session->s_ctx.conn_ctx, 0);
     }
@@ -935,6 +1028,9 @@ void sss_se05x_session_delete(sss_se05x_session_t *session)
 sss_status_t sss_se05x_key_object_init(sss_se05x_object_t *keyObject, sss_se05x_key_store_t *keyStore)
 {
     sss_status_t retval = kStatus_SSS_Success;
+    if (keyObject == NULL) {
+        return kStatus_SSS_Fail;
+    }
     memset(keyObject, 0, sizeof(*keyObject));
     keyObject->keyStore = keyStore;
 
@@ -968,6 +1064,9 @@ sss_status_t sss_se05x_key_object_allocate_handle(sss_se05x_object_t *keyObject,
     }
     else {
         LOG_E("Couldn't check if object id 0x%X exists", keyId);
+        if (status == SM_ERR_APDU_THROUGHPUT) {
+            return kStatus_SSS_ApduThroughputError;
+        }
         return kStatus_SSS_Fail;
     }
 
@@ -989,13 +1088,19 @@ sss_status_t sss_se05x_key_object_get_handle(sss_se05x_object_t *keyObject, uint
     uint8_t retTransientType;
     SE05x_ECCurve_t retCurveId;
     const SE05x_AttestationType_t attestationType = kSE05x_AttestationType_None;
-    smStatus_t apiRetval;
+    smStatus_t apiRetval                          = SM_NOT_OK;
+    smStatus_t apduRetValue                       = SM_NOT_OK;
 
-    if (0 == CheckIfKeyIdExists(keyId, &keyObject->keyStore->session->s_ctx)) {
+    if (0 == CheckIfKeyIdExists(keyId, &keyObject->keyStore->session->s_ctx, &apduRetValue)) {
         /* Object does not exist  */
         LOG_D("keyId does not exist");
         LOG_U32_D(keyId);
-        return retval;
+        if (apduRetValue == SM_ERR_APDU_THROUGHPUT) {
+            return kStatus_SSS_ApduThroughputError;
+        }
+        else {
+            return retval;
+        }
     }
 
     keyObject->keyId = keyId;
@@ -1047,12 +1152,7 @@ sss_status_t sss_se05x_key_object_get_handle(sss_se05x_object_t *keyObject, uint
                     keyObject->cipherType = kSSS_CipherType_EC_MONTGOMERY;
                 }
 #endif
-#if SSS_HAVE_TPM_BN
-                else if (retCurveId == kSE05x_ECCurve_TPM_ECC_BN_P256) {
-                    keyObject->cipherType = kSSS_CipherType_EC_BARRETO_NAEHRIG;
-                }
-#endif
-#if SSS_HAVE_SE05X_VER_GTE_06_00 && SSS_HAVE_EC_MONT
+#if SSS_HAVE_SE05X_VER_GTE_07_02 && SSS_HAVE_EC_MONT
                 else if (retCurveId == kSE05x_ECCurve_RESERVED_ID_ECC_MONT_DH_448) {
                     keyObject->cipherType = kSSS_CipherType_EC_MONTGOMERY;
                 }
@@ -1063,6 +1163,9 @@ sss_status_t sss_se05x_key_object_get_handle(sss_se05x_object_t *keyObject, uint
             }
             else {
                 LOG_E("error in Se05x_API_GetECCurveId");
+                if (apiRetval == SM_ERR_APDU_THROUGHPUT) {
+                    return kStatus_SSS_ApduThroughputError;
+                }
                 return kStatus_SSS_Fail;
             }
         }
@@ -1200,7 +1303,12 @@ sss_status_t sss_se05x_key_object_get_handle(sss_se05x_object_t *keyObject, uint
     }
     else {
         LOG_W("Error in Se05x_API_ReadType. Further use of object may fail");
-        retval = kStatus_SSS_Success;
+        if (apiRetval == SM_ERR_APDU_THROUGHPUT) {
+            retval = kStatus_SSS_ApduThroughputError;
+        }
+        else {
+            retval = kStatus_SSS_Success;
+        }
         return retval;
     }
 
@@ -1300,6 +1408,9 @@ sss_status_t sss_se05x_derive_key_context_init(sss_se05x_derive_key_t *context,
 {
     sss_status_t retval = kStatus_SSS_Success;
 
+    if (context == NULL) {
+        return kStatus_SSS_Fail;
+    }
     context->session   = session;
     context->keyObject = keyObject;
     context->algorithm = algorithm;
@@ -1363,7 +1474,9 @@ sss_status_t sss_se05x_derive_key_go(sss_se05x_derive_key_t *context,
 
     retval = kStatus_SSS_Success;
 exit:
-
+    if (status == SM_ERR_APDU_THROUGHPUT) {
+        retval = kStatus_SSS_ApduThroughputError;
+    }
     return retval;
 }
 
@@ -1388,8 +1501,9 @@ sss_status_t sss_se05x_derive_key_one_go(sss_se05x_derive_key_t *context,
     SE05x_HkdfMode_t hkdfMode =
         (context->mode == kMode_SSS_HKDF_ExpandOnly ? kSE05x_HkdfMode_ExpandOnly : kSE05x_HkdfMode_ExtractExpand);
 
-#if SSS_HAVE_SE05X_VER_GTE_06_00
+#if SSS_HAVE_SE05X_VER_GTE_07_02
     if (derivedKeyObject != NULL) {
+        ENSURE_OR_GO_EXIT(context->keyObject != NULL);
         if (context->keyObject->keyStore->session->subsystem == derivedKeyObject->keyStore->session->subsystem) {
             pHkdfKey = NULL;
         }
@@ -1428,7 +1542,9 @@ sss_status_t sss_se05x_derive_key_one_go(sss_se05x_derive_key_t *context,
 
     retval = kStatus_SSS_Success;
 exit:
-
+    if (status == SM_ERR_APDU_THROUGHPUT) {
+        retval = kStatus_SSS_ApduThroughputError;
+    }
     return retval;
 }
 
@@ -1455,14 +1571,16 @@ sss_status_t sss_se05x_derive_key_sobj_one_go(sss_se05x_derive_key_t *context,
 
     if (saltKeyObject != NULL) {
         // Enforce that Salt is stored (securely) in the same keystore as the HMAC key.
+        ENSURE_OR_GO_EXIT(context->keyObject != NULL);
         if (context->keyObject->keyStore != saltKeyObject->keyStore) {
             retval = kStatus_SSS_InvalidArgument;
             goto exit;
         }
     }
 
-#if SSS_HAVE_SE05X_VER_GTE_06_00
+#if SSS_HAVE_SE05X_VER_GTE_07_02
     if (derivedKeyObject != NULL) {
+        ENSURE_OR_GO_EXIT(context->keyObject != NULL);
         if (context->keyObject->keyStore == derivedKeyObject->keyStore) {
             pHkdfKey = NULL;
         }
@@ -1501,7 +1619,9 @@ sss_status_t sss_se05x_derive_key_sobj_one_go(sss_se05x_derive_key_t *context,
 
     retval = kStatus_SSS_Success;
 exit:
-
+    if (status == SM_ERR_APDU_THROUGHPUT) {
+        retval = kStatus_SSS_ApduThroughputError;
+    }
     return retval;
 }
 
@@ -1521,7 +1641,7 @@ sss_status_t sss_se05x_derive_key_dh(
 #if SSS_HAVE_EC_MONT
     uint8_t swapByte = 0;
 #endif
-#if SSS_HAVE_SE05X_VER_GTE_06_00
+#if SSS_HAVE_SE05X_VER_GTE_07_02
     uint8_t invertEndiannes = 0x00;
 #endif
 
@@ -1536,22 +1656,11 @@ sss_status_t sss_se05x_derive_key_dh(
         (sss_key_store_t *)sss_other_keyObject->keyStore, sss_other_keyObject, pubkey, &pubkeylen, &pbKeyBitLen);
     ENSURE_OR_GO_EXIT(retval == kStatus_SSS_Success);
 
-    switch (otherPartyKeyObject->cipherType) {
-#if SSS_HAVE_TPM_BN
-    case kSSS_CipherType_EC_BARRETO_NAEHRIG:
-        /* TODO: Implement asn parser */
-        publicKeyLen   = pubkeylen;
-        publicKeyIndex = 0;
-        break;
-#endif
-    default: {
-        retval = sss_util_pkcs8_asn1_get_ec_public_key_index(
-            (const uint8_t *)pubkey, pubkeylen, &publicKeyIndex, &publicKeyLen);
-        if (retval != kStatus_SSS_Success) {
-            LOG_W("error in sss_util_pkcs8_asn1_get_ec_public_key_index");
-            goto exit;
-        }
-    }
+    retval =
+        sss_util_pkcs8_asn1_get_ec_public_key_index((const uint8_t *)pubkey, pubkeylen, &publicKeyIndex, &publicKeyLen);
+    if (retval != kStatus_SSS_Success) {
+        LOG_W("error in sss_util_pkcs8_asn1_get_ec_public_key_index");
+        goto exit;
     }
 
 #if SSS_HAVE_EC_MONT
@@ -1574,7 +1683,7 @@ sss_status_t sss_se05x_derive_key_dh(
     else {
         goto exit;
     }
-#if SSS_HAVE_SE05X_VER_GTE_06_00
+#if SSS_HAVE_SE05X_VER_GTE_07_02
 #if SSS_HAVE_EC_MONT
     if (otherPartyKeyObject->cipherType == kSSS_CipherType_EC_MONTGOMERY) {
         // In case of Montgomery curves we want to store the
@@ -1592,7 +1701,12 @@ sss_status_t sss_se05x_derive_key_dh(
             invertEndiannes);
         if (status != SM_OK) {
             LOG_W("error in Se05x_API_ECDHGenerateSharedSecret_InObject");
-            retval = kStatus_SSS_Fail;
+            if (status == SM_ERR_APDU_THROUGHPUT) {
+                retval = kStatus_SSS_ApduThroughputError;
+            }
+            else {
+                retval = kStatus_SSS_Fail;
+            }
             goto exit;
         }
     }
@@ -1605,7 +1719,12 @@ sss_status_t sss_se05x_derive_key_dh(
             sharedsecret,
             &sharedsecretLen);
         if (status != SM_OK) {
-            retval = kStatus_SSS_Fail;
+            if (status == SM_ERR_APDU_THROUGHPUT) {
+                retval = kStatus_SSS_ApduThroughputError;
+            }
+            else {
+                retval = kStatus_SSS_Fail;
+            }
             goto exit;
         }
 
@@ -1630,7 +1749,7 @@ sss_status_t sss_se05x_derive_key_dh(
             NULL,
             0);
         ENSURE_OR_GO_EXIT(retval == kStatus_SSS_Success);
-#if SSS_HAVE_SE05X_VER_GTE_06_00
+#if SSS_HAVE_SE05X_VER_GTE_07_02
     }
 #endif
 
@@ -1653,6 +1772,9 @@ void sss_se05x_derive_key_context_free(sss_se05x_derive_key_t *context)
 sss_status_t sss_se05x_key_store_context_init(sss_se05x_key_store_t *keyStore, sss_se05x_session_t *session)
 {
     sss_status_t retval = kStatus_SSS_Success;
+    if (keyStore == NULL) {
+        return kStatus_SSS_Fail;
+    }
     memset(keyStore, 0, sizeof(*keyStore));
     keyStore->session = session;
     return retval;
@@ -1758,10 +1880,15 @@ static sss_status_t sss_se05x_key_store_set_rsa_key(sss_se05x_key_store_t *keySt
 #endif
 
     if (key_type == kSSS_KeyPart_Public) {
-        retval = sss_util_asn1_rsa_parse_public(key, keyLen, &rsaN, &rsaNlen, &rsaE, &rsaElen);
+        smStatus_t apduRetValue = SM_NOT_OK;
+        retval                  = sss_util_asn1_rsa_parse_public(key, keyLen, &rsaN, &rsaNlen, &rsaE, &rsaElen);
         ENSURE_OR_GO_EXIT(retval == kStatus_SSS_Success);
 
-        IdExists     = CheckIfKeyIdExists(keyObject->keyId, &keyStore->session->s_ctx);
+        IdExists = CheckIfKeyIdExists(keyObject->keyId, &keyStore->session->s_ctx, &apduRetValue);
+        if (apduRetValue == SM_ERR_APDU_THROUGHPUT) {
+            retval = kStatus_SSS_ApduThroughputError;
+            goto exit;
+        }
         keyBitLength = (IdExists == 1) ? 0 : keyBitLen;
         obj_exists   = (IdExists == 1) ? kSE05x_Result_SUCCESS : kSE05x_Result_FAILURE;
 
@@ -1788,7 +1915,12 @@ static sss_status_t sss_se05x_key_store_set_rsa_key(sss_se05x_key_store_t *keySt
             rsa_format,
             obj_exists);
         if (status != SM_OK) {
-            retval = kStatus_SSS_Fail;
+            if (status == SM_ERR_APDU_THROUGHPUT) {
+                retval = kStatus_SSS_ApduThroughputError;
+            }
+            else {
+                retval = kStatus_SSS_Fail;
+            }
             goto exit;
         }
 
@@ -1812,11 +1944,17 @@ static sss_status_t sss_se05x_key_store_set_rsa_key(sss_se05x_key_store_t *keySt
             obj_exists);
 
         if (status != SM_OK) {
-            retval = kStatus_SSS_Fail;
+            if (status == SM_ERR_APDU_THROUGHPUT) {
+                retval = kStatus_SSS_ApduThroughputError;
+            }
+            else {
+                retval = kStatus_SSS_Fail;
+            }
             goto exit;
         }
     }
     else if (key_type == kSSS_KeyPart_Private) {
+        smStatus_t apduRetValue = SM_NOT_OK;
         if (keyObject->cipherType == kSSS_CipherType_RSA) {
             retval = sss_util_asn1_rsa_parse_private(key,
                 keyLen,
@@ -1838,7 +1976,6 @@ static sss_status_t sss_se05x_key_store_set_rsa_key(sss_se05x_key_store_t *keySt
                 NULL,
                 NULL);
             if (retval != kStatus_SSS_Success) {
-                retval = kStatus_SSS_Fail;
                 goto exit;
             }
             if ((rsaN == NULL) || (rsaD == NULL)) {
@@ -1846,7 +1983,11 @@ static sss_status_t sss_se05x_key_store_set_rsa_key(sss_se05x_key_store_t *keySt
                 goto exit;
             }
 
-            IdExists     = CheckIfKeyIdExists(keyObject->keyId, &keyStore->session->s_ctx);
+            IdExists = CheckIfKeyIdExists(keyObject->keyId, &keyStore->session->s_ctx, &apduRetValue);
+            if (apduRetValue == SM_ERR_APDU_THROUGHPUT) {
+                retval = kStatus_SSS_ApduThroughputError;
+                goto exit;
+            }
             keyBitLength = (IdExists == 1) ? 0 : keyBitLen;
             obj_exists   = (IdExists == 1) ? kSE05x_Result_SUCCESS : kSE05x_Result_FAILURE;
 
@@ -1870,7 +2011,12 @@ static sss_status_t sss_se05x_key_store_set_rsa_key(sss_se05x_key_store_t *keySt
                 obj_exists);
 
             if (status != SM_OK) {
-                retval = kStatus_SSS_Fail;
+                if (status == SM_ERR_APDU_THROUGHPUT) {
+                    retval = kStatus_SSS_ApduThroughputError;
+                }
+                else {
+                    retval = kStatus_SSS_Fail;
+                }
                 goto exit;
             }
 
@@ -1894,7 +2040,12 @@ static sss_status_t sss_se05x_key_store_set_rsa_key(sss_se05x_key_store_t *keySt
                 obj_exists);
 
             if (status != SM_OK) {
-                retval = kStatus_SSS_Fail;
+                if (status == SM_ERR_APDU_THROUGHPUT) {
+                    retval = kStatus_SSS_ApduThroughputError;
+                }
+                else {
+                    retval = kStatus_SSS_Fail;
+                }
                 goto exit;
             }
         }
@@ -1919,7 +2070,6 @@ static sss_status_t sss_se05x_key_store_set_rsa_key(sss_se05x_key_store_t *keySt
                 &rsaQINV,
                 &rsaQINVlen);
             if (retval != kStatus_SSS_Success) {
-                retval = kStatus_SSS_Fail;
                 goto exit;
             }
             if ((rsaP == NULL) || (rsaQ == NULL) || (rsaDP == NULL) || (rsaDQ == NULL) || (rsaQINV == NULL)) {
@@ -1927,7 +2077,11 @@ static sss_status_t sss_se05x_key_store_set_rsa_key(sss_se05x_key_store_t *keySt
                 goto exit;
             }
 
-            IdExists     = CheckIfKeyIdExists(keyObject->keyId, &keyStore->session->s_ctx);
+            IdExists = CheckIfKeyIdExists(keyObject->keyId, &keyStore->session->s_ctx, &apduRetValue);
+            if (apduRetValue == SM_ERR_APDU_THROUGHPUT) {
+                retval = kStatus_SSS_ApduThroughputError;
+                goto exit;
+            }
             keyBitLength = (IdExists == 1) ? 0 : keyBitLen;
             obj_exists   = (IdExists == 1) ? kSE05x_Result_SUCCESS : kSE05x_Result_FAILURE;
 
@@ -1951,7 +2105,12 @@ static sss_status_t sss_se05x_key_store_set_rsa_key(sss_se05x_key_store_t *keySt
                 obj_exists);
 
             if (status != SM_OK) {
-                retval = kStatus_SSS_Fail;
+                if (status == SM_ERR_APDU_THROUGHPUT) {
+                    retval = kStatus_SSS_ApduThroughputError;
+                }
+                else {
+                    retval = kStatus_SSS_Fail;
+                }
                 goto exit;
             }
 
@@ -1975,7 +2134,12 @@ static sss_status_t sss_se05x_key_store_set_rsa_key(sss_se05x_key_store_t *keySt
                 obj_exists);
 
             if (status != SM_OK) {
-                retval = kStatus_SSS_Fail;
+                if (status == SM_ERR_APDU_THROUGHPUT) {
+                    retval = kStatus_SSS_ApduThroughputError;
+                }
+                else {
+                    retval = kStatus_SSS_Fail;
+                }
                 goto exit;
             }
 
@@ -1999,7 +2163,12 @@ static sss_status_t sss_se05x_key_store_set_rsa_key(sss_se05x_key_store_t *keySt
                 obj_exists);
 
             if (status != SM_OK) {
-                retval = kStatus_SSS_Fail;
+                if (status == SM_ERR_APDU_THROUGHPUT) {
+                    retval = kStatus_SSS_ApduThroughputError;
+                }
+                else {
+                    retval = kStatus_SSS_Fail;
+                }
                 goto exit;
             }
 
@@ -2023,7 +2192,12 @@ static sss_status_t sss_se05x_key_store_set_rsa_key(sss_se05x_key_store_t *keySt
                 obj_exists);
 
             if (status != SM_OK) {
-                retval = kStatus_SSS_Fail;
+                if (status == SM_ERR_APDU_THROUGHPUT) {
+                    retval = kStatus_SSS_ApduThroughputError;
+                }
+                else {
+                    retval = kStatus_SSS_Fail;
+                }
                 goto exit;
             }
 
@@ -2047,14 +2221,20 @@ static sss_status_t sss_se05x_key_store_set_rsa_key(sss_se05x_key_store_t *keySt
                 obj_exists);
 
             if (status != SM_OK) {
-                retval = kStatus_SSS_Fail;
+                if (status == SM_ERR_APDU_THROUGHPUT) {
+                    retval = kStatus_SSS_ApduThroughputError;
+                }
+                else {
+                    retval = kStatus_SSS_Fail;
+                }
                 goto exit;
             }
         }
     }
     else if (key_type == kSSS_KeyPart_Pair) {
         if (keyObject->cipherType == kSSS_CipherType_RSA) {
-            retval = sss_util_asn1_rsa_parse_private(key,
+            smStatus_t apduRetValue = SM_NOT_OK;
+            retval                  = sss_util_asn1_rsa_parse_private(key,
                 keyLen,
                 (sss_cipher_type_t)keyObject->cipherType,
                 &rsaN,
@@ -2078,7 +2258,11 @@ static sss_status_t sss_se05x_key_store_set_rsa_key(sss_se05x_key_store_t *keySt
             ENSURE_OR_EXIT_WITH_STATUS_ON_ERROR(
                 !((rsaD == NULL) || (rsaE == NULL) || (rsaN == NULL)), retval, kStatus_SSS_Fail);
 
-            IdExists     = CheckIfKeyIdExists(keyObject->keyId, &keyStore->session->s_ctx);
+            IdExists = CheckIfKeyIdExists(keyObject->keyId, &keyStore->session->s_ctx, &apduRetValue);
+            if (apduRetValue == SM_ERR_APDU_THROUGHPUT) {
+                retval = kStatus_SSS_ApduThroughputError;
+                goto exit;
+            }
             keyBitLength = (IdExists == 1) ? 0 : keyBitLen;
             obj_exists   = (IdExists == 1) ? kSE05x_Result_SUCCESS : kSE05x_Result_FAILURE;
 
@@ -2102,7 +2286,12 @@ static sss_status_t sss_se05x_key_store_set_rsa_key(sss_se05x_key_store_t *keySt
                 obj_exists);
 
             if (status != SM_OK) {
-                retval = kStatus_SSS_Fail;
+                if (status == SM_ERR_APDU_THROUGHPUT) {
+                    retval = kStatus_SSS_ApduThroughputError;
+                }
+                else {
+                    retval = kStatus_SSS_Fail;
+                }
                 goto exit;
             }
 
@@ -2126,7 +2315,12 @@ static sss_status_t sss_se05x_key_store_set_rsa_key(sss_se05x_key_store_t *keySt
                 obj_exists);
 
             if (status != SM_OK) {
-                retval = kStatus_SSS_Fail;
+                if (status == SM_ERR_APDU_THROUGHPUT) {
+                    retval = kStatus_SSS_ApduThroughputError;
+                }
+                else {
+                    retval = kStatus_SSS_Fail;
+                }
                 goto exit;
             }
 
@@ -2150,12 +2344,18 @@ static sss_status_t sss_se05x_key_store_set_rsa_key(sss_se05x_key_store_t *keySt
                 obj_exists);
 
             if (status != SM_OK) {
-                retval = kStatus_SSS_Fail;
+                if (status == SM_ERR_APDU_THROUGHPUT) {
+                    retval = kStatus_SSS_ApduThroughputError;
+                }
+                else {
+                    retval = kStatus_SSS_Fail;
+                }
                 goto exit;
             }
         }
         else if (keyObject->cipherType == kSSS_CipherType_RSA_CRT) {
-            retval = sss_util_asn1_rsa_parse_private(key,
+            smStatus_t apduRetValue = SM_NOT_OK;
+            retval                  = sss_util_asn1_rsa_parse_private(key,
                 keyLen,
                 (sss_cipher_type_t)keyObject->cipherType,
                 &rsaN,
@@ -2182,7 +2382,11 @@ static sss_status_t sss_se05x_key_store_set_rsa_key(sss_se05x_key_store_t *keySt
                 goto exit;
             }
 
-            IdExists     = CheckIfKeyIdExists(keyObject->keyId, &keyStore->session->s_ctx);
+            IdExists = CheckIfKeyIdExists(keyObject->keyId, &keyStore->session->s_ctx, &apduRetValue);
+            if (apduRetValue == SM_ERR_APDU_THROUGHPUT) {
+                retval = kStatus_SSS_ApduThroughputError;
+                goto exit;
+            }
             keyBitLength = (IdExists == 1) ? 0 : keyBitLen;
             obj_exists   = (IdExists == 1) ? kSE05x_Result_SUCCESS : kSE05x_Result_FAILURE;
 
@@ -2206,7 +2410,12 @@ static sss_status_t sss_se05x_key_store_set_rsa_key(sss_se05x_key_store_t *keySt
                 obj_exists);
 
             if (status != SM_OK) {
-                retval = kStatus_SSS_Fail;
+                if (status == SM_ERR_APDU_THROUGHPUT) {
+                    retval = kStatus_SSS_ApduThroughputError;
+                }
+                else {
+                    retval = kStatus_SSS_Fail;
+                }
                 goto exit;
             }
 
@@ -2230,7 +2439,12 @@ static sss_status_t sss_se05x_key_store_set_rsa_key(sss_se05x_key_store_t *keySt
                 obj_exists);
 
             if (status != SM_OK) {
-                retval = kStatus_SSS_Fail;
+                if (status == SM_ERR_APDU_THROUGHPUT) {
+                    retval = kStatus_SSS_ApduThroughputError;
+                }
+                else {
+                    retval = kStatus_SSS_Fail;
+                }
                 goto exit;
             }
 
@@ -2254,7 +2468,12 @@ static sss_status_t sss_se05x_key_store_set_rsa_key(sss_se05x_key_store_t *keySt
                 obj_exists);
 
             if (status != SM_OK) {
-                retval = kStatus_SSS_Fail;
+                if (status == SM_ERR_APDU_THROUGHPUT) {
+                    retval = kStatus_SSS_ApduThroughputError;
+                }
+                else {
+                    retval = kStatus_SSS_Fail;
+                }
                 goto exit;
             }
 
@@ -2278,7 +2497,12 @@ static sss_status_t sss_se05x_key_store_set_rsa_key(sss_se05x_key_store_t *keySt
                 obj_exists);
 
             if (status != SM_OK) {
-                retval = kStatus_SSS_Fail;
+                if (status == SM_ERR_APDU_THROUGHPUT) {
+                    retval = kStatus_SSS_ApduThroughputError;
+                }
+                else {
+                    retval = kStatus_SSS_Fail;
+                }
                 goto exit;
             }
 
@@ -2302,7 +2526,12 @@ static sss_status_t sss_se05x_key_store_set_rsa_key(sss_se05x_key_store_t *keySt
                 obj_exists);
 
             if (status != SM_OK) {
-                retval = kStatus_SSS_Fail;
+                if (status == SM_ERR_APDU_THROUGHPUT) {
+                    retval = kStatus_SSS_ApduThroughputError;
+                }
+                else {
+                    retval = kStatus_SSS_Fail;
+                }
                 goto exit;
             }
 
@@ -2326,7 +2555,12 @@ static sss_status_t sss_se05x_key_store_set_rsa_key(sss_se05x_key_store_t *keySt
                 obj_exists);
 
             if (status != SM_OK) {
-                retval = kStatus_SSS_Fail;
+                if (status == SM_ERR_APDU_THROUGHPUT) {
+                    retval = kStatus_SSS_ApduThroughputError;
+                }
+                else {
+                    retval = kStatus_SSS_Fail;
+                }
                 goto exit;
             }
 
@@ -2350,7 +2584,12 @@ static sss_status_t sss_se05x_key_store_set_rsa_key(sss_se05x_key_store_t *keySt
                 obj_exists);
 
             if (status != SM_OK) {
-                retval = kStatus_SSS_Fail;
+                if (status == SM_ERR_APDU_THROUGHPUT) {
+                    retval = kStatus_SSS_ApduThroughputError;
+                }
+                else {
+                    retval = kStatus_SSS_Fail;
+                }
                 goto exit;
             }
         }
@@ -2494,7 +2733,7 @@ static sss_status_t getEccPrivPubKeyLen(uint32_t curve_id, size_t *pubKeyLen, si
     } break;
 #endif // SSS_HAVE_EC_MONT || SSS_HAVE_EC_ED
 
-#if SSS_HAVE_SE05X_VER_GTE_06_00 && SSS_HAVE_EC_MONT
+#if SSS_HAVE_SE05X_VER_GTE_07_02 && SSS_HAVE_EC_MONT
     case kSE05x_ECCurve_RESERVED_ID_ECC_MONT_DH_448: {
         *privKeyLen = 56;
         *pubKeyLen  = 56;
@@ -2532,14 +2771,20 @@ smStatus_t sss_se05x_create_curve_if_needed(Se05xSession_t *pSession, uint32_t c
 
 #if SSS_HAVE_EC_MONT
     if (curve_id == kSE05x_ECCurve_RESERVED_ID_ECC_MONT_DH_25519
-#if SSS_HAVE_SE05X_VER_GTE_06_00
+#if SSS_HAVE_SE05X_VER_GTE_07_02
         || curve_id == kSE05x_ECCurve_RESERVED_ID_ECC_MONT_DH_448
 #endif
     ) {
-#if SSS_HAVE_SE05X_VER_GTE_06_00
+#if SSS_HAVE_SE05X_VER_GTE_07_02
         status = Se05x_API_CreateECCurve(pSession, curve_id);
-        /* If curve is already created, Se05x_API_CreateECCurve fails. Ignore this error */
-        return SM_OK;
+        if (status == SM_ERR_APDU_THROUGHPUT) {
+            return status;
+        }
+        else {
+            /* If curve is already created, Se05x_API_CreateECCurve fails. Ignore this error */
+            return SM_OK;
+        }
+
 #else
         return SM_OK;
         /* ECC_MONT_DH_25519 and ECC_MONT_DH_448 are always present */
@@ -2560,7 +2805,7 @@ smStatus_t sss_se05x_create_curve_if_needed(Se05xSession_t *pSession, uint32_t c
         }
     }
     else {
-        return SM_NOT_OK;
+        return status;
     }
 
     status = SM_NOT_OK;
@@ -2624,11 +2869,6 @@ smStatus_t sss_se05x_create_curve_if_needed(Se05xSession_t *pSession, uint32_t c
         status = Se05x_API_CreateCurve_secp256k1(pSession, curve_id);
         break;
 #endif
-#if SSS_HAVE_TPM_BN
-    case kSE05x_ECCurve_TPM_ECC_BN_P256:
-        status = Se05x_API_CreateCurve_tpm_bm_p256(pSession, curve_id);
-        break;
-#endif
     default:
         break;
     }
@@ -2643,12 +2883,15 @@ exit:
 #endif // SSSFTR_SE05X_ECC && SSSFTR_SE05X_KEY_SET
 
 #if SSSFTR_SE05X_KEY_SET || SSSFTR_SE05X_KEY_GET
-static uint8_t CheckIfKeyIdExists(uint32_t keyId, pSe05xSession_t session_ctx)
+static uint8_t CheckIfKeyIdExists(uint32_t keyId, pSe05xSession_t session_ctx, smStatus_t *apduStatus)
 {
     smStatus_t retStatus    = SM_NOT_OK;
     SE05x_Result_t IdExists = kSE05x_Result_NA;
 
     retStatus = Se05x_API_CheckObjectExists(session_ctx, keyId, &IdExists);
+    if (apduStatus != NULL) {
+        *apduStatus = retStatus;
+    }
     if (retStatus == SM_OK) {
         if (IdExists == kSE05x_Result_SUCCESS) {
             LOG_D("Key Id 0x%X exists", keyId);
@@ -2666,7 +2909,189 @@ static uint8_t CheckIfKeyIdExists(uint32_t keyId, pSe05xSession_t session_ctx)
 #endif
 
 #if SSSFTR_SE05X_ECC && SSSFTR_SE05X_KEY_SET
-static sss_status_t sss_se05x_key_store_set_ecc_key(sss_se05x_key_store_t *keyStore,
+
+static sss_status_t sss_se05x_key_store_set_ecc_public_key(sss_se05x_key_store_t *keyStore,
+    sss_se05x_object_t *keyObject,
+    const uint8_t *key,
+    size_t keyLen,
+    size_t keyBitLen,
+    void *policy_buff,
+    size_t policy_buff_len)
+{
+    sss_status_t retval     = kStatus_SSS_Fail;
+    sss_status_t asn_retval = kStatus_SSS_Fail;
+    smStatus_t status       = SM_NOT_OK;
+    Se05xPolicy_t se05x_policy;
+    SE05x_INS_t transient_type;
+    SE05x_ECCurve_t curveId    = keyObject->curve_id;
+    SE05x_KeyPart_t key_part   = kSE05x_KeyPart_NA;
+    SE05x_Result_t exists      = kSE05x_Result_NA;
+    SE05x_ECCurve_t retCurveId = keyObject->curve_id;
+    size_t std_pubKey_len      = 0;
+    size_t std_privKey_len     = 0;
+#if SSS_HAVE_EC_MONT || SSS_HAVE_EC_ED
+    uint8_t pubKeyReversed[64] = {
+        0,
+    };
+#endif
+    const uint8_t *pPublicKey = NULL;
+    size_t publicKeyLen       = 0;
+    uint16_t publicKeyIndex   = 0;
+
+    /* Assign proper instruction type based on keyObject->isPersistant  */
+    (keyObject->isPersistant) ? (transient_type = kSE05x_INS_NA) : (transient_type = kSE05x_INS_TRANSIENT);
+
+    se05x_policy.value     = (uint8_t *)policy_buff;
+    se05x_policy.value_len = policy_buff_len;
+
+    if (keyObject->curve_id == 0) {
+        keyObject->curve_id =
+            (SE05x_ECCurve_t)se05x_sssKeyTypeLenToCurveId((sss_cipher_type_t)keyObject->cipherType, keyBitLen);
+    }
+
+    if (keyObject->curve_id <= 0) {
+        goto exit;
+    }
+
+    status = sss_se05x_create_curve_if_needed(&keyObject->keyStore->session->s_ctx, keyObject->curve_id);
+    if (status == SM_NOT_OK) {
+        goto exit;
+    }
+    else if (status == SM_ERR_APDU_THROUGHPUT) {
+        retval = kStatus_SSS_ApduThroughputError;
+        goto exit;
+    }
+    else if (status == SM_ERR_CONDITIONS_NOT_SATISFIED) {
+        LOG_W("Allowing SM_ERR_CONDITIONS_NOT_SATISFIED for CreateCurve");
+    }
+
+    status = Se05x_API_CheckObjectExists(&keyStore->session->s_ctx, keyObject->keyId, &exists);
+    if (status == SM_ERR_APDU_THROUGHPUT) {
+        retval = kStatus_SSS_ApduThroughputError;
+        goto exit;
+    }
+    ENSURE_OR_GO_EXIT(status == SM_OK);
+
+    if (exists == kSE05x_Result_SUCCESS) {
+        /* Check if object is of same curve id */
+        status = Se05x_API_EC_CurveGetId(&keyObject->keyStore->session->s_ctx, keyObject->keyId, &retCurveId);
+        if (status == SM_ERR_APDU_THROUGHPUT) {
+            retval = kStatus_SSS_ApduThroughputError;
+            goto exit;
+        }
+        ENSURE_OR_GO_EXIT(status == SM_OK);
+
+        if (retCurveId == keyObject->curve_id) {
+            curveId = kSE05x_ECCurve_NA;
+        }
+        else {
+            LOG_W("Cannot overwrite object with different curve id");
+            goto exit;
+        }
+    }
+    else {
+        curveId = keyObject->curve_id;
+    }
+
+    if (exists == kSE05x_Result_FAILURE) {
+        key_part = kSE05x_KeyPart_Public;
+    }
+
+    switch (keyObject->curve_id) {
+    default: {
+        asn_retval = sss_util_pkcs8_asn1_get_ec_public_key_index(key, keyLen, &publicKeyIndex, &publicKeyLen);
+        if (asn_retval != kStatus_SSS_Success) {
+            LOG_W("error in sss_util_pkcs8_asn1_get_ec_public_key_index");
+            goto exit;
+        }
+
+        asn_retval = getEccPrivPubKeyLen((uint32_t)keyObject->curve_id, &std_pubKey_len, &std_privKey_len);
+        if (asn_retval != kStatus_SSS_Success) {
+            LOG_W("error in getEccPrivPubKeyLen");
+            goto exit;
+        }
+
+        if (publicKeyLen != std_pubKey_len) {
+            if (key[publicKeyIndex] == 0) {
+                publicKeyIndex++;
+                publicKeyLen--;
+            }
+        }
+        if (publicKeyLen != std_pubKey_len) {
+            LOG_W("error in public key length");
+            goto exit;
+        }
+    }
+    }
+
+#ifdef TMP_ENDIAN_VERBOSE
+    {
+        printf("Pub Key Before Reverse:\n");
+        for (size_t z = 0; z < publicKeyLen; z++) {
+            printf("%02X.", key[publicKeyIndex + z]);
+        }
+        printf("\n");
+    }
+#endif
+
+    // Conditionally Reverse Endianness
+#if SSS_HAVE_EC_MONT || SSS_HAVE_EC_ED
+    if ((keyObject->curve_id == kSE05x_ECCurve_ECC_MONT_DH_25519) ||
+        (keyObject->curve_id == kSE05x_ECCurve_ECC_MONT_DH_448) ||
+        (keyObject->curve_id == kSE05x_ECCurve_ECC_ED_25519)) {
+        size_t i        = 0;
+        size_t nByteKey = 32; // Corresponds to kSE05x_ECCurve_ECC_MONT_DH_25519
+
+        if (keyObject->curve_id == kSE05x_ECCurve_ECC_MONT_DH_448) {
+            nByteKey = 56;
+        }
+
+        while (i < nByteKey) {
+            pubKeyReversed[i] = key[publicKeyIndex + publicKeyLen - i - 1];
+            i++;
+        }
+        pPublicKey = &pubKeyReversed[0];
+    }
+    else
+#endif // SSS_HAVE_EC_MONT || SSS_HAVE_EC_ED
+    {
+        pPublicKey = &key[publicKeyIndex];
+    }
+
+#ifdef TMP_ENDIAN_VERBOSE
+    {
+        printf("Pub Key After Reverse:\n");
+        for (size_t z = 0; z < publicKeyLen; z++) {
+            printf("%02X.", pPublicKey[z]);
+        }
+        printf("\n");
+    }
+#endif
+
+    status = sss_se05x_LL_set_ec_key(&keyStore->session->s_ctx,
+        &se05x_policy,
+        SE05x_MaxAttemps_NA,
+        keyObject->keyId,
+        curveId,
+        NULL,
+        0,
+        pPublicKey,
+        publicKeyLen,
+        transient_type,
+        key_part,
+        exists);
+    if (status == SM_ERR_APDU_THROUGHPUT) {
+        retval = kStatus_SSS_ApduThroughputError;
+        goto exit;
+    }
+    ENSURE_OR_GO_EXIT(status == SM_OK);
+
+    retval = kStatus_SSS_Success;
+exit:
+    return retval;
+}
+
+static sss_status_t sss_se05x_key_store_set_ecc_keypair(sss_se05x_key_store_t *keyStore,
     sss_se05x_object_t *keyObject,
     const uint8_t *key,
     size_t keyLen,
@@ -2693,6 +3118,12 @@ static sss_status_t sss_se05x_key_store_set_ecc_key(sss_se05x_key_store_t *keySt
         0,
     };
 #endif
+    const uint8_t *pPrivateKey = NULL;
+    const uint8_t *pPublicKey  = NULL;
+    size_t privateKeyLen       = 0;
+    size_t publicKeyLen        = 0;
+    uint16_t privateKeyIndex   = 0;
+    uint16_t publicKeyIndex    = 0;
 
     /* Assign proper instruction type based on keyObject->isPersistant  */
     (keyObject->isPersistant) ? (transient_type = kSE05x_INS_NA) : (transient_type = kSE05x_INS_TRANSIENT);
@@ -2718,11 +3149,19 @@ static sss_status_t sss_se05x_key_store_set_ecc_key(sss_se05x_key_store_t *keySt
         LOG_W("Allowing SM_ERR_CONDITIONS_NOT_SATISFIED for CreateCurve");
     }
     status = Se05x_API_CheckObjectExists(&keyStore->session->s_ctx, keyObject->keyId, &exists);
+    if (status == SM_ERR_APDU_THROUGHPUT) {
+        retval = kStatus_SSS_ApduThroughputError;
+        goto exit;
+    }
     ENSURE_OR_GO_EXIT(status == SM_OK);
 
     if (exists == kSE05x_Result_SUCCESS) {
         /* Check if object is of same curve id */
         status = Se05x_API_EC_CurveGetId(&keyObject->keyStore->session->s_ctx, keyObject->keyId, &retCurveId);
+        if (status == SM_ERR_APDU_THROUGHPUT) {
+            retval = kStatus_SSS_ApduThroughputError;
+            goto exit;
+        }
         ENSURE_OR_GO_EXIT(status == SM_OK);
 
         if (retCurveId == keyObject->curve_id) {
@@ -2732,311 +3171,306 @@ static sss_status_t sss_se05x_key_store_set_ecc_key(sss_se05x_key_store_t *keySt
             LOG_W("Cannot overwrite object with different curve id");
             goto exit;
         }
-
-        //if (se05x_policy.value_len != 0) {
-        //    LOG_W("Policy + Existing Key is not a valid combination");
-        //}
     }
     else {
         curveId = keyObject->curve_id;
     }
 
-    if (keyObject->objectType == kSSS_KeyPart_Pair) {
-        const uint8_t *pPrivateKey = NULL;
-        const uint8_t *pPublicKey  = NULL;
-        size_t privateKeyLen       = 0;
-        size_t publicKeyLen        = 0;
-        uint16_t privateKeyIndex   = 0;
-        uint16_t publicKeyIndex    = 0;
-        if (exists == kSE05x_Result_FAILURE) {
-            key_part = kSE05x_KeyPart_Pair;
-        }
-
-        switch (keyObject->curve_id) {
-#if SSS_HAVE_TPM_BN
-        case kSE05x_ECCurve_TPM_ECC_BN_P256: {
-            LOG_I("Key pair should be paased without header");
-            /* No header included in ED and BN curve keys */
-            privateKeyIndex = 0;
-            publicKeyIndex  = 32;
-            privateKeyLen   = 32;
-            publicKeyLen    = 32;
-        } break;
-#endif
-
-        default: {
-#if SSS_HAVE_EC_MONT || SSS_HAVE_EC_ED
-            if ((keyObject->curve_id == kSE05x_ECCurve_ECC_MONT_DH_25519) ||
-                (keyObject->curve_id == kSE05x_ECCurve_ECC_MONT_DH_448) ||
-                (keyObject->curve_id == kSE05x_ECCurve_ECC_ED_25519)) {
-                asn_retval = sss_util_rfc8410_asn1_get_ec_pair_key_index(
-                    key, keyLen, &publicKeyIndex, &publicKeyLen, &privateKeyIndex, &privateKeyLen);
-                if (asn_retval != kStatus_SSS_Success) {
-                    LOG_W("error in sss_util_rfc8410_asn1_get_ec_pair_key_index");
-                    goto exit;
-                }
-            }
-            else
-#endif // SSS_HAVE_EC_MONT || SSS_HAVE_EC_ED
-            {
-                asn_retval = sss_util_pkcs8_asn1_get_ec_pair_key_index(
-                    key, keyLen, &publicKeyIndex, &publicKeyLen, &privateKeyIndex, &privateKeyLen);
-                if (asn_retval != kStatus_SSS_Success) {
-                    LOG_W("error in sss_util_pkcs8_asn1_get_ec_pair_key_index");
-                    goto exit;
-                }
-            }
-
-            asn_retval = getEccPrivPubKeyLen((uint32_t)keyObject->curve_id, &std_pubKey_len, &std_privKey_len);
-            if (asn_retval != kStatus_SSS_Success) {
-                LOG_W("error in getEccPrivPubKeyLen");
-                goto exit;
-            }
-
-            if (privateKeyLen != std_privKey_len) {
-                if (key[privateKeyIndex] == 0) {
-                    privateKeyIndex++;
-                    privateKeyLen--;
-                }
-            }
-            if (privateKeyLen != std_privKey_len) {
-                LOG_W("error in private key length");
-                goto exit;
-            }
-
-            if (publicKeyLen != std_pubKey_len) {
-                if (key[publicKeyIndex] == 0) {
-                    publicKeyIndex++;
-                    publicKeyLen--;
-                }
-            }
-            if (publicKeyLen != std_pubKey_len) {
-                LOG_W("error in public key length");
-                goto exit;
-            }
-        }
-        }
-
-        // Conditionally Reverse Endianness
-#if SSS_HAVE_EC_MONT || SSS_HAVE_EC_ED
-        if ((keyObject->curve_id == kSE05x_ECCurve_ECC_MONT_DH_25519) ||
-            (keyObject->curve_id == kSE05x_ECCurve_ECC_MONT_DH_448) ||
-            (keyObject->curve_id == kSE05x_ECCurve_ECC_ED_25519)) {
-            size_t i        = 0;
-            size_t nByteKey = 32; // Corresponds to kSE05x_ECCurve_ECC_MONT_DH_25519
-
-            if (keyObject->curve_id == kSE05x_ECCurve_ECC_MONT_DH_448) {
-                nByteKey = 56;
-            }
-
-            if (keyObject->curve_id != kSE05x_ECCurve_ECC_ED_25519) {
-                while (i < nByteKey) {
-                    privKeyReversed[i] = key[privateKeyIndex + privateKeyLen - i - 1];
-                    i++;
-                }
-                pPrivateKey = &privKeyReversed[0];
-            }
-            else {
-                // SE05x expects private key to be in litte endian format
-                pPrivateKey = &key[privateKeyIndex];
-            }
-            i = 0;
-            while (i < nByteKey) {
-                pubKeyReversed[i] = key[publicKeyIndex + publicKeyLen - i - 1];
-                i++;
-            }
-            pPublicKey = &pubKeyReversed[0];
-        }
-        else
-#endif // SSS_HAVE_EC_MONT || SSS_HAVE_EC_ED
-        {
-            pPrivateKey = &key[privateKeyIndex];
-            pPublicKey  = &key[publicKeyIndex];
-        }
-
-#ifdef TMP_ENDIAN_VERBOSE
-        {
-            printf("Private Key After Reverse:\n");
-            for (size_t z = 0; z < privateKeyLen; z++) {
-                printf("%02X.", pPrivateKey[z]);
-            }
-            printf("\n");
-        }
-#endif
-
-        status = sss_se05x_LL_set_ec_key(&keyStore->session->s_ctx,
-            &se05x_policy,
-            SE05x_MaxAttemps_UNLIMITED,
-            keyObject->keyId,
-            curveId,
-            pPrivateKey,
-            privateKeyLen,
-            pPublicKey,
-            publicKeyLen,
-            transient_type,
-            key_part,
-            exists);
-        ENSURE_OR_GO_EXIT(status == SM_OK);
+    if (exists == kSE05x_Result_FAILURE) {
+        key_part = kSE05x_KeyPart_Pair;
     }
-    else if (keyObject->objectType == kSSS_KeyPart_Public) {
-        const uint8_t *pPublicKey = NULL;
-        size_t publicKeyLen       = 0;
-        uint16_t publicKeyIndex   = 0;
-        if (exists == kSE05x_Result_FAILURE) {
-            key_part = kSE05x_KeyPart_Public;
-        }
 
-        switch (keyObject->curve_id) {
-#if SSS_HAVE_TPM_BN
-        case kSE05x_ECCurve_TPM_ECC_BN_P256: {
-            LOG_I("Public key should be paased without header");
-            publicKeyLen = keyLen;
-        } break;
-#endif
-        default: {
-            asn_retval = sss_util_pkcs8_asn1_get_ec_public_key_index(key, keyLen, &publicKeyIndex, &publicKeyLen);
-            if (asn_retval != kStatus_SSS_Success) {
-                LOG_W("error in sss_util_pkcs8_asn1_get_ec_public_key_index");
-                goto exit;
-            }
-
-            asn_retval = getEccPrivPubKeyLen((uint32_t)keyObject->curve_id, &std_pubKey_len, &std_privKey_len);
-            if (asn_retval != kStatus_SSS_Success) {
-                LOG_W("error in getEccPrivPubKeyLen");
-                goto exit;
-            }
-
-            if (publicKeyLen != std_pubKey_len) {
-                if (key[publicKeyIndex] == 0) {
-                    publicKeyIndex++;
-                    publicKeyLen--;
-                }
-            }
-            if (publicKeyLen != std_pubKey_len) {
-                LOG_W("error in public key length");
-                goto exit;
-            }
-        }
-        }
-
-#ifdef TMP_ENDIAN_VERBOSE
-        {
-            printf("Pub Key Before Reverse:\n");
-            for (size_t z = 0; z < publicKeyLen; z++) {
-                printf("%02X.", key[publicKeyIndex + z]);
-            }
-            printf("\n");
-        }
-#endif
-
-        // Conditionally Reverse Endianness
 #if SSS_HAVE_EC_MONT || SSS_HAVE_EC_ED
-        if ((keyObject->curve_id == kSE05x_ECCurve_ECC_MONT_DH_25519) ||
-            (keyObject->curve_id == kSE05x_ECCurve_ECC_MONT_DH_448) ||
-            (keyObject->curve_id == kSE05x_ECCurve_ECC_ED_25519)) {
-            size_t i        = 0;
-            size_t nByteKey = 32; // Corresponds to kSE05x_ECCurve_ECC_MONT_DH_25519
-
-            if (keyObject->curve_id == kSE05x_ECCurve_ECC_MONT_DH_448) {
-                nByteKey = 56;
-            }
-
-            while (i < nByteKey) {
-                pubKeyReversed[i] = key[publicKeyIndex + publicKeyLen - i - 1];
-                i++;
-            }
-            pPublicKey = &pubKeyReversed[0];
-        }
-        else
-#endif // SSS_HAVE_EC_MONT || SSS_HAVE_EC_ED
-        {
-            pPublicKey = &key[publicKeyIndex];
-        }
-
-#ifdef TMP_ENDIAN_VERBOSE
-        {
-            printf("Pub Key After Reverse:\n");
-            for (size_t z = 0; z < publicKeyLen; z++) {
-                printf("%02X.", pPublicKey[z]);
-            }
-            printf("\n");
-        }
-#endif
-
-        status = sss_se05x_LL_set_ec_key(&keyStore->session->s_ctx,
-            &se05x_policy,
-            SE05x_MaxAttemps_NA,
-            keyObject->keyId,
-            curveId,
-            NULL,
-            0,
-            pPublicKey,
-            publicKeyLen,
-            transient_type,
-            key_part,
-            exists);
-
-        ENSURE_OR_GO_EXIT(status == SM_OK);
-    }
-    else if (keyObject->objectType == kSSS_KeyPart_Private) {
-        const uint8_t *pPrivKey  = NULL;
-        size_t privKeyLen        = (uint16_t)keyLen;
-        uint16_t privateKeyIndex = 0;
-        if (exists == kSE05x_Result_FAILURE) {
-            key_part = kSE05x_KeyPart_Private;
-        }
-
-        LOG_I("Private key should be passed without header");
-
-        switch (keyObject->curve_id) {
-#if SSS_HAVE_TPM_BN
-        case kSE05x_ECCurve_TPM_ECC_BN_P256: {
-            privateKeyIndex = 0;
-        } break;
-#endif
-#if SSS_HAVE_SE05X_VER_GTE_06_00 && SSS_HAVE_EC_MONT
-        case kSE05x_ECCurve_RESERVED_ID_ECC_MONT_DH_448: {
-            LOG_W(
-                "Private Key injection is not supported for "
-                "ECC_MONT_DH_448 curve");
+    if ((keyObject->curve_id == kSE05x_ECCurve_ECC_MONT_DH_25519) ||
+        (keyObject->curve_id == kSE05x_ECCurve_ECC_MONT_DH_448) ||
+        (keyObject->curve_id == kSE05x_ECCurve_ECC_ED_25519)) {
+        asn_retval = sss_util_rfc8410_asn1_get_ec_pair_key_index(
+            key, keyLen, &publicKeyIndex, &publicKeyLen, &privateKeyIndex, &privateKeyLen);
+        if (asn_retval != kStatus_SSS_Success) {
+            LOG_W("error in sss_util_rfc8410_asn1_get_ec_pair_key_index");
             goto exit;
         }
-#endif
-        default: {
-            asn_retval = getEccPrivPubKeyLen((uint32_t)keyObject->curve_id, &std_pubKey_len, &std_privKey_len);
-            if (asn_retval != kStatus_SSS_Success) {
-                LOG_W("error in getEccPrivPubKeyLen");
-                goto exit;
-            }
+    }
+    else
+#endif // SSS_HAVE_EC_MONT || SSS_HAVE_EC_ED
+    {
+        asn_retval = sss_util_pkcs8_asn1_get_ec_pair_key_index(
+            key, keyLen, &publicKeyIndex, &publicKeyLen, &privateKeyIndex, &privateKeyLen);
+        if (asn_retval != kStatus_SSS_Success) {
+            LOG_W("error in sss_util_pkcs8_asn1_get_ec_pair_key_index");
+            goto exit;
+        }
+    }
 
-            if (keyLen != std_privKey_len) {
-                if (key[0] == 0) {
-                    privKeyLen      = keyLen - 1;
-                    privateKeyIndex = 1;
-                }
-            }
-            if (privKeyLen != std_privKey_len) {
-                LOG_W("error in private key length");
-                goto exit;
-            }
-        } break;
+    asn_retval = getEccPrivPubKeyLen((uint32_t)keyObject->curve_id, &std_pubKey_len, &std_privKey_len);
+    if (asn_retval != kStatus_SSS_Success) {
+        LOG_W("error in getEccPrivPubKeyLen");
+        goto exit;
+    }
+
+    if (privateKeyLen != std_privKey_len) {
+        if (key[privateKeyIndex] == 0) {
+            privateKeyIndex++;
+            privateKeyLen--;
+        }
+    }
+    if (privateKeyLen != std_privKey_len) {
+        LOG_W("error in private key length");
+        goto exit;
+    }
+
+    if (publicKeyLen != std_pubKey_len) {
+        if (key[publicKeyIndex] == 0) {
+            publicKeyIndex++;
+            publicKeyLen--;
+        }
+    }
+    if (publicKeyLen != std_pubKey_len) {
+        LOG_W("error in public key length");
+        goto exit;
+    }
+
+    // Conditionally Reverse Endianness
+#if SSS_HAVE_EC_MONT || SSS_HAVE_EC_ED
+    if ((keyObject->curve_id == kSE05x_ECCurve_ECC_MONT_DH_25519) ||
+        (keyObject->curve_id == kSE05x_ECCurve_ECC_MONT_DH_448) ||
+        (keyObject->curve_id == kSE05x_ECCurve_ECC_ED_25519)) {
+        size_t i        = 0;
+        size_t nByteKey = 32; // Corresponds to kSE05x_ECCurve_ECC_MONT_DH_25519
+
+        if (keyObject->curve_id == kSE05x_ECCurve_ECC_MONT_DH_448) {
+            nByteKey = 56;
         }
 
-        pPrivKey = &key[privateKeyIndex];
+        if (keyObject->curve_id != kSE05x_ECCurve_ECC_ED_25519) {
+            while (i < nByteKey) {
+                privKeyReversed[i] = key[privateKeyIndex + privateKeyLen - i - 1];
+                i++;
+            }
+            pPrivateKey = &privKeyReversed[0];
+        }
+        else {
+            // SE05x expects private key to be in litte endian format
+            pPrivateKey = &key[privateKeyIndex];
+        }
+        i = 0;
+        while (i < nByteKey) {
+            pubKeyReversed[i] = key[publicKeyIndex + publicKeyLen - i - 1];
+            i++;
+        }
+        pPublicKey = &pubKeyReversed[0];
+    }
+    else
+#endif // SSS_HAVE_EC_MONT || SSS_HAVE_EC_ED
+    {
+        pPrivateKey = &key[privateKeyIndex];
+        pPublicKey  = &key[publicKeyIndex];
+    }
 
-        status = sss_se05x_LL_set_ec_key(&keyStore->session->s_ctx,
-            &se05x_policy,
-            SE05x_MaxAttemps_NA,
-            keyObject->keyId,
-            curveId,
-            pPrivKey,
-            privKeyLen,
-            NULL,
-            0,
-            transient_type,
-            key_part,
-            exists);
+#ifdef TMP_ENDIAN_VERBOSE
+    {
+        printf("Private Key After Reverse:\n");
+        for (size_t z = 0; z < privateKeyLen; z++) {
+            printf("%02X.", pPrivateKey[z]);
+        }
+        printf("\n");
+    }
+#endif
+
+    status = sss_se05x_LL_set_ec_key(&keyStore->session->s_ctx,
+        &se05x_policy,
+        SE05x_MaxAttemps_UNLIMITED,
+        keyObject->keyId,
+        curveId,
+        pPrivateKey,
+        privateKeyLen,
+        pPublicKey,
+        publicKeyLen,
+        transient_type,
+        key_part,
+        exists);
+    if (status == SM_ERR_APDU_THROUGHPUT) {
+        retval = kStatus_SSS_ApduThroughputError;
+        goto exit;
+    }
+    ENSURE_OR_GO_EXIT(status == SM_OK);
+
+    retval = kStatus_SSS_Success;
+exit:
+    return retval;
+}
+
+static sss_status_t sss_se05x_key_store_set_ecc_private_key(sss_se05x_key_store_t *keyStore,
+    sss_se05x_object_t *keyObject,
+    const uint8_t *key,
+    size_t keyLen,
+    size_t keyBitLen,
+    void *policy_buff,
+    size_t policy_buff_len)
+{
+    sss_status_t retval     = kStatus_SSS_Fail;
+    sss_status_t asn_retval = kStatus_SSS_Fail;
+    smStatus_t status       = SM_NOT_OK;
+    Se05xPolicy_t se05x_policy;
+    SE05x_INS_t transient_type;
+    SE05x_ECCurve_t curveId    = keyObject->curve_id;
+    SE05x_KeyPart_t key_part   = kSE05x_KeyPart_NA;
+    SE05x_Result_t exists      = kSE05x_Result_NA;
+    SE05x_ECCurve_t retCurveId = keyObject->curve_id;
+    size_t std_pubKey_len      = 0;
+    size_t std_privKey_len     = 0;
+    const uint8_t *pPrivKey    = NULL;
+    size_t privKeyLen          = keyLen;
+    uint16_t privateKeyIndex   = 0;
+
+    /* Assign proper instruction type based on keyObject->isPersistant  */
+    (keyObject->isPersistant) ? (transient_type = kSE05x_INS_NA) : (transient_type = kSE05x_INS_TRANSIENT);
+
+    se05x_policy.value     = (uint8_t *)policy_buff;
+    se05x_policy.value_len = policy_buff_len;
+
+    if (keyObject->curve_id == 0) {
+        keyObject->curve_id =
+            (SE05x_ECCurve_t)se05x_sssKeyTypeLenToCurveId((sss_cipher_type_t)keyObject->cipherType, keyBitLen);
+    }
+
+    if (keyObject->curve_id <= 0) {
+        goto exit;
+    }
+
+    status = sss_se05x_create_curve_if_needed(&keyObject->keyStore->session->s_ctx, keyObject->curve_id);
+
+    if (status == SM_NOT_OK) {
+        goto exit;
+    }
+    else if (status == SM_ERR_CONDITIONS_NOT_SATISFIED) {
+        LOG_W("Allowing SM_ERR_CONDITIONS_NOT_SATISFIED for CreateCurve");
+    }
+    status = Se05x_API_CheckObjectExists(&keyStore->session->s_ctx, keyObject->keyId, &exists);
+    if (status == SM_ERR_APDU_THROUGHPUT) {
+        retval = kStatus_SSS_ApduThroughputError;
+        goto exit;
+    }
+    ENSURE_OR_GO_EXIT(status == SM_OK);
+
+    if (exists == kSE05x_Result_SUCCESS) {
+        /* Check if object is of same curve id */
+        status = Se05x_API_EC_CurveGetId(&keyObject->keyStore->session->s_ctx, keyObject->keyId, &retCurveId);
+        if (status == SM_ERR_APDU_THROUGHPUT) {
+            retval = kStatus_SSS_ApduThroughputError;
+            goto exit;
+        }
         ENSURE_OR_GO_EXIT(status == SM_OK);
+
+        if (retCurveId == keyObject->curve_id) {
+            curveId = kSE05x_ECCurve_NA;
+        }
+        else {
+            LOG_W("Cannot overwrite object with different curve id");
+            goto exit;
+        }
+    }
+    else {
+        curveId = keyObject->curve_id;
+    }
+
+    if (exists == kSE05x_Result_FAILURE) {
+        key_part = kSE05x_KeyPart_Private;
+    }
+
+    LOG_I("Private key should be passed without header");
+
+    switch (keyObject->curve_id) {
+#if SSS_HAVE_SE05X_VER_GTE_07_02 && SSS_HAVE_EC_MONT
+    case kSE05x_ECCurve_RESERVED_ID_ECC_MONT_DH_448: {
+        LOG_W(
+            "Private Key injection is not supported for "
+            "ECC_MONT_DH_448 curve");
+        goto exit;
+    }
+#endif
+    default: {
+        asn_retval = getEccPrivPubKeyLen((uint32_t)keyObject->curve_id, &std_pubKey_len, &std_privKey_len);
+        if (asn_retval != kStatus_SSS_Success) {
+            LOG_W("error in getEccPrivPubKeyLen");
+            goto exit;
+        }
+
+        if (keyLen != std_privKey_len) {
+            if (key[0] == 0) {
+                privKeyLen      = keyLen - 1;
+                privateKeyIndex = 1;
+            }
+        }
+        if (privKeyLen != std_privKey_len) {
+            LOG_W("error in private key length");
+            goto exit;
+        }
+    } break;
+    }
+
+    pPrivKey = &key[privateKeyIndex];
+
+    status = sss_se05x_LL_set_ec_key(&keyStore->session->s_ctx,
+        &se05x_policy,
+        SE05x_MaxAttemps_NA,
+        keyObject->keyId,
+        curveId,
+        pPrivKey,
+        privKeyLen,
+        NULL,
+        0,
+        transient_type,
+        key_part,
+        exists);
+    if (status == SM_ERR_APDU_THROUGHPUT) {
+        retval = kStatus_SSS_ApduThroughputError;
+        goto exit;
+    }
+    ENSURE_OR_GO_EXIT(status == SM_OK);
+
+    retval = kStatus_SSS_Success;
+exit:
+    return retval;
+}
+
+static sss_status_t sss_se05x_key_store_set_ecc_key(sss_se05x_key_store_t *keyStore,
+    sss_se05x_object_t *keyObject,
+    const uint8_t *key,
+    size_t keyLen,
+    size_t keyBitLen,
+    void *policy_buff,
+    size_t policy_buff_len)
+{
+    sss_status_t retval    = kStatus_SSS_Fail;
+    sss_status_t sssStatus = kStatus_SSS_Fail;
+
+    if (keyObject->objectType == kSSS_KeyPart_Pair) {
+        sssStatus = sss_se05x_key_store_set_ecc_keypair(
+            keyStore, keyObject, key, keyLen, keyBitLen, policy_buff, policy_buff_len);
+        if (sssStatus != kStatus_SSS_Success) {
+            LOG_E("Error in sss_se05x_key_store_set_ecc_keypair");
+            retval = sssStatus;
+            goto exit;
+        }
+    }
+    else if (keyObject->objectType == kSSS_KeyPart_Public) {
+        sssStatus = sss_se05x_key_store_set_ecc_public_key(
+            keyStore, keyObject, key, keyLen, keyBitLen, policy_buff, policy_buff_len);
+        if (sssStatus != kStatus_SSS_Success) {
+            LOG_E("Error in sss_se05x_key_store_set_ecc_keypair");
+            retval = sssStatus;
+            goto exit;
+        }
+    }
+    else if (keyObject->objectType == kSSS_KeyPart_Private) {
+        sssStatus = sss_se05x_key_store_set_ecc_private_key(
+            keyStore, keyObject, key, keyLen, keyBitLen, policy_buff, policy_buff_len);
+        if (sssStatus != kStatus_SSS_Success) {
+            LOG_E("Error in sss_se05x_key_store_set_ecc_keypair");
+            retval = sssStatus;
+            goto exit;
+        }
     }
     else {
         goto exit;
@@ -3065,11 +3499,16 @@ static sss_status_t sss_se05x_key_store_set_aes_key(sss_se05x_key_store_t *keySt
     SE05x_KeyID_t kekID      = SE05x_KeyID_KEK_NONE;
     uint8_t IdExists         = 0;
     SE05x_Result_t objExists = kSE05x_Result_NA;
+    smStatus_t apduRetValue  = SM_NOT_OK;
 
     /* Assign proper instruction type based on keyObject->isPersistant  */
     (keyObject->isPersistant) ? (transient_type = kSE05x_INS_NA) : (transient_type = kSE05x_INS_TRANSIENT);
 
-    IdExists  = CheckIfKeyIdExists(keyObject->keyId, &keyStore->session->s_ctx);
+    IdExists = CheckIfKeyIdExists(keyObject->keyId, &keyStore->session->s_ctx, &apduRetValue);
+    if (apduRetValue == SM_ERR_APDU_THROUGHPUT) {
+        retval = kStatus_SSS_ApduThroughputError;
+        goto exit;
+    }
     objExists = (IdExists == 1) ? kSE05x_Result_SUCCESS : kSE05x_Result_FAILURE;
 
     se05x_policy.value     = (uint8_t *)policy_buff;
@@ -3099,6 +3538,10 @@ static sss_status_t sss_se05x_key_store_set_aes_key(sss_se05x_key_store_t *keySt
             transient_type,
             type,
             objExists);
+        if (status == SM_ERR_APDU_THROUGHPUT) {
+            retval = kStatus_SSS_ApduThroughputError;
+            goto exit;
+        }
         ENSURE_OR_GO_EXIT(status == SM_OK);
     }
     else {
@@ -3126,12 +3569,17 @@ static sss_status_t sss_se05x_key_store_set_des_key(sss_se05x_key_store_t *keySt
     SE05x_KeyID_t kekID      = SE05x_KeyID_KEK_NONE;
     uint8_t IdExists         = 0;
     SE05x_Result_t objExists = kSE05x_Result_NA;
+    smStatus_t apduRetValue  = SM_NOT_OK;
 
     AX_UNUSED_ARG(keyBitLen);
 
     /* Assign proper instruction type based on keyObject->isPersistant  */
     (keyObject->isPersistant) ? (transient_type = kSE05x_INS_NA) : (transient_type = kSE05x_INS_TRANSIENT);
-    IdExists = CheckIfKeyIdExists(keyObject->keyId, &keyStore->session->s_ctx);
+    IdExists = CheckIfKeyIdExists(keyObject->keyId, &keyStore->session->s_ctx, &apduRetValue);
+    if (apduRetValue == SM_ERR_APDU_THROUGHPUT) {
+        retval = kStatus_SSS_ApduThroughputError;
+        goto exit;
+    }
 
     objExists              = (IdExists == 1) ? kSE05x_Result_SUCCESS : kSE05x_Result_FAILURE;
     se05x_policy.value     = (uint8_t *)policy_buff;
@@ -3151,6 +3599,10 @@ static sss_status_t sss_se05x_key_store_set_des_key(sss_se05x_key_store_t *keySt
         transient_type,
         kSE05x_SymmKeyType_DES,
         objExists);
+    if (status == SM_ERR_APDU_THROUGHPUT) {
+        retval = kStatus_SSS_ApduThroughputError;
+        goto exit;
+    }
     ENSURE_OR_GO_EXIT(status == SM_OK);
 
     retval = kStatus_SSS_Success;
@@ -3215,22 +3667,27 @@ static sss_status_t sss_se05x_key_store_set_cert(sss_se05x_key_store_t *keyStore
     sss_status_t retval = kStatus_SSS_Fail;
     smStatus_t status   = SM_NOT_OK;
     Se05xPolicy_t se05x_policy;
-#if !SSS_HAVE_SE05X_VER_GTE_06_00
+#if !SSS_HAVE_SE05X_VER_GTE_07_02
     Se05xPolicy_t *ppolicy = &se05x_policy;
 #endif
     uint16_t data_rem;
     uint16_t offset   = 0;
     uint16_t fileSize = 0;
     uint8_t IdExists  = 0;
-#if SSS_HAVE_SE05X_VER_GTE_06_00
+#if SSS_HAVE_SE05X_VER_GTE_07_02
     SE05x_Result_t obj_exists = kSE05x_Result_NA;
 #endif
+    smStatus_t apduRetValue = SM_NOT_OK;
 
     AX_UNUSED_ARG(keyBitLen);
 
     ENSURE_OR_GO_EXIT(keyLen < 0xFFFFu);
 
-    IdExists = CheckIfKeyIdExists(keyObject->keyId, &keyStore->session->s_ctx);
+    IdExists = CheckIfKeyIdExists(keyObject->keyId, &keyStore->session->s_ctx, &apduRetValue);
+    if (apduRetValue == SM_ERR_APDU_THROUGHPUT) {
+        retval = kStatus_SSS_ApduThroughputError;
+        goto exit;
+    }
     fileSize = (IdExists == 1) ? 0 : (uint16_t)keyLen;
     data_rem = (uint16_t)keyLen;
 
@@ -3241,7 +3698,7 @@ static sss_status_t sss_se05x_key_store_set_cert(sss_se05x_key_store_t *keyStore
         uint16_t chunk = (data_rem > BINARY_WRITE_MAX_LEN) ? BINARY_WRITE_MAX_LEN : data_rem;
         data_rem       = data_rem - chunk;
 
-#if SSS_HAVE_SE05X_VER_GTE_06_00
+#if SSS_HAVE_SE05X_VER_GTE_07_02
         /* Call APIs For SE051 */
         obj_exists = (IdExists == 1) ? kSE05x_Result_SUCCESS : kSE05x_Result_FAILURE;
         if (obj_exists == kSE05x_Result_FAILURE && offset == 0) {
@@ -3271,6 +3728,10 @@ static sss_status_t sss_se05x_key_store_set_cert(sss_se05x_key_store_t *keyStore
             &keyStore->session->s_ctx, ppolicy, keyObject->keyId, offset, (uint16_t)fileSize, (key + offset), chunk);
         ppolicy = NULL;
 #endif
+        if (status == SM_ERR_APDU_THROUGHPUT) {
+            retval = kStatus_SSS_ApduThroughputError;
+            goto exit;
+        }
         ENSURE_OR_GO_EXIT(status == SM_OK);
 
         fileSize = 0;
@@ -3361,18 +3822,12 @@ sss_status_t sss_se05x_key_store_set_key(sss_se05x_key_store_t *keyStore,
     uint8_t policies_buff[MAX_POLICY_BUFFER_SIZE] = {
         0,
     };
+    sss_status_t sssStatus = kStatus_SSS_Fail;
 
     AX_UNUSED_ARG(optionsLen);
 
     ENSURE_OR_GO_EXIT(keyStore);
     ENSURE_OR_GO_EXIT(keyObject);
-
-#if SSS_HAVE_TPM_BN && SSS_HAVE_ECDAA && SSS_HAVE_SE05X_VER_GTE_07_02
-    if ((keyObject->keyId & SSS_SE05X_RESID_ECDAA_RANDOM_KEY_MASK) == SSS_SE05X_RESID_ECDAA_RANDOM_KEY_START) {
-        LOG_W("Could not set key %X. It's reserved for ECDAA random key.", keyObject->keyId);
-        goto exit;
-    }
-#endif
 
     if (keyBitLen) {
         ENSURE_OR_GO_EXIT(key);
@@ -3394,9 +3849,10 @@ sss_status_t sss_se05x_key_store_set_key(sss_se05x_key_store_t *keyStore,
 #if SSSFTR_SE05X_RSA && SSS_HAVE_RSA
     case kSSS_CipherType_RSA:
     case kSSS_CipherType_RSA_CRT:
-        if (kStatus_SSS_Success !=
-            sss_se05x_key_store_set_rsa_key(
-                keyStore, keyObject, key, keyLen, keyBitLen, ppolicySet, valid_policy_buff_len)) {
+        sssStatus = sss_se05x_key_store_set_rsa_key(
+            keyStore, keyObject, key, keyLen, keyBitLen, ppolicySet, valid_policy_buff_len);
+        if (sssStatus != kStatus_SSS_Success) {
+            retval = sssStatus;
             goto exit;
         }
         break;
@@ -3415,12 +3871,10 @@ sss_status_t sss_se05x_key_store_set_key(sss_se05x_key_store_t *keyStore,
 #if SSS_HAVE_EC_ED
     case kSSS_CipherType_EC_TWISTED_ED:
 #endif
-#if SSS_HAVE_TPM_BN
-    case kSSS_CipherType_EC_BARRETO_NAEHRIG:
-#endif
-        if (kStatus_SSS_Success !=
-            sss_se05x_key_store_set_ecc_key(
-                keyStore, keyObject, key, keyLen, keyBitLen, ppolicySet, valid_policy_buff_len)) {
+        sssStatus = sss_se05x_key_store_set_ecc_key(
+            keyStore, keyObject, key, keyLen, keyBitLen, ppolicySet, valid_policy_buff_len);
+        if (sssStatus != kStatus_SSS_Success) {
+            retval = sssStatus;
             goto exit;
         }
         break;
@@ -3433,9 +3887,10 @@ sss_status_t sss_se05x_key_store_set_key(sss_se05x_key_store_t *keyStore,
     case kSSS_CipherType_CMAC:
     case kSSS_CipherType_HMAC:
 #if SSSFTR_SE05X_AES && SSSFTR_SE05X_KEY_SET
-        if (kStatus_SSS_Success !=
-            sss_se05x_key_store_set_aes_key(
-                keyStore, keyObject, key, keyLen, keyBitLen, ppolicySet, valid_policy_buff_len)) {
+        sssStatus = sss_se05x_key_store_set_aes_key(
+            keyStore, keyObject, key, keyLen, keyBitLen, ppolicySet, valid_policy_buff_len);
+        if (sssStatus != kStatus_SSS_Success) {
+            retval = sssStatus;
             goto exit;
         }
 #else
@@ -3443,17 +3898,19 @@ sss_status_t sss_se05x_key_store_set_key(sss_se05x_key_store_t *keyStore,
 #endif
         break;
     case kSSS_CipherType_DES:
-        if (kStatus_SSS_Success !=
-            sss_se05x_key_store_set_des_key(
-                keyStore, keyObject, key, keyLen, keyBitLen, ppolicySet, valid_policy_buff_len)) {
+        sssStatus = sss_se05x_key_store_set_des_key(
+            keyStore, keyObject, key, keyLen, keyBitLen, ppolicySet, valid_policy_buff_len);
+        if (sssStatus != kStatus_SSS_Success) {
+            retval = sssStatus;
             goto exit;
         }
         break;
     case kSSS_CipherType_Binary:
     case kSSS_CipherType_Certificate: {
-        if (kStatus_SSS_Success !=
-            sss_se05x_key_store_set_cert(
-                keyStore, keyObject, key, keyLen, keyBitLen, ppolicySet, valid_policy_buff_len)) {
+        sssStatus = sss_se05x_key_store_set_cert(
+            keyStore, keyObject, key, keyLen, keyBitLen, ppolicySet, valid_policy_buff_len);
+        if (sssStatus != kStatus_SSS_Success) {
+            retval = sssStatus;
             goto exit;
         }
     } break;
@@ -3480,15 +3937,10 @@ sss_status_t sss_se05x_key_store_generate_key(
     SE05x_INS_t transient_type;
     uint8_t IdExists = 0;
     uint8_t policies_buff[MAX_POLICY_BUFFER_SIZE];
+    smStatus_t apduRetValue = SM_NOT_OK;
+
     ENSURE_OR_GO_EXIT(keyStore);
     ENSURE_OR_GO_EXIT(keyObject);
-
-#if SSS_HAVE_TPM_BN && SSS_HAVE_ECDAA && SSS_HAVE_SE05X_VER_GTE_07_02
-    if ((keyObject->keyId & SSS_SE05X_RESID_ECDAA_RANDOM_KEY_MASK) == SSS_SE05X_RESID_ECDAA_RANDOM_KEY_START) {
-        LOG_W("Could not generate key %X. It's reserved for ECDAA random key.", keyObject->keyId);
-        goto exit;
-    }
-#endif
 
     if (policies) {
         if (kStatus_SSS_Success !=
@@ -3520,9 +3972,6 @@ sss_status_t sss_se05x_key_store_generate_key(
 #if SSS_HAVE_EC_MONT
     case kSSS_CipherType_EC_MONTGOMERY:
 #endif
-#if SSS_HAVE_TPM_BN
-    case kSSS_CipherType_EC_BARRETO_NAEHRIG:
-#endif
 #if SSS_HAVE_EC_ED
     case kSSS_CipherType_EC_TWISTED_ED:
 #endif
@@ -3539,7 +3988,11 @@ sss_status_t sss_se05x_key_store_generate_key(
 
         status = sss_se05x_create_curve_if_needed(&keyObject->keyStore->session->s_ctx, keyObject->curve_id);
 
-        IdExists = CheckIfKeyIdExists(keyObject->keyId, &keyStore->session->s_ctx);
+        IdExists = CheckIfKeyIdExists(keyObject->keyId, &keyStore->session->s_ctx, &apduRetValue);
+        if (apduRetValue == SM_ERR_APDU_THROUGHPUT) {
+            retval = kStatus_SSS_ApduThroughputError;
+            goto exit;
+        }
         curve_id = (IdExists == 1) ? kSE05x_ECCurve_NA : (SE05x_ECCurve_t)keyObject->curve_id;
 
         status = Se05x_API_WriteECKey(&keyStore->session->s_ctx,
@@ -3553,19 +4006,11 @@ sss_status_t sss_se05x_key_store_generate_key(
             0,
             transient_type,
             kSE05x_KeyPart_Pair);
-        ENSURE_OR_GO_EXIT(status == SM_OK);
-
-#if SSS_HAVE_TPM_BN && SSS_HAVE_ECDAA && SSS_HAVE_SE05X_VER_GTE_07_02
-        // Create ECDAA Random key.
-        if (keyObject->cipherType == kSSS_CipherType_EC_BARRETO_NAEHRIG) {
-            sss_status_t sss_status = kStatus_SSS_Fail;
-            uint32_t random_keyId;
-            LOG_W("BARRETO NAEHRIG curve is deprecated. This will be removed in next release");
-            LOG_D("Generate ECDAA Random Key");
-            sss_status = sss_se05x_generate_ecdaa_random_key(&keyStore->session->s_ctx, &random_keyId);
-            ENSURE_OR_GO_EXIT(sss_status == kStatus_SSS_Success);
+        if (status == SM_ERR_APDU_THROUGHPUT) {
+            retval = kStatus_SSS_ApduThroughputError;
+            goto exit;
         }
-#endif
+        ENSURE_OR_GO_EXIT(status == SM_OK);
         break;
     }
 #endif // < SSSFTR_SE05X_ECC
@@ -3588,7 +4033,11 @@ sss_status_t sss_se05x_key_store_generate_key(
             goto exit;
         }
 
-        IdExists     = CheckIfKeyIdExists(keyObject->keyId, &keyStore->session->s_ctx);
+        IdExists = CheckIfKeyIdExists(keyObject->keyId, &keyStore->session->s_ctx, &apduRetValue);
+        if (apduRetValue == SM_ERR_APDU_THROUGHPUT) {
+            retval = kStatus_SSS_ApduThroughputError;
+            goto exit;
+        }
         keyBitLength = (IdExists == 1) ? 0 : keyBitLen;
 
         ENSURE_OR_GO_EXIT(keyBitLength <= UINT16_MAX);
@@ -3607,7 +4056,10 @@ sss_status_t sss_se05x_key_store_generate_key(
             transient_type,
             key_part,
             rsa_format);
-
+        if (status == SM_ERR_APDU_THROUGHPUT) {
+            retval = kStatus_SSS_ApduThroughputError;
+            goto exit;
+        }
         ENSURE_OR_GO_EXIT(status == SM_OK);
         break;
     }
@@ -3811,7 +4263,7 @@ void add_ecc_header(uint8_t *key, size_t *keylen, uint8_t **key_buf, size_t *key
     }
 #endif
 #if SSS_HAVE_EC_MONT
-#if SSS_HAVE_SE05X_VER_GTE_06_00
+#if SSS_HAVE_SE05X_VER_GTE_07_02
     else if (curve_id == kSE05x_ECCurve_ECC_MONT_DH_448) {
         ENSURE_OR_GO_EXIT((*keylen) > der_ecc_mont_dh_448_header_len);
         ENSURE_OR_GO_EXIT((SIZE_MAX - der_ecc_mont_dh_448_header_len) >= (*key_buflen));
@@ -3983,7 +4435,7 @@ sss_status_t sss_se05x_key_store_get_key(
     sss_status_t retval           = kStatus_SSS_Fail;
     sss_cipher_type_t cipher_type = kSSS_CipherType_NONE;
     smStatus_t status             = SM_NOT_OK;
-    uint16_t size;
+    uint16_t size                 = 0;
     ENSURE_OR_GO_EXIT(keyObject);
     ENSURE_OR_GO_EXIT(key);
     ENSURE_OR_GO_EXIT(keylen);
@@ -3998,9 +4450,6 @@ sss_status_t sss_se05x_key_store_get_key(
 #endif
 #if SSS_HAVE_EC_BP
     case kSSS_CipherType_EC_BRAINPOOL:
-#endif
-#if SSS_HAVE_TPM_BN
-    case kSSS_CipherType_EC_BARRETO_NAEHRIG:
 #endif
 #if SSS_HAVE_EC_MONT
     case kSSS_CipherType_EC_MONTGOMERY:
@@ -4018,10 +4467,14 @@ sss_status_t sss_se05x_key_store_get_key(
         (*keylen) = (*keylen) - key_buflen;
 
         status = Se05x_API_ReadObject(&keyStore->session->s_ctx, keyObject->keyId, 0, 0, key_buf, keylen);
+        if (status == SM_ERR_APDU_THROUGHPUT) {
+            retval = kStatus_SSS_ApduThroughputError;
+            goto exit;
+        }
         ENSURE_OR_GO_EXIT(status == SM_OK);
 
         /* Change Endiannes. */
-#if SSS_HAVE_TPM_BN || SSS_HAVE_EC_ED
+#if SSS_HAVE_EC_MONT || SSS_HAVE_EC_ED
         if ((keyObject->curve_id == kSE05x_ECCurve_ECC_MONT_DH_25519) ||
             (keyObject->curve_id == kSE05x_ECCurve_ECC_MONT_DH_448) ||
             (keyObject->curve_id == kSE05x_ECCurve_ECC_ED_25519)) {
@@ -4048,10 +4501,18 @@ sss_status_t sss_se05x_key_store_get_key(
 
         status = Se05x_API_ReadRSA(
             &keyStore->session->s_ctx, keyObject->keyId, 0, 0, kSE05x_RSAPubKeyComp_MOD, modulus, &modLen);
+        if (status == SM_ERR_APDU_THROUGHPUT) {
+            retval = kStatus_SSS_ApduThroughputError;
+            goto exit;
+        }
         ENSURE_OR_GO_EXIT(status == SM_OK);
 
         status = Se05x_API_ReadRSA(
             &keyStore->session->s_ctx, keyObject->keyId, 0, 0, kSE05x_RSAPubKeyComp_PUB_EXP, exponent, &expLen);
+        if (status == SM_ERR_APDU_THROUGHPUT) {
+            retval = kStatus_SSS_ApduThroughputError;
+            goto exit;
+        }
         ENSURE_OR_GO_EXIT(status == SM_OK);
 
         if (sss_util_asn1_rsa_get_public(key, keylen, modulus, modLen, exponent, expLen) != kStatus_SSS_Success) {
@@ -4061,6 +4522,10 @@ sss_status_t sss_se05x_key_store_get_key(
 #endif // SSSFTR_SE05X_RSA && && SSS_HAVE_RSA
     case kSSS_CipherType_AES:
         status = Se05x_API_ReadObject(&keyStore->session->s_ctx, keyObject->keyId, 0, 0, key, keylen);
+        if (status == SM_ERR_APDU_THROUGHPUT) {
+            retval = kStatus_SSS_ApduThroughputError;
+            goto exit;
+        }
         ENSURE_OR_GO_EXIT(status == SM_OK);
         break;
     case kSSS_CipherType_Binary:
@@ -4069,6 +4534,10 @@ sss_status_t sss_se05x_key_store_get_key(
         uint16_t offset   = 0;
         size_t max_buffer = 0;
         status            = Se05x_API_ReadSize(&keyStore->session->s_ctx, keyObject->keyId, &size);
+        if (status == SM_ERR_APDU_THROUGHPUT) {
+            retval = kStatus_SSS_ApduThroughputError;
+            goto exit;
+        }
         ENSURE_OR_GO_EXIT(status == SM_OK);
         if (*keylen < size) {
             LOG_E("Insufficient buffer ");
@@ -4083,21 +4552,51 @@ sss_status_t sss_se05x_key_store_get_key(
             max_buffer     = chunk;
             status         = Se05x_API_ReadObject(
                 &keyStore->session->s_ctx, keyObject->keyId, offset, chunk, (key + offset), &max_buffer);
+            if (status == SM_ERR_APDU_THROUGHPUT) {
+                retval = kStatus_SSS_ApduThroughputError;
+                goto exit;
+            }
             ENSURE_OR_GO_EXIT(status == SM_OK);
             offset = offset + chunk;
         }
+        if (cipher_type == kSSS_CipherType_Certificate) { /*ASN1 Parse step to remove extra padded 0*/
+            int ret         = 0;
+            size_t taglen   = 0;
+            size_t bufIndex = 0;
+            ret             = asn_1_parse_tlv(key, &taglen, &bufIndex);
+            if (ret != 0) {
+                goto exit;
+            }
+            taglen += bufIndex;
 
+            ENSURE_OR_GO_EXIT(taglen <= (*keylen));
+            if ((taglen == ((*keylen) - 1)) && (key[taglen] == 0)) {
+                (*keylen)--;
+            }
+        }
     } break;
     case kSSS_CipherType_DES:
         status = Se05x_API_ReadObject(&keyStore->session->s_ctx, keyObject->keyId, 0, 0, key, keylen);
+        if (status == SM_ERR_APDU_THROUGHPUT) {
+            retval = kStatus_SSS_ApduThroughputError;
+            goto exit;
+        }
         ENSURE_OR_GO_EXIT(status == SM_OK);
         break;
     case kSSS_CipherType_PCR:
         status = Se05x_API_ReadObject(&keyStore->session->s_ctx, keyObject->keyId, 0, 0, key, keylen);
+        if (status == SM_ERR_APDU_THROUGHPUT) {
+            retval = kStatus_SSS_ApduThroughputError;
+            goto exit;
+        }
         ENSURE_OR_GO_EXIT(status == SM_OK);
         break;
     case kSSS_CipherType_Count:
         status = Se05x_API_ReadObject(&keyStore->session->s_ctx, keyObject->keyId, 0, 0, key, keylen);
+        if (status == SM_ERR_APDU_THROUGHPUT) {
+            retval = kStatus_SSS_ApduThroughputError;
+            goto exit;
+        }
         ENSURE_OR_GO_EXIT(status == SM_OK);
         break;
     default:
@@ -4144,9 +4643,8 @@ sss_status_t sss_se05x_key_store_get_key_attst(sss_se05x_key_store_t *keyStore,
         attestAlgo                         = (SE05x_AttestationAlgo_t)ecSignAlgo;
     } break;
 
-#if SSS_HAVE_EC_ED || SSS_HAVE_TPM_BN
-    case kSSS_CipherType_EC_TWISTED_ED:
-    case kSSS_CipherType_EC_BARRETO_NAEHRIG: {
+#if SSS_HAVE_EC_ED
+    case kSSS_CipherType_EC_TWISTED_ED: {
         LOG_E("Attestation not supported");
         return retval;
     } break;
@@ -4170,9 +4668,6 @@ sss_status_t sss_se05x_key_store_get_key_attst(sss_se05x_key_store_t *keyStore,
 #endif
 #if SSS_HAVE_EC_BP
     case kSSS_CipherType_EC_BRAINPOOL:
-#endif
-#if SSS_HAVE_TPM_BN
-    case kSSS_CipherType_EC_BARRETO_NAEHRIG:
 #endif
 #if SSS_HAVE_EC_MONT
     case kSSS_CipherType_EC_MONTGOMERY:
@@ -4236,6 +4731,10 @@ sss_status_t sss_se05x_key_store_get_key_attst(sss_se05x_key_store_t *keyStore,
             attst_data->data[0].signature,
             &(attst_data->data[0].signatureLen));
 #endif
+        if (status == SM_ERR_APDU_THROUGHPUT) {
+            retval = kStatus_SSS_ApduThroughputError;
+            goto exit;
+        }
         ENSURE_OR_GO_EXIT(status == SM_OK);
 
 #if SSS_HAVE_EC_MONT || SSS_HAVE_EC_ED
@@ -4269,6 +4768,9 @@ sss_status_t sss_se05x_key_store_get_key_attst(sss_se05x_key_store_t *keyStore,
         if (attestAlgo == kSE05x_AttestationAlgo_RSA_SHA_512_PKCS1 ||
             attestAlgo == kSE05x_AttestationAlgo_RSA_SHA512_PKCS1_PSS) {
             status = Se05x_API_ReadSize(&keyStore->session->s_ctx, keyObject_attst->keyId, &key_size_bytes);
+            if (status == SM_ERR_APDU_THROUGHPUT) {
+                return kStatus_SSS_ApduThroughputError;
+            }
             if (status != SM_OK) {
                 return kStatus_SSS_Fail;
             }
@@ -4324,6 +4826,10 @@ sss_status_t sss_se05x_key_store_get_key_attst(sss_se05x_key_store_t *keyStore,
             attst_data->data[0].signature,
             &(attst_data->data[0].signatureLen));
 #endif
+        if (status == SM_ERR_APDU_THROUGHPUT) {
+            retval = kStatus_SSS_ApduThroughputError;
+            goto exit;
+        }
         ENSURE_OR_GO_EXIT(status == SM_OK);
 
         attst_data->data[1].timeStampLen = sizeof(SE05x_TimeStamp_t);
@@ -4374,6 +4880,10 @@ sss_status_t sss_se05x_key_store_get_key_attst(sss_se05x_key_store_t *keyStore,
 #endif
         attst_data->valid_number = 2;
 
+        if (status == SM_ERR_APDU_THROUGHPUT) {
+            retval = kStatus_SSS_ApduThroughputError;
+            goto exit;
+        }
         ENSURE_OR_GO_EXIT(status == SM_OK);
 
         if (sss_util_asn1_rsa_get_public(key, keylen, modulus, modLen, exponent, expLen) != kStatus_SSS_Success) {
@@ -4427,7 +4937,10 @@ sss_status_t sss_se05x_key_store_get_key_attst(sss_se05x_key_store_t *keyStore,
             &(attst_data->data[0].signatureLen));
 #endif
         attst_data->valid_number = 1;
-
+        if (status == SM_ERR_APDU_THROUGHPUT) {
+            retval = kStatus_SSS_ApduThroughputError;
+            goto exit;
+        }
         ENSURE_OR_GO_EXIT(status == SM_OK);
         break;
     case kSSS_CipherType_Binary:
@@ -4437,6 +4950,10 @@ sss_status_t sss_se05x_key_store_get_key_attst(sss_se05x_key_store_t *keyStore,
         size_t dataLen    = 0;
         // size_t signatureLen = 0;
         status = Se05x_API_ReadSize(&keyStore->session->s_ctx, keyObject->keyId, &size);
+        if (status == SM_ERR_APDU_THROUGHPUT) {
+            retval = kStatus_SSS_ApduThroughputError;
+            goto exit;
+        }
         ENSURE_OR_GO_EXIT(status == SM_OK);
 
         if (*keylen < size) {
@@ -4503,7 +5020,10 @@ sss_status_t sss_se05x_key_store_get_key_attst(sss_se05x_key_store_t *keyStore,
             attst_data->data[0].signature,
             &attst_data->data[0].signatureLen);
 #endif
-
+        if (status == SM_ERR_APDU_THROUGHPUT) {
+            retval = kStatus_SSS_ApduThroughputError;
+            goto exit;
+        }
         ENSURE_OR_GO_EXIT(status == SM_OK);
 
         // offset = offset + chunk;
@@ -4556,7 +5076,10 @@ sss_status_t sss_se05x_key_store_get_key_attst(sss_se05x_key_store_t *keyStore,
 
 #endif
         attst_data->valid_number = 1;
-
+        if (status == SM_ERR_APDU_THROUGHPUT) {
+            retval = kStatus_SSS_ApduThroughputError;
+            goto exit;
+        }
         ENSURE_OR_GO_EXIT(status == SM_OK);
         break;
 
@@ -4606,7 +5129,10 @@ sss_status_t sss_se05x_key_store_get_key_attst(sss_se05x_key_store_t *keyStore,
             &(attst_data->data[0].signatureLen));
 #endif
         attst_data->valid_number = 1;
-
+        if (status == SM_ERR_APDU_THROUGHPUT) {
+            retval = kStatus_SSS_ApduThroughputError;
+            goto exit;
+        }
         ENSURE_OR_GO_EXIT(status == SM_OK);
         break;
 
@@ -4656,7 +5182,10 @@ sss_status_t sss_se05x_key_store_get_key_attst(sss_se05x_key_store_t *keyStore,
             &(attst_data->data[0].signatureLen));
 #endif
         attst_data->valid_number = 1;
-
+        if (status == SM_ERR_APDU_THROUGHPUT) {
+            retval = kStatus_SSS_ApduThroughputError;
+            goto exit;
+        }
         ENSURE_OR_GO_EXIT(status == SM_OK);
         break;
 
@@ -4708,7 +5237,10 @@ sss_status_t sss_se05x_key_store_get_key_attst(sss_se05x_key_store_t *keyStore,
             &(attst_data->data[0].signatureLen));
 #endif
         attst_data->valid_number = 1;
-
+        if (status == SM_ERR_APDU_THROUGHPUT) {
+            retval = kStatus_SSS_ApduThroughputError;
+            goto exit;
+        }
         ENSURE_OR_GO_EXIT(status == SM_OK);
         break;
     }
@@ -4799,6 +5331,10 @@ sss_status_t sss_se05x_key_store_erase_key(sss_se05x_key_store_t *keyStore, sss_
     }
     else {
         LOG_W("Could not delete Key id %X", keyObject->keyId);
+        if (status == SM_ERR_APDU_THROUGHPUT) {
+            retval = kStatus_SSS_ApduThroughputError;
+            goto exit;
+        }
     }
 exit:
     return retval;
@@ -4824,9 +5360,6 @@ sss_status_t sss_se05x_key_store_export_key(
 #if SSS_HAVE_EC_BP
     case kSSS_CipherType_EC_BRAINPOOL:
 #endif
-#if SSS_HAVE_TPM_BN
-    case kSSS_CipherType_EC_BARRETO_NAEHRIG:
-#endif
 #if SSS_HAVE_EC_MONT
     case kSSS_CipherType_EC_MONTGOMERY:
 #endif
@@ -4837,6 +5370,10 @@ sss_status_t sss_se05x_key_store_export_key(
     case kSSS_CipherType_DES: {
         status =
             Se05x_API_ExportObject(&keyStore->session->s_ctx, keyObject->keyId, kSE05x_RSAKeyComponent_NA, key, keylen);
+        if (status == SM_ERR_APDU_THROUGHPUT) {
+            retval = kStatus_SSS_ApduThroughputError;
+            goto exit;
+        }
         if (status != SM_OK) {
             goto exit;
         }
@@ -4868,9 +5405,6 @@ sss_status_t sss_se05x_key_store_import_key(
 #if SSS_HAVE_EC_BP
     case kSSS_CipherType_EC_BRAINPOOL:
 #endif
-#if SSS_HAVE_TPM_BN
-    case kSSS_CipherType_EC_BARRETO_NAEHRIG:
-#endif
 #if SSS_HAVE_EC_MONT
     case kSSS_CipherType_EC_MONTGOMERY:
 #endif
@@ -4881,6 +5415,10 @@ sss_status_t sss_se05x_key_store_import_key(
     case kSSS_CipherType_DES: {
         status =
             Se05x_API_ImportObject(&keyStore->session->s_ctx, keyObject->keyId, kSE05x_RSAKeyComponent_NA, key, keylen);
+        if (status == SM_ERR_APDU_THROUGHPUT) {
+            retval = kStatus_SSS_ApduThroughputError;
+            goto exit;
+        }
         if (status != SM_OK) {
             goto exit;
         }
@@ -4910,7 +5448,9 @@ sss_status_t sss_se05x_asymmetric_context_init(sss_se05x_asymmetric_t *context,
     sss_mode_t mode)
 {
     sss_status_t retval = kStatus_SSS_Success;
-
+    if (context == NULL) {
+        return kStatus_SSS_Fail;
+    }
     context->session   = session;
     context->keyObject = keyObject;
     context->algorithm = algorithm;
@@ -4926,9 +5466,15 @@ sss_status_t sss_se05x_asymmetric_encrypt(
 #if SSSFTR_SE05X_RSA && SSS_HAVE_RSA
     smStatus_t status                           = SM_NOT_OK;
     SE05x_RSAEncryptionAlgo_t rsaEncryptionAlgo = se05x_get_rsa_encrypt_mode(context->algorithm);
+    if (context->keyObject == NULL) {
+        return kStatus_SSS_Fail;
+    }
     status                                      = Se05x_API_RSAEncrypt(
         &context->session->s_ctx, context->keyObject->keyId, rsaEncryptionAlgo, srcData, srcLen, destData, destLen);
-    if (status == SM_OK) {
+    if (status == SM_ERR_APDU_THROUGHPUT) {
+        retval = kStatus_SSS_ApduThroughputError;
+    }
+    else if (status == SM_OK) {
         retval = kStatus_SSS_Success;
     }
 #else
@@ -4949,9 +5495,15 @@ sss_status_t sss_se05x_asymmetric_decrypt(
     smStatus_t status = SM_NOT_OK;
 
     SE05x_RSAEncryptionAlgo_t rsaEncryptionAlgo = se05x_get_rsa_encrypt_mode(context->algorithm);
+    if (context->keyObject == NULL) {
+        return retval;
+    }
     status                                      = Se05x_API_RSADecrypt(
         &context->session->s_ctx, context->keyObject->keyId, rsaEncryptionAlgo, srcData, srcLen, destData, destLen);
-    if (status == SM_OK) {
+    if (status == SM_ERR_APDU_THROUGHPUT) {
+        retval = kStatus_SSS_ApduThroughputError;
+    }
+    else if (status == SM_OK) {
         retval = kStatus_SSS_Success;
     }
 #else
@@ -4965,27 +5517,13 @@ sss_status_t sss_se05x_asymmetric_decrypt(
 }
 
 sss_status_t sss_se05x_asymmetric_sign_digest(
-    sss_se05x_asymmetric_t *context, uint8_t *digest, size_t digestLen, uint8_t *signature, size_t *signatureLen)
+    sss_se05x_asymmetric_t *context, const uint8_t *digest, size_t digestLen, uint8_t *signature, size_t *signatureLen)
 {
     sss_status_t retval = kStatus_SSS_Fail;
     smStatus_t status   = SM_NOT_OK;
 
 #if SSSFTR_SE05X_ECC
     SE05x_ECSignatureAlgo_t ecSignAlgo = kSE05x_ECSignatureAlgo_NA;
-#endif
-#if SSSFTR_SE05X_ECC && SSS_HAVE_TPM_BN && SSS_HAVE_ECDAA
-    uint8_t raw_signature[64];
-    size_t raw_signatureLen = sizeof(raw_signature);
-    sss_status_t asn_retval = kStatus_SSS_Fail;
-#if SSS_HAVE_SE05X_VER_GTE_07_02
-    uint32_t random_keyId;
-    sss_status_t sss_status = kStatus_SSS_Fail;
-#else
-    uint8_t random[32] = {
-        0,
-    };
-    size_t random_len = sizeof(random);
-#endif
 #endif
 
 #if SSSFTR_SE05X_ECC || SSSFTR_SE05X_RSA
@@ -5013,82 +5551,18 @@ sss_status_t sss_se05x_asymmetric_sign_digest(
             digestLen,
             signature,
             signatureLen);
-    } break;
-#if SSS_HAVE_TPM_BN && SSS_HAVE_ECDAA
-#if SSS_HAVE_SE05X_VER_GTE_07_02
-    case kSSS_CipherType_EC_BARRETO_NAEHRIG: {
-        if (context->algorithm != kAlgorithm_SSS_ECDAA) {
-            return kStatus_SSS_Fail;
-        }
-        // Create ECDAA Random key.
-        LOG_D("(Re)Generate ECDAA Random Key if required");
-        sss_status = sss_se05x_generate_ecdaa_random_key(&context->session->s_ctx, &random_keyId);
-        if (sss_status != kStatus_SSS_Success) {
-            LOG_E("(Re)Generate ECDAA Random Key failed");
-            return kStatus_SSS_Fail;
-        }
-
-        status = Se05x_API_ECDAASign(&context->session->s_ctx,
-            context->keyObject->keyId,
-            kSE05x_ECDAASignatureAlgo_ECDAA,
-            digest,
-            digestLen,
-            random_keyId,
-            raw_signature,
-            &raw_signatureLen);
-        if (status != SM_OK) {
-            LOG_E("SE050 ECDAA Sign failed");
-            return kStatus_SSS_Fail;
-        }
-
-        asn_retval = sss_util_asn1_ecdaa_get_signature(signature, signatureLen, raw_signature, raw_signatureLen);
-        if (asn_retval != kStatus_SSS_Success) {
-            LOG_E("SE050 ECDAA Sign failed");
-            return kStatus_SSS_Fail;
+        if (status == SM_ERR_APDU_THROUGHPUT) {
+            retval = kStatus_SSS_ApduThroughputError;
         }
     } break;
-#else // For 06.00 or lower version Applet
-    case kSSS_CipherType_EC_BARRETO_NAEHRIG: {
-        if (context->algorithm != kAlgorithm_SSS_ECDAA) {
-            return kStatus_SSS_Fail;
-        }
-
-        status = Se05x_API_GetRandom(&context->session->s_ctx, (uint16_t)random_len, random, &random_len);
-        if (status != SM_OK) {
-            LOG_E("Se05x_API_GetRandom failed");
-            return kStatus_SSS_Fail;
-        }
-
-        status = Se05x_API_ECDAASign(&context->session->s_ctx,
-            context->keyObject->keyId,
-            kSE05x_ECDAASignatureAlgo_ECDAA,
-            digest,
-            digestLen,
-            random,
-            sizeof(random),
-            raw_signature,
-            &raw_signatureLen);
-        if (status != SM_OK) {
-            LOG_E("SE050 ECDAA Sign failed");
-            return kStatus_SSS_Fail;
-        }
-
-        asn_retval = sss_util_asn1_ecdaa_get_signature(signature, signatureLen, raw_signature, raw_signatureLen);
-        if (asn_retval != kStatus_SSS_Success) {
-            LOG_E("SE050 ECDAA Sign failed");
-            return kStatus_SSS_Fail;
-        }
-    } break;
-#endif
-#endif // SSS_HAVE_TPM_BN && SSS_HAVE_ECDAA
-#if SSS_HAVE_SE05X_VER_GTE_06_00 && SSS_HAVE_EC_MONT
+#if SSS_HAVE_SE05X_VER_GTE_07_02 && SSS_HAVE_EC_MONT
     case kSSS_CipherType_EC_MONTGOMERY: {
         LOG_W(
             "Sign operation is not supported for "
             "kSSS_CipherType_EC_MONTGOMERY curve");
         return kStatus_SSS_Fail;
     } break;
-#endif // SSS_HAVE_SE05X_VER_GTE_06_00 && SSS_HAVE_EC_MONT
+#endif // SSS_HAVE_SE05X_VER_GTE_07_02 && SSS_HAVE_EC_MONT
 #endif //SSSFTR_SE05X_ECC
 #if SSSFTR_SE05X_RSA && SSS_HAVE_RSA && !SSS_HAVE_HOSTCRYPTO_NONE
     case kSSS_CipherType_RSA:
@@ -5099,10 +5573,17 @@ sss_status_t sss_se05x_asymmetric_sign_digest(
             /* clang-format off */
             uint8_t emsa_data[512] = {0,}; /* MAX - SHA512*/
             size_t emsa_len = sizeof(emsa_data);
+            uint8_t encode_ret = 0;
             /* clang-format on */
 
-            if (0 != emsa_encode(context, digest, digestLen, emsa_data, &emsa_len)) {
-                return kStatus_SSS_Fail;
+            encode_ret = emsa_encode(context, digest, digestLen, emsa_data, &emsa_len);
+            if (0 != encode_ret) {
+                if (encode_ret == 2) {
+                    return kStatus_SSS_ApduThroughputError;
+                }
+                else {
+                    return kStatus_SSS_Fail;
+                }
             }
             status = Se05x_API_RSADecrypt(&context->session->s_ctx,
                 context->keyObject->keyId,
@@ -5111,17 +5592,27 @@ sss_status_t sss_se05x_asymmetric_sign_digest(
                 emsa_len,
                 signature,
                 signatureLen);
+            if (status == SM_ERR_APDU_THROUGHPUT) {
+                retval = kStatus_SSS_ApduThroughputError;
+            }
         }
         else if ((context->algorithm <= kAlgorithm_SSS_RSASSA_PKCS1_V1_5_SHA512) &&
                  (context->algorithm >= kAlgorithm_SSS_RSASSA_PKCS1_V1_5_SHA1)) {
+            uint8_t encode_ret = 0;
             /* Perform PKCS1-v15 encoding on input data and and RSA decrypt on PKCS1-v15 data --> RSA sign without hash */
             /* clang-format off */
             uint8_t pkcs1v15_encode_data[512] = {0,}; /* MAX - SHA512*/
             size_t encode_data_len = sizeof(pkcs1v15_encode_data);
             /* clang-format on */
 
-            if (0 != pkcs1_v15_encode(context, digest, digestLen, pkcs1v15_encode_data, &encode_data_len)) {
-                return kStatus_SSS_Fail;
+            encode_ret = pkcs1_v15_encode(context, digest, digestLen, pkcs1v15_encode_data, &encode_data_len);
+            if (0 != encode_ret) {
+                if (encode_ret == 2) {
+                    return kStatus_SSS_ApduThroughputError;
+                }
+                else {
+                    return kStatus_SSS_Fail;
+                }
             }
             status = Se05x_API_RSADecrypt(&context->session->s_ctx,
                 context->keyObject->keyId,
@@ -5130,16 +5621,26 @@ sss_status_t sss_se05x_asymmetric_sign_digest(
                 encode_data_len,
                 signature,
                 signatureLen);
+            if (status == SM_ERR_APDU_THROUGHPUT) {
+                retval = kStatus_SSS_ApduThroughputError;
+            }
         }
         else if (context->algorithm == kAlgorithm_SSS_RSASSA_PKCS1_V1_5_NO_HASH) {
+            uint8_t encode_ret = 0;
             /* Perform PKCS1-v15 encoding on input data and and RSA decrypt on PKCS1-v15 data --> RSA sign without hash */
             /* clang-format off */
             uint8_t pkcs1v15_encode_data[512] = {0,}; /* MAX - SHA512*/
             size_t encode_data_len = sizeof(pkcs1v15_encode_data);
             /* clang-format on */
 
-            if (0 != pkcs1_v15_encode_no_hash(context, digest, digestLen, pkcs1v15_encode_data, &encode_data_len)) {
-                return kStatus_SSS_Fail;
+            encode_ret = pkcs1_v15_encode_no_hash(context, digest, digestLen, pkcs1v15_encode_data, &encode_data_len);
+            if (0 != encode_ret) {
+                if (encode_ret == 2) {
+                    return kStatus_SSS_ApduThroughputError;
+                }
+                else {
+                    return kStatus_SSS_Fail;
+                }
             }
             status = Se05x_API_RSADecrypt(&context->session->s_ctx,
                 context->keyObject->keyId,
@@ -5148,6 +5649,9 @@ sss_status_t sss_se05x_asymmetric_sign_digest(
                 encode_data_len,
                 signature,
                 signatureLen);
+            if (status == SM_ERR_APDU_THROUGHPUT) {
+                retval = kStatus_SSS_ApduThroughputError;
+            }
         }
         else if (context->algorithm == kAlgorithm_SSS_RSASSA_NO_PADDING) {
             uint8_t padded_data[512] = {0};
@@ -5156,6 +5660,9 @@ sss_status_t sss_se05x_asymmetric_sign_digest(
             size_t parsedKeyByteLen      = 0;
             uint16_t u16parsedKeyByteLen = 0;
             status = Se05x_API_ReadSize(&context->session->s_ctx, context->keyObject->keyId, &u16parsedKeyByteLen);
+            if (status == SM_ERR_APDU_THROUGHPUT) {
+                return kStatus_SSS_ApduThroughputError;
+            }
             parsedKeyByteLen = u16parsedKeyByteLen;
             if (status != SM_OK) {
                 return kStatus_SSS_Fail;
@@ -5176,6 +5683,9 @@ sss_status_t sss_se05x_asymmetric_sign_digest(
                 padded_len,
                 signature,
                 signatureLen);
+            if (status == SM_ERR_APDU_THROUGHPUT) {
+                retval = kStatus_SSS_ApduThroughputError;
+            }
         }
         else {
             LOG_E("Selected padding is not supported for RSA Sign in SE050");
@@ -5189,73 +5699,13 @@ sss_status_t sss_se05x_asymmetric_sign_digest(
 
     if (status == SM_OK) {
         retval = kStatus_SSS_Success;
-
-#if 0 // SSS_HAVE_HOSTCRYPTO_MBEDTLS && SSSFTR_SE05X_ECC
-        if (context->keyObject->cipherType >= kSSS_CipherType_EC_NIST_P &&
-            context->keyObject->cipherType <
-                kSSS_CipherType_EC_BARRETO_NAEHRIG) {
-            int ret;
-            /* Workaround for ECDSA signiture to omit prefix zeros if asn1
-               signiutre tag (integer) length in R and S component is 20 */
-
-            size_t length = 0, bufIndex = 0;
-            ret = asn_1_parse_tlv(signature, &length, &bufIndex);
-            if (ret != 0) {
-                retval = kStatus_SSS_Fail;
-                return retval;
-            }
-            if (signature[bufIndex] == 0x02) /* Check for tag interger */
-            {
-                LOG_AU8_D(signature, *signatureLen);
-
-                int count = 0;
-                uint16_t i = 0;
-                /* For R and S component */
-                for (i = 0; i < 2; i++) {
-                    count = 0;
-                    ret = asn_1_parse_tlv(signature, &length, &bufIndex);
-                    if (ret != 0) {
-                        retval = kStatus_SSS_Fail;
-                        return retval;
-                    }
-                    if (length == 0x20) {
-                        size_t j = bufIndex;
-                        for (;; j++) {
-                            if (signature[j] == 0 && signature[j + 1] > 0x7F) {
-                                count++;
-                            }
-                            else {
-                                break;
-                            }
-                        }
-                    }
-                    if (count) {
-                        uint16_t k = 0;
-                        signature[bufIndex - 1] -=
-                            count; /* Update the tag length */
-                        signature[1] -=
-                            count; /* Update the Sequence tag length */
-
-                        for (k = 0; k < (*signatureLen - bufIndex - count);
-                             k++) {
-                            signature[bufIndex + k] =
-                                signature[bufIndex + count + k];
-                        }
-
-                        *signatureLen -= count;
-                    }
-                    bufIndex += length - count;
-                }
-            }
-        }
-#endif // SSS_HAVE_HOSTCRYPTO_MBEDTLS && SSSFTR_SE05X_ECC
     }
 
     return retval;
 }
 
 sss_status_t sss_se05x_asymmetric_sign(
-    sss_se05x_asymmetric_t *context, uint8_t *srcData, size_t srcLen, uint8_t *destData, size_t *destLen)
+    sss_se05x_asymmetric_t *context, const uint8_t *srcData, size_t srcLen, uint8_t *destData, size_t *destLen)
 {
     sss_status_t retval = kStatus_SSS_Fail;
 #if (SSSFTR_SE05X_RSA && SSS_HAVE_RSA) || (SSSFTR_SE05X_ECC && SSS_HAVE_EC_ED)
@@ -5275,6 +5725,9 @@ sss_status_t sss_se05x_asymmetric_sign(
         if (context->algorithm == kAlgorithm_SSS_RSASSA_PKCS1_V1_5_SHA512 ||
             context->algorithm == kAlgorithm_SSS_RSASSA_PKCS1_PSS_MGF1_SHA512) {
             status = Se05x_API_ReadSize(&context->session->s_ctx, context->keyObject->keyId, &key_size_bytes);
+            if (status == SM_ERR_APDU_THROUGHPUT) {
+                return kStatus_SSS_ApduThroughputError;
+            }
             if (status != SM_OK) {
                 return kStatus_SSS_Fail;
             }
@@ -5286,6 +5739,9 @@ sss_status_t sss_se05x_asymmetric_sign(
 
         status = Se05x_API_RSASign(
             &context->session->s_ctx, context->keyObject->keyId, rsaSigningAlgo, srcData, srcLen, destData, destLen);
+        if (status == SM_ERR_APDU_THROUGHPUT) {
+            retval = kStatus_SSS_ApduThroughputError;
+        }
     } break;
 #endif // SSSFTR_SE05X_RSA && SSS_HAVE_RSA
 #if SSSFTR_SE05X_ECC && SSS_HAVE_EC_ED
@@ -5294,6 +5750,9 @@ sss_status_t sss_se05x_asymmetric_sign(
             SE05x_EDSignatureAlgo_t ecSignAlgo = kSE05x_EDSignatureAlgo_ED25519PURE_SHA_512;
             status                             = Se05x_API_EdDSASign(
                 &context->session->s_ctx, context->keyObject->keyId, ecSignAlgo, srcData, srcLen, destData, destLen);
+            if (status == SM_ERR_APDU_THROUGHPUT) {
+                retval = kStatus_SSS_ApduThroughputError;
+            }
         }
 
 #ifdef TMP_ENDIAN_VERBOSE_SIGN
@@ -5357,8 +5816,11 @@ sss_status_t sss_se05x_asymmetric_sign(
     return retval;
 }
 
-sss_status_t sss_se05x_asymmetric_verify_digest(
-    sss_se05x_asymmetric_t *context, uint8_t *digest, size_t digestLen, uint8_t *signature, size_t signatureLen)
+sss_status_t sss_se05x_asymmetric_verify_digest(sss_se05x_asymmetric_t *context,
+    const uint8_t *digest,
+    size_t digestLen,
+    const uint8_t *signature,
+    size_t signatureLen)
 {
     sss_status_t retval = kStatus_SSS_Fail;
 #if SSSFTR_SE05X_ECC || SSSFTR_SE05X_RSA
@@ -5392,20 +5854,14 @@ sss_status_t sss_se05x_asymmetric_verify_digest(
             signatureLen,
             &result);
     } break;
-#if SSS_HAVE_TPM_BN
-    case kSSS_CipherType_EC_BARRETO_NAEHRIG: {
-        retval = kStatus_SSS_Fail;
-        LOG_W("Verify not supported for BN Curve");
-    } break;
-#endif
-#if SSS_HAVE_SE05X_VER_GTE_06_00 && SSS_HAVE_EC_MONT
+#if SSS_HAVE_SE05X_VER_GTE_07_02 && SSS_HAVE_EC_MONT
     case kSSS_CipherType_EC_MONTGOMERY: {
         LOG_W(
             "Verify operation is not supported for "
             "kSSS_CipherType_EC_MONTGOMERY curve");
         return kStatus_SSS_Fail;
     } break;
-#endif // SSS_HAVE_SE05X_VER_GTE_06_00 && SSS_HAVE_EC_MONT
+#endif // SSS_HAVE_SE05X_VER_GTE_07_02 && SSS_HAVE_EC_MONT
 #endif // SSSFTR_SE05X_ECC
 #if SSSFTR_SE05X_RSA && SSS_HAVE_RSA && !SSS_HAVE_HOSTCRYPTO_NONE
     case kSSS_CipherType_RSA:
@@ -5424,9 +5880,10 @@ sss_status_t sss_se05x_asymmetric_verify_digest(
                 signatureLen,
                 dec_data,
                 &dec_len);
-
-            if (0 == emsa_decode_and_compare(context, dec_data, dec_len, digest, digestLen)) {
-                result = kSE05x_Result_SUCCESS;
+            if (status == SM_OK) {
+                if (0 == emsa_decode_and_compare(context, dec_data, dec_len, digest, digestLen)) {
+                    result = kSE05x_Result_SUCCESS;
+                }
             }
         }
         else if ((context->algorithm <= kAlgorithm_SSS_RSASSA_PKCS1_V1_5_SHA512) &&
@@ -5445,13 +5902,21 @@ sss_status_t sss_se05x_asymmetric_verify_digest(
                 signatureLen,
                 dec_data,
                 &dec_len);
+            if (status == SM_OK) {
+                uint8_t encode_ret = 0;
+                encode_ret = pkcs1_v15_encode(context, digest, digestLen, pkcs1v15_encode_data, &encode_data_len);
+                if (0 != encode_ret) {
+                    if (encode_ret == 2) {
+                        return kStatus_SSS_ApduThroughputError;
+                    }
+                    else {
+                        return kStatus_SSS_Fail;
+                    }
+                }
 
-            if (0 != pkcs1_v15_encode(context, digest, digestLen, pkcs1v15_encode_data, &encode_data_len)) {
-                return kStatus_SSS_Fail;
-            }
-
-            if (memcmp(dec_data, pkcs1v15_encode_data, encode_data_len) == 0) {
-                result = kSE05x_Result_SUCCESS;
+                if (memcmp(dec_data, pkcs1v15_encode_data, encode_data_len) == 0) {
+                    result = kSE05x_Result_SUCCESS;
+                }
             }
         }
         else if (context->algorithm == kAlgorithm_SSS_RSASSA_PKCS1_V1_5_NO_HASH) {
@@ -5469,13 +5934,22 @@ sss_status_t sss_se05x_asymmetric_verify_digest(
                 signatureLen,
                 dec_data,
                 &dec_len);
+            if (status == SM_OK) {
+                uint8_t encode_ret = 0;
+                encode_ret =
+                    pkcs1_v15_encode_no_hash(context, digest, digestLen, pkcs1v15_encode_data, &encode_data_len);
+                if (0 != encode_ret) {
+                    if (encode_ret == 2) {
+                        return kStatus_SSS_ApduThroughputError;
+                    }
+                    else {
+                        return kStatus_SSS_Fail;
+                    }
+                }
 
-            if (0 != pkcs1_v15_encode_no_hash(context, digest, digestLen, pkcs1v15_encode_data, &encode_data_len)) {
-                return kStatus_SSS_Fail;
-            }
-
-            if (memcmp(dec_data, pkcs1v15_encode_data, encode_data_len) == 0) {
-                result = kSE05x_Result_SUCCESS;
+                if (memcmp(dec_data, pkcs1v15_encode_data, encode_data_len) == 0) {
+                    result = kSE05x_Result_SUCCESS;
+                }
             }
         }
         else if (context->algorithm == kAlgorithm_SSS_RSASSA_NO_PADDING) {
@@ -5495,25 +5969,28 @@ sss_status_t sss_se05x_asymmetric_verify_digest(
                 signatureLen,
                 dec_data,
                 &dec_len);
+            if (status == SM_OK) {
+                status = Se05x_API_ReadSize(&context->session->s_ctx, context->keyObject->keyId, &u16parsedKeyByteLen);
+                if (status == SM_OK) {
+                    parsedKeyByteLen = u16parsedKeyByteLen;
+                    if (status != SM_OK) {
+                        return kStatus_SSS_Fail;
+                    }
 
-            status = Se05x_API_ReadSize(&context->session->s_ctx, context->keyObject->keyId, &u16parsedKeyByteLen);
-            parsedKeyByteLen = u16parsedKeyByteLen;
-            if (status != SM_OK) {
-                return kStatus_SSS_Fail;
-            }
+                    if (digestLen <= parsedKeyByteLen && digestLen > 0) {
+                        memset(padded_data, 0x00, padded_len);
+                        memcpy(&padded_data[parsedKeyByteLen - digestLen], &digest[0], digestLen);
+                        padded_len = parsedKeyByteLen;
+                    }
 
-            if (digestLen <= parsedKeyByteLen && digestLen > 0) {
-                memset(padded_data, 0x00, padded_len);
-                memcpy(&padded_data[parsedKeyByteLen - digestLen], &digest[0], digestLen);
-                padded_len = parsedKeyByteLen;
-            }
+                    else {
+                        return kStatus_SSS_Fail;
+                    }
 
-            else {
-                return kStatus_SSS_Fail;
-            }
-
-            if (memcmp(&dec_data[0], &padded_data[0], padded_len) == 0) {
-                result = kSE05x_Result_SUCCESS;
+                    if (memcmp(&dec_data[0], &padded_data[0], padded_len) == 0) {
+                        result = kSE05x_Result_SUCCESS;
+                    }
+                }
             }
         }
         else {
@@ -5534,13 +6011,19 @@ sss_status_t sss_se05x_asymmetric_verify_digest(
             retval = kStatus_SSS_Success;
         }
     }
+    if (status == SM_ERR_APDU_THROUGHPUT) {
+        retval = kStatus_SSS_ApduThroughputError;
+    }
 #endif // SSSFTR_SE05X_ECC || SSSFTR_SE05X_RSA
 
     return retval;
 }
 
-sss_status_t sss_se05x_asymmetric_verify(
-    sss_se05x_asymmetric_t *context, uint8_t *srcData, size_t srcLen, uint8_t *signature, size_t signatureLen)
+sss_status_t sss_se05x_asymmetric_verify(sss_se05x_asymmetric_t *context,
+    const uint8_t *srcData,
+    size_t srcLen,
+    const uint8_t *signature,
+    size_t signatureLen)
 {
     sss_status_t retval = kStatus_SSS_Fail;
 #if (SSSFTR_SE05X_RSA && SSS_HAVE_RSA) || (SSSFTR_SE05X_ECC && SSS_HAVE_EC_ED)
@@ -5558,6 +6041,9 @@ sss_status_t sss_se05x_asymmetric_verify(
         if (context->algorithm == kAlgorithm_SSS_RSASSA_PKCS1_V1_5_SHA512 ||
             context->algorithm == kAlgorithm_SSS_RSASSA_PKCS1_PSS_MGF1_SHA512) {
             status = Se05x_API_ReadSize(&context->session->s_ctx, context->keyObject->keyId, &key_size_bytes);
+            if (status == SM_ERR_APDU_THROUGHPUT) {
+                return kStatus_SSS_ApduThroughputError;
+            }
             if (status != SM_OK) {
                 return kStatus_SSS_Fail;
             }
@@ -5581,7 +6067,7 @@ sss_status_t sss_se05x_asymmetric_verify(
     case kSSS_CipherType_EC_TWISTED_ED: {
 #ifdef TMP_ENDIAN_VERBOSE
         {
-            printf("Signatire before Reverse:\n");
+            printf("Signature before Reverse:\n");
             for (size_t z = 0; z < signatureLen; z++) {
                 printf("%02X.", signature[z]);
             }
@@ -5590,13 +6076,21 @@ sss_status_t sss_se05x_asymmetric_verify(
 #endif
 
         // Revert Endianness
-        size_t offset = 0;
+        uint8_t signature_temp[64] = {0};
+        size_t offset              = 0;
+
+        if (signatureLen <= sizeof(signature_temp)) {
+            memcpy(signature_temp, &signature[0], signatureLen);
+        }
+        else {
+            return kStatus_SSS_Fail;
+        }
 
         for (size_t keyValueIdx = 0; keyValueIdx < (signatureLen >> 2); keyValueIdx++) {
-            uint8_t swapByte = signature[keyValueIdx];
+            uint8_t swapByte = signature_temp[keyValueIdx];
             if (offset + (signatureLen >> 1) - 1 - keyValueIdx < signatureLen) {
-                signature[offset + keyValueIdx] = signature[offset + (signatureLen >> 1) - 1 - keyValueIdx];
-                signature[offset + (signatureLen >> 1) - 1 - keyValueIdx] = swapByte;
+                signature_temp[offset + keyValueIdx] = signature_temp[offset + (signatureLen >> 1) - 1 - keyValueIdx];
+                signature_temp[offset + (signatureLen >> 1) - 1 - keyValueIdx] = swapByte;
             }
             else {
                 return kStatus_SSS_Fail;
@@ -5606,13 +6100,13 @@ sss_status_t sss_se05x_asymmetric_verify(
         offset = signatureLen >> 1;
 
         for (size_t keyValueIdx = 0; keyValueIdx < (signatureLen >> 2); keyValueIdx++) {
-            uint8_t swapByte = signature[offset + keyValueIdx];
+            uint8_t swapByte = signature_temp[offset + keyValueIdx];
             if ((UINT_MAX - offset) < keyValueIdx) {
                 return kStatus_SSS_Fail;
             }
-            signature[offset + keyValueIdx] = signature[offset + (signatureLen >> 1) - 1 - keyValueIdx];
+            signature_temp[offset + keyValueIdx] = signature_temp[offset + (signatureLen >> 1) - 1 - keyValueIdx];
             if (offset + (signatureLen >> 1) - 1 - keyValueIdx < signatureLen) {
-                signature[offset + (signatureLen >> 1) - 1 - keyValueIdx] = swapByte;
+                signature_temp[offset + (signatureLen >> 1) - 1 - keyValueIdx] = swapByte;
             }
             else {
                 return kStatus_SSS_Fail;
@@ -5621,9 +6115,9 @@ sss_status_t sss_se05x_asymmetric_verify(
 
 #ifdef TMP_ENDIAN_VERBOSE
         {
-            printf("Signatire after Reverse:\n");
+            printf("Signature after Reverse:\n");
             for (size_t z = 0; z < signatureLen; z++) {
-                printf("%02X.", signature[z]);
+                printf("%02X.", signature_temp[z]);
             }
             printf("\n");
         }
@@ -5636,7 +6130,7 @@ sss_status_t sss_se05x_asymmetric_verify(
                 ecSignAlgo,
                 srcData,
                 srcLen,
-                signature,
+                signature_temp,
                 signatureLen,
                 &result);
         }
@@ -5652,6 +6146,9 @@ sss_status_t sss_se05x_asymmetric_verify(
         if (result == kSE05x_Result_SUCCESS) {
             retval = kStatus_SSS_Success;
         }
+    }
+    if (status == SM_ERR_APDU_THROUGHPUT) {
+        retval = kStatus_SSS_ApduThroughputError;
     }
 #endif
 
@@ -5676,6 +6173,9 @@ sss_status_t sss_se05x_symmetric_context_init(sss_se05x_symmetric_t *context,
     sss_mode_t mode)
 {
     sss_status_t retval     = kStatus_SSS_Success;
+    if (context == NULL) {
+        return kStatus_SSS_Fail;
+    }
     context->session        = session;
     context->keyObject      = keyObject;
     context->algorithm      = algorithm;
@@ -5716,7 +6216,10 @@ sss_status_t sss_se05x_cipher_one_go(sss_se05x_symmetric_t *context,
         destData,
         &dataLen,
         OperType);
-
+    if (status == SM_ERR_APDU_THROUGHPUT) {
+        retval = kStatus_SSS_ApduThroughputError;
+        goto exit;
+    }
     ENSURE_OR_GO_EXIT(status == SM_OK);
 
     retval = kStatus_SSS_Success;
@@ -5757,7 +6260,10 @@ sss_status_t sss_se05x_cipher_one_go_v2(sss_se05x_symmetric_t *context,
         destData,
         pDataLen,
         OperType);
-
+    if (status == SM_ERR_APDU_THROUGHPUT) {
+        retval = kStatus_SSS_ApduThroughputError;
+        goto exit;
+    }
     ENSURE_OR_GO_EXIT(status == SM_OK);
 
     retval = kStatus_SSS_Success;
@@ -5822,6 +6328,10 @@ sss_status_t sss_se05x_cipher_init(sss_se05x_symmetric_t *context, uint8_t *iv, 
     }
 
     status = Se05x_API_ReadCryptoObjectList(&context->session->s_ctx, list, &listlen);
+    if (status == SM_ERR_APDU_THROUGHPUT) {
+        return kStatus_SSS_ApduThroughputError;
+    }
+    ENSURE_OR_GO_EXIT(status == SM_OK);
     for (i = 0; i < listlen; i += 4) {
         uint16_t cryptoObjectId = list[i + 1] | (list[i + 0] << 8);
         if (cryptoObjectId == context->cryptoObjectId) {
@@ -5832,6 +6342,9 @@ sss_status_t sss_se05x_cipher_init(sss_se05x_symmetric_t *context, uint8_t *iv, 
     if (create_crypto_obj) {
         status = Se05x_API_CreateCryptoObject(
             &context->session->s_ctx, context->cryptoObjectId, kSE05x_CryptoContext_CIPHER, subtype);
+        if (status == SM_ERR_APDU_THROUGHPUT) {
+            return kStatus_SSS_ApduThroughputError;
+        }
         if (status != SM_OK) {
             return kStatus_SSS_Fail;
         }
@@ -5846,6 +6359,9 @@ sss_status_t sss_se05x_cipher_init(sss_se05x_symmetric_t *context, uint8_t *iv, 
 
     status = Se05x_API_CipherInit(
         &context->session->s_ctx, context->keyObject->keyId, context->cryptoObjectId, iv, ivLen, OperType);
+    if (status == SM_ERR_APDU_THROUGHPUT) {
+        return kStatus_SSS_ApduThroughputError;
+    }
     ENSURE_OR_GO_EXIT(status == SM_OK);
 
     retval = kStatus_SSS_Success;
@@ -5902,6 +6418,10 @@ sss_status_t sss_se05x_cipher_update(
                 cipherBlockSize,
                 destData,
                 &blockoutLen);
+            if (status == SM_ERR_APDU_THROUGHPUT) {
+                retval = kStatus_SSS_ApduThroughputError;
+                goto exit;
+            }
             ENSURE_OR_GO_EXIT(status == SM_OK);
 
             src_offset = cipherBlockSize - context->cache_data_len;
@@ -5928,6 +6448,10 @@ sss_status_t sss_se05x_cipher_update(
                 inputData_len,
                 (destData + output_offset),
                 &blockoutLen);
+            if (status == SM_ERR_APDU_THROUGHPUT) {
+                retval = kStatus_SSS_ApduThroughputError;
+                goto exit;
+            }
             ENSURE_OR_GO_EXIT(status == SM_OK);
 
             src_offset += inputData_len;
@@ -5946,7 +6470,7 @@ sss_status_t sss_se05x_cipher_update(
 
     retval = kStatus_SSS_Success;
 exit:
-    if (retval == kStatus_SSS_Fail) {
+    if (retval != kStatus_SSS_Success) {
         if (destLen) {
             *destLen = 0;
         }
@@ -5969,6 +6493,7 @@ sss_status_t sss_se05x_cipher_finish(
         context->algorithm == kAlgorithm_SSS_DES3_ECB || context->algorithm == kAlgorithm_SSS_DES3_CBC) {
         cipherBlockSize = DES_BLOCK_SIZE;
     }
+    ENSURE_OR_GO_EXIT(destLen != NULL);
 
     if (srcLen > cipherBlockSize) {
         LOG_E("srcLen cannot be grater than 16 bytes. Call update function ");
@@ -5982,6 +6507,7 @@ sss_status_t sss_se05x_cipher_finish(
         context->cache_data_len = 0;
     }
     if (srcLen != 0) {
+        ENSURE_OR_GO_EXIT(srcData != NULL);
         memcpy((srcdata_updated + srcdata_updated_len), srcData, srcLen);
         srcdata_updated_len += srcLen;
     }
@@ -6001,6 +6527,10 @@ sss_status_t sss_se05x_cipher_finish(
 
     status = Se05x_API_CipherFinal(
         &context->session->s_ctx, context->cryptoObjectId, srcdata_updated, srcdata_updated_len, destData, destLen);
+    if (status == SM_ERR_APDU_THROUGHPUT) {
+        retval = kStatus_SSS_ApduThroughputError;
+        goto exit;
+    }
     ENSURE_OR_GO_EXIT(status == SM_OK);
 
     retval = kStatus_SSS_Success;
@@ -6045,7 +6575,10 @@ sss_status_t sss_se05x_cipher_crypt_ctr(sss_se05x_symmetric_t *context,
         destData,
         &outputDataLen,
         OperType);
-
+    if (status == SM_ERR_APDU_THROUGHPUT) {
+        retval = kStatus_SSS_ApduThroughputError;
+        goto exit;
+    }
     ENSURE_OR_GO_EXIT(status == SM_OK);
 
     retval = kStatus_SSS_Success;
@@ -6097,6 +6630,9 @@ sss_status_t sss_se05x_aead_context_init(sss_se05x_aead_t *context,
     sss_mode_t mode)
 {
     sss_status_t retval = kStatus_SSS_Fail;
+    if (context == NULL) {
+        return kStatus_SSS_Fail;
+    }
     context->session    = session;
     context->keyObject  = keyObject;
     if ((algorithm == kAlgorithm_SSS_AES_CCM) || (algorithm == kAlgorithm_SSS_AES_GCM) ||
@@ -6125,7 +6661,7 @@ sss_status_t sss_se05x_aead_one_go(sss_se05x_aead_t *context,
     size_t *tagLen)
 {
     sss_status_t retval = kStatus_SSS_Fail;
-#if SSS_HAVE_SE05X_VER_GTE_06_00
+#if SSS_HAVE_SE05X_VER_GTE_07_02
     smStatus_t status  = SM_NOT_OK;
     size_t destDataLen = size;
     SE05x_CipherMode_t cipherMode =
@@ -6137,6 +6673,7 @@ sss_status_t sss_se05x_aead_one_go(sss_se05x_aead_t *context,
     ENSURE_OR_GO_EXIT(
         !((context->algorithm == kAlgorithm_SSS_AES_GCM_INT_IV) && (OperType == kSE05x_Cipher_Oper_OneShot_Decrypt)));
 
+    ENSURE_OR_GO_EXIT(context->keyObject != NULL);
     status = Se05x_API_AeadOneShot(&context->session->s_ctx,
         context->keyObject->keyId,
         cipherMode,
@@ -6151,6 +6688,10 @@ sss_status_t sss_se05x_aead_one_go(sss_se05x_aead_t *context,
         destData,
         &destDataLen,
         OperType);
+    if (status == SM_ERR_APDU_THROUGHPUT) {
+        retval = kStatus_SSS_ApduThroughputError;
+        goto exit;
+    }
     ENSURE_OR_GO_EXIT(status == SM_OK);
 
     retval = kStatus_SSS_Success;
@@ -6166,7 +6707,7 @@ exit:
     AX_UNUSED_ARG(aadLen);
     AX_UNUSED_ARG(tag);
     AX_UNUSED_ARG(tagLen);
-#endif /* SSS_HAVE_SE05X_VER_GTE_06_00 */
+#endif /* SSS_HAVE_SE05X_VER_GTE_07_02 */
     return retval;
 }
 
@@ -6174,7 +6715,7 @@ sss_status_t sss_se05x_aead_init(
     sss_se05x_aead_t *context, uint8_t *nonce, size_t nonceLen, size_t tagLen, size_t aadLen, size_t payloadLen)
 {
     sss_status_t retval = kStatus_SSS_Fail;
-#if SSS_HAVE_SE05X_VER_GTE_06_00
+#if SSS_HAVE_SE05X_VER_GTE_07_02
     smStatus_t status             = SM_NOT_OK;
     SE05x_CipherMode_t cipherMode = kSE05x_CipherMode_NA;
     SE05x_Cipher_Oper_t OperType =
@@ -6222,6 +6763,9 @@ sss_status_t sss_se05x_aead_init(
         goto exit;
     }
     status = Se05x_API_ReadCryptoObjectList(&context->session->s_ctx, list, &listlen);
+    if (status == SM_ERR_APDU_THROUGHPUT) {
+        return kStatus_SSS_ApduThroughputError;
+    }
     for (i = 0; i < listlen; i += 4) {
         uint16_t cryptoObjectId = list[i + 1] | (list[i + 0] << 8);
         if (cryptoObjectId == context->cryptoObjectId) {
@@ -6232,6 +6776,9 @@ sss_status_t sss_se05x_aead_init(
     if (create_crypto_obj) {
         status = Se05x_API_CreateCryptoObject(
             &context->session->s_ctx, context->cryptoObjectId, kSE05x_CryptoContext_AEAD, subtype);
+        if (status == SM_ERR_APDU_THROUGHPUT) {
+            return kStatus_SSS_ApduThroughputError;
+        }
         if (status != SM_OK) {
             return kStatus_SSS_Fail;
         }
@@ -6268,6 +6815,10 @@ sss_status_t sss_se05x_aead_init(
             tagLen,
             OperType);
     }
+    if (status == SM_ERR_APDU_THROUGHPUT) {
+        retval = kStatus_SSS_ApduThroughputError;
+        goto exit;
+    }
     ENSURE_OR_GO_EXIT(status == SM_OK);
 
     retval = kStatus_SSS_Success;
@@ -6279,14 +6830,14 @@ exit:
     AX_UNUSED_ARG(tagLen);
     AX_UNUSED_ARG(aadLen);
     AX_UNUSED_ARG(payloadLen);
-#endif /* SSS_HAVE_SE05X_VER_GTE_06_00 */
+#endif /* SSS_HAVE_SE05X_VER_GTE_07_02 */
     return retval;
 }
 
 sss_status_t sss_se05x_aead_update_aad(sss_se05x_aead_t *context, const uint8_t *aadData, size_t aadDataLen)
 {
     sss_status_t retval = kStatus_SSS_Fail;
-#if SSS_HAVE_SE05X_VER_GTE_06_00
+#if SSS_HAVE_SE05X_VER_GTE_07_02
     smStatus_t status = SM_NOT_OK;
     size_t src_offset = 0;
     if (aadDataLen > AEAD_BLOCK_SIZE) {
@@ -6294,6 +6845,10 @@ sss_status_t sss_se05x_aead_update_aad(sss_se05x_aead_t *context, const uint8_t 
             /*For the subsequent blocks which are of block size 16*/
             status = Se05x_API_AeadUpdate_aad(
                 &context->session->s_ctx, context->cryptoObjectId, (aadData + src_offset), AEAD_BLOCK_SIZE);
+            if (status == SM_ERR_APDU_THROUGHPUT) {
+                retval = kStatus_SSS_ApduThroughputError;
+                goto exit;
+            }
             ENSURE_OR_GO_EXIT(status == SM_OK);
             src_offset += AEAD_BLOCK_SIZE;
         }
@@ -6301,11 +6856,19 @@ sss_status_t sss_se05x_aead_update_aad(sss_se05x_aead_t *context, const uint8_t 
             /*For the subsequent blocks which are yet to process*/
             status = Se05x_API_AeadUpdate_aad(
                 &context->session->s_ctx, context->cryptoObjectId, (aadData + src_offset), (aadDataLen - src_offset));
+            if (status == SM_ERR_APDU_THROUGHPUT) {
+                retval = kStatus_SSS_ApduThroughputError;
+                goto exit;
+            }
             ENSURE_OR_GO_EXIT(status == SM_OK);
         }
     }
     else {
         status = Se05x_API_AeadUpdate_aad(&context->session->s_ctx, context->cryptoObjectId, aadData, aadDataLen);
+        if (status == SM_ERR_APDU_THROUGHPUT) {
+            retval = kStatus_SSS_ApduThroughputError;
+            goto exit;
+        }
         ENSURE_OR_GO_EXIT(status == SM_OK);
     }
     retval = kStatus_SSS_Success;
@@ -6314,7 +6877,7 @@ exit:
     AX_UNUSED_ARG(context);
     AX_UNUSED_ARG(aadData);
     AX_UNUSED_ARG(aadDataLen);
-#endif /* SSS_HAVE_SE05X_VER_GTE_06_00 */
+#endif /* SSS_HAVE_SE05X_VER_GTE_07_02 */
     return retval;
 }
 
@@ -6322,7 +6885,7 @@ sss_status_t sss_se05x_aead_update(
     sss_se05x_aead_t *context, const uint8_t *srcData, size_t srcLen, uint8_t *destData, size_t *destLen)
 {
     sss_status_t retval = kStatus_SSS_Fail;
-#if SSS_HAVE_SE05X_VER_GTE_06_00
+#if SSS_HAVE_SE05X_VER_GTE_07_02
     smStatus_t status    = SM_NOT_OK;
     size_t inputData_len = 0;
     size_t src_offset    = 0;
@@ -6363,6 +6926,10 @@ sss_status_t sss_se05x_aead_update(
                 CIPHER_BLOCK_SIZE,
                 destData,
                 &blockoutLen);
+            if (status == SM_ERR_APDU_THROUGHPUT) {
+                retval = kStatus_SSS_ApduThroughputError;
+                goto exit;
+            }
             ENSURE_OR_GO_EXIT(status == SM_OK);
 
             src_offset = CIPHER_BLOCK_SIZE - context->cache_data_len;
@@ -6389,6 +6956,10 @@ sss_status_t sss_se05x_aead_update(
                 inputData_len,
                 (destData + output_offset),
                 &blockoutLen);
+            if (status == SM_ERR_APDU_THROUGHPUT) {
+                retval = kStatus_SSS_ApduThroughputError;
+                goto exit;
+            }
             ENSURE_OR_GO_EXIT(status == SM_OK);
 
             src_offset += inputData_len;
@@ -6407,7 +6978,7 @@ sss_status_t sss_se05x_aead_update(
 
     retval = kStatus_SSS_Success;
 exit:
-    if (retval == kStatus_SSS_Fail) {
+    if (retval != kStatus_SSS_Success) {
         if (destLen) {
             *destLen = 0;
         }
@@ -6431,7 +7002,7 @@ sss_status_t sss_se05x_aead_finish(sss_se05x_aead_t *context,
     size_t *tagLen)
 {
     sss_status_t retval = kStatus_SSS_Fail;
-#if SSS_HAVE_SE05X_VER_GTE_06_00
+#if SSS_HAVE_SE05X_VER_GTE_07_02
     smStatus_t status = SM_NOT_OK;
 
     SE05x_Cipher_Oper_t OperType =
@@ -6443,7 +7014,9 @@ sss_status_t sss_se05x_aead_finish(sss_se05x_aead_t *context,
 
     if (srcLen > CIPHER_BLOCK_SIZE) {
         LOG_E("srcLen cannot be grater than 16 bytes. Call update function ");
-        *destLen = 0;
+        if (destLen != NULL) {
+            *destLen = 0;
+        }
         goto exit;
     }
 
@@ -6456,6 +7029,7 @@ sss_status_t sss_se05x_aead_finish(sss_se05x_aead_t *context,
             srcdata_updated_len = context->cache_data_len;
         }
         if (srcLen != 0) {
+            ENSURE_OR_GO_EXIT(srcData != NULL);
             memcpy((srcdata_updated + srcdata_updated_len), srcData, srcLen);
             srcdata_updated_len += srcLen;
         }
@@ -6466,6 +7040,10 @@ sss_status_t sss_se05x_aead_finish(sss_se05x_aead_t *context,
                 srcdata_updated_len,
                 destData,
                 destLen);
+            if (status == SM_ERR_APDU_THROUGHPUT) {
+                retval = kStatus_SSS_ApduThroughputError;
+                goto exit;
+            }
             ENSURE_OR_GO_EXIT(status == SM_OK);
         }
         else {
@@ -6474,6 +7052,10 @@ sss_status_t sss_se05x_aead_finish(sss_se05x_aead_t *context,
             *destLen = 0;
         }
         status = Se05x_API_AeadFinal(&context->session->s_ctx, context->cryptoObjectId, tag, tagLen, OperType);
+        if (status == SM_ERR_APDU_THROUGHPUT) {
+            retval = kStatus_SSS_ApduThroughputError;
+            goto exit;
+        }
         ENSURE_OR_GO_EXIT(status == SM_OK);
         retval = kStatus_SSS_Success;
     }
@@ -6486,11 +7068,11 @@ exit:
     AX_UNUSED_ARG(destLen);
     AX_UNUSED_ARG(tag);
     AX_UNUSED_ARG(tagLen);
-#endif /* SSS_HAVE_SE05X_VER_GTE_06_00 */
+#endif /* SSS_HAVE_SE05X_VER_GTE_07_02 */
     return retval;
 }
 
-#if SSS_HAVE_SE05X_VER_GTE_06_00
+#if SSS_HAVE_SE05X_VER_GTE_07_02
 static sss_status_t sss_se05x_aead_CCMfinish(sss_se05x_aead_t *context,
     const uint8_t *srcData,
     size_t srcLen,
@@ -6524,6 +7106,10 @@ static sss_status_t sss_se05x_aead_CCMfinish(sss_se05x_aead_t *context,
         if (srcdata_updated_len < CIPHER_BLOCK_SIZE) {
             status = Se05x_API_AeadCCMLastUpdate(
                 &context->session->s_ctx, context->cryptoObjectId, srcdata_updated, srcdata_updated_len);
+            if (status == SM_ERR_APDU_THROUGHPUT) {
+                retval = kStatus_SSS_ApduThroughputError;
+                goto exit;
+            }
             ENSURE_OR_GO_EXIT(status == SM_OK);
             dataprocessed = 0;
         }
@@ -6535,6 +7121,10 @@ static sss_status_t sss_se05x_aead_CCMfinish(sss_se05x_aead_t *context,
                 CIPHER_BLOCK_SIZE,
                 destData,
                 &tempoutLen);
+            if (status == SM_ERR_APDU_THROUGHPUT) {
+                retval = kStatus_SSS_ApduThroughputError;
+                goto exit;
+            }
             ENSURE_OR_GO_EXIT(status == SM_OK);
             srcdata_updated_len = srcdata_updated_len - CIPHER_BLOCK_SIZE;
             outLen              = outLen + tempoutLen;
@@ -6545,6 +7135,10 @@ static sss_status_t sss_se05x_aead_CCMfinish(sss_se05x_aead_t *context,
                     context->cryptoObjectId,
                     srcdata_updated + CIPHER_BLOCK_SIZE,
                     srcdata_updated_len);
+                if (status == SM_ERR_APDU_THROUGHPUT) {
+                    retval = kStatus_SSS_ApduThroughputError;
+                    goto exit;
+                }
                 ENSURE_OR_GO_EXIT(status == SM_OK);
                 dataprocessed = 0;
             }
@@ -6568,17 +7162,21 @@ static sss_status_t sss_se05x_aead_CCMfinish(sss_se05x_aead_t *context,
         /*All data is processed no destination data*/
         status = Se05x_API_AeadFinal(&context->session->s_ctx, context->cryptoObjectId, tag, tagLen, OperType);
     }
+    if (status == SM_ERR_APDU_THROUGHPUT) {
+        retval = kStatus_SSS_ApduThroughputError;
+        goto exit;
+    }
     ENSURE_OR_GO_EXIT(status == SM_OK);
     retval   = kStatus_SSS_Success;
     *destLen = outLen;
 exit:
     return retval;
 }
-#endif /* SSS_HAVE_SE05X_VER_GTE_06_00 */
+#endif /* SSS_HAVE_SE05X_VER_GTE_07_02 */
 
 void sss_se05x_aead_context_free(sss_se05x_aead_t *context)
 {
-#if SSS_HAVE_SE05X_VER_GTE_06_00
+#if SSS_HAVE_SE05X_VER_GTE_07_02
 #if SSSFTR_SE05X_CREATE_DELETE_CRYPTOOBJ
     smStatus_t status;
     uint8_t list[1024] = {
@@ -6607,7 +7205,7 @@ void sss_se05x_aead_context_free(sss_se05x_aead_t *context)
     memset(context, 0, sizeof(*context));
 #else
     AX_UNUSED_ARG(context);
-#endif /* SSS_HAVE_SE05X_VER_GTE_06_00 */
+#endif /* SSS_HAVE_SE05X_VER_GTE_07_02 */
 }
 
 /* End: se05x_aead */
@@ -6623,6 +7221,9 @@ sss_status_t sss_se05x_mac_context_init(sss_se05x_mac_t *context,
     sss_mode_t mode)
 {
     sss_status_t retval = kStatus_SSS_Success;
+    if (context == NULL) {
+        return kStatus_SSS_Fail;
+    }
     context->session    = session;
     context->keyObject  = keyObject;
     context->algorithm  = algorithm;
@@ -6646,6 +7247,10 @@ sss_status_t sss_se05x_mac_one_go(
     if (context->mode == kMode_SSS_Mac) {
         status = Se05x_API_MACOneShot_G(
             &context->session->s_ctx, context->keyObject->keyId, macOperation, message, messageLen, mac, macLen);
+        if (status == SM_ERR_APDU_THROUGHPUT) {
+            retval = kStatus_SSS_ApduThroughputError;
+            goto exit;
+        }
         ENSURE_OR_GO_EXIT(status == SM_OK);
     }
     else if (context->mode == kMode_SSS_Mac_Validate) {
@@ -6661,6 +7266,10 @@ sss_status_t sss_se05x_mac_one_go(
             *macLen,
             (uint8_t *)&result,
             &result_size);
+        if (status == SM_ERR_APDU_THROUGHPUT) {
+            retval = kStatus_SSS_ApduThroughputError;
+            goto exit;
+        }
         ENSURE_OR_GO_EXIT(status == SM_OK);
 
         ENSURE_OR_GO_EXIT(result == kSE05x_Result_SUCCESS);
@@ -6701,7 +7310,10 @@ sss_status_t sss_se05x_mac_validate_one_go(
         macLen,
         (uint8_t *)&result,
         &result_size);
-
+    if (status == SM_ERR_APDU_THROUGHPUT) {
+        retval = kStatus_SSS_ApduThroughputError;
+        goto exit;
+    }
     if (status == SM_OK) {
         if (result == kSE05x_Result_SUCCESS) {
             retval = kStatus_SSS_Success;
@@ -6764,6 +7376,9 @@ sss_status_t sss_se05x_mac_init(sss_se05x_mac_t *context)
     }
 
     status = Se05x_API_ReadCryptoObjectList(&context->session->s_ctx, list, &listlen);
+    if (status == SM_ERR_APDU_THROUGHPUT) {
+        return kStatus_SSS_ApduThroughputError;
+    }
     for (i = 0; i < listlen; i += 4) {
         uint16_t cryptoObjectId = list[i + 1] | (list[i + 0] << 8);
         if (cryptoObjectId == context->cryptoObjectId) {
@@ -6774,6 +7389,9 @@ sss_status_t sss_se05x_mac_init(sss_se05x_mac_t *context)
     if (create_crypto_obj) {
         status =
             Se05x_API_CreateCryptoObject(&context->session->s_ctx, context->cryptoObjectId, cryptoContext, subtype);
+        if (status == SM_ERR_APDU_THROUGHPUT) {
+            return kStatus_SSS_ApduThroughputError;
+        }
         if (status != SM_OK) {
             LOG_W("CreateCryptoObject Failed");
             return kStatus_SSS_Fail;
@@ -6793,6 +7411,9 @@ sss_status_t sss_se05x_mac_init(sss_se05x_mac_t *context)
     }
 
     status = Se05x_API_MACInit(&context->session->s_ctx, context->keyObject->keyId, context->cryptoObjectId, operType);
+    if (status == SM_ERR_APDU_THROUGHPUT) {
+        return kStatus_SSS_ApduThroughputError;
+    }
     ENSURE_OR_GO_EXIT(status == SM_OK);
 
     retval = kStatus_SSS_Success;
@@ -6808,6 +7429,10 @@ sss_status_t sss_se05x_mac_update(sss_se05x_mac_t *context, const uint8_t *messa
     //SE05x_MACAlgo_t macOperation = se05x_get_mac_algo(context->algorithm);
 
     status = Se05x_API_MACUpdate(&context->session->s_ctx, message, messageLen, context->cryptoObjectId);
+    if (status == SM_ERR_APDU_THROUGHPUT) {
+        retval = kStatus_SSS_ApduThroughputError;
+        goto exit;
+    }
     ENSURE_OR_GO_EXIT(status == SM_OK);
 
     retval = kStatus_SSS_Success;
@@ -6824,14 +7449,25 @@ sss_status_t sss_se05x_mac_finish(sss_se05x_mac_t *context, uint8_t *mac, size_t
 
     if (context->mode == kMode_SSS_Mac) {
         status = Se05x_API_MACFinal(&context->session->s_ctx, NULL, 0, context->cryptoObjectId, NULL, 0, mac, macLen);
+        if (status == SM_ERR_APDU_THROUGHPUT) {
+            retval = kStatus_SSS_ApduThroughputError;
+            goto exit;
+        }
         ENSURE_OR_GO_EXIT(status == SM_OK);
     }
     else if (context->mode == kMode_SSS_Mac_Validate) {
         SE05x_Result_t result = kSE05x_Result_FAILURE;
         size_t result_size    = sizeof(result);
 
+        if (macLen == NULL) {
+            return kStatus_SSS_Fail;
+        }
         status = Se05x_API_MACFinal(
             &context->session->s_ctx, NULL, 0, context->cryptoObjectId, mac, *macLen, (uint8_t *)&result, &result_size);
+        if (status == SM_ERR_APDU_THROUGHPUT) {
+            retval = kStatus_SSS_ApduThroughputError;
+            goto exit;
+        }
         ENSURE_OR_GO_EXIT(status == SM_OK);
 
         ENSURE_OR_GO_EXIT(result == kSE05x_Result_SUCCESS);
@@ -6868,6 +7504,9 @@ sss_status_t sss_se05x_digest_context_init(
     sss_se05x_digest_t *context, sss_se05x_session_t *session, sss_algorithm_t algorithm, sss_mode_t mode)
 {
     sss_status_t retval = kStatus_SSS_Success;
+    if (context == NULL) {
+        return kStatus_SSS_Fail;
+    }
     context->session    = session;
     context->algorithm  = algorithm;
     context->mode       = mode;
@@ -6884,6 +7523,11 @@ sss_status_t sss_se05x_digest_one_go(
     ENSURE_OR_GO_EXIT(sha_type != kSE05x_DigestMode_NA);
 
     status = Se05x_API_SHAOneShot(&context->session->s_ctx, sha_type, message, messageLen, digest, digestLen);
+    if (status == SM_ERR_APDU_THROUGHPUT) {
+        retval     = kStatus_SSS_ApduThroughputError;
+        *digestLen = 0;
+        goto exit;
+    }
     if (status != SM_OK) {
         *digestLen = 0;
         goto exit;
@@ -6939,6 +7583,9 @@ sss_status_t sss_se05x_digest_init(sss_se05x_digest_t *context)
     }
 
     status = Se05x_API_ReadCryptoObjectList(&context->session->s_ctx, list, &listlen);
+    if (status == SM_ERR_APDU_THROUGHPUT) {
+        return kStatus_SSS_ApduThroughputError;
+    }
     for (i = 0; i < listlen; i += 4) {
         uint16_t cryptoObjectId = list[i + 1] | (list[i + 0] << 8);
         if (cryptoObjectId == context->cryptoObjectId) {
@@ -6949,6 +7596,9 @@ sss_status_t sss_se05x_digest_init(sss_se05x_digest_t *context)
     if (create_crypto_obj) {
         status = Se05x_API_CreateCryptoObject(
             &context->session->s_ctx, context->cryptoObjectId, kSE05x_CryptoContext_DIGEST, subtype);
+        if (status == SM_ERR_APDU_THROUGHPUT) {
+            return kStatus_SSS_ApduThroughputError;
+        }
         if (status != SM_OK) {
             return kStatus_SSS_Fail;
         }
@@ -6956,6 +7606,10 @@ sss_status_t sss_se05x_digest_init(sss_se05x_digest_t *context)
 #endif
 
     status = Se05x_API_DigestInit(&context->session->s_ctx, context->cryptoObjectId);
+    if (status == SM_ERR_APDU_THROUGHPUT) {
+        retval = kStatus_SSS_ApduThroughputError;
+        goto exit;
+    }
     ENSURE_OR_GO_EXIT(status == SM_OK);
 
     retval = kStatus_SSS_Success;
@@ -6969,6 +7623,10 @@ sss_status_t sss_se05x_digest_update(sss_se05x_digest_t *context, const uint8_t 
     smStatus_t status   = SM_NOT_OK;
 
     status = Se05x_API_DigestUpdate(&context->session->s_ctx, context->cryptoObjectId, message, messageLen);
+    if (status == SM_ERR_APDU_THROUGHPUT) {
+        retval = kStatus_SSS_ApduThroughputError;
+        goto exit;
+    }
     ENSURE_OR_GO_EXIT(status == SM_OK);
 
     retval = kStatus_SSS_Success;
@@ -6982,6 +7640,10 @@ sss_status_t sss_se05x_digest_finish(sss_se05x_digest_t *context, uint8_t *diges
     smStatus_t status   = SM_NOT_OK;
 
     status = Se05x_API_DigestFinal(&context->session->s_ctx, context->cryptoObjectId, NULL, 0, digest, digestLen);
+    if (status == SM_ERR_APDU_THROUGHPUT) {
+        retval = kStatus_SSS_ApduThroughputError;
+        goto exit;
+    }
     ENSURE_OR_GO_EXIT(status == SM_OK);
 
     retval = kStatus_SSS_Success;
@@ -7031,6 +7693,10 @@ sss_status_t sss_se05x_rng_get_random(sss_se05x_rng_context_t *context, uint8_t 
         }
 
         status = Se05x_API_GetRandom(&context->session->s_ctx, (uint16_t)chunk, (random_data + offset), &chunk);
+        if (status == SM_ERR_APDU_THROUGHPUT) {
+            retval = kStatus_SSS_ApduThroughputError;
+            goto exit;
+        }
         ENSURE_OR_GO_EXIT(status == SM_OK);
 
         offset += chunk;
@@ -7095,7 +7761,7 @@ void sss_se05x_tunnel_context_free(sss_se05x_tunnel_context_t *context)
     vSemaphoreDelete(context->channelLock);
 #elif (__GNUC__ && !AX_EMBEDDED)
     if (pthread_mutex_destroy(&context->channelLock) != 0) {
-        return;
+        LOG_E("pthread_mutex_destroy failed");
     }
 #endif
     memset(context, 0, sizeof(*context));
@@ -7118,28 +7784,70 @@ static smStatus_t sss_se05x_TXn(struct Se05xSession *pSession,
     };
     size_t txBufLen = sizeof(txBuf);
 
+    const tlvHeader_t *sendHdr = NULL;
+    uint8_t *sendBuf           = NULL;
+    size_t sendBufLen          = 0;
+
     if (pSession->fp_Transform) {
-        ret = pSession->fp_Transform(pSession, hdr, cmdBuf, cmdBufLen, &outHdr, txBuf, &txBufLen, hasle);
+#ifdef SSS_USE_SCP03_THREAD_SAFETY
+#if SSS_HAVE_SCP_SCP03_SSS && USE_LOCK
+        if ((pSession->authType == kSSS_AuthType_SCP03) && (pSession->fp_Transform == &se05x_Transform_scp)) {
+            if (pSession->scp03_lock_init) {
+                LOCK_TXN(pSession->scp03_lock);
+                LOG_D("SCP03 Channel Locked");
+            }
+        }
+#endif // SSS_HAVE_SCP_SCP03_SSS && USE_LOCK
+#endif //#ifdef SSS_USE_SCP03_THREAD_SAFETY
+        ret        = pSession->fp_Transform(pSession, hdr, cmdBuf, cmdBufLen, &outHdr, txBuf, &txBufLen, hasle);
+        sendHdr    = &outHdr;
+        sendBuf    = txBuf;
+        sendBufLen = txBufLen;
+    }
+    else {
+        ret        = SM_OK;
+        sendHdr    = hdr;
+        sendBuf    = cmdBuf;
+        sendBufLen = cmdBufLen;
     }
     ENSURE_OR_GO_EXIT(ret == SM_OK);
+
     if (pSession->fp_RawTXn) {
         ret = pSession->fp_RawTXn(pSession->conn_ctx,
             pSession->pChannelCtx,
             pSession->authType,
-            &outHdr,
-            txBuf,
-            txBufLen,
+            sendHdr,
+            sendBuf,
+            sendBufLen,
             rsp,
             rspLen,
             hasle);
+        /*
+            Irrespective of the return status (ret),
+            fp_DeCrypt has to be called to ensure command counter (required for PLatformSCP03) is incremented.
+        */
+    }
+    else {
+        goto exit;
     }
 
     if (pSession->fp_DeCrypt) {
         ret = pSession->fp_DeCrypt(pSession, cmdBufLen, rsp, rspLen, hasle);
     }
-
     ENSURE_OR_GO_EXIT(ret == SM_OK);
 exit:
+#ifdef SSS_USE_SCP03_THREAD_SAFETY
+#if SSS_HAVE_SCP_SCP03_SSS && USE_LOCK
+    if (pSession->fp_Transform) {
+        if ((pSession->authType == kSSS_AuthType_SCP03) && (pSession->fp_Transform == &se05x_Transform_scp)) {
+            if (pSession->scp03_lock_init) {
+                UNLOCK_TXN(pSession->scp03_lock);
+                LOG_D("SCP03 Channel Unlocked");
+            }
+        }
+    }
+#endif // SSS_HAVE_SCP_SCP03_SSS && USE_LOCK
+#endif //#ifdef SSS_USE_SCP03_THREAD_SAFETY
     return ret;
 }
 
@@ -7295,7 +8003,7 @@ sss_status_t sss_se05x_set_feature(
 {
     sss_status_t retval = kStatus_SSS_Fail;
     smStatus_t status   = SM_NOT_OK;
-#if SSS_HAVE_SE05X_VER_GTE_06_00
+#if SSS_HAVE_SE05X_VER_GTE_07_02
     SE05x_ExtendedFeatures_t extended = {0};
 #endif
     Se05x_AppletFeatures_t applet_features = {kSE05x_AppletConfig_NA, NULL};
@@ -7305,15 +8013,11 @@ sss_status_t sss_se05x_set_feature(
         goto exit;
     }
 
-#if SSS_HAVE_SE05X_VER_GTE_06_00
+#if SSS_HAVE_SE05X_VER_GTE_07_02
 
     /** Disable feature ECDH B2b8 */
     if (disable_features.EXTCFG_FORBID_ECDH == 1) {
         extended.features[1] |= 0x80; // 8th bit
-    }
-    /** Disable feature ECDAA B2b7 */
-    if (disable_features.EXTCFG_FORBID_ECDAA == 1) {
-        extended.features[1] |= 0x40; // 7th bit
     }
     /** Disable feature RSA_LT_2K B6b8 */
     if (disable_features.EXTCFG_FORBID_RSA_LT_2K == 1) {
@@ -7341,10 +8045,7 @@ sss_status_t sss_se05x_set_feature(
     AX_UNUSED_ARG(disable_features);
 #endif
 
-    if (feature.AppletConfig_ECDAA == 1) {
-        applet_features.variant |= kSE05x_AppletConfig_ECDAA;
-    }
-    else if (feature.AppletConfig_ECDSA_ECDH_ECDHE == 1) {
+    if (feature.AppletConfig_ECDSA_ECDH_ECDHE == 1) {
         applet_features.variant |= kSE05x_AppletConfig_ECDSA_ECDH_ECDHE;
     }
     else if (feature.AppletConfig_EDDSA == 1) {
@@ -7385,7 +8086,9 @@ sss_status_t sss_se05x_set_feature(
     }
 
     status = Se05x_API_SetAppletFeatures(&session->s_ctx, &applet_features);
-
+    if (status == SM_ERR_APDU_THROUGHPUT) {
+        return kStatus_SSS_ApduThroughputError;
+    }
     if (status == SM_OK) {
         retval = kStatus_SSS_Success;
     }
@@ -7486,7 +8189,12 @@ static smStatus_t se05x_CreateVerifyAESKeySession(
                 status                            = SM_OK;
             }
             else {
-                status = SM_NOT_OK;
+                if (retval == kStatus_SSS_ApduThroughputError) {
+                    status = SM_ERR_APDU_THROUGHPUT;
+                }
+                else {
+                    status = SM_NOT_OK;
+                }
             }
         }
     }
@@ -7515,6 +8223,10 @@ static sss_status_t nxECKey_StoreAttestationPublicKey(
     keylen = keylen - key_buflen;
 
     sm_status = Se05x_API_ReadObject(se05xSession, SSS_SE05X_RESID_ATTESTATION_KEY, 0, 0, key_buf, &keylen);
+    if (sm_status == SM_ERR_APDU_THROUGHPUT) {
+        status = kStatus_SSS_ApduThroughputError;
+        goto cleanup;
+    }
     if (sm_status != SM_OK) {
         status = kStatus_SSS_Fail;
         goto cleanup;
@@ -7674,6 +8386,10 @@ sss_status_t nxECKey_ReadEckaPublicKey(pSe05xSession_t se05xSession,
         att_data.data[0].signature,
         &att_data.data[0].signatureLen);
 #endif // SSS_HAVE_SE05X_VER_GTE_07_02
+    if (sm_status == SM_ERR_APDU_THROUGHPUT) {
+        status = kStatus_SSS_ApduThroughputError;
+        goto cleanup;
+    }
     ENSURE_OR_GO_CLEANUP(sm_status == SM_OK);
 
 #if SSS_HAVE_SE05X_VER_GTE_07_02
@@ -7764,7 +8480,12 @@ static smStatus_t se05x_CreateECKeySession(
             &sePubEckaLen,
             kSE05x_AppletResID_KP_ECKEY_USER);
         if (retval != kStatus_SSS_Success) {
-            status = SM_NOT_OK;
+            if (retval == kStatus_SSS_ApduThroughputError) {
+                status = SM_ERR_APDU_THROUGHPUT;
+            }
+            else {
+                status = SM_NOT_OK;
+            }
             return status;
         }
         status = Se05x_API_CreateSession(se05xSession, auth_id, se05xSession->value, &sessionIdLen);
@@ -7782,6 +8503,9 @@ static smStatus_t se05x_CreateECKeySession(
                 se05xSession->pdynScp03Ctx                  = pFScpCtx->pDyn_ctx;
                 status                                      = SM_OK;
                 se05xSession->auth_id                       = auth_id;
+            }
+            else if (retval == kStatus_SSS_ApduThroughputError) {
+                status = SM_ERR_APDU_THROUGHPUT;
             }
         }
     }
@@ -7813,9 +8537,6 @@ static sss_status_t se05x_check_input_len(size_t inLen, sss_algorithm_t algorith
         retval = (inLen == 28) ? kStatus_SSS_Success : kStatus_SSS_Fail;
         break;
     case kAlgorithm_SSS_SHA256:
-#if SSS_HAVE_ECDAA
-    case kAlgorithm_SSS_ECDAA:
-#endif
     case kAlgorithm_SSS_ECDSA_SHA256:
 #if SSS_HAVE_RSA
     case kAlgorithm_SSS_RSASSA_PKCS1_V1_5_SHA256:
@@ -8052,7 +8773,7 @@ SE05x_DigestMode_t se05x_get_sha_algo(sss_algorithm_t algorithm)
         break;
 #endif
     default:
-        sha_type = 0x00;
+        sha_type = kSE05x_DigestMode_NA;
     }
 
     return sha_type;
@@ -8073,7 +8794,7 @@ static smStatus_t sss_se05x_LL_set_ec_key(pSe05xSession_t session_ctx,
     SE05x_Result_t obj_exists)
 {
     smStatus_t status = SM_NOT_OK;
-#if SSS_HAVE_SE05X_VER_GTE_06_00
+#if SSS_HAVE_SE05X_VER_GTE_07_02
     fp_Ec_KeyWrite_t fpEcKey_Ver = NULL;
     /* Call APIs For SE051 */
     if (obj_exists == kSE05x_Result_FAILURE) {
@@ -8124,7 +8845,7 @@ static smStatus_t sss_se05x_LL_set_symm_key(pSe05xSession_t session_ctx,
     SE05x_Result_t obj_exists)
 {
     smStatus_t status = SM_NOT_OK;
-#if SSS_HAVE_SE05X_VER_GTE_06_00
+#if SSS_HAVE_SE05X_VER_GTE_07_02
     fp_Symm_KeyWrite_t fpSymmKey_Ver = NULL;
     /* Call APIs For SE051 */
     if (obj_exists == kSE05x_Result_FAILURE) {
@@ -8178,7 +8899,7 @@ static smStatus_t sss_se05x_LL_set_RSA_key(pSe05xSession_t session_ctx,
     SE05x_Result_t obj_exists)
 {
     smStatus_t status = SM_NOT_OK;
-#if SSS_HAVE_SE05X_VER_GTE_06_00
+#if SSS_HAVE_SE05X_VER_GTE_07_02
     fp_RSA_KeyWrite_t fpRSAKey_Ver = NULL;
     /* Call APIs For SE051 */
     if (obj_exists == kSE05x_Result_FAILURE) {
@@ -8246,168 +8967,6 @@ static smStatus_t sss_se05x_LL_set_RSA_key(pSe05xSession_t session_ctx,
     return status;
 }
 #endif //SSSFTR_SE05X_RSA && SSSFTR_SE05X_KEY_SET
-
-#if SSS_HAVE_TPM_BN && SSS_HAVE_ECDAA && SSS_HAVE_SE05X_VER_GTE_07_02
-#if SSSFTR_SE05X_ECC
-/* Reserved Random key id is 0x7DB0,0000 -> 0x7DB0,FFFF
-*  0x7DB0,0000 is used for None auth session and platform scp03 session
-*  Other id = (auth_id % 0x0000,FFFF) + 0x7DB0,0001
-*/
-static sss_status_t sss_se05x_get_ecdaa_random_key_id(Se05xSession_t *context, uint32_t *random_keyId)
-{
-    sss_status_t retval = kStatus_SSS_Fail;
-
-    ENSURE_OR_GO_EXIT(context != NULL);
-    ENSURE_OR_GO_EXIT(random_keyId != NULL);
-
-    if (context->hasSession == 1) {
-        *random_keyId = context->auth_id % (SSS_SE05X_RESID_ECDAA_RANDOM_KEY_NUMBER - 1) +
-                        SSS_SE05X_RESID_ECDAA_RANDOM_KEY_START + 1;
-    }
-    else {
-        *random_keyId = SSS_SE05X_RESID_ECDAA_RANDOM_KEY_START;
-    }
-
-    retval = kStatus_SSS_Success;
-exit:
-    return retval;
-}
-
-static sss_status_t sss_se05x_generate_ecdaa_random_key(Se05xSession_t *context, uint32_t *random_keyId)
-{
-    sss_status_t retval = kStatus_SSS_Fail;
-
-    smStatus_t status       = SM_NOT_OK;
-    sss_status_t sss_ret    = kStatus_SSS_Fail;
-    SE05x_Result_t IdExists = kSE05x_Result_NA;
-    uint8_t data[SE05X_MAX_BUF_SIZE_RSP];
-    size_t dataLen = SE05X_MAX_BUF_SIZE_RSP;
-
-    /* Policies for key */
-    const sss_policy_u key_withPol = {.type = KPolicy_Asym_Key,
-        .auth_obj_id                        = ECDAA_RANDOM_KEY_OBJ_AUTH_ID,
-        .policy                             = {.asymmkey = {
-                       .can_Sign              = 1,
-                       .can_Verify            = 0,
-                       .can_Encrypt           = 0,
-                       .can_Decrypt           = 0,
-                       .can_Import_Export     = 0,
-                       .forbid_Derived_Output = 0,
-                       .can_Gen               = 1,
-                       .can_KA                = 1,
-                       .can_Attest            = 0,
-                   }}};
-
-    /* Common rules */
-    const sss_policy_u common = {.type = KPolicy_Common,
-        .auth_obj_id                   = ECDAA_RANDOM_KEY_OBJ_AUTH_ID,
-        .policy                        = {.common = {
-                       .forbid_All  = 0,
-                       .can_Read    = 1,
-                       .can_Write   = 0,
-                       .can_Delete  = 1,
-                       .req_Sm      = 0,
-                       .req_pcr_val = 0,
-                   }}};
-
-    /* create policy set */
-    sss_policy_t policy_for_ec_key = {.nPolicies = 2, .policies = {&key_withPol, &common}};
-
-    Se05xPolicy_t se05x_policy;
-    uint8_t policies_buff[MAX_POLICY_BUFFER_SIZE];
-    size_t valid_policy_buff_len = 0;
-
-    ENSURE_OR_GO_EXIT(context != NULL);
-    ENSURE_OR_GO_EXIT(random_keyId != NULL);
-
-    // Construct policy for ECDAA Random key.
-    sss_ret = sss_se05x_create_object_policy_buffer(&policy_for_ec_key, &policies_buff[0], &valid_policy_buff_len);
-    ENSURE_OR_GO_EXIT(sss_ret == kStatus_SSS_Success);
-
-    se05x_policy.value     = &policies_buff[0];
-    se05x_policy.value_len = valid_policy_buff_len;
-
-    // Get Random key id for this session.
-    sss_ret = sss_se05x_get_ecdaa_random_key_id(context, random_keyId);
-    ENSURE_OR_GO_EXIT(sss_ret == kStatus_SSS_Success);
-
-    // Check if reserved random key already exist. If not, create it.
-    IdExists = kSE05x_Result_NA;
-    status   = Se05x_API_CheckObjectExists(context, *random_keyId, &IdExists);
-    if (status != SM_OK) {
-        LOG_W("Fail to check random key 0x%x exists. It may has already been occupied by other session", *random_keyId);
-    }
-    ENSURE_OR_GO_EXIT(status == SM_OK);
-
-    if (IdExists == kSE05x_Result_FAILURE) {
-        // Reserved random key does not exist. Generate ECC keypair.
-
-        uint8_t curveList[kSE05x_ECCurve_Total_Weierstrass_Curves] = {
-            0,
-        };
-        size_t curveListLen = sizeof(curveList);
-
-        status = Se05x_API_ReadECCurveList(context, curveList, &curveListLen);
-        ENSURE_OR_GO_EXIT(status == SM_OK);
-
-        if (curveList[kSE05x_ECCurve_TPM_ECC_BN_P256 - 1] == kSE05x_SetIndicator_SET) {
-            // Curve already created. Pass
-        }
-        else {
-            status = Se05x_API_CreateCurve_tpm_bm_p256(context, kSE05x_ECCurve_TPM_ECC_BN_P256);
-
-            ENSURE_OR_GO_EXIT(status != SM_NOT_OK);
-            if (status == SM_ERR_CONDITIONS_NOT_SATISFIED) {
-                LOG_W("Allowing SM_ERR_CONDITIONS_NOT_SATISFIED for CreateCurve");
-            }
-        }
-
-        LOG_D("Create Key 0x%x as random keypair", *random_keyId);
-        status = Se05x_API_WriteECKey(context,
-            &se05x_policy,
-            SE05x_MaxAttemps_NA,
-            *random_keyId,
-            kSE05x_ECCurve_TPM_ECC_BN_P256,
-            NULL,
-            0,
-            NULL,
-            0,
-            kSE05x_INS_TRANSIENT,
-            kSE05x_KeyPart_Private);
-        ENSURE_OR_GO_EXIT(status == SM_OK);
-    }
-    else {
-        status = Se05x_API_ReadObjectAttributes(context, *random_keyId, data, &dataLen);
-        ENSURE_OR_GO_EXIT(status == SM_OK);
-        ENSURE_OR_GO_EXIT(dataLen >= 19); //Object identifier+type+auth+AEAD+authid+output+Origin+Version
-        ENSURE_OR_GO_EXIT(data[SSS_SE05X_OBJ_ATTR_TYPE_OFFSET] == kSE05x_SecObjTyp_EC_PRIV_KEY_BN_P256)
-
-        // "r" is in uninitialized state after reselect Applet. Regenerate "r" then.
-        if (data[dataLen - SSS_SE05X_OBJ_ATTR_ORIG_REV_OFFSET] == kSE05x_Origin_NA) {
-            LOG_D("Key 0x%x already exist. Regenerate it", *random_keyId);
-
-            status = Se05x_API_WriteECKey(context,
-                NULL,
-                SE05x_MaxAttemps_NA,
-                *random_keyId,
-                kSE05x_ECCurve_NA,
-                NULL,
-                0,
-                NULL,
-                0,
-                kSE05x_INS_NA,
-                kSE05x_KeyPart_NA);
-            ENSURE_OR_GO_EXIT(status == SM_OK);
-        }
-    }
-
-    retval = kStatus_SSS_Success;
-exit:
-    return retval;
-}
-#endif // SSSFTR_SE05X_ECC
-
-#endif // #if SSS_HAVE_TPM_BN && SSS_HAVE_ECDAA && SSS_HAVE_SE05X_VER_GTE_07_02 && SSSFTR_SE05X_KEY_SET
 
 #ifdef __cplusplus
 }

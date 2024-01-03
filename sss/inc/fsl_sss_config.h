@@ -12,6 +12,7 @@
     + (1 * sizeof(void *)) \
     + (1 * sizeof(void *)) \
     + (8 * sizeof(void *)) \
+    + (7 * sizeof(void *)) \
     + 32)
 #define SSS_KEY_STORE_MAX_CONTEXT_SIZE      ( 0 \
     + (1 * sizeof(void *)) \

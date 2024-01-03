@@ -228,7 +228,12 @@ static sss_status_t nxScp03_GP_ExternalAuthenticate(
     st = DoAPDUTx_s_Case3(se05xSession, &hdr, &txBuf[5], 16);
     if (st != SM_OK) {
         LOG_E("GP_ExternalAuthenticate transmit failed");
-        status = kStatus_SSS_Fail;
+        if (st == SM_ERR_APDU_THROUGHPUT) {
+            status = kStatus_SSS_ApduThroughputError;
+        }
+        else {
+            status = kStatus_SSS_Fail;
+        }
     }
     else {
         status = kStatus_SSS_Success;
@@ -460,7 +465,12 @@ static sss_status_t nxScp03_GP_InitializeUpdate(pSe05xSession_t se05xSession,
     st = DoAPDUTxRx_s_Case4(se05xSession, &hdr, cmdBuf, hostChallengeLen, response, &responseLen);
     if (st != SM_OK) {
         LOG_E("GP_InitializeUpdate Failure on communication Link %04X", st);
-        return status;
+        if (st == SM_ERR_APDU_THROUGHPUT) {
+            return kStatus_SSS_ApduThroughputError;
+        }
+        else {
+            return status;
+        }
     }
 
     // Parse Response
@@ -489,6 +499,9 @@ static sss_status_t nxScp03_GP_InitializeUpdate(pSe05xSession_t se05xSession,
         LOG_MAU8_D(" Output: cardChallenge", cardChallenge, *pCardChallengeLen);
         LOG_MAU8_D(" Output: cardCryptoGram", cardCryptoGram, *pCardCryptoGramLen);
         status = kStatus_SSS_Success;
+    }
+    if (sw == SM_ERR_APDU_THROUGHPUT) {
+        status = kStatus_SSS_ApduThroughputError;
     }
 cleanup:
     return status;

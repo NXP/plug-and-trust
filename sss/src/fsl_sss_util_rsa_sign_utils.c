@@ -47,6 +47,7 @@
 #include <nxLog_sss.h>
 #include <stdlib.h>
 #include <string.h>
+#include <limits.h>
 
 #if SSS_HAVE_APPLET_SE05X_IOT && SSSFTR_RSA && !SSS_HAVE_HOSTCRYPTO_NONE
 #include "fsl_sss_util_rsa_sign_utils.h"
@@ -54,6 +55,9 @@
 #include "nxEnsure.h"
 #include "se05x_APDU.h"
 
+/*
+* Return:  0-Success, 1-Error, 2-ThroughPut error
+*/
 uint8_t pkcs1_v15_encode(
     sss_se05x_asymmetric_t *context, const uint8_t *hash, size_t hashlen, uint8_t *out, size_t *outLen)
 {
@@ -77,7 +81,12 @@ uint8_t pkcs1_v15_encode(
 
     ret_val = Se05x_API_ReadSize(&context->session->s_ctx, context->keyObject->keyId, &key_size_bytes);
     if (ret_val != SM_OK) {
-        return 1;
+        if (ret_val == SM_ERR_APDU_THROUGHPUT) {
+            return 2;
+        }
+        else {
+            return 1;
+        }
     }
 
     outlength = key_size_bytes;
@@ -137,6 +146,9 @@ uint8_t pkcs1_v15_encode(
         * - Need hashlen bytes for hash
         * - Need oid_size bytes for hash alg OID.
         */
+    if (hashlen > (SIZE_MAX - (10 + oid_size))) {
+        return 1;
+    }
     if (nb_pad < 10 + hashlen + oid_size) {
         return 1;
     }
@@ -197,6 +209,9 @@ uint8_t pkcs1_v15_encode(
     return 0;
 }
 
+/*
+* Return:  0-Success, 1-Error, 2-ThroughPut error
+*/
 uint8_t pkcs1_v15_encode_no_hash(
     sss_se05x_asymmetric_t *context, const uint8_t *hash, size_t hashlen, uint8_t *out, size_t *outLen)
 {
@@ -212,7 +227,12 @@ uint8_t pkcs1_v15_encode_no_hash(
 
     ret_val = Se05x_API_ReadSize(&context->session->s_ctx, context->keyObject->keyId, &key_size_bytes);
     if ((ret_val != SM_OK) || (key_size_bytes == 0)) {
-        return 1;
+        if (ret_val == SM_ERR_APDU_THROUGHPUT) {
+            return 2;
+        }
+        else {
+            return 1;
+        }
     }
 
     if (hashlen > (size_t)(key_size_bytes - 11)) {
@@ -336,6 +356,7 @@ exit:
 //         the hash requested for the signature (kAlgorithm_SSS_RSASSA_PKCS1_PSS_MGF1_SHAxxx)
 //         will be rejected.
 //
+//Return:  0-Success, 1-Error, 2-ThroughPut error
 uint8_t emsa_encode(sss_se05x_asymmetric_t *context, const uint8_t *hash, size_t hashlen, uint8_t *out, size_t *outLen)
 {
     size_t outlength = 0;
@@ -371,6 +392,9 @@ uint8_t emsa_encode(sss_se05x_asymmetric_t *context, const uint8_t *hash, size_t
 
     ret_val = Se05x_API_ReadSize(&context->session->s_ctx, context->keyObject->keyId, &key_size_bytes);
     if (ret_val != SM_OK) {
+        if (ret_val == SM_ERR_APDU_THROUGHPUT) {
+            ret = 2;
+        }
         goto exit;
     }
 
@@ -489,12 +513,11 @@ uint8_t emsa_encode(sss_se05x_asymmetric_t *context, const uint8_t *hash, size_t
 
 exit:
     sss_host_session_close(&host_session);
-
     return ret;
 }
 
 uint8_t emsa_decode_and_compare(
-    sss_se05x_asymmetric_t *context, uint8_t *sig, size_t siglen, uint8_t *hash, size_t hashlen)
+    sss_se05x_asymmetric_t *context, uint8_t *sig, size_t siglen, const uint8_t *hash, size_t hashlen)
 {
     uint8_t *p;
     uint8_t *hash_start;
@@ -555,13 +578,14 @@ uint8_t emsa_decode_and_compare(
 
     p = buf;
 
+    ENSURE_OR_GO_EXIT(siglen <= sizeof(buf));
     if (buf[siglen - 1] != 0xBC) {
         goto exit;
     }
 
     memset(zeros, 0, 8);
 
-    msb = (hlen * 8) - 1;
+    msb = (siglen * 8) - 1;
 
     if (buf[0] >> (8 - siglen * 8 + msb)) {
         goto exit;

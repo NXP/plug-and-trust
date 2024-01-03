@@ -10,6 +10,7 @@
 /*
  * Define Reset logic for reset pin on SE
  * Active high for SE050
+ * Change SE_RESET_LOGIC to 0 for SE052
  */
 #define SE_RESET_LOGIC 1
 

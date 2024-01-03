@@ -11,10 +11,6 @@
 #include "fsl_sss_ftr_default.h"
 #endif
 
-#if SSS_HAVE_SSCP
-#include <fsl_sss_sscp.h>
-#endif /* SSS_HAVE_SSCP */
-
 #if SSS_HAVE_APPLET_SE05X_IOT
 #include <fsl_sss_se05x_apis.h>
 #endif /* SSS_HAVE_APPLET_SE05X_IOT */
@@ -63,9 +59,6 @@ sss_status_t sss_session_create(sss_session_t *session,
 #if SSS_HAVE_APPLET_SE05X_IOT
         subsystem = kType_SSS_SE_SE05x;
 #endif
-#if SSS_HAVE_APPLET_A71CH || SSS_HAVE_APPLET_A71CH_SIM
-        subsystem = kType_SSS_SE_A71CH;
-#endif
     }
 
 #if SSS_HAVE_SSCP
@@ -111,9 +104,6 @@ sss_status_t sss_session_open(sss_session_t *session,
 #if SSS_HAVE_APPLET
 
         subsystem = kType_SSS_SE_SE05x;
-#endif
-#if SSS_HAVE_APPLET_A71CH || SSS_HAVE_APPLET_A71CH_SIM
-        subsystem = kType_SSS_SE_A71CH;
 #endif
     }
 

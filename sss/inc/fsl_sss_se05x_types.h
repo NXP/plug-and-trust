@@ -37,6 +37,9 @@
 #include "task.h"
 #endif
 
+#if defined(USE_THREADX_RTOS)
+#include "tx_api.h"
+#endif
 /*!
  * @addtogroup sss_sw_se05x
  * @{
@@ -99,7 +102,9 @@ typedef struct _sss_se05x_tunnel_context
     /** Where exactly this tunnel terminates to */
     sss_tunnel_dest_t tunnelDest;
 /** For systems where we potentially have multi-threaded operations, have a lock */
-#if defined(USE_RTOS) && (USE_RTOS == 1)
+#if defined(USE_THREADX_RTOS)
+    TX_MUTEX channelLock;
+#elif (defined(USE_RTOS) && (USE_RTOS == 1))
     SemaphoreHandle_t channelLock;
 #elif (__GNUC__ && !AX_EMBEDDED)
     pthread_mutex_t channelLock;
@@ -551,14 +556,17 @@ sss_status_t sss_se05x_mac_validate_one_go(
  * but hashing/digest done by SE
  */
 sss_status_t sss_se05x_asymmetric_sign(
-    sss_se05x_asymmetric_t *context, uint8_t *srcData, size_t srcLen, uint8_t *signature, size_t *signatureLen);
+    sss_se05x_asymmetric_t *context, const uint8_t *srcData, size_t srcLen, uint8_t *signature, size_t *signatureLen);
 
 /** Similar to @ref sss_se05x_asymmetric_verify_digest,
  * but hashing/digest done by SE
  *
  */
-sss_status_t sss_se05x_asymmetric_verify(
-    sss_se05x_asymmetric_t *context, uint8_t *srcData, size_t srcLen, uint8_t *signature, size_t signatureLen);
+sss_status_t sss_se05x_asymmetric_verify(sss_se05x_asymmetric_t *context,
+    const uint8_t *srcData,
+    size_t srcLen,
+    const uint8_t *signature,
+    size_t signatureLen);
 
 /*! @} */ /* end of : sss_se05x_asym */
 
@@ -614,6 +622,7 @@ smStatus_t Se05x_i2c_master_txn(sss_session_t *sess, SE05x_I2CM_cmd_t *cmds, uin
  * @param[in] random_attst 16-byte freshness random
  * @param[in] random_attstLen length of freshness random
  * @param[in] attst_algo 1 byte attestationAlgo
+ * @param[in] pattest_data Data Related to Attestation process
  * @param[out] rspbuffer  The read response
  * @param[out] rspbufferLen Length of the response
  * @param[in] noOftags Amount of structures contained in ``p``

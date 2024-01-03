@@ -409,6 +409,10 @@ sss_status_t nxECKey_InternalAuthenticate(pSe05xSession_t se05xSession,
     cmdbufLen += sig_host5F37Len;
     status    = kStatus_SSS_Fail;
     retStatus = DoAPDUTxRx_s_Case4(se05xSession, &hdr, cmdbuf, cmdbufLen, rspbuf, &rspbufLen);
+    if (retStatus == SM_ERR_APDU_THROUGHPUT) {
+        status = kStatus_SSS_ApduThroughputError;
+        goto cleanup;
+    }
     ENSURE_OR_GO_CLEANUP(retStatus == SM_OK);
     tlvRet =
         tlvGet_u8buf(pRspbuf, &rspIndex, rspbufLen, kSE05x_GP_TAG_DR_SE, rndData, rndDataLen); /* Get the Random No */
@@ -425,6 +429,7 @@ cleanup:
     return status;
 }
 
+// LCOV_EXCL_START
 int get_u8buf_2bTag(uint8_t *buf, size_t *pBufIndex, const size_t bufLen, uint16_t tag, uint8_t *rsp, size_t *pRspLen)
 {
     int retVal       = 1;
@@ -487,6 +492,7 @@ int get_u8buf_2bTag(uint8_t *buf, size_t *pBufIndex, const size_t bufLen, uint16
 cleanup:
     return retVal;
 }
+// LCOV_EXCL_STOP
 
 sss_status_t nxECKey_Calculate_Shared_secret(
     SE05x_AuthCtx_ECKey_t *pAuthFScp, uint8_t *sharedSecret, size_t *sharedSecretLen)

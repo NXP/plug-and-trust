@@ -7,6 +7,7 @@
 #include <stddef.h>
 #include <assert.h>
 #include <string.h>
+#include <limits.h>
 
 #include "global_platf.h"
 #include "smCom.h"
@@ -76,6 +77,9 @@ U16 GP_Select(void *conn_ctx, const U8 *appletName, U16 appletNameLen, U8 *respo
 
     rv = smCom_TransceiveRaw(conn_ctx, tx_buf, tx_len, responseData, &u32RXLen);
     if (rv == SW_OK && u32RXLen >= 2) {
+        if ((u32RXLen - 2) > UINT16_MAX) {
+            return ERR_COMM_ERROR;
+        }
         *responseDataLen = u32RXLen - 2;
         rv = responseData[u32RXLen - 2];
         rv <<= 8;

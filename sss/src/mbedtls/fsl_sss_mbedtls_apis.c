@@ -1206,8 +1206,11 @@ static mbedtls_md_type_t sss_mbedtls_set_padding_get_hash(sss_algorithm_t algori
 }
 #endif
 
-sss_status_t sss_mbedtls_asymmetric_sign_digest(
-    sss_mbedtls_asymmetric_t *context, uint8_t *digest, size_t digestLen, uint8_t *signature, size_t *signatureLen)
+sss_status_t sss_mbedtls_asymmetric_sign_digest(sss_mbedtls_asymmetric_t *context,
+    const uint8_t *digest,
+    size_t digestLen,
+    uint8_t *signature,
+    size_t *signatureLen)
 {
     sss_status_t retval = kStatus_SSS_Fail;
 #if SSSFTR_SW_ECC || SSSFTR_SW_RSA
@@ -1234,8 +1237,11 @@ exit:
     return retval;
 }
 
-sss_status_t sss_mbedtls_asymmetric_verify_digest(
-    sss_mbedtls_asymmetric_t *context, uint8_t *digest, size_t digestLen, uint8_t *signature, size_t signatureLen)
+sss_status_t sss_mbedtls_asymmetric_verify_digest(sss_mbedtls_asymmetric_t *context,
+    const uint8_t *digest,
+    size_t digestLen,
+    const uint8_t *signature,
+    size_t signatureLen)
 {
     sss_status_t retval = kStatus_SSS_Fail;
 #if SSSFTR_SW_ECC || SSSFTR_SW_RSA

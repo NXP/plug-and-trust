@@ -1432,8 +1432,11 @@ static void *openssl_get_hash_ptr_set_padding(sss_algorithm_t algorithm, uint32_
     return hashfPtr;
 }
 
-sss_status_t sss_openssl_asymmetric_sign_digest(
-    sss_openssl_asymmetric_t *context, uint8_t *digest, size_t digestLen, uint8_t *signature, size_t *signatureLen)
+sss_status_t sss_openssl_asymmetric_sign_digest(sss_openssl_asymmetric_t *context,
+    const uint8_t *digest,
+    size_t digestLen,
+    uint8_t *signature,
+    size_t *signatureLen)
 {
     sss_status_t retval    = kStatus_SSS_Success;
     EVP_PKEY *pKey         = NULL;
@@ -1523,8 +1526,11 @@ exit:
     return retval;
 }
 
-sss_status_t sss_openssl_asymmetric_verify_digest(
-    sss_openssl_asymmetric_t *context, uint8_t *digest, size_t digestLen, uint8_t *signature, size_t signatureLen)
+sss_status_t sss_openssl_asymmetric_verify_digest(sss_openssl_asymmetric_t *context,
+    const uint8_t *digest,
+    size_t digestLen,
+    const uint8_t *signature,
+    size_t signatureLen)
 {
     sss_status_t retval    = kStatus_SSS_Success;
     EVP_PKEY *pKey         = NULL;

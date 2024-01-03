@@ -147,6 +147,8 @@ typedef U16 SM_Error_t;
 #define ERR_CRC_CHKSUM_VERIFY (0x7033)      //!< CRC checksum verify error
 #define ERR_INTERNAL_BUF_TOO_SMALL (0x7034) //!< In A71CH PSP 1.6 this had value 0x7033. Code was already taken by A71CL
 
+#define ERR_APDU_THROUGHPUT (0x66A6) //!< APDU Throughput error code
+
 #define SCP_OK (SW_OK)
 #define SCP_UNDEFINED_CHANNEL_ID (0x7041) //!< Undefined SCP channel identifier
 #define SCP_FAIL (0x7042)

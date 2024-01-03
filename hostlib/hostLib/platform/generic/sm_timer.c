@@ -25,12 +25,14 @@
 #include "task.h"
 #endif
 
+// LCOV_EXCL_START
 /* initializes the system tick counter
  * return 0 on succes, 1 on failure */
 uint32_t sm_initSleep()
 {
     return 0;
 }
+// LCOV_EXCL_STOP
 
 #if defined(USE_RTOS) && USE_RTOS == 1
 #ifndef MSEC_TO_TICK

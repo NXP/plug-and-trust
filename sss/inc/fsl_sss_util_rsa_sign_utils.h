@@ -23,7 +23,7 @@ uint8_t sss_mgf_mask_func(uint8_t *dst, size_t dlen, uint8_t *src, size_t slen, 
 uint8_t emsa_encode(sss_se05x_asymmetric_t *context, const uint8_t *hash, size_t hashlen, uint8_t *out, size_t *outLen);
 
 uint8_t emsa_decode_and_compare(
-    sss_se05x_asymmetric_t *context, uint8_t *sig, size_t siglen, uint8_t *hash, size_t hashlen);
+    sss_se05x_asymmetric_t *context, uint8_t *sig, size_t siglen, const uint8_t *hash, size_t hashlen);
 #endif //SSS_HAVE_APPLET_SE05X_IOT && SSSFTR_RSA
 
 #endif

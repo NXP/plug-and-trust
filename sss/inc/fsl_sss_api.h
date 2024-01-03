@@ -52,6 +52,8 @@ typedef enum
      * */
     kStatus_SSS_ResourceBusy = 0x3c3c0002u,
     // LCOV_EXCL_STOP
+    /** APDU Throughput error */
+    kStatus_SSS_ApduThroughputError = 0x3c3c0003u,
 } sss_status_t;
 
 /** Helper macro to set enum value */
@@ -1192,7 +1194,7 @@ sss_status_t sss_cipher_one_go(
  * @param srcData Buffer containing the input data (block aligned).
  * @param srcLen  Length of buffer srcData.
  * @param destData Buffer containing the output data.
- * @param pDataLen Pointer to Size of buffer destData in bytes.
+ * @param dataLen Pointer to Size of buffer destData in bytes.
  * @returns Status of the operation
  * @retval #kStatus_SSS_Success The operation has completed successfully.
  * @retval #kStatus_SSS_Fail The operation has failed.
