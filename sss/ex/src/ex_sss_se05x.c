@@ -262,6 +262,8 @@ sss_status_t ex_sss_boot_se05x_open(ex_sss_boot_ctx_t *pCtx, const char *portNam
         goto cleanup;
     }
 
+    ((sss_se05x_session_t *)(&pCtx->session))->s_ctx.applet_version =
+        ((sss_se05x_session_t *)(pPfSession))->s_ctx.applet_version;
     ((sss_se05x_session_t *)&pCtx->session)->s_ctx.conn_ctx = ((sss_se05x_session_t *)pPfSession)->s_ctx.conn_ctx;
 
 #endif

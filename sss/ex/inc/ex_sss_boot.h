@@ -67,7 +67,7 @@ typedef struct
     sss_session_t session;
     sss_key_store_t ks;
 
-#if SSS_HAVE_HOSTCRYPTO_ANY || SSS_HAVE_SSCP
+#if SSS_HAVE_HOSTCRYPTO_ANY
     sss_session_t host_session;
 #endif
 
@@ -79,10 +79,6 @@ typedef struct
     SE_Connect_Ctx_t se05x_open_ctx;
     sss_tunnel_t *pTunnel_ctx;
     ex_SE05x_authCtx_t ex_se05x_auth;
-#endif
-
-#if SSS_HAVE_SSCP
-    sscp_context_t sscp_ctx;
 #endif
 
 } ex_sss_boot_ctx_t;

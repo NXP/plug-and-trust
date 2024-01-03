@@ -244,6 +244,11 @@ void nLog_au8(const char *comp, int level, const char *message, const unsigned c
     if (level > (int)(sizeof(szLevel) / sizeof(char*))) {
         return;
     }
+    if (array_len > 0) {
+        if (array == NULL) {
+            return;
+        }
+    }
     nLog_AcquireLock();
     setColor(level);
     if (level >= 1) {

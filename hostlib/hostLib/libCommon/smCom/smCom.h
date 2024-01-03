@@ -28,6 +28,7 @@ extern "C" {
 #define SMCOM_NO_PRIOR_INIT   0x7015  //!< The callbacks doing the actual transfer have not been installed
 #define SMCOM_COM_ALREADY_OPEN      0x7016  //!< Communication link is already open with device
 #define SMCOM_COM_INIT_FAILED       0x7017  //!< Communication init failed
+#define SMCOM_ERR_APDU_THROUGHPUT   0x66A6  //!< APDU Limit error code
 
 
 /* ------------------------------------------------------------------------- */

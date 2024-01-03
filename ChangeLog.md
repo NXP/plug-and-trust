@@ -1,6 +1,35 @@
 # Plug-And-Trust Mini Package Change Log
 
 
+## Release v04.05.00
+
+- Appler version `06_00` removed from `PTMW_SE05X_Ver`
+
+- Private key (ECC and RSA) create disabled at SE05x APDU layer
+
+- BN Curve and ECDAA APIs removed.
+
+- Thread safety when using SCP03 in SSS layer. (Disabled by default. To enable, uncomment `//#define SSS_USE_SCP03_THREAD_SAFETY` in fsl_sss_se05x_apis.c)
+
+- Issue of polices passed to the SSS API being modified - is Fixed.
+
+- Fixes for compilation warnings and static analysis findings.
+
+- Input pointers are updated with const qualifiers for asymmetric_sign APIs
+(:cpp:type:`sss_se05x_asymmetric_sign_digest`, :cpp:type:`sss_se05x_asymmetric_sign`, :cpp:type:`sss_se05x_asymmetric_verify_digest`,
+:cpp:type:`sss_se05x_asymmetric_verify`, :cpp:type:`sss_asymmetric_sign_digest`, :cpp:type:`sss_asymmetric_verify_digest`)
+
+- New APDUs for RSA sign and verify with salt length added - :cpp:func:`Se05x_API_RSASign_WithSalt` and :cpp:func:`Se05x_API_RSAVerify_WithSalt`.
+
+- Bug fix : failing phNxpEse_chipReset does not return failure
+
+- phNxpEse_open memory leak fix
+
+- APDU throughput error code (SM_ERR_APDU_THROUGHPUT) added in smStatus_t.
+
+- APDU throughput error code (kStatus_SSS_ApduThroughputError) added in sss_status_t. SSS APIs are updated return new throughput error code.
+
+
 ## Release v04.04.00
 
 - Fixes for compilation warnings and static analysis findings.

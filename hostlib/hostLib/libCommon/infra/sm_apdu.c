@@ -27,7 +27,6 @@
 #endif
 
 #include "sm_apdu.h"
-// #include "ax_api.h"
 #include "scp.h"
 #include "nxLog_hostLib.h"
 #include "nxEnsure.h"
@@ -36,19 +35,7 @@ static void ReserveLc(apdu_t * pApdu);
 static void SetLc(apdu_t * pApdu, U16 lc);
 static void AddLe(apdu_t * pApdu, U16 le);
 
-#if SSS_HAVE_APPLET_A71CH_SIM
-/* Send session ID in trans-receive */
-static U8 session_Tlv[7];
-static U8 gEnableEnc = 0;
-#endif
-
 static U8 sharedApduBuffer[MAX_APDU_BUF_LENGTH];
-
-#ifdef TGT_A71CH
-#if ( (APDU_HEADER_LENGTH + APDU_STD_MAX_DATA + 1) >= MAX_APDU_BUF_LENGTH )
-#error "Ensure MAX_APDU_BUF_LENGTH is big enough"
-#endif
-#endif // TGT_A71CH
 
 /**
  * Associates a memory buffer with the APDU buffer.
@@ -130,24 +117,6 @@ U8 SetApduHeader(apdu_t * pApdu, U8 extendedLength)
 exit:
     return ret;
 }
-
-#if SSS_HAVE_APPLET_A71CH_SIM
-/**
- * Creates session TLV from session ID. Session ID is retrieved as response to auth command.
- * \param[in] sessionId
- */
-void set_SessionId_Tlv(U32 sessionId)
-{
-    session_Tlv[0] = 0xBE;
-    session_Tlv[1] = 0xBE;
-    session_Tlv[2] = 0x04;
-    session_Tlv[3] = (U8)(sessionId >> 24);
-    session_Tlv[4] = (U8)(sessionId >> 16);
-    session_Tlv[5] = (U8)(sessionId >> 8);
-    session_Tlv[6] = (U8)(sessionId >> 0);
-    gEnableEnc = sessionId !=0 ? 1:0;
-}
-#endif
 
 /**
  * In the final stage before sending the APDU cmd one needs to update the values of lc (and le).
@@ -284,248 +253,6 @@ exit:
     return;
 }
 
-
-#if 0
-/**
- * @function             AddTlvItem
- * @description          Adds a Tag-Length-Value structure to the command APDU.
- * @param pApdu          [IN/OUT] APDU buffer.
- * @param tag            [IN] tag; either a 1-byte tag or a 2-byte tag
- * @param dataLength     [IN] length of the Value
- * @param pValue         [IN] Value
- * @return               SW_OK or ERR_BUF_TOO_SMALL
- */
-U16 AddTlvItem(apdu_t * pApdu, U16 tag, U16 dataLength, const U8 *pValue)
-{
-    U8 msbTag = tag >> 8;
-    U8 lsbTag = tag & 0xff;
-
-    // If this is the first tag added to the buffer, we needs to ensure
-    // the correct offset is used writing the data. This depends on
-    // whether the APDU is a standard or an extended APDU.
-    if (pApdu->hasData == 0)
-    {
-        pApdu->hasData = 1;
-        ReserveLc(pApdu);
-    }
-
-    // Ensure no buffer overflow will occur before writing any data to buffer
-    {
-        U32 xtraData = 0;
-        U32 u32_Offset = (U32)(pApdu->offset);
-
-        xtraData = 1;
-        // Tag
-        if (msbTag != 0x00)
-        {
-            // 2-byte tag
-            xtraData++;
-        }
-
-        // Length
-        if (dataLength <= 0x7f)
-        {
-            // 1-byte length
-            xtraData++;
-        }
-        else if (dataLength <= 0xff)
-        {
-            // 2-byte length
-            xtraData += 2;
-        }
-        else
-        {
-            // 3-byte length
-            xtraData += 3;
-        }
-        xtraData += dataLength;
-
-        // Can we still add 'xtraData' to internal buffer without buffer overwrite?
-        if ( (u32_Offset + xtraData) > MAX_APDU_BUF_LENGTH)
-        {
-            // Bufferflow would occur
-            return ERR_BUF_TOO_SMALL;
-        }
-    }
-
-    // Tag
-    if (msbTag != 0x00)
-    {
-        // 2-byte tag
-        pApdu->pBuf[pApdu->offset++] = msbTag;
-    }
-    pApdu->pBuf[pApdu->offset++] = lsbTag;
-
-    // Length
-    if (dataLength <= 0x7f)
-    {
-        // 1-byte length
-        pApdu->pBuf[pApdu->offset++] = (U8) dataLength;
-        pApdu->lc += 2 + dataLength;
-    }
-    else if (dataLength <= 0xff)
-    {
-        // 2-byte length
-        pApdu->pBuf[pApdu->offset++] = 0x81;
-        pApdu->pBuf[pApdu->offset++] = (U8) dataLength;
-        pApdu->lc += 3 + dataLength;
-    }
-    else
-    {
-        // 3-byte length
-        pApdu->pBuf[pApdu->offset++] = 0x82;
-        pApdu->pBuf[pApdu->offset++] = dataLength >> 8;
-        pApdu->pBuf[pApdu->offset++] = dataLength & 0xff;
-        pApdu->lc += 4 + dataLength;
-    }
-
-    // Value
-    memcpy(&pApdu->pBuf[pApdu->offset], pValue, dataLength);
-    pApdu->offset += dataLength;
-
-    // adapt length
-    pApdu->buflen = pApdu->offset;
-
-    return SW_OK;
-}
-
-/**
- * AddStdCmdData
- * \deprecated Use ::smApduAppendCmdData instead
- */
-U16 AddStdCmdData(apdu_t * pApdu, U16 dataLen, const U8 *data)
-{
-
-    pApdu->hasData = 1;
-    ReserveLc(pApdu);
-
-    pApdu->lc += dataLen;
-
-    // Value
-    memcpy(&pApdu->pBuf[pApdu->offset], data, dataLen);
-    pApdu->offset += dataLen;
-
-    // adapt length
-    pApdu->buflen = pApdu->offset;
-
-    return pApdu->offset;
-}
-
-/**
- * @function                 ParseResponse
- * @description              Parses a received Tag-Length-Value structure (response APDU).
- * @param pApdu              [IN] APDU buffer
- * @param expectedTag        [IN] expected tag; either a 1-byte tag or a 2-byte tag
- * @param pLen               [IN,OUT] IN: size of buffer provided; OUT: length of the received Value
- * @param pValue             [OUT] received Value
- * @return status
- */
-U16 ParseResponse(apdu_t *pApdu, U16 expectedTag, U16 *pLen, U8 *pValue)
-{
-    U16 tag = 0;
-    U16 rv = ERR_GENERAL_ERROR;
-    int foundTag = 0;
-    U16 bufferLen = *pLen;
-
-    *pLen = 0;
-
-    if (pApdu->rxlen < 2) /* minimum: 2 byte for response */
-    {
-        return ERR_GENERAL_ERROR;
-    }
-    else
-    {
-        /* check status returned is okay */
-        if ((pApdu->pBuf[pApdu->rxlen - 2] != 0x90) || (pApdu->pBuf[pApdu->rxlen - 1] != 0x00))
-        {
-            return ERR_GENERAL_ERROR;
-        }
-        else // response okay
-        {
-            pApdu->offset = 0;
-
-            do
-            {
-                U16 len = 0;
-
-                // Ensure we don't parse beyond the APDU Response Data
-                if (pApdu->offset >= (pApdu->rxlen -2)) { break; }
-
-                /* get the tag (see ISO 7816-4 annex D); limited to max 2 bytes */
-                if ((pApdu->pBuf[pApdu->offset] & 0x1F) != 0x1F) /* 1 byte tag only */
-                {
-                    tag = (pApdu->pBuf[pApdu->offset] & 0x00FF);
-                    pApdu->offset += 1;
-                }
-                else /* tag consists out of 2 bytes */
-                {
-                    tag = (pApdu->pBuf[pApdu->offset] << 8) + pApdu->pBuf[pApdu->offset + 1];
-                    pApdu->offset += 2;
-                }
-
-                // Ensure we don't parse beyond the APDU Response Data
-                if (pApdu->offset >= (pApdu->rxlen -2)) { break; }
-
-                // tag is OK
-                /* get the length (see ISO 7816-4 annex D) */
-                if ((pApdu->pBuf[pApdu->offset] & 0x80) != 0x80)
-                {
-                    /* 1 byte length */
-                    len = (pApdu->pBuf[pApdu->offset++] & 0x00FF);
-                }
-                else
-                {
-                    /* length consists of 2 or 3 bytes */
-
-                    U8 additionalBytesForLength = (pApdu->pBuf[pApdu->offset++] & 0x7F);
-
-                    if (additionalBytesForLength == 1)
-                    {
-                        len = pApdu->pBuf[pApdu->offset];
-                        pApdu->offset += 1;
-                    }
-                    else if (additionalBytesForLength == 2)
-                    {
-                        len = (pApdu->pBuf[pApdu->offset] << 8) + pApdu->pBuf[pApdu->offset + 1];
-                        pApdu->offset += 2;
-                    }
-                    else
-                    {
-                        return ERR_GENERAL_ERROR;
-                    }
-                }
-
-                // Ensure we don't parse beyond the APDU Response Data
-                if (pApdu->offset >= (pApdu->rxlen -2)) { break; }
-
-                if (tag == expectedTag)
-                {
-                    // copy the value
-                    if ( (len > 0) && (bufferLen >= len) )
-                    {
-                        *pLen = len;
-                        memcpy(pValue, &pApdu->pBuf[pApdu->offset], *pLen);
-                        rv = SW_OK;
-                        foundTag = 1;
-                        break;
-                    }
-                    else
-                    {
-                        rv = ERR_BUF_TOO_SMALL;
-                        break;
-                    }
-                }
-
-                // update the offset
-                pApdu->offset += len;
-            } while (!foundTag);
-        }
-    }
-
-    return rv;
-}
-
-#endif // TGT_A71CH
 
 /**
  * Add or append data to the body of a command APDU.
@@ -671,31 +398,6 @@ exit:
 }
 
 /**
- * verify crc checksum.
- * \param[in] pApdu      APDU buffer
- * \param[in] dataLen    data length to be use for crc caluate
- * \return               offset in APDU buffer after the header
- */
-#if defined(TGT_A71CL)
-static U8 smVerifyCrc(apdu_t *pApdu, U16 dataLen)
-{
-    U16 crc = 0;
-    U16 recvCrc = 0;
-
-    ENSURE_OR_GO_EXIT(pApdu != NULL);
-    //FIXME: Where is the definition for below function?
-    //crc = CL_CalCRC(&pApdu->pBuf[pApdu->offset], (U32)dataLen, 0xFFFF);
-    recvCrc = *(U16*)&pApdu->pBuf[pApdu->offset + dataLen];
-    if (crc != recvCrc) {
-        return 0;
-    } else {
-        return 1;
-    }
-exit:
-    return 0;
-}
-#endif
-/**
  * Retrieve the response data of the APDU response, in case the status word matches ::SW_OK
  */
 U16 smApduGetResponseBody(apdu_t *pApdu, U8 *buf, U16 *bufLen)
@@ -763,32 +465,6 @@ U16 smApduGetResponseBody(apdu_t *pApdu, U8 *buf, U16 *bufLen)
 exit:
     return rv;
 }
-
-#ifdef TGT_A71CL
-
-/**
- * In the final stage before sending the APDU cmd one needs to update checksum value.
- * \param[in,out] pApdu        APDU buffer
- * \param[in] chksum
- */
-U16 smApduAdaptChkSum(apdu_t *pApdu, U16 chkSum)
-{
-    U16 rv = ERR_GENERAL_ERROR;
-    // assert(pApdu->txHasChkSum == 1);
-    // U16 tmpchkSum = (chkSum >> 8)|(chkSum << 8);
-
-    ENSURE_OR_GO_EXIT(pApdu != NULL);
-    if (pApdu->txHasChkSum) {
-        memcpy(&pApdu->pBuf[pApdu->offset], &chkSum, pApdu->txChkSumLength);
-    }
-    pApdu->buflen += pApdu->txChkSumLength;
-    pApdu->offset += pApdu->txChkSumLength;
-
-    rv = pApdu->offset;
-exit:
-    return rv;
-}
-#endif
 
 bool smApduGetArrayBytes(char *str, size_t *len, uint8_t *buffer, size_t buffer_len)
 {

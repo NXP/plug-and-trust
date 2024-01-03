@@ -315,12 +315,14 @@ ESESTATUS phNxpEse_chipReset(void* conn_ctx)
     ESESTATUS status = ESESTATUS_SUCCESS;
     bool_t bStatus = FALSE;
     phNxpEse_Context_t* nxpese_ctxt = (conn_ctx == NULL) ? &gnxpese_ctxt : (phNxpEse_Context_t*)conn_ctx;
+
     bStatus = phNxpEseProto7816_Reset();
     if(!bStatus)
     {
-        status = ESESTATUS_FAILED;
         LOG_E("phNxpEseProto7816_Reset Failed");
+        return ESESTATUS_FAILED;
     }
+
 #if defined(T1oI2C_UM11225)
     bStatus = phNxpEseProto7816_ChipReset((void*)nxpese_ctxt);
 #elif defined(T1oI2C_GP1_0)
@@ -328,7 +330,8 @@ ESESTATUS phNxpEse_chipReset(void* conn_ctx)
 #endif
     if (bStatus != TRUE)
     {
-        LOG_E("phNxpEse_chipReset  Failed");
+        status = ESESTATUS_FAILED;
+        LOG_E("phNxpEseProto7816_ColdReset Failed");
     }
     return status;
 }

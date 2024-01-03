@@ -128,11 +128,6 @@ sss_status_t sss_util_asn1_rsa_parse_public(
 sss_status_t sss_util_asn1_rsa_get_public(
     uint8_t *key, size_t *keylen, uint8_t *modulus, size_t modlen, uint8_t *pubExp, size_t pubExplen);
 
-#if SSS_HAVE_ECDAA
-sss_status_t sss_util_asn1_ecdaa_get_signature(
-    uint8_t *signature, size_t *signatureLen, uint8_t *rawSignature, size_t rawSignatureLen);
-#endif
-
 sss_status_t sss_util_asn1_get_oid_from_header(uint8_t *input, size_t inLen, uint32_t *output, uint8_t *outLen);
 
 sss_status_t sss_util_asn1_get_oid_from_sssObj(sss_object_t *pkeyObject, uint32_t *output, uint8_t *outLen);

@@ -12,7 +12,7 @@
 #include "veneer_printf_table.h"
 #endif
 
-#if SSS_HAVE_SE05X_VER_GTE_06_00
+#if SSS_HAVE_SE05X_VER_GTE_07_02
 /* OK */
 #else
 #error "Only with SE051 based build"
@@ -97,9 +97,11 @@ smStatus_t Se05x_API_AeadOneShot(pSe05xSession_t session_ctx,
         }
     }
     if (operation == kSE05x_Cipher_Oper_OneShot_Decrypt) {
-        tlvRet = TLVSET_u8bufOptional("tag", &pCmdbuf, &cmdbufLen, kSE05x_TAG_6, pTagData, *pTagDataLen);
-        if (0 != tlvRet) {
-            goto cleanup;
+        if (pTagDataLen != NULL) {
+            tlvRet = TLVSET_u8bufOptional("tag", &pCmdbuf, &cmdbufLen, kSE05x_TAG_6, pTagData, *pTagDataLen);
+            if (0 != tlvRet) {
+                goto cleanup;
+            }
         }
     }
     retStatus = DoAPDUTxRx_s_Case4_ext(session_ctx, &hdr, cmdbuf, cmdbufLen, rspbuf, &rspbufLen);
@@ -164,6 +166,7 @@ smStatus_t Se05x_API_AeadInit(pSe05xSession_t session_ctx,
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "AeadInit []");
+    nLog("APDU", NX_LEVEL_WARN, "AeadInit [] APDU causes NVM Writes");
 #endif /* VERBOSE_APDU_LOGS */
     if (IVLen > UINT16_MAX) {
         goto cleanup;
@@ -371,6 +374,7 @@ smStatus_t Se05x_API_AeadUpdate(pSe05xSession_t session_ctx,
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "AeadUpdate []");
+    nLog("APDU", NX_LEVEL_WARN, "AeadUpdate [] APDU causes NVM Writes");
 #endif /* VERBOSE_APDU_LOGS */
     tlvRet = TLVSET_CryptoObjectID("cryptoObjectID", &pCmdbuf, &cmdbufLen, kSE05x_TAG_2, cryptoObjectID);
     if (0 != tlvRet) {
@@ -408,6 +412,7 @@ smStatus_t Se05x_API_AeadCCMLastUpdate(
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "AeadUpdate []");
+    nLog("APDU", NX_LEVEL_WARN, "AeadUpdate [] APDU causes NVM Writes");
 #endif /* VERBOSE_APDU_LOGS */
     tlvRet = TLVSET_CryptoObjectID("cryptoObjectID", &pCmdbuf, &cmdbufLen, kSE05x_TAG_2, cryptoObjectID);
     if (0 != tlvRet) {
@@ -439,14 +444,20 @@ smStatus_t Se05x_API_AeadCCMFinal(pSe05xSession_t session_ctx,
     uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP] = {0};
     uint8_t *pRspbuf                       = &rspbuf[0];
     size_t rspbufLen                       = ARRAY_SIZE(rspbuf);
-    size_t tagLen                          = *pTagLen;
+    size_t tagLen                          = 0;
     SE05x_Result_t result;
     size_t rspIndex = 0;
 
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "AeadFinal []");
+    nLog("APDU", NX_LEVEL_WARN, "AeadFinal [] APDU causes NVM Writes");
 #endif /* VERBOSE_APDU_LOGS */
+
+    if (pTagLen != NULL) {
+        tagLen = *pTagLen;
+    }
+
     tlvRet = TLVSET_CryptoObjectID("cryptoObjectID", &pCmdbuf, &cmdbufLen, kSE05x_TAG_2, cryptoObjectID);
     if (0 != tlvRet) {
         goto cleanup;
@@ -504,14 +515,20 @@ smStatus_t Se05x_API_AeadFinal(pSe05xSession_t session_ctx,
     uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP] = {0};
     uint8_t *pRspbuf                       = &rspbuf[0];
     size_t rspbufLen                       = ARRAY_SIZE(rspbuf);
-    size_t tagLen                          = *pTagLen;
+    size_t tagLen                          = 0;
     SE05x_Result_t result;
     size_t rspIndex = 0;
 
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "AeadFinal []");
+    nLog("APDU", NX_LEVEL_WARN, "AeadFinal [] APDU causes NVM Writes");
 #endif /* VERBOSE_APDU_LOGS */
+
+    if (pTagLen != NULL) {
+        tagLen = *pTagLen;
+    }
+
     tlvRet = TLVSET_CryptoObjectID("cryptoObjectID", &pCmdbuf, &cmdbufLen, kSE05x_TAG_2, cryptoObjectID);
     if (0 != tlvRet) {
         goto cleanup;
@@ -561,6 +578,7 @@ smStatus_t Se05x_API_DisableObjCreation(
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "DisableObjCreation []");
+    nLog("APDU", NX_LEVEL_WARN, "DisableObjCreation [] APDU causes NVM Writes");
 #endif /* VERBOSE_APDU_LOGS */
 
     tlvRet = TLVSET_U8("lockIndicator", &pCmdbuf, &cmdbufLen, kSE05x_TAG_1, lockIndicator);
@@ -1121,7 +1139,7 @@ smStatus_t Se05x_API_WriteRSAKey_Ver(pSe05xSession_t session_ctx,
     uint32_t version)
 {
     smStatus_t retStatus = SM_NOT_OK;
-    tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_WRITE | ins_type, kSE05x_P1_RSA | key_part, rsa_format}};
+    tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_WRITE | ins_type, (uint8_t)kSE05x_P1_RSA | key_part, rsa_format}};
     uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
     size_t cmdbufLen = 0;
     uint8_t *pCmdbuf = &cmdbuf[0];
@@ -1199,7 +1217,7 @@ smStatus_t Se05x_API_WriteECKey_Ver(pSe05xSession_t session_ctx,
     uint32_t version)
 {
     smStatus_t retStatus = SM_NOT_OK;
-    tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_WRITE | ins_type, kSE05x_P1_EC | key_part, kSE05x_P2_DEFAULT}};
+    tlvHeader_t hdr = {{kSE05x_CLA, kSE05x_INS_WRITE | ins_type, (uint8_t)kSE05x_P1_EC | key_part, kSE05x_P2_DEFAULT}};
     uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
     size_t cmdbufLen = 0;
     uint8_t *pCmdbuf = &cmdbuf[0];
@@ -1479,7 +1497,7 @@ smStatus_t Se05x_API_UpdateRSAKey_Ver(pSe05xSession_t session_ctx,
     uint32_t version)
 {
     smStatus_t retStatus = SM_NOT_OK;
-    tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_WRITE | ins_type, kSE05x_P1_RSA | key_part, rsa_format}};
+    tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_WRITE | ins_type, (uint8_t)kSE05x_P1_RSA | key_part, rsa_format}};
     uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
     size_t cmdbufLen = 0;
     uint8_t *pCmdbuf = &cmdbuf[0];
@@ -1560,7 +1578,7 @@ smStatus_t Se05x_API_UpdateECKey_Ver(pSe05xSession_t session_ctx,
     uint32_t version)
 {
     smStatus_t retStatus = SM_NOT_OK;
-    tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_WRITE | ins_type, kSE05x_P1_EC | key_part, kSE05x_P2_DEFAULT}};
+    tlvHeader_t hdr = {{kSE05x_CLA, kSE05x_INS_WRITE | ins_type, (uint8_t)kSE05x_P1_EC | key_part, kSE05x_P2_DEFAULT}};
     uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
     size_t cmdbufLen = 0;
     uint8_t *pCmdbuf = &cmdbuf[0];
@@ -2049,6 +2067,139 @@ smStatus_t Se05x_API_ECPointMultiply_InputObj(pSe05xSession_t session_ctx,
             if ((rspIndex + 2) == rspbufLen) {
                 retStatus = (smStatus_t)((pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]));
             }
+        }
+    }
+
+cleanup:
+    return retStatus;
+}
+
+smStatus_t Se05x_API_RSASign_WithSalt(pSe05xSession_t session_ctx,
+    uint32_t objectID,
+    SE05x_RSASignatureAlgo_t rsaSigningAlgo,
+    const uint8_t *inputData,
+    size_t inputDataLen,
+    uint16_t saltLen,
+    uint8_t *signature,
+    size_t *psignatureLen)
+{
+    smStatus_t retStatus = SM_NOT_OK;
+    tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_CRYPTO, kSE05x_P1_SIGNATURE, kSE05x_P2_SIGN}};
+    uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
+    size_t cmdbufLen                       = 0;
+    uint8_t *pCmdbuf                       = &cmdbuf[0];
+    int tlvRet                             = 0;
+    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP] = {0};
+    uint8_t *pRspbuf                       = &rspbuf[0];
+    size_t rspbufLen                       = ARRAY_SIZE(rspbuf);
+    size_t rspIndex                        = 0;
+#if VERBOSE_APDU_LOGS
+    NEWLINE();
+    nLog("APDU", NX_LEVEL_DEBUG, "RSASign_WithSalt []");
+#endif /* VERBOSE_APDU_LOGS */
+    tlvRet = TLVSET_U32("objectID", &pCmdbuf, &cmdbufLen, kSE05x_TAG_1, objectID);
+    if (0 != tlvRet) {
+        goto cleanup;
+    }
+    tlvRet = TLVSET_RSASignatureAlgo("rsaSigningAlgo", &pCmdbuf, &cmdbufLen, kSE05x_TAG_2, rsaSigningAlgo);
+    if (0 != tlvRet) {
+        goto cleanup;
+    }
+    tlvRet = TLVSET_u8bufOptional("inputData", &pCmdbuf, &cmdbufLen, kSE05x_TAG_3, inputData, inputDataLen);
+    if (0 != tlvRet) {
+        goto cleanup;
+    }
+    if (saltLen <= 256) {
+        /* The salt length is restricted to 256. This is because of the APDU buffer size.
+         * Depending on the RSA key size, the value can be changed.
+        */
+        tlvRet =
+            TLVSET_u8bufOptional("saltLen", &pCmdbuf, &cmdbufLen, kSE05x_TAG_4, rspbuf /* all zero buffer */, saltLen);
+        if (0 != tlvRet) {
+            goto cleanup;
+        }
+    }
+    else {
+        goto cleanup;
+    }
+    retStatus = DoAPDUTxRx_s_Case4_ext(session_ctx, &hdr, cmdbuf, cmdbufLen, rspbuf, &rspbufLen);
+    if (retStatus == SM_OK) {
+        retStatus = SM_NOT_OK;
+        tlvRet    = tlvGet_u8buf(pRspbuf, &rspIndex, rspbufLen, kSE05x_TAG_1, signature, psignatureLen); /*  */
+        if (0 != tlvRet) {
+            goto cleanup;
+        }
+        if ((rspIndex + 2) == rspbufLen) {
+            retStatus = (smStatus_t)((pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]));
+        }
+    }
+
+cleanup:
+    return retStatus;
+}
+
+smStatus_t Se05x_API_RSAVerify_WithSalt(pSe05xSession_t session_ctx,
+    uint32_t objectID,
+    SE05x_RSASignatureAlgo_t rsaSigningAlgo,
+    const uint8_t *inputData,
+    size_t inputDataLen,
+    uint16_t saltLen,
+    const uint8_t *signature,
+    size_t signatureLen,
+    SE05x_Result_t *presult)
+{
+    smStatus_t retStatus = SM_NOT_OK;
+    tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_CRYPTO, kSE05x_P1_SIGNATURE, kSE05x_P2_VERIFY}};
+    uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
+    size_t cmdbufLen                       = 0;
+    uint8_t *pCmdbuf                       = &cmdbuf[0];
+    int tlvRet                             = 0;
+    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP] = {0};
+    uint8_t *pRspbuf                       = &rspbuf[0];
+    size_t rspbufLen                       = ARRAY_SIZE(rspbuf);
+    size_t rspIndex                        = 0;
+#if VERBOSE_APDU_LOGS
+    NEWLINE();
+    nLog("APDU", NX_LEVEL_DEBUG, "RSAVerify_WithSalt []");
+#endif /* VERBOSE_APDU_LOGS */
+    tlvRet = TLVSET_U32("objectID", &pCmdbuf, &cmdbufLen, kSE05x_TAG_1, objectID);
+    if (0 != tlvRet) {
+        goto cleanup;
+    }
+    tlvRet = TLVSET_RSASignatureAlgo("rsaSigningAlgo", &pCmdbuf, &cmdbufLen, kSE05x_TAG_2, rsaSigningAlgo);
+    if (0 != tlvRet) {
+        goto cleanup;
+    }
+    tlvRet = TLVSET_u8bufOptional("inputData", &pCmdbuf, &cmdbufLen, kSE05x_TAG_3, inputData, inputDataLen);
+    if (0 != tlvRet) {
+        goto cleanup;
+    }
+    if (saltLen <= 256) {
+        /* The salt length is restricted to 256. This is because of the APDU buffer size.
+         * Depending on the RSA key size, the value can be changed.
+        */
+        tlvRet =
+            TLVSET_u8bufOptional("saltLen", &pCmdbuf, &cmdbufLen, kSE05x_TAG_4, rspbuf /* all zero buffer */, saltLen);
+        if (0 != tlvRet) {
+            goto cleanup;
+        }
+    }
+    else {
+        goto cleanup;
+    }
+    tlvRet = TLVSET_u8bufOptional("signature", &pCmdbuf, &cmdbufLen, kSE05x_TAG_5, signature, signatureLen);
+    if (0 != tlvRet) {
+        goto cleanup;
+    }
+    retStatus = DoAPDUTxRx_s_Case4(session_ctx, &hdr, cmdbuf, cmdbufLen, rspbuf, &rspbufLen);
+    if (retStatus == SM_OK) {
+        retStatus = SM_NOT_OK;
+        tlvRet    = tlvGet_Result(pRspbuf, &rspIndex, rspbufLen, kSE05x_TAG_1, presult); /* - */
+        if (0 != tlvRet) {
+            goto cleanup;
+        }
+        if ((rspIndex + 2) == rspbufLen) {
+            retStatus = (smStatus_t)((pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]));
         }
     }
 

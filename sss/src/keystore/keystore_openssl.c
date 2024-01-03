@@ -49,6 +49,7 @@ sss_status_t ks_openssl_load_key(sss_openssl_object_t *sss_key, keyStoreTable_t 
     sss_status_t retval                = kStatus_SSS_Fail;
     char file_name[MAX_FILE_NAME_SIZE] = {0};
     FILE *fp                           = NULL;
+    int evp_pkey_bits                  = 0;
     //const char *root_folder = sss_key->keyStore->session->szRootPath;
     size_t size = 0;
     uint32_t i;
@@ -134,7 +135,11 @@ sss_status_t ks_openssl_load_key(sss_openssl_object_t *sss_key, keyStoreTable_t 
                         sss_key->contents = (void *)pkey;
                     }
 
-                    sss_key->keyBitLen = EVP_PKEY_bits(pkey);
+                    evp_pkey_bits = EVP_PKEY_bits(pkey);
+                    if (evp_pkey_bits < 0) {
+                        return kStatus_SSS_Fail;
+                    }
+                    sss_key->keyBitLen = evp_pkey_bits;
                 } break;
                 case kSSS_CipherType_EC_NIST_P:
                 case kSSS_CipherType_EC_NIST_K:
@@ -157,7 +162,13 @@ sss_status_t ks_openssl_load_key(sss_openssl_object_t *sss_key, keyStoreTable_t 
                     else {
                         sss_key->contents = (void *)pkey;
                     }
-                    sss_key->keyBitLen = EVP_PKEY_bits(pkey);
+
+                    evp_pkey_bits = EVP_PKEY_bits(pkey);
+                    if (evp_pkey_bits < 0) {
+                        retval = kStatus_SSS_Fail;
+                    }
+                    sss_key->keyBitLen = evp_pkey_bits;
+
                 } break;
                 default: {
                     retval = sss_openssl_key_store_set_key(sss_key->keyStore, sss_key, keyBuf, size, size * 8, NULL, 0);

@@ -2691,7 +2691,6 @@ const char *sss_cipher_type_sz(sss_cipher_type_t cipher_type)
         CASE_X_RETRUN_STR_kSSS_CipherType(EC_MONTGOMERY);
         CASE_X_RETRUN_STR_kSSS_CipherType(EC_TWISTED_ED);
         CASE_X_RETRUN_STR_kSSS_CipherType(EC_BRAINPOOL);
-        CASE_X_RETRUN_STR_kSSS_CipherType(EC_BARRETO_NAEHRIG);
         CASE_X_RETRUN_STR_kSSS_CipherType(UserID);
         CASE_X_RETRUN_STR_kSSS_CipherType(Certificate);
         CASE_X_RETRUN_STR_kSSS_CipherType(Binary);

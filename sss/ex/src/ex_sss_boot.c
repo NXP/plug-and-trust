@@ -69,11 +69,7 @@ sss_status_t ex_sss_boot_open(ex_sss_boot_ctx_t *pCtx, const char *portName)
 {
     sss_status_t status = kStatus_SSS_Fail;
 
-#if SSS_HAVE_APPLET_A71CH || SSS_HAVE_APPLET_A71CH_SIM
-    status = ex_sss_boot_a71ch_open(pCtx, portName);
-#elif SSS_HAVE_APPLET_A71CL || SSS_HAVE_APPLET_SE05X_L
-    status = ex_sss_boot_a71cl_open(pCtx, portName);
-#elif SSS_HAVE_APPLET_SE05X_IOT
+#if SSS_HAVE_APPLET_SE05X_IOT
     status = ex_sss_boot_se05x_open(pCtx, portName);
 #elif SSS_HAVE_APPLET
     status = ex_sss_boot_se_open(pCtx, portName);
@@ -99,17 +95,7 @@ sss_status_t ex_sss_boot_factory_reset(ex_sss_boot_ctx_t *pCtx)
 {
     sss_status_t status = kStatus_SSS_Fail;
 
-#if SSS_HAVE_APPLET_A71CH || SSS_HAVE_APPLET_A71CH_SIM
-    uint16_t ret;
-    ret = HLSE_DbgReset();
-    if (ret == HLSE_SW_OK) {
-        status = kStatus_SSS_Success;
-    }
-
-#elif SSS_HAVE_APPLET_A71CL || SSS_HAVE_APPLET_SE05X_L
-    status = kStatus_SSS_Success;
-
-#elif SSS_HAVE_APPLET_SE05X_IOT
+#if SSS_HAVE_APPLET_SE05X_IOT
     smStatus_t st;
     sss_se05x_session_t *pSession = (sss_se05x_session_t *)&pCtx->session;
     st                            = Se05x_API_DeleteAll_Iterative(&pSession->s_ctx);
@@ -180,7 +166,7 @@ static void free_auth_objects(SE_Connect_Ctx_t *pConnectCtx)
 
 void ex_sss_session_close(ex_sss_boot_ctx_t *pCtx)
 {
-#if SSS_HAVE_APPLET_SE05X_IOT || SSS_HAVE_SSCP
+#if SSS_HAVE_APPLET_SE05X_IOT
 #if SSS_HAVE_APPLET_SE05X_IOT
 #if ((SSS_HAVE_HOSTCRYPTO_ANY) &&                                                           \
      ((SSS_HAVE_SE05X_AUTH_USERID_PLATFSCP03) || (SSS_HAVE_SE05X_AUTH_AESKEY_PLATFSCP03) || \
@@ -195,7 +181,7 @@ void ex_sss_session_close(ex_sss_boot_ctx_t *pCtx)
         sss_session_delete(&pCtx->session);
     }
 
-#if SSS_HAVE_APPLET_SE05X_IOT || SSS_HAVE_SSCP
+#if SSS_HAVE_APPLET_SE05X_IOT
 
 #if SSS_HAVE_APPLET_SE05X_IOT
 #if ((SSS_HAVE_HOSTCRYPTO_ANY) &&                                                           \
@@ -260,7 +246,7 @@ sss_status_t ex_sss_boot_open_host_session(ex_sss_boot_ctx_t *pCtx)
 {
     sss_status_t status = kStatus_SSS_Fail;
 
-#if SSS_HAVE_APPLET_SE05X_IOT || SSS_HAVE_SSCP
+#if SSS_HAVE_APPLET_SE05X_IOT
     if (pCtx->host_ks.session == NULL) {
         status = sss_session_open(&pCtx->host_session, kType_SSS_Software, 0, kSSS_ConnectionType_Plain, NULL);
         if (kStatus_SSS_Success != status) {

@@ -43,7 +43,7 @@ extern "C" {
 /* Generated implementation */
 #include "se05x_APDU_impl.h"
 
-#if SSS_HAVE_SE05X_VER_GTE_06_00
+#if SSS_HAVE_SE05X_VER_GTE_07_02
 #include "se05x_04_xx_APDU_impl.h"
 #endif
 

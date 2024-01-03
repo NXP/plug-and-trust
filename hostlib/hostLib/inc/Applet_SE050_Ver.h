@@ -18,11 +18,7 @@
 //#define APPLET_SE050_VER_STRING_NUM     "v03.01.00"
 //#define APPLET_SE050_PROD_NAME_VER_FULL "Applet_SE050_v03.01.00"
 
-#if SSS_HAVE_SE05X_VER_06_00 == 1
-#    define APPLET_SE050_VER_MAJOR          (6u)
-#    define APPLET_SE050_VER_MINOR          (0u)
-#    define APPLET_SE050_VER_DEV            (0u)
-#elif SSS_HAVE_SE05X_VER_07_02 == 1
+#if SSS_HAVE_SE05X_VER_07_02 == 1
 #    define APPLET_SE050_VER_MAJOR          (7u)
 #    define APPLET_SE050_VER_MINOR          (2u)
 #    define APPLET_SE050_VER_DEV            (0u)

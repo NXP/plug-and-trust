@@ -35,6 +35,7 @@ smStatus_t Se05x_API_PAKEConfigDevice(
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "PAKEConfigDevice []");
+    nLog("APDU", NX_LEVEL_WARN, "PAKEConfigDevice [] APDU causes NVM Writes");
 #endif /* VERBOSE_APDU_LOGS */
     tlvRet = TLVSET_CryptoObjectID("cryptoObjectID", &pCmdbuf, &cmdbufLen, kSE05x_TAG_2, cryptoObjectID);
     if (0 != tlvRet) {
@@ -69,6 +70,7 @@ smStatus_t Se05x_API_PAKEInitDevice(pSe05xSession_t session_ctx,
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "PAKEInitDevice[]");
+    nLog("APDU", NX_LEVEL_WARN, "PAKEInitDevice [] APDU causes NVM Writes");
 #endif /* VERBOSE_APDU_LOGS */
 
     tlvRet = TLVSET_CryptoObjectID("cryptoObjectID", &pCmdbuf, &cmdbufLen, kSE05x_TAG_2, cryptoObjectID);
@@ -113,6 +115,7 @@ smStatus_t Se05x_API_PAKEInitCredentials(pSe05xSession_t session_ctx,
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "PAKEInitCredentials[]");
+    nLog("APDU", NX_LEVEL_WARN, "PAKEInitCredentials[] APDU causes NVM Writes");
 #endif /* VERBOSE_APDU_LOGS */
 
     tlvRet = TLVSET_CryptoObjectID("cryptoObjectID", &pCmdbuf, &cmdbufLen, kSE05x_TAG_2, cryptoObjectID);

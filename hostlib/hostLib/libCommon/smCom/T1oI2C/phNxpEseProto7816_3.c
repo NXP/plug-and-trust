@@ -195,6 +195,7 @@ exit:
     return status;
 }
 
+// LCOV_EXCL_START
 /******************************************************************************
  * Function         getMaxSupportedSendIFrameSize
  *
@@ -210,6 +211,7 @@ uint8_t getMaxSupportedSendIFrameSize(void)
 {
     return IFSC_SIZE_SEND ;
 }
+// LCOV_EXCL_STOP
 
 /******************************************************************************
  * Function         phNxpEseProto7816_SendSFrame
@@ -438,6 +440,7 @@ static bool_t phNxpEseProto7816_SendIframe(void* conn_ctx, iFrameInfo_t iFrameDa
     }
     /* This update is helpful in-case a R-NACK is transmitted from the MW */
     phNxpEseProto7816_3_Var.lastSentNonErrorframeType = IFRAME;
+    ENSURE_OR_GO_EXIT(iFrameData.sendDataLen <= (UINT_MAX - (PH_PROTO_7816_HEADER_LEN + PH_PROTO_7816_CRC_LEN)))
     frame_len = (iFrameData.sendDataLen+ PH_PROTO_7816_HEADER_LEN + PH_PROTO_7816_CRC_LEN);
 
     /* frame the packet */
@@ -465,9 +468,9 @@ static bool_t phNxpEseProto7816_SendIframe(void* conn_ctx, iFrameInfo_t iFrameDa
     p_framebuff[PH_PROPTO_7816_LEN_LOWER_OFFSET] =(((uint16_t)iFrameData.sendDataLen) & 0xff);
 #endif
     /* store I frame */
-    if (iFrameData.sendDataLen > (MAX_DATA_LEN - PH_PROPTO_7816_INF_BYTE_OFFSET)){
-        return FALSE;
-    }
+    ENSURE_OR_GO_EXIT(iFrameData.sendDataLen <= (MAX_DATA_LEN - PH_PROPTO_7816_INF_BYTE_OFFSET))
+    ENSURE_OR_GO_EXIT(frame_len - 1 < MAX_DATA_LEN)
+
     phNxpEse_memcpy(&(p_framebuff[PH_PROPTO_7816_INF_BYTE_OFFSET]), iFrameData.p_data + iFrameData.dataOffset, iFrameData.sendDataLen);
     calc_crc = phNxpEseProto7816_ComputeCRC(p_framebuff, 0, (frame_len - 2));
 
@@ -475,6 +478,7 @@ static bool_t phNxpEseProto7816_SendIframe(void* conn_ctx, iFrameInfo_t iFrameDa
     p_framebuff[frame_len - 1] = calc_crc & 0xff;
     status = phNxpEseProto7816_SendRawFrame(conn_ctx, frame_len, p_framebuff);
 
+exit:
     return status;
 }
 
@@ -1540,6 +1544,7 @@ bool_t phNxpEseProto7816_Close(void* conn_ctx)
     return status;
 }
 
+// LCOV_EXCL_START
 #if defined(T1oI2C_UM11225)
 /******************************************************************************
  * Function         phNxpEseProto7816_IntfReset
@@ -1579,6 +1584,7 @@ bool_t phNxpEseProto7816_IntfReset(void* conn_ctx, phNxpEse_data *AtrRsp)
 exit:
     return status ;
 }
+// LCOV_EXCL_STOP
 
 /******************************************************************************
  * Function         phNxpEseProto7816_ChipReset

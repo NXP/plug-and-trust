@@ -159,6 +159,9 @@ sss_status_t sss_openssl_session_open(sss_openssl_session_t *session,
     AX_UNUSED_ARG(application_id);
     AX_UNUSED_ARG(connection_type);
 
+    if (session == NULL) {
+        return retval;
+    }
     memset(session, 0, sizeof(*session));
 
 #if SSS_HAVE_HOSTCRYPTO_OPENSSL
@@ -423,6 +426,10 @@ sss_status_t sss_openssl_key_object_set_eccgfp_group(sss_openssl_object_t *keyOb
 sss_status_t sss_openssl_key_object_get_user(sss_openssl_object_t *keyObject, uint32_t *user)
 {
     sss_status_t retval = kStatus_SSS_Success;
+
+    if (user == NULL) {
+        return kStatus_SSS_Fail;
+    }
     *user               = keyObject->user_id;
     return retval;
 }
@@ -430,6 +437,10 @@ sss_status_t sss_openssl_key_object_get_user(sss_openssl_object_t *keyObject, ui
 sss_status_t sss_openssl_key_object_get_purpose(sss_openssl_object_t *keyObject, sss_mode_t *purpose)
 {
     sss_status_t retval = kStatus_SSS_Success;
+
+    if (purpose == NULL) {
+        return kStatus_SSS_Fail;
+    }
     *purpose            = keyObject->purpose;
     return retval;
 }
@@ -437,6 +448,10 @@ sss_status_t sss_openssl_key_object_get_purpose(sss_openssl_object_t *keyObject,
 sss_status_t sss_openssl_key_object_get_access(sss_openssl_object_t *keyObject, uint32_t *access)
 {
     sss_status_t retval = kStatus_SSS_Success;
+
+    if (access == NULL) {
+        return kStatus_SSS_Fail;
+    }
     *access             = keyObject->accessRights;
     return retval;
 }
@@ -556,6 +571,9 @@ sss_status_t sss_openssl_derive_key_sobj_one_go(sss_openssl_derive_key_t *contex
     }
 
     if (context->mode != kMode_SSS_HKDF_ExpandOnly) {
+        if (saltKeyObject == NULL) {
+            return kStatus_SSS_Fail;
+        }
         status = sss_openssl_key_store_get_key(saltKeyObject->keyStore, saltKeyObject, saltData, &saltLen, &dummySize);
         if (status != kStatus_SSS_Success) {
             return kStatus_SSS_Fail;
@@ -767,6 +785,10 @@ sss_status_t sss_openssl_derive_key_dh(sss_openssl_derive_key_t *context,
         }
         else {
             memset((void *)secret, 0, sharedSecretLen);
+            if (sharedSecretLen > INT_MAX) {
+                SSS_FREE(secret);
+                return kStatus_SSS_Fail;
+            }
             sharedSecretLen_Derived = sharedSecretLen;
 
             if (EVP_PKEY_derive(ctx, secret, &sharedSecretLen) <= 0) {
@@ -791,9 +813,15 @@ sss_status_t sss_openssl_derive_key_dh(sss_openssl_derive_key_t *context,
                 ECDH_compute_key(secret, sharedSecretLen, EC_KEY_get0_public_key(pEcpExt), pEcpPrv, NULL);
         }
     }
+
+    if (sharedSecretLen_Derived < 0) {
+        retval = kStatus_SSS_Fail;
+        goto exit;
+    }
+
     memcpy(derivedKeyObject->contents, secret, sharedSecretLen_Derived);
     derivedKeyObject->contents_size = sharedSecretLen_Derived;
-
+exit:
     EC_GROUP_free(pEC_Group);
     EC_KEY_free(pEcpPrv);
     EC_KEY_free(pEcpExt);
@@ -966,9 +994,11 @@ sss_status_t sss_openssl_key_store_generate_key(
     sss_openssl_key_store_t *keyStore, sss_openssl_object_t *keyObject, size_t keyBitLen, void *options)
 {
     sss_status_t retval           = kStatus_SSS_Success;
-    sss_cipher_type_t cipher_type = (sss_cipher_type_t)keyObject->cipherType;
+    sss_cipher_type_t cipher_type = 0;
+
     ENSURE_OR_GO_EXIT(keyStore);
     ENSURE_OR_GO_EXIT(keyObject);
+    cipher_type = (sss_cipher_type_t) keyObject->cipherType;
 
     AX_UNUSED_ARG(options);
 
@@ -1011,6 +1041,8 @@ sss_status_t sss_openssl_key_store_get_key(sss_openssl_key_store_t *keyStore,
 
     switch (keyObject->objectType) {
     case kSSS_KeyPart_Default:
+        ENSURE_OR_GO_CLEANUP(dataLen);
+        ENSURE_OR_GO_CLEANUP(*dataLen >= keyObject->contents_size);
         memcpy(data, keyObject->contents, keyObject->contents_size);
         *dataLen = keyObject->contents_size;
         break;
@@ -1251,9 +1283,17 @@ sss_status_t sss_openssl_asymmetric_encrypt(
     /* Get the RSA Key. */
     pKey = (EVP_PKEY *)keyObj->contents;
     pRSA = EVP_PKEY_get1_RSA(pKey);
+    if (pRSA == NULL) {
+        retval = kStatus_SSS_Fail;
+        goto exit;
+    }
 
     padding = openssl_get_padding(context->algorithm);
 
+    if (srcLen > INT_MAX) {
+        retval = kStatus_SSS_Fail;
+        goto exit;
+    }
     /* Encrypt the mesasage. */
     ret = RSA_public_encrypt((int)srcLen, srcData, destData, pRSA, padding);
     if (ret == -1) {
@@ -1344,9 +1384,16 @@ sss_status_t sss_openssl_asymmetric_decrypt(
     /* Get the RSA Key. */
     pKey = (EVP_PKEY *)keyObj->contents;
     pRSA = EVP_PKEY_get1_RSA(pKey);
-
+    if (pRSA == NULL) {
+        retval = kStatus_SSS_Fail;
+        goto exit;
+    }
     padding = openssl_get_padding(context->algorithm);
 
+    if (srcLen > INT_MAX) {
+        retval = kStatus_SSS_Fail;
+        goto exit;
+    }
     /* Decrypt the mesasage. */
     ret = RSA_private_decrypt((int)srcLen, srcData, destData, pRSA, padding);
     if (ret == -1) {
@@ -1398,8 +1445,7 @@ static void *openssl_get_hash_ptr_set_padding(sss_algorithm_t algorithm, uint32_
     case kAlgorithm_SSS_RSASSA_PKCS1_PSS_MGF1_SHA256:
     case kAlgorithm_SSS_RSASSA_NO_PADDING:
     case kAlgorithm_SSS_RSAES_PKCS1_V1_5:
-    case kAlgorithm_SSS_RSAES_PKCS1_OAEP_SHA256:
-    case kAlgorithm_SSS_ECDAA: {
+    case kAlgorithm_SSS_RSAES_PKCS1_OAEP_SHA256: {
         hashfPtr = (void *)EVP_sha256();
     } break;
     case kAlgorithm_SSS_SHA384:
@@ -1484,8 +1530,7 @@ sss_status_t sss_openssl_asymmetric_sign_digest(sss_openssl_asymmetric_t *contex
     if (context->keyObject->cipherType == kSSS_CipherType_EC_NIST_P ||
         context->keyObject->cipherType == kSSS_CipherType_EC_NIST_K ||
         context->keyObject->cipherType == kSSS_CipherType_EC_BRAINPOOL ||
-        context->keyObject->cipherType == kSSS_CipherType_EC_TWISTED_ED ||
-        context->keyObject->cipherType == kSSS_CipherType_EC_BARRETO_NAEHRIG) {
+        context->keyObject->cipherType == kSSS_CipherType_EC_TWISTED_ED) {
         ENSURE_OR_GO_EXIT(NULL != hashfPtr);
     }
 
@@ -1579,8 +1624,7 @@ sss_status_t sss_openssl_asymmetric_verify_digest(sss_openssl_asymmetric_t *cont
     if (context->keyObject->cipherType == kSSS_CipherType_EC_NIST_P ||
         context->keyObject->cipherType == kSSS_CipherType_EC_NIST_K ||
         context->keyObject->cipherType == kSSS_CipherType_EC_BRAINPOOL ||
-        context->keyObject->cipherType == kSSS_CipherType_EC_TWISTED_ED ||
-        context->keyObject->cipherType == kSSS_CipherType_EC_BARRETO_NAEHRIG) {
+        context->keyObject->cipherType == kSSS_CipherType_EC_TWISTED_ED) {
         ENSURE_OR_GO_EXIT(NULL != hashfPtr);
     }
 
@@ -1699,6 +1743,9 @@ sss_status_t sss_openssl_symmetric_context_init(sss_openssl_symmetric_t *context
 {
     sss_status_t retval = kStatus_SSS_Success;
 
+    if (context == NULL) {
+        return kStatus_SSS_Fail;
+    }
     context->session        = session;
     context->keyObject      = keyObject;
     context->algorithm      = algorithm;
@@ -1903,7 +1950,10 @@ sss_status_t sss_openssl_cipher_one_go(sss_openssl_symmetric_t *context,
 #endif
         } break;
         case kAlgorithm_SSS_DES_CBC:
-            DES_cbc_encrypt(srcData, destData, (int)dataLen, &scheduledKey1, (DES_cblock *)iv, DES_ENCRYPT);
+            if (dataLen > LONG_MAX) {
+                return kStatus_SSS_Fail;
+            }
+            DES_cbc_encrypt(srcData, destData, (long)dataLen, &scheduledKey1, (DES_cblock *)iv, DES_ENCRYPT);
             break;
         case kAlgorithm_SSS_DES3_ECB:
             DES_ecb3_encrypt((const_DES_cblock *)srcData,
@@ -1914,6 +1964,9 @@ sss_status_t sss_openssl_cipher_one_go(sss_openssl_symmetric_t *context,
                 DES_ENCRYPT);
             break;
         case kAlgorithm_SSS_DES3_CBC:
+            if (dataLen > LONG_MAX) {
+                return kStatus_SSS_Fail;
+            }
             DES_ede3_cbc_encrypt(srcData,
                 destData,
                 (long)dataLen,
@@ -1970,6 +2023,9 @@ sss_status_t sss_openssl_cipher_one_go(sss_openssl_symmetric_t *context,
 #endif
         } break;
         case kAlgorithm_SSS_DES_CBC:
+            if (dataLen > LONG_MAX) {
+                return kStatus_SSS_Fail;
+            }
             DES_cbc_encrypt(srcData, destData, (long)dataLen, &scheduledKey1, (DES_cblock *)iv, DES_DECRYPT);
             break;
         case kAlgorithm_SSS_DES3_ECB:
@@ -1981,6 +2037,9 @@ sss_status_t sss_openssl_cipher_one_go(sss_openssl_symmetric_t *context,
                 DES_DECRYPT);
             break;
         case kAlgorithm_SSS_DES3_CBC:
+            if (dataLen > LONG_MAX) {
+                return kStatus_SSS_Fail;
+            }
             DES_ede3_cbc_encrypt(srcData,
                 destData,
                 (long)dataLen,
@@ -2012,6 +2071,9 @@ sss_status_t sss_openssl_cipher_one_go_v2(sss_openssl_symmetric_t *context,
     uint8_t *destData,
     size_t *pDataLen)
 {
+    if (pDataLen == NULL) {
+        return kStatus_SSS_Fail;
+    }
     if (*pDataLen < srcLen) {
         return kStatus_SSS_Fail;
     }
@@ -2326,6 +2388,7 @@ sss_status_t sss_openssl_cipher_finish(
 
     /* All data processed using EVP_CipherUpdate call. EVP_CipherFinal call will be dummy call.
        No encrypted/decrypted output will be generated */
+    ENSURE_OR_GO_EXIT(context->cipher_ctx != NULL);
     if (1 != EVP_CipherFinal(context->cipher_ctx, dummyBuf, &dummyBufLen)) {
         goto exit;
     }
@@ -2426,6 +2489,8 @@ sss_status_t sss_openssl_cipher_crypt_ctr(sss_openssl_symmetric_t *context,
         ENSURE_OR_GO_EXIT(destData != NULL);
     }
 
+    ENSURE_OR_GO_EXIT(context->keyObject != NULL);
+    ENSURE_OR_GO_EXIT((context->keyObject->contents_size) < INT_MAX / 8)
     if (AES_set_encrypt_key(
             (uint8_t *)context->keyObject->contents, (int)(context->keyObject->contents_size * 8), &key) < 0) {
         goto exit;
@@ -2435,7 +2500,10 @@ sss_status_t sss_openssl_cipher_crypt_ctr(sss_openssl_symmetric_t *context,
     case 128:
     case 192:
     case 256: {
-        unsigned int iLeft = (unsigned int)*szLeft;
+        if (*szLeft > UINT_MAX) {
+            goto exit;
+        }
+        unsigned int iLeft = *szLeft;
 #if (OPENSSL_VERSION_NUMBER < 0x10100000L)
         AES_ctr128_encrypt(srcData, destData, size, &key, initialCounter, lastEncryptedCounter, &iLeft);
 #else
@@ -2477,6 +2545,8 @@ sss_status_t sss_openssl_aead_context_init(sss_openssl_aead_t *context,
     sss_mode_t mode)
 {
     sss_status_t retval = kStatus_SSS_Fail;
+
+    ENSURE_OR_GO_EXIT(context != NULL);
     context->session    = session;
     context->keyObject  = keyObject;
     context->mode       = mode;
@@ -2587,6 +2657,7 @@ sss_status_t sss_openssl_aead_one_go(sss_openssl_aead_t *context,
     }
 
     /* Set IV length if default 96 bits is not appropriate */
+    ENSURE_OR_GO_EXIT(context->aead_ctx != NULL);
     ret = EVP_CIPHER_CTX_ctrl(context->aead_ctx, EVP_CTRL_GCM_SET_IVLEN, nonceLen, NULL);
     ENSURE_OR_GO_EXIT(ret == 1);
     context->pCcm_data = NULL;
@@ -2860,6 +2931,7 @@ sss_status_t sss_openssl_aead_finish(sss_openssl_aead_t *context,
     int ret                    = 0;
 
     ENSURE_OR_GO_EXIT(context != NULL);
+    ENSURE_OR_GO_EXIT(destLen != NULL);
     if (srcLen > 0) {
         ENSURE_OR_GO_EXIT(srcData != NULL);
     }
@@ -3242,6 +3314,9 @@ sss_status_t sss_openssl_mac_one_go(
         goto cleanup;
     }
 
+    if (context->keyObject == NULL) {
+        goto cleanup;
+    }
     if (context->keyObject->contents) {
         keylen = context->keyObject->contents_size;
     }
@@ -3250,7 +3325,11 @@ sss_status_t sss_openssl_mac_one_go(
         goto cleanup;
     }
 
+    if (*macLen > UINT_MAX) {
+        goto cleanup;
+    }
     iMacLen = (unsigned int)*macLen;
+
     if (context->algorithm == kAlgorithm_SSS_CMAC_AES) {
         if (context->cmac_ctx == NULL) {
             retval = kStatus_SSS_InvalidArgument;
@@ -3338,6 +3417,9 @@ sss_status_t sss_openssl_mac_one_go(
             goto cleanup;
         }
 
+        if (context->keyObject->contents_size > INT_MAX) {
+            goto cleanup;
+        }
         if (context->mode == kMode_SSS_Mac) {
             if (NULL != HMAC(evp_md,
                             context->keyObject->contents,
@@ -3517,6 +3599,9 @@ sss_status_t sss_openssl_mac_init(sss_openssl_mac_t *context)
             goto cleanup;
         }
 
+        if (context->keyObject->contents_size > INT_MAX) {
+            goto cleanup;
+        }
         ret = HMAC_Init_ex(
             context->hmac_ctx, context->keyObject->contents, (int)context->keyObject->contents_size, evp_md, NULL);
         if (ret == 1) {
@@ -3655,6 +3740,9 @@ sss_status_t sss_openssl_mac_finish(sss_openssl_mac_t *context, uint8_t *mac, si
     else if (context->algorithm == kAlgorithm_SSS_HMAC_SHA1 || context->algorithm == kAlgorithm_SSS_HMAC_SHA224 ||
              context->algorithm == kAlgorithm_SSS_HMAC_SHA256 || context->algorithm == kAlgorithm_SSS_HMAC_SHA384 ||
              context->algorithm == kAlgorithm_SSS_HMAC_SHA512) {
+        if (*macLen > UINT_MAX) {
+            retval = kStatus_SSS_Fail;
+        }
         unsigned int iMacLen = (unsigned int)*macLen;
 
         if (context->mode == kMode_SSS_Mac) {
@@ -3763,6 +3851,7 @@ sss_status_t sss_openssl_digest_one_go(
 
     const EVP_MD *md;
 
+    ENSURE_OR_GO_EXIT(digestLen != NULL);
     ENSURE_OR_GO_EXIT((*digestLen) <= UINT32_MAX);
     iDigestLen = (unsigned int)*digestLen;
 
@@ -4752,6 +4841,7 @@ static sss_status_t sss_openssl_hkdf_expand(const EVP_MD *md,
     size_t okm_len)
 {
     size_t hash_len;
+    int evp_hash_len;
     size_t N;
     size_t T_len = 0, where = 0, i;
 #if (OPENSSL_VERSION_NUMBER < 0x10100000L)
@@ -4767,7 +4857,12 @@ static sss_status_t sss_openssl_hkdf_expand(const EVP_MD *md,
         goto exit;
     }
 
-    hash_len = EVP_MD_size(md);
+    evp_hash_len = EVP_MD_size(md);
+    if (evp_hash_len < 0) {
+        retval = kStatus_SSS_Fail;
+        goto exit;
+    }
+    hash_len = (size_t)evp_hash_len;
 
     if (info == NULL) {
         info = (const unsigned char *)"";
@@ -4795,6 +4890,10 @@ static sss_status_t sss_openssl_hkdf_expand(const EVP_MD *md,
 #endif
 
 #if (OPENSSL_VERSION_NUMBER < 0x10100000L)
+    if (prk_len > INT_MAX) {
+        retval = kStatus_SSS_Fail;
+        goto exit;
+    }
     if (!HMAC_Init_ex(&hmac, prk, (int)prk_len, md, NULL)) {
         retval = kStatus_SSS_Fail;
         goto exit;
@@ -4839,6 +4938,10 @@ static sss_status_t sss_openssl_hkdf_expand(const EVP_MD *md,
         T_len = hash_len;
     }
 #else
+    if (prk_len > INT_MAX) {
+        retval = kStatus_SSS_Fail;
+        goto exit;
+    }
     if (!HMAC_Init_ex(hmac, prk, (int)prk_len, md, NULL)) {
         retval = kStatus_SSS_Fail;
         goto exit;

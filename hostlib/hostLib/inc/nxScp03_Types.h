@@ -31,16 +31,16 @@
 #endif
 
 #include "sm_api.h"
-#if SSS_HAVE_SSCP
-#include "fsl_sscp_a71ch.h"
-#endif
 
 /** @addtogroup se05x_scp03
  *
  * @{ */
 
+/** Defining authentication types in SE05x
+*/
 typedef enum
 {
+    /** No authentication */
     kSSS_AuthType_None = 0,
     /** Global platform SCP03 */
     kSSS_AuthType_SCP03 = 1,

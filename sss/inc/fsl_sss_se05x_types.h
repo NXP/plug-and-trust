@@ -32,7 +32,6 @@
 /* FreeRTOS includes. */
 #if defined(USE_RTOS) && (USE_RTOS == 1)
 #include "FreeRTOS.h"
-#include "FreeRTOSIPConfig.h"
 #include "semphr.h"
 #include "task.h"
 #endif
@@ -293,8 +292,6 @@ typedef enum
 /** Used to enable Applet Features via ``sss_se05x_set_feature`` */
 typedef struct
 {
-    /** Use of curve TPM_ECC_BN_P256 */
-    uint8_t AppletConfig_ECDAA : 1;
     /** EC DSA and DH support */
     uint8_t AppletConfig_ECDSA_ECDH_ECDHE : 1;
     /** Use of curve RESERVED_ID_ECC_ED_25519 */
@@ -330,8 +327,6 @@ typedef struct
 {
     /** Disable feature ECDH B2b8 */
     uint8_t EXTCFG_FORBID_ECDH : 1;
-    /** Disable feature ECDAA B2b7 */
-    uint8_t EXTCFG_FORBID_ECDAA : 1;
     /** Disable feature RSA_LT_2K B6b8 */
     uint8_t EXTCFG_FORBID_RSA_LT_2K : 1;
     /** Disable feature RSA_SHA1 B6b7 */

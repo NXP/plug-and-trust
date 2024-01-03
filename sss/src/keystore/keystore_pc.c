@@ -79,6 +79,10 @@ void ks_sw_getKeyFileName(
         LOG_E("cipherType should be 2 Bytes.");
         return;
     }
+    if (size < 1) {
+        LOG_E("size should be a non-zero positive value");
+        return;
+    }
     keyType    = sss_key->objectType;
     cipherType = sss_key->cipherType;
     if (SNPRINTF(file_name, size - 1, "%s/sss_%08X_%04d_%04d.bin", root_folder, keyId, keyType, cipherType) < 0) {
@@ -266,10 +270,11 @@ sss_status_t ks_mbedtls_load_key(sss_mbedtls_object_t *sss_key, keyStoreTable_t 
     sss_status_t retval                = kStatus_SSS_Fail;
     char file_name[MAX_FILE_NAME_SIZE] = {0};
     FILE *fp                           = NULL;
-    //const char *root_folder = sss_key->keyStore->session->szRootPath;
-    size_t size = 0;
-    uint32_t i;
+    size_t size = 0, fread_size = 0;
+    uint32_t i                             = 0;
     keyIdAndTypeIndexLookup_t *shadowEntry = NULL;
+    uint8_t *keyBuf                        = NULL;
+    int fret                               = 0;
 
     for (i = 0; i < sss_key->keyStore->max_object_count; i++) {
         if (keystore_shadow->entries[i].extKeyId == extKeyId) {
@@ -284,68 +289,71 @@ sss_status_t ks_mbedtls_load_key(sss_mbedtls_object_t *sss_key, keyStoreTable_t 
             break;
         }
     }
-    if (retval == kStatus_SSS_Success) {
-        fp = fopen(file_name, "rb");
-        if (fp == NULL) {
-            LOG_E("Can not open file");
-            retval = kStatus_SSS_Fail;
+    ENSURE_OR_GO_CLEANUP(kStatus_SSS_Success == retval)
+
+    fp = fopen(file_name, "rb");
+    if (fp == NULL) {
+        LOG_E("Can not open file");
+        retval = kStatus_SSS_Fail;
+        goto cleanup;
+    }
+    /* Buffer to hold max RSA Key*/
+    if (fseek(fp, 0, SEEK_END) != 0) {
+        LOG_E("fseek failed,hence calling fclose");
+        if (fclose(fp) != 0) {
+            LOG_E("fclose error");
         }
-        else {
-            /* Buffer to hold max RSA Key*/
-            uint8_t *keyBuf = NULL;
-            int signed_val  = 0;
-            if (fseek(fp, 0, SEEK_END) != 0) {
-                LOG_E("fseek failed,hence calling fclose");
-                if (fclose(fp) != 0) {
-                    LOG_E("fclose error");
-                }
-                return kStatus_SSS_Fail;
-            }
-            signed_val = ftell(fp);
-            if (signed_val < 0) {
-                LOG_E("File does not contain any data");
-                retval = kStatus_SSS_Fail;
-                fclose(fp);
-                return retval;
-            }
-            size = (size_t)signed_val;
-            if (fseek(fp, 0, SEEK_SET) != 0) {
-                LOG_E("fseek faild,hence calling fclose");
-                if (fclose(fp) != 0) {
-                    LOG_E("fclose error");
-                }
-                return kStatus_SSS_Fail;
-            }
-            keyBuf = SSS_CALLOC(1, size);
-            if (keyBuf == NULL) {
-                fclose(fp);
-                return kStatus_SSS_Fail;
-            }
-            signed_val = (int)fread(keyBuf, size, 1, fp);
-            if (signed_val < 0) {
-                LOG_E("fread faild");
-                retval = kStatus_SSS_Fail;
-                fclose(fp);
-                if (keyBuf != NULL) {
-                    SSS_FREE(keyBuf);
-                }
-                return retval;
-            }
-            fclose(fp);
-            retval = ks_mbedtls_key_object_create(sss_key,
-                shadowEntry->extKeyId,
-                (sss_key_part_t)(shadowEntry->keyPart & 0x0F),
-                (sss_cipher_type_t)(shadowEntry->cipherType),
-                size,
-                kKeyObject_Mode_Persistent);
-            if (retval == kStatus_SSS_Success) {
-                retval = sss_mbedtls_key_store_set_key(
-                    sss_key->keyStore, sss_key, keyBuf, size, size * 8 /* FIXME */, NULL, 0);
-            }
-            if (keyBuf != NULL) {
-                SSS_FREE(keyBuf);
-            }
+        retval = kStatus_SSS_Fail;
+        goto cleanup;
+    }
+    fret = ftell(fp);
+    if (fret < 0) {
+        LOG_E("File does not contain any data");
+        retval = kStatus_SSS_Fail;
+        if (fclose(fp) != 0) {
+            LOG_E("fclose error");
         }
+        goto cleanup;
+    }
+    size = (size_t)fret;
+    if (fseek(fp, 0, SEEK_SET) != 0) {
+        LOG_E("fseek faild,hence calling fclose");
+        retval = kStatus_SSS_Fail;
+        if (fclose(fp) != 0) {
+            LOG_E("fclose error");
+        }
+        goto cleanup;
+    }
+    keyBuf = SSS_CALLOC(1, size);
+    if (keyBuf == NULL) {
+        retval = kStatus_SSS_Fail;
+        if (fclose(fp) != 0) {
+            LOG_E("fclose error");
+        }
+        goto cleanup;
+    }
+    fread_size = fread(keyBuf, size, 1, fp);
+    if (fread_size != 1) {
+        retval = kStatus_SSS_Fail;
+        LOG_E("fread error");
+    }
+    if (fclose(fp) != 0) {
+        retval = kStatus_SSS_Fail;
+        LOG_E("fclose error");
+        goto cleanup;
+    }
+    retval = ks_mbedtls_key_object_create(sss_key,
+        shadowEntry->extKeyId,
+        (sss_key_part_t)(shadowEntry->keyPart & 0x0F),
+        (sss_cipher_type_t)(shadowEntry->cipherType),
+        size,
+        kKeyObject_Mode_Persistent);
+    ENSURE_OR_GO_CLEANUP(kStatus_SSS_Success == retval)
+
+    retval = sss_mbedtls_key_store_set_key(sss_key->keyStore, sss_key, keyBuf, size, size * 8 /* FIXME */, NULL, 0);
+cleanup:
+    if (keyBuf != NULL) {
+        SSS_FREE(keyBuf);
     }
     return retval;
 }
@@ -353,6 +361,7 @@ sss_status_t ks_mbedtls_load_key(sss_mbedtls_object_t *sss_key, keyStoreTable_t 
 sss_status_t ks_mbedtls_store_key(const sss_mbedtls_object_t *sss_key)
 {
     sss_status_t retval                = kStatus_SSS_Fail;
+    int fret                           = -1;
     char file_name[MAX_FILE_NAME_SIZE] = {0};
     FILE *fp                           = NULL;
     /* Buffer to hold max RSA Key*/
@@ -373,7 +382,14 @@ sss_status_t ks_mbedtls_store_key(const sss_mbedtls_object_t *sss_key)
         pk = (mbedtls_pk_context *)sss_key->contents;
         switch (sss_key->objectType) {
         case kSSS_KeyPart_Default:
-            fwrite(sss_key->contents, sss_key->contents_max_size, 1, fp);
+            if (fwrite(sss_key->contents, sss_key->contents_max_size, 1, fp) != 1) {
+                LOG_E("fwrite error, hence calling fclose");
+                fret = fclose(fp);
+                if (fret != 0) {
+                    LOG_E("fclose error");
+                }
+                goto exit;
+            }
             retval = kStatus_SSS_Success; /* Allows to skip writing pem/der files */
             break;
         case kSSS_KeyPart_Pair:
@@ -388,12 +404,26 @@ sss_status_t ks_mbedtls_store_key(const sss_mbedtls_object_t *sss_key)
         }
         if (ret > 0 && retval != kStatus_SSS_Success) {
             c = key_buf + sizeof(key_buf) - ret;
-            fwrite(c, ret, 1, fp);
+            if (fwrite(c, ret, 1, fp) != 1) {
+                LOG_E("fwrite error, hence calling fclose");
+                fret = fclose(fp);
+                if (fret != 0) {
+                    LOG_E("fclose error");
+                }
+                goto exit;
+            }
             retval = kStatus_SSS_Success;
         }
-        fflush(fp);
-        fclose(fp);
+        fret = fflush(fp);
+        if (fret != 0) {
+            LOG_E("fflush error");
+        }
+        fret = fclose(fp);
+        if (fret != 0) {
+            LOG_E("fclose error");
+        }
     }
+exit:
     return retval;
 }
 

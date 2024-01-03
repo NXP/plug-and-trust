@@ -284,7 +284,7 @@ sss_status_t sss_util_asn1_rsa_parse_private(const uint8_t *key,
         tag = pBuf[bufIndex];
     }
 
-    ENSURE_OR_GO_EXIT(bufIndex < keylen);
+    ENSURE_OR_GO_EXIT(bufIndex < (keylen-1));
     if (pBuf[bufIndex] == ASN_TAG_INT && pBuf[bufIndex + 1] == 1) {
         bufIndex += 3;
     }
@@ -310,7 +310,7 @@ sss_status_t sss_util_asn1_rsa_parse_private(const uint8_t *key,
         ENSURE_OR_GO_EXIT(modulus != NULL);
         *modulus = SSS_MALLOC(*modlen);
         if ((*modulus != NULL) && ((*modlen) > 0)) {
-            ENSURE_OR_GO_EXIT(bufIndex < keylen);
+            ENSURE_OR_GO_EXIT(bufIndex <= (keylen - (*modlen)) );
             memcpy(*modulus, pBuf + bufIndex, *modlen);
             bufIndex += *modlen;
         }
@@ -334,7 +334,7 @@ sss_status_t sss_util_asn1_rsa_parse_private(const uint8_t *key,
         ENSURE_OR_GO_EXIT(pubExp != NULL);
         *pubExp = SSS_MALLOC(*pubExplen);
         if ((*pubExp != NULL) && ((*pubExplen) > 0)) {
-            ENSURE_OR_GO_EXIT(bufIndex < keylen);
+            ENSURE_OR_GO_EXIT(bufIndex <= (keylen - (*pubExplen)));
             memcpy(*pubExp, pBuf + bufIndex, *pubExplen);
             bufIndex += *pubExplen;
         }
@@ -370,7 +370,7 @@ sss_status_t sss_util_asn1_rsa_parse_private(const uint8_t *key,
         ENSURE_OR_GO_EXIT(priExp != NULL);
         *priExp = SSS_MALLOC(*priExplen);
         if ((*priExp != NULL) && ((*priExplen) > 0)) {
-            ENSURE_OR_GO_EXIT(bufIndex < keylen);
+            ENSURE_OR_GO_EXIT(bufIndex <= (keylen - (*priExplen)));
             memcpy(*priExp, pBuf + bufIndex, *priExplen);
             bufIndex += *priExplen;
         }
@@ -406,7 +406,7 @@ sss_status_t sss_util_asn1_rsa_parse_private(const uint8_t *key,
         ENSURE_OR_GO_EXIT(prime1 != NULL);
         *prime1 = SSS_MALLOC(*prime1len);
         if ((*prime1 != NULL) && ((*prime1len) > 0)) {
-            ENSURE_OR_GO_EXIT(bufIndex < keylen);
+            ENSURE_OR_GO_EXIT(bufIndex <= (keylen - (*prime1len)));
             memcpy(*prime1, pBuf + bufIndex, *prime1len);
             bufIndex += *prime1len;
         }
@@ -446,7 +446,7 @@ sss_status_t sss_util_asn1_rsa_parse_private(const uint8_t *key,
             goto exit;
         }
         if (*prime2len > 0) {
-            ENSURE_OR_GO_EXIT(bufIndex < keylen);
+            ENSURE_OR_GO_EXIT(bufIndex <= (keylen - (*prime2len)));
             memcpy(*prime2, pBuf + bufIndex, *prime2len);
             bufIndex += *prime2len;
         }
@@ -482,7 +482,7 @@ sss_status_t sss_util_asn1_rsa_parse_private(const uint8_t *key,
         ENSURE_OR_GO_EXIT(exponent1 != NULL);
         *exponent1 = SSS_MALLOC(*exponent1len);
         if ((*exponent1 != NULL) && ((*exponent1len) > 0)) {
-            ENSURE_OR_GO_EXIT(bufIndex < keylen);
+            ENSURE_OR_GO_EXIT(bufIndex <= (keylen - (*exponent1len)));
             memcpy(*exponent1, pBuf + bufIndex, *exponent1len);
             bufIndex += *exponent1len;
         }
@@ -522,7 +522,7 @@ sss_status_t sss_util_asn1_rsa_parse_private(const uint8_t *key,
             goto exit;
         }
         if (*exponent2len > 0) {
-            ENSURE_OR_GO_EXIT(bufIndex < keylen);
+            ENSURE_OR_GO_EXIT(bufIndex <= (keylen - (*exponent2len)));
             memcpy(*exponent2, pBuf + bufIndex, *exponent2len);
             bufIndex += *exponent2len;
         }
@@ -558,7 +558,7 @@ sss_status_t sss_util_asn1_rsa_parse_private(const uint8_t *key,
         ENSURE_OR_GO_EXIT(coefficient != NULL);
         *coefficient = SSS_MALLOC(*coefficientlen);
         if ((*coefficient != NULL) && ((*coefficientlen) > 0)) {
-            ENSURE_OR_GO_EXIT(bufIndex < keylen);
+            ENSURE_OR_GO_EXIT(bufIndex <= (keylen - (*coefficientlen)));
             memcpy(*coefficient, pBuf + bufIndex, *coefficientlen);
             bufIndex += *coefficientlen;
         }
@@ -645,7 +645,7 @@ sss_status_t sss_util_asn1_rsa_parse_private_allow_invalid_key(const uint8_t *ke
         tag = pBuf[bufIndex];
     }
 
-    ENSURE_OR_GO_EXIT(bufIndex < keylen);
+    ENSURE_OR_GO_EXIT(bufIndex < keylen -1);
     if (pBuf[bufIndex] == ASN_TAG_INT && pBuf[bufIndex + 1] == 1) {
         bufIndex += 3;
     }
@@ -670,7 +670,7 @@ sss_status_t sss_util_asn1_rsa_parse_private_allow_invalid_key(const uint8_t *ke
         ENSURE_OR_GO_EXIT(modulus != NULL);
         *modulus = SSS_MALLOC(*modlen);
         if ((*modulus != NULL) && ((*modlen) > 0)) {
-            ENSURE_OR_GO_EXIT(bufIndex < keylen);
+            ENSURE_OR_GO_EXIT(bufIndex <= (keylen - (*modlen)));
             memcpy(*modulus, pBuf + bufIndex, *modlen);
             bufIndex += *modlen;
         }
@@ -691,7 +691,7 @@ sss_status_t sss_util_asn1_rsa_parse_private_allow_invalid_key(const uint8_t *ke
         *pubExplen = taglen;
         ENSURE_OR_GO_EXIT(pubExp != NULL);
         *pubExp = SSS_MALLOC(*pubExplen);
-        ENSURE_OR_GO_EXIT(bufIndex < keylen);
+        ENSURE_OR_GO_EXIT(bufIndex <= (keylen - (*pubExplen)));
         if ((*pubExp != NULL) && ((*pubExplen) > 0)) {
             memcpy(*pubExp, pBuf + bufIndex, *pubExplen);
             bufIndex += *pubExplen;
@@ -726,7 +726,7 @@ sss_status_t sss_util_asn1_rsa_parse_private_allow_invalid_key(const uint8_t *ke
         ENSURE_OR_GO_EXIT(priExp != NULL);
         *priExp = SSS_MALLOC(*priExplen);
         if ((*priExp != NULL) && ((*priExplen) > 0)) {
-            ENSURE_OR_GO_EXIT(bufIndex < keylen);
+            ENSURE_OR_GO_EXIT(bufIndex <= (keylen - (*priExplen)));
             memcpy(*priExp, pBuf + bufIndex, *priExplen);
             bufIndex += *priExplen;
         }
@@ -760,7 +760,7 @@ sss_status_t sss_util_asn1_rsa_parse_private_allow_invalid_key(const uint8_t *ke
         ENSURE_OR_GO_EXIT(prime1 != NULL);
         *prime1 = SSS_MALLOC(*prime1len);
         if ((*prime1 != NULL) && ((*prime1len) > 0)) {
-            ENSURE_OR_GO_EXIT(bufIndex < keylen);
+            ENSURE_OR_GO_EXIT(bufIndex <= (keylen - (*prime1len)));
             memcpy(*prime1, pBuf + bufIndex, *prime1len);
             bufIndex += *prime1len;
         }
@@ -798,7 +798,7 @@ sss_status_t sss_util_asn1_rsa_parse_private_allow_invalid_key(const uint8_t *ke
             goto exit;
         }
         if (*prime2len > 0) {
-            ENSURE_OR_GO_EXIT(bufIndex < keylen);
+            ENSURE_OR_GO_EXIT(bufIndex <= (keylen - (*prime2len)));
             memcpy(*prime2, pBuf + bufIndex, *prime2len);
             bufIndex += *prime2len;
         }
@@ -832,7 +832,7 @@ sss_status_t sss_util_asn1_rsa_parse_private_allow_invalid_key(const uint8_t *ke
         ENSURE_OR_GO_EXIT(exponent1 != NULL);
         *exponent1 = SSS_MALLOC(*exponent1len);
         if ((*exponent1 != NULL) && ((*exponent1len) > 0)) {
-            ENSURE_OR_GO_EXIT(bufIndex < keylen);
+            ENSURE_OR_GO_EXIT(bufIndex <= (keylen - (*exponent1len)));
             memcpy(*exponent1, pBuf + bufIndex, *exponent1len);
             bufIndex += *exponent1len;
         }
@@ -870,7 +870,7 @@ sss_status_t sss_util_asn1_rsa_parse_private_allow_invalid_key(const uint8_t *ke
             goto exit;
         }
         if (*exponent2len > 0) {
-            ENSURE_OR_GO_EXIT(bufIndex < keylen);
+            ENSURE_OR_GO_EXIT(bufIndex <= (keylen - (*exponent2len)));
             memcpy(*exponent2, pBuf + bufIndex, *exponent2len);
             bufIndex += *exponent2len;
         }
@@ -904,7 +904,7 @@ sss_status_t sss_util_asn1_rsa_parse_private_allow_invalid_key(const uint8_t *ke
         ENSURE_OR_GO_EXIT(coefficient != NULL);
         *coefficient = SSS_MALLOC(*coefficientlen);
         if ((*coefficient != NULL) && ((*coefficientlen) > 0)) {
-            ENSURE_OR_GO_EXIT(bufIndex < keylen);
+            ENSURE_OR_GO_EXIT(bufIndex <= (keylen - (*coefficientlen)));
             memcpy(*coefficient, pBuf + bufIndex, *coefficientlen);
             bufIndex += *coefficientlen;
         }
@@ -991,7 +991,7 @@ sss_status_t sss_util_asn1_rsa_parse_public_nomalloc(
 
     *modlen = temp_modlen;
     if ((*modlen) > 0) {
-        ENSURE_OR_GO_EXIT(bufIndex < keylen);
+        ENSURE_OR_GO_EXIT(bufIndex <= (keylen - (*modlen)));
         memcpy(modulus, pBuf + bufIndex, *modlen);
         bufIndex += *modlen;
     }
@@ -1009,7 +1009,7 @@ sss_status_t sss_util_asn1_rsa_parse_public_nomalloc(
     }
     *pubExplen = temp_pubExplen;
     if (*pubExplen > 0) {
-        ENSURE_OR_GO_EXIT(bufIndex < keylen);
+        ENSURE_OR_GO_EXIT(bufIndex <= (keylen - (*pubExplen)));
         memcpy(pubExp, pBuf + bufIndex, *pubExplen);
         ENSURE_OR_GO_EXIT((UINT_MAX - bufIndex) >= *pubExplen);
         bufIndex += *pubExplen;
@@ -1074,7 +1074,7 @@ sss_status_t sss_util_asn1_rsa_parse_public_nomalloc_complete_modulus(
 
     *modlen = temp_modlen;
     if ((*modlen) > 0) {
-        ENSURE_OR_GO_EXIT(bufIndex < keylen);
+        ENSURE_OR_GO_EXIT(bufIndex <= (keylen - (*modlen)));
         memcpy(modulus, pBuf + bufIndex, *modlen);
         ENSURE_OR_GO_EXIT((UINT_MAX - bufIndex) >= *modlen);
         bufIndex += *modlen;
@@ -1093,7 +1093,7 @@ sss_status_t sss_util_asn1_rsa_parse_public_nomalloc_complete_modulus(
     }
     *pubExplen = temp_pubExplen;
     if (*pubExplen > 0) {
-        ENSURE_OR_GO_EXIT(bufIndex < keylen);
+        ENSURE_OR_GO_EXIT(bufIndex <= (keylen - (*pubExplen)));
         memcpy(pubExp, pBuf + bufIndex, *pubExplen);
         ENSURE_OR_GO_EXIT((UINT_MAX - bufIndex) >= *pubExplen);
         bufIndex += *pubExplen;
@@ -1160,7 +1160,7 @@ sss_status_t sss_util_asn1_rsa_parse_public(
     }
     *modulus = SSS_MALLOC(*modlen);
     if ((*modulus != NULL) && ((*modlen) > 0)) {
-        ENSURE_OR_GO_EXIT(bufIndex < keylen);
+        ENSURE_OR_GO_EXIT(bufIndex <= (keylen - (*modlen)));
         memcpy(*modulus, pBuf + bufIndex, *modlen);
         ENSURE_OR_GO_EXIT((UINT_MAX - bufIndex) >= *modlen);
         bufIndex += *modlen;
@@ -1179,7 +1179,7 @@ sss_status_t sss_util_asn1_rsa_parse_public(
         goto exit;
     }
     if (*pubExplen > 0) {
-        ENSURE_OR_GO_EXIT(bufIndex < keylen);
+        ENSURE_OR_GO_EXIT(bufIndex <= (keylen - (*pubExplen)));
         memcpy(*pubExp, pBuf + bufIndex, *pubExplen);
         ENSURE_OR_GO_EXIT((UINT_MAX - bufIndex) >= *pubExplen);
         bufIndex += *pubExplen;
@@ -1279,104 +1279,6 @@ sss_status_t sss_util_asn1_rsa_get_public(
 exit:
     return status;
 }
-
-#if SSS_HAVE_ECDAA
-#if SSS_HAVE_SE05X_VER_GTE_07_02
-sss_status_t sss_util_asn1_ecdaa_get_signature(
-    uint8_t *signature, size_t *signatureLen, uint8_t *rawSignature, size_t rawSignatureLen)
-{
-    sss_status_t status = kStatus_SSS_Fail;
-    size_t signAsn1Len, s_len;
-
-    ENSURE_OR_GO_EXIT(signature != NULL);
-    ENSURE_OR_GO_EXIT(signatureLen != NULL);
-    ENSURE_OR_GO_EXIT(rawSignature != NULL);
-
-    s_len = rawSignatureLen;
-    // SEQUENCE (2B) + INTEGER(2B)
-    signAsn1Len = 4 + rawSignatureLen;
-    if (*signatureLen < signAsn1Len) {
-        LOG_E("ECDAA Signature buffer overflow");
-        goto exit;
-    }
-
-    /*
-        Example:
-        30 22                                ; SEQUENCE (34 Bytes)
-            02 20                            ; INTEGER (32 Bytes)
-            |  3d 46 28 7b 8c 6e 8c 8c  26 1c 1b 88 f2 73 b0 9a
-            |  32 a6 cf 28 09 fd 6e 30  d5 a7 9f 26 37 00 8f 54
-    */
-    *signatureLen = signAsn1Len;
-    if (rawSignatureLen == 0x20) {                     // TPM_ECC_BN_P256
-        signature[0] = 0x30;                           //SEQUENCE
-        signature[1] = (uint8_t)(rawSignatureLen + 2); //INTEGER(2B)
-        signature[2] = 0x02;                           //INTEGER
-        signature[3] = (uint8_t)s_len;                 //lenght of s
-        memcpy(&signature[4], &rawSignature[0], s_len);
-    }
-    else {
-        LOG_E("Invalid ECDAA Signature data");
-        goto exit;
-    }
-
-    status = kStatus_SSS_Success;
-exit:
-    return status;
-}
-
-#else // Applet 06_00 or lower
-sss_status_t sss_util_asn1_ecdaa_get_signature(
-    uint8_t *signature, size_t *signatureLen, uint8_t *rawSignature, size_t rawSignatureLen)
-{
-    sss_status_t status = kStatus_SSS_Fail;
-    size_t signAsn1Len, r_len, s_len;
-
-    ENSURE_OR_GO_EXIT(signature != NULL);
-    ENSURE_OR_GO_EXIT(signatureLen != NULL);
-    ENSURE_OR_GO_EXIT(rawSignature != NULL);
-
-    r_len = rawSignatureLen / 2;
-    s_len = rawSignatureLen / 2;
-    // SEQUENCE (2B) + INTEGER(2B)  + INTEGER(2B)
-    signAsn1Len = 6 + rawSignatureLen;
-    if (*signatureLen < signAsn1Len) {
-        LOG_E("ECDAA Signature buffer overflow");
-        goto exit;
-    }
-
-    /*
-        Example:
-        30 44                                ; SEQUENCE (68 Bytes)
-            02 20                            ; INTEGER (32 Bytes)
-            |  3d 46 28 7b 8c 6e 8c 8c  26 1c 1b 88 f2 73 b0 9a
-            |  32 a6 cf 28 09 fd 6e 30  d5 a7 9f 26 37 00 8f 54
-            02 20                            ; INTEGER (32 Bytes)
-            |  4e 72 23 6e a3 90 a9 a1  7b cf 5f 7a 09 d6 3a b2
-            |  17 6c 92 bb 8e 36 c0 41  98 a2 7b 90 9b 6e 8f 13
-    */
-    *signatureLen = signAsn1Len;
-    if (rawSignatureLen == 0x40) {                     // TPM_ECC_BN_P256
-        signature[0] = 0x30;                           //SEQUENCE
-        signature[1] = (uint8_t)(rawSignatureLen + 4); //INTEGER(2B)  + INTEGER(2B)
-        signature[2] = 0x02;                           //INTEGER
-        signature[3] = (uint8_t)r_len;                 //lenght of r
-        memcpy(&signature[4], &rawSignature[0], r_len);
-        signature[3 + r_len + 1] = 0x02;           //INTEGER
-        signature[3 + r_len + 2] = (uint8_t)s_len; //lenght of s
-        memcpy(&signature[3 + r_len + 3], &rawSignature[r_len], s_len);
-    }
-    else {
-        LOG_E("Invalid ECDAA Signature data");
-        goto exit;
-    }
-
-    status = kStatus_SSS_Success;
-exit:
-    return status;
-}
-#endif // SSS_HAVE_SE05X_VER_GTE_07_02
-#endif
 
 #if 0
 static  uint8_t *asn_1_parse_header(uint8_t *key, size_t keylen)
@@ -1805,61 +1707,6 @@ sss_status_t sss_util_rfc8410_asn1_get_ec_pair_key_index(const uint8_t *input,
     status = kStatus_SSS_Success;
 exit:
     return status;
-}
-
-sss_status_t sss_util_openssl_read_pkcs12(
-    const char *pkcs12_cert, const char *password, uint8_t *private_key, uint8_t *cert)
-{
-    sss_status_t retval = kStatus_SSS_Fail;
-
-#if SSS_HAVE_HOSTCRYPTO_OPENSSL
-    int status = 0;
-    FILE *pkcs12_cert_file;
-    PKCS12 *p12_cert;
-    X509 *x509_cert                  = NULL;
-    EVP_PKEY *p_key                  = NULL;
-    BIO *pem_key_bio                 = BIO_new(BIO_s_mem());
-    BIO *cert_bio                    = BIO_new(BIO_s_mem());
-    STACK_OF(X509) *additional_certs = NULL;
-
-    ENSURE_OR_GO_EXIT(pkcs12_cert != NULL);
-    ENSURE_OR_GO_EXIT(password != NULL);
-    ENSURE_OR_GO_EXIT(private_key != NULL);
-    ENSURE_OR_GO_EXIT(cert != NULL);
-
-    // Open PKCS12 certificate file
-    pkcs12_cert_file = fopen(pkcs12_cert, "rb");
-    ENSURE_OR_GO_EXIT(pkcs12_cert_file != NULL);
-
-    p12_cert = d2i_PKCS12_fp(pkcs12_cert_file, NULL);
-    ENSURE_OR_GO_EXIT((fclose(pkcs12_cert_file)) == 0);
-
-    // Parse PKCS12 key and certificates to seperate pem and certificates
-    status = PKCS12_parse(p12_cert, password, &p_key, &x509_cert, &additional_certs);
-    if (!status) {
-        retval = kStatus_SSS_Fail;
-        goto exit;
-    }
-    PKCS12_free(p12_cert);
-
-    // Dump pem key to buffer
-    PEM_write_bio_PrivateKey(pem_key_bio, p_key, NULL, NULL, 0, NULL, NULL);
-    BIO_read(pem_key_bio, private_key, 10000);
-
-    // Dump certificate to buffer
-    PEM_write_bio_X509(cert_bio, x509_cert);
-    BIO_read(cert_bio, cert, 20000);
-    retval = kStatus_SSS_Success;
-#else
-    AX_UNUSED_ARG(pkcs12_cert);
-    AX_UNUSED_ARG(password);
-    AX_UNUSED_ARG(private_key);
-    AX_UNUSED_ARG(cert);
-    retval = kStatus_SSS_Fail;
-    goto exit;
-#endif
-exit:
-    return retval;
 }
 
 sss_status_t sss_util_openssl_write_pkcs12(const char *pkcs12_cert,

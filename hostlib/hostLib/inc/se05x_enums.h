@@ -157,12 +157,12 @@ typedef enum
     kSE05x_P1_CIPHER = 0x0E,
     kSE05x_P1_TLS = 0x0F,
     kSE05x_P1_CRYPTO_OBJ = 0x10,
-#if SSS_HAVE_SE05X_VER_GTE_06_00
+#if SSS_HAVE_SE05X_VER_GTE_07_02
     /** Applet >= 4.4 */
     kSE05x_P1_AEAD = 0x11,
     /** Applet >= 4.4 */
     kSE05x_P1_AEAD_SP800_38D = 0x12,
-#endif /* SSS_HAVE_SE05X_VER_GTE_06_00 */
+#endif /* SSS_HAVE_SE05X_VER_GTE_07_02 */
     kSE05x_P1_PAKE = 0x12,
 } SE05x_P1_t;
 
@@ -213,7 +213,6 @@ typedef enum
     kSE05x_P2_MAC = 0x32,
     kSE05x_P2_UNLOCK_CHALLENGE = 0x33,
     kSE05x_P2_CURVE_LIST = 0x34,
-    kSE05x_P2_SIGN_ECDAA = 0x35,
     kSE05x_P2_ID = 0x36,
     kSE05x_P2_ENCRYPT_ONESHOT = 0x37,
     kSE05x_P2_DECRYPT_ONESHOT = 0x38,
@@ -243,7 +242,7 @@ typedef enum
     kSE05x_P2_SCP = 0x52,
     kSE05x_P2_AUTH_FIRST_PART1 = 0x53,
     kSE05x_P2_AUTH_NONFIRST_PART1 = 0x54,
-#if SSS_HAVE_SE05X_VER_GTE_06_00
+#if SSS_HAVE_SE05X_VER_GTE_07_02
     kSE05x_P2_CM_COMMAND = 0x55,
     kSE05x_P2_MODE_OF_OPERATION = 0x56,
     kSE05x_P2_RESTRICT = 0x57,
@@ -345,15 +344,6 @@ typedef enum
     /** Message input must be plain Data. Pure EDDSA algorithm */
     kSE05x_EDSignatureAlgo_ED25519PURE_SHA_512 = 0xA3,
 } SE05x_EDSignatureAlgo_t;
-
-/** Different signature algorithms for ECDAA (This is deprecated. This will be removed in next release)*/
-typedef enum
-{
-    /** Invalid */
-    kSE05x_ECDAASignatureAlgo_NA = 0,
-    /** Message input must be pre-hashed (using SHA256) */
-    kSE05x_ECDAASignatureAlgo_ECDAA = 0xF4,
-} SE05x_ECDAASignatureAlgo_t;
 
 /** Different ECDH algorithms */
 typedef enum
@@ -547,7 +537,7 @@ typedef enum
 /** Same as kSE05x_ECCurve_TPM_ECC_BN_P256 */
 #define kSE05x_ECCurve_RESERVED_ID_ECC_ED_25519 kSE05x_ECCurve_ECC_ED_25519
 #define kSE05x_ECCurve_RESERVED_ID_ECC_MONT_DH_25519 kSE05x_ECCurve_ECC_MONT_DH_25519
-#if SSS_HAVE_SE05X_VER_GTE_06_00
+#if SSS_HAVE_SE05X_VER_GTE_07_02
 #define kSE05x_ECCurve_RESERVED_ID_ECC_MONT_DH_448 kSE05x_ECCurve_ECC_MONT_DH_448
 #endif
 #define kSE05x_ECCurve_Total_Weierstrass_Curves kSE05x_ECCurve_TPM_ECC_BN_P256
@@ -614,8 +604,6 @@ typedef enum
 typedef enum {
     /** Invalid */
     kSE05x_AppletConfig_NA = 0,
-    /** Use of curve TPM_ECC_BN_P256 */
-    kSE05x_AppletConfig_ECDAA = 0x0001,
     /** EC DSA and DH support */
     kSE05x_AppletConfig_ECDSA_ECDH_ECDHE = 0x0002,
     /** Use of curve RESERVED_ID_ECC_ED_25519 */
@@ -732,7 +720,7 @@ typedef enum
     kSE05x_MoreIndicator_MORE = 0x02,
 } SE05x_MoreIndicator_t;
 
-#if SSS_HAVE_SE05X_VER_GTE_06_00
+#if SSS_HAVE_SE05X_VER_GTE_07_02
 /** Health check */
 typedef enum
 {
@@ -1117,7 +1105,6 @@ typedef enum
     kSE05x_AttestationAlgo_EC_SHA_384 = kSE05x_ECSignatureAlgo_SHA_384,
     kSE05x_AttestationAlgo_EC_SHA_512 = kSE05x_ECSignatureAlgo_SHA_512,
     kSE05x_AttestationAlgo_ED25519PURE_SHA_512 = kSE05x_EDSignatureAlgo_ED25519PURE_SHA_512,
-    kSE05x_AttestationAlgo_ECDAA = kSE05x_ECDAASignatureAlgo_ECDAA,
     kSE05x_AttestationAlgo_RSA_SHA1_PKCS1_PSS = kSE05x_RSASignatureAlgo_SHA1_PKCS1_PSS,
     kSE05x_AttestationAlgo_RSA_SHA224_PKCS1_PSS = kSE05x_RSASignatureAlgo_SHA224_PKCS1_PSS,
     kSE05x_AttestationAlgo_RSA_SHA256_PKCS1_PSS = kSE05x_RSASignatureAlgo_SHA256_PKCS1_PSS,

@@ -17,6 +17,9 @@
 #include <string.h>
 #include <limits.h>
 
+// Check the minor version for varient
+#define SE05X_CHECK_52F_VERSION(app_ver) ((((app_ver >> 8) & 0xFF) >= 0x10) && (((app_ver >> 8) & 0xFF) <= 0x1F))
+
 smStatus_t Se05x_API_CreateSession(
     pSe05xSession_t session_ctx, uint32_t authObjectID, uint8_t *sessionId, size_t *psessionIdLen)
 {
@@ -113,6 +116,11 @@ smStatus_t Se05x_API_CloseSession(pSe05xSession_t session_ctx)
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "CloseSession []");
 #endif /* VERBOSE_APDU_LOGS */
+
+    if (session_ctx == NULL) {
+        return retStatus;
+    }
+
     if (((session_ctx->value[0] || session_ctx->value[1] || session_ctx->value[2] || session_ctx->value[3] ||
             session_ctx->value[4] || session_ctx->value[5] || session_ctx->value[6] || session_ctx->value[7])) &&
         (session_ctx->hasSession == 1)) {
@@ -163,6 +171,7 @@ smStatus_t Se05x_API_SetLockState(pSe05xSession_t session_ctx, uint8_t lockIndic
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "SetLockState []");
+    nLog("APDU", NX_LEVEL_WARN, "SetLockState [] APDU causes NVM Writes");
 #endif /* VERBOSE_APDU_LOGS */
     tlvRet = TLVSET_U8("lock indicator", &pCmdbuf, &cmdbufLen, kSE05x_TAG_1, lockIndicator);
     if (0 != tlvRet) {
@@ -189,6 +198,7 @@ smStatus_t Se05x_API_SetPlatformSCPRequest(pSe05xSession_t session_ctx, SE05x_Pl
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "SetPlatformSCPRequest []");
+    nLog("APDU", NX_LEVEL_WARN, "SetPlatformSCPRequest [] APDU causes NVM Writes");
 #endif /* VERBOSE_APDU_LOGS */
     tlvRet = TLVSET_PlatformSCPRequest("platf scp req", &pCmdbuf, &cmdbufLen, kSE05x_TAG_1, platformSCPRequest);
     if (0 != tlvRet) {
@@ -211,6 +221,7 @@ smStatus_t Se05x_API_SetAppletFeatures(pSe05xSession_t session_ctx, pSe05xApplet
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "SetAppletFeatures []");
+    nLog("APDU", NX_LEVEL_WARN, "SetAppletFeatures [] APDU causes NVM Writes");
 #endif /* VERBOSE_APDU_LOGS */
     tlvRet = TLVSET_Variant(&pCmdbuf, &cmdbufLen, kSE05x_TAG_1, appletVariant);
     if (0 != tlvRet) {
@@ -235,7 +246,7 @@ smStatus_t Se05x_API_WriteECKey(pSe05xSession_t session_ctx,
     const SE05x_KeyPart_t key_part)
 {
     smStatus_t retStatus = SM_NOT_OK;
-    tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_WRITE | ins_type, kSE05x_P1_EC | key_part, kSE05x_P2_DEFAULT}};
+    tlvHeader_t hdr = {{kSE05x_CLA, kSE05x_INS_WRITE | ins_type, (uint8_t)kSE05x_P1_EC | key_part, kSE05x_P2_DEFAULT}};
     uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
     size_t cmdbufLen = 0;
     uint8_t *pCmdbuf = &cmdbuf[0];
@@ -244,13 +255,13 @@ smStatus_t Se05x_API_WriteECKey(pSe05xSession_t session_ctx,
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "WriteECKey []");
+    nLog("APDU", NX_LEVEL_WARN, "WriteECKey [] APDU causes NVM Writes");
 #endif /* VERBOSE_APDU_LOGS */
 
     if ((privKey == NULL) && (pubKey == NULL)) {
         if (key_part == kSE05x_KeyPart_Private) {
-            LOG_W(
-                "Private key generation is deprecated. This will be removed in next release. Use Key-Pair option to "
-                "generate the key");
+            LOG_E("Only Private Key cannot be generated. Use Key Pair option instead");
+            goto cleanup;
         }
     }
 
@@ -309,7 +320,7 @@ smStatus_t Se05x_API_WriteRSAKey(pSe05xSession_t session_ctx,
     const SE05x_RSAKeyFormat_t rsa_format)
 {
     smStatus_t retStatus = SM_NOT_OK;
-    tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_WRITE | ins_type, kSE05x_P1_RSA | key_part, rsa_format}};
+    tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_WRITE | ins_type, (uint8_t)kSE05x_P1_RSA | key_part, rsa_format}};
     uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
     size_t cmdbufLen = 0;
     uint8_t *pCmdbuf = &cmdbuf[0];
@@ -318,14 +329,14 @@ smStatus_t Se05x_API_WriteRSAKey(pSe05xSession_t session_ctx,
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "WriteRSAKey []");
+    nLog("APDU", NX_LEVEL_WARN, "WriteRSAKey [] causes NVM Writes");
 #endif /* VERBOSE_APDU_LOGS */
 
     if ((p == NULL) && (q == NULL) && (dp == NULL) && (dq == NULL) && (qInv == NULL) && (pubExp == NULL) &&
         (priv == NULL) && (pubMod == NULL)) {
         if (key_part == kSE05x_KeyPart_Private) {
-            LOG_W(
-                "Private key generation is deprecated. This will be removed in next release. Use Key-Pair option to "
-                "generate the key");
+            LOG_E("Only Private Key cannot be generated. Use Key Pair option instead");
+            goto cleanup;
         }
     }
 
@@ -399,6 +410,7 @@ smStatus_t Se05x_API_WriteSymmKey(pSe05xSession_t session_ctx,
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "WriteSymmKey []");
+    nLog("APDU", NX_LEVEL_WARN, "WriteSymmKey [] APDU causes NVM Writes");
 #endif /* VERBOSE_APDU_LOGS */
     tlvRet = TLVSET_Se05xPolicy("policy", &pCmdbuf, &cmdbufLen, kSE05x_TAG_POLICY, policy);
     if (0 != tlvRet) {
@@ -444,6 +456,7 @@ smStatus_t Se05x_API_WriteBinary(pSe05xSession_t session_ctx,
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "WriteBinary []");
+    nLog("APDU", NX_LEVEL_WARN, "WriteBinary [] APDU causes NVM Writes");
 #endif /* VERBOSE_APDU_LOGS */
     tlvRet = TLVSET_Se05xPolicy("policy", &pCmdbuf, &cmdbufLen, kSE05x_TAG_POLICY, policy);
     if (0 != tlvRet) {
@@ -489,6 +502,7 @@ smStatus_t Se05x_API_WriteUserID(pSe05xSession_t session_ctx,
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "WriteUserID []");
+    nLog("APDU", NX_LEVEL_WARN, "WriteUserID [] APDU causes NVM Writes");
 #endif /* VERBOSE_APDU_LOGS */
     tlvRet = TLVSET_Se05xPolicy("policy", &pCmdbuf, &cmdbufLen, kSE05x_TAG_POLICY, policy);
     if (0 != tlvRet) {
@@ -524,6 +538,7 @@ smStatus_t Se05x_API_CreateCounter(pSe05xSession_t session_ctx, pSe05xPolicy_t p
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "Se05x_API_CreateCounter []");
+    nLog("APDU", NX_LEVEL_WARN, "Se05x_API_CreateCounter [] APDU causes NVM Writes");
 #endif /* VERBOSE_APDU_LOGS */
     tlvRet = TLVSET_Se05xPolicy("policy", &pCmdbuf, &cmdbufLen, kSE05x_TAG_POLICY, policy);
     if (0 != tlvRet) {
@@ -641,6 +656,7 @@ smStatus_t Se05x_API_WritePCR_WithType(pSe05xSession_t session_ctx,
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "WritePCR []");
+    nLog("APDU", NX_LEVEL_WARN, "WritePCR [] APDU causes NVM Writes");
 #endif /* VERBOSE_APDU_LOGS */
     tlvRet = TLVSET_Se05xPolicy("policy", &pCmdbuf, &cmdbufLen, kSE05x_TAG_POLICY, policy);
     if (0 != tlvRet) {
@@ -718,6 +734,7 @@ smStatus_t Se05x_API_ImportExternalObject(pSe05xSession_t session_ctx,
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "ImportExternalObject []");
+    nLog("APDU", NX_LEVEL_WARN, "ImportExternalObject [] APDU causes NVM Writes");
 #endif /* VERBOSE_APDU_LOGS */
     tlvRet = TLVSET_u8buf("AuthData", &pCmdbuf, &cmdbufLen, kSE05x_TAG_IMPORT_AUTH_DATA, ECKeydata, ECKeydataLen);
     if (0 != tlvRet) {
@@ -1319,7 +1336,7 @@ smStatus_t Se05x_API_ReadType(pSe05xSession_t session_ctx,
     const SE05x_AttestationType_t attestation_type)
 {
     smStatus_t retStatus = SM_NOT_OK;
-    tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_READ | attestation_type, kSE05x_P1_DEFAULT, kSE05x_P2_TYPE}};
+    tlvHeader_t hdr = {{kSE05x_CLA, (uint8_t)kSE05x_INS_READ | attestation_type, kSE05x_P1_DEFAULT, kSE05x_P2_TYPE}};
     uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
     size_t cmdbufLen                       = 0;
     uint8_t *pCmdbuf                       = &cmdbuf[0];
@@ -1339,9 +1356,11 @@ smStatus_t Se05x_API_ReadType(pSe05xSession_t session_ctx,
     retStatus = DoAPDUTxRx_s_Case4(session_ctx, &hdr, cmdbuf, cmdbufLen, rspbuf, &rspbufLen);
     if (retStatus == SM_OK) {
         retStatus = SM_NOT_OK;
-        tlvRet    = tlvGet_SecureObjectType(pRspbuf, &rspIndex, rspbufLen, kSE05x_TAG_1, ptype); /* - */
-        if (0 != tlvRet) {
-            goto cleanup;
+        if (ptype != NULL) {
+            tlvRet = tlvGet_SecureObjectType(pRspbuf, &rspIndex, rspbufLen, kSE05x_TAG_1, ptype); /* - */
+            if (0 != tlvRet) {
+                goto cleanup;
+            }
         }
         tlvRet = tlvGet_U8(pRspbuf, &rspIndex, rspbufLen, kSE05x_TAG_2, pisTransient); /* - */
         if (0 != tlvRet) {
@@ -1469,9 +1488,11 @@ smStatus_t Se05x_API_CheckObjectExists(pSe05xSession_t session_ctx, uint32_t obj
     retStatus = DoAPDUTxRx_s_Case4(session_ctx, &hdr, cmdbuf, cmdbufLen, rspbuf, &rspbufLen);
     if (retStatus == SM_OK) {
         retStatus = SM_NOT_OK;
-        tlvRet    = tlvGet_Result(pRspbuf, &rspIndex, rspbufLen, kSE05x_TAG_1, presult); /* - */
-        if (0 != tlvRet) {
-            goto cleanup;
+        if (presult != NULL) {
+            tlvRet = tlvGet_Result(pRspbuf, &rspIndex, rspbufLen, kSE05x_TAG_1, presult); /* - */
+            if (0 != tlvRet) {
+                goto cleanup;
+            }
         }
         if ((rspIndex + 2) == rspbufLen) {
             retStatus = (smStatus_t)((pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]));
@@ -1494,6 +1515,7 @@ smStatus_t Se05x_API_DeleteSecureObject(pSe05xSession_t session_ctx, uint32_t ob
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "DeleteSecureObject []");
+    nLog("APDU", NX_LEVEL_WARN, "DeleteSecureObject [] APDU causes NVM Writes");
 #endif /* VERBOSE_APDU_LOGS */
     tlvRet = TLVSET_U32("object id", &pCmdbuf, &cmdbufLen, kSE05x_TAG_1, objectID);
     if (0 != tlvRet) {
@@ -1542,6 +1564,7 @@ smStatus_t Se05x_API_SetECCurveParam(pSe05xSession_t session_ctx,
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "SetECCurveParam []");
+    nLog("APDU", NX_LEVEL_WARN, "SetECCurveParam [] APDU causes NVM Writes");
 #endif /* VERBOSE_APDU_LOGS */
     tlvRet = TLVSET_ECCurve("curve id", &pCmdbuf, &cmdbufLen, kSE05x_TAG_1, curveID);
     if (0 != tlvRet) {
@@ -1639,6 +1662,7 @@ smStatus_t Se05x_API_DeleteECCurve(pSe05xSession_t session_ctx, SE05x_ECCurve_t 
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "DeleteECCurve []");
+    nLog("APDU", NX_LEVEL_WARN, "DeleteECCurve [] APDU causes NVM Writes");
 #endif /* VERBOSE_APDU_LOGS */
     tlvRet = TLVSET_ECCurve("curve id", &pCmdbuf, &cmdbufLen, kSE05x_TAG_1, curveID);
     if (0 != tlvRet) {
@@ -1664,6 +1688,7 @@ smStatus_t Se05x_API_CreateCryptoObject(pSe05xSession_t session_ctx,
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "CreateCryptoObject []");
+    nLog("APDU", NX_LEVEL_WARN, "CreateCryptoObject [] APDU causes NVM Writes");
 #endif /* VERBOSE_APDU_LOGS */
     tlvRet = TLVSET_CryptoObjectID("cryptoObjectID", &pCmdbuf, &cmdbufLen, kSE05x_TAG_1, cryptoObjectID);
     if (0 != tlvRet) {
@@ -1731,6 +1756,7 @@ smStatus_t Se05x_API_DeleteCryptoObject(pSe05xSession_t session_ctx, SE05x_Crypt
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "DeleteCryptoObject []");
+    nLog("APDU", NX_LEVEL_WARN, "DeleteCryptoObject [] APDU causes NVM Writes");
 #endif /* VERBOSE_APDU_LOGS */
     tlvRet = TLVSET_CryptoObjectID("cryptoObjectID", &pCmdbuf, &cmdbufLen, kSE05x_TAG_1, cryptoObjectID);
     if (0 != tlvRet) {
@@ -1841,123 +1867,6 @@ smStatus_t Se05x_API_EdDSASign(pSe05xSession_t session_ctx,
 cleanup:
     return retStatus;
 }
-
-#if SSS_HAVE_SE05X_VER_GTE_07_02
-smStatus_t Se05x_API_ECDAASign(pSe05xSession_t session_ctx,
-    uint32_t objectID,
-    SE05x_ECDAASignatureAlgo_t ecdaaSignAlgo,
-    const uint8_t *inputData,
-    size_t inputDataLen,
-    uint32_t randomObjectID,
-    uint8_t *signature,
-    size_t *psignatureLen)
-{
-    smStatus_t retStatus = SM_NOT_OK;
-    tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_CRYPTO, kSE05x_P1_SIGNATURE, kSE05x_P2_SIGN}};
-    uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
-    size_t cmdbufLen                       = 0;
-    uint8_t *pCmdbuf                       = &cmdbuf[0];
-    int tlvRet                             = 0;
-    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP] = {0};
-    uint8_t *pRspbuf                       = &rspbuf[0];
-    size_t rspbufLen                       = ARRAY_SIZE(rspbuf);
-    size_t rspIndex                        = 0;
-#if VERBOSE_APDU_LOGS
-    NEWLINE();
-    nLog("APDU", NX_LEVEL_DEBUG, "ECDAASign []");
-#endif /* VERBOSE_APDU_LOGS */
-    LOG_W("BARRETO NAEHRIG curve is deprecated. This will be removed in next release");
-    tlvRet = TLVSET_U32("objectID", &pCmdbuf, &cmdbufLen, kSE05x_TAG_1, objectID);
-    if (0 != tlvRet) {
-        goto cleanup;
-    }
-    tlvRet = TLVSET_ECDAASignatureAlgo("ecdaaSignAlgo", &pCmdbuf, &cmdbufLen, kSE05x_TAG_2, ecdaaSignAlgo);
-    if (0 != tlvRet) {
-        goto cleanup;
-    }
-    tlvRet = TLVSET_u8bufOptional("inputData", &pCmdbuf, &cmdbufLen, kSE05x_TAG_3, inputData, inputDataLen);
-    if (0 != tlvRet) {
-        goto cleanup;
-    }
-    tlvRet = TLVSET_U32("randomObjectID", &pCmdbuf, &cmdbufLen, kSE05x_TAG_4, randomObjectID);
-    if (0 != tlvRet) {
-        goto cleanup;
-    }
-    retStatus = DoAPDUTxRx_s_Case4(session_ctx, &hdr, cmdbuf, cmdbufLen, rspbuf, &rspbufLen);
-    if (retStatus == SM_OK) {
-        retStatus = SM_NOT_OK;
-        tlvRet    = tlvGet_u8buf(pRspbuf, &rspIndex, rspbufLen, kSE05x_TAG_1, signature, psignatureLen); /*  */
-        if (0 != tlvRet) {
-            goto cleanup;
-        }
-        if ((rspIndex + 2) == rspbufLen) {
-            retStatus = (smStatus_t)((pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]));
-        }
-    }
-
-cleanup:
-    return retStatus;
-}
-
-#else
-
-smStatus_t Se05x_API_ECDAASign(pSe05xSession_t session_ctx,
-    uint32_t objectID,
-    SE05x_ECDAASignatureAlgo_t ecdaaSignAlgo,
-    const uint8_t *inputData,
-    size_t inputDataLen,
-    const uint8_t *randomData,
-    size_t randomDataLen,
-    uint8_t *signature,
-    size_t *psignatureLen)
-{
-    smStatus_t retStatus = SM_NOT_OK;
-    tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_CRYPTO, kSE05x_P1_SIGNATURE, kSE05x_P2_SIGN}};
-    uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
-    size_t cmdbufLen                       = 0;
-    uint8_t *pCmdbuf                       = &cmdbuf[0];
-    int tlvRet                             = 0;
-    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP] = {0};
-    uint8_t *pRspbuf                       = &rspbuf[0];
-    size_t rspbufLen                       = ARRAY_SIZE(rspbuf);
-    size_t rspIndex                        = 0;
-#if VERBOSE_APDU_LOGS
-    NEWLINE();
-    nLog("APDU", NX_LEVEL_DEBUG, "ECDAASign []");
-#endif /* VERBOSE_APDU_LOGS */
-    LOG_W("BARRETO NAEHRIG curve is deprecated. This will be removed in next release");
-    tlvRet = TLVSET_U32("objectID", &pCmdbuf, &cmdbufLen, kSE05x_TAG_1, objectID);
-    if (0 != tlvRet) {
-        goto cleanup;
-    }
-    tlvRet = TLVSET_ECDAASignatureAlgo("ecdaaSignAlgo", &pCmdbuf, &cmdbufLen, kSE05x_TAG_2, ecdaaSignAlgo);
-    if (0 != tlvRet) {
-        goto cleanup;
-    }
-    tlvRet = TLVSET_u8bufOptional("inputData", &pCmdbuf, &cmdbufLen, kSE05x_TAG_3, inputData, inputDataLen);
-    if (0 != tlvRet) {
-        goto cleanup;
-    }
-    tlvRet = TLVSET_u8bufOptional("randomData", &pCmdbuf, &cmdbufLen, kSE05x_TAG_4, randomData, randomDataLen);
-    if (0 != tlvRet) {
-        goto cleanup;
-    }
-    retStatus = DoAPDUTxRx_s_Case4(session_ctx, &hdr, cmdbuf, cmdbufLen, rspbuf, &rspbufLen);
-    if (retStatus == SM_OK) {
-        retStatus = SM_NOT_OK;
-        tlvRet    = tlvGet_u8buf(pRspbuf, &rspIndex, rspbufLen, kSE05x_TAG_1, signature, psignatureLen); /*  */
-        if (0 != tlvRet) {
-            goto cleanup;
-        }
-        if ((rspIndex + 2) == rspbufLen) {
-            retStatus = (smStatus_t)((pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]));
-        }
-    }
-
-cleanup:
-    return retStatus;
-}
-#endif
 
 smStatus_t Se05x_API_ECDSAVerify(pSe05xSession_t session_ctx,
     uint32_t objectID,
@@ -2341,6 +2250,7 @@ smStatus_t Se05x_API_CipherInit(pSe05xSession_t session_ctx,
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "CipherInit []");
+    nLog("APDU", NX_LEVEL_WARN, "CipherInit [] APDU causes NVM Writes");
 #endif /* VERBOSE_APDU_LOGS */
     if (IVLen > UINT16_MAX) {
         goto cleanup;
@@ -2418,6 +2328,7 @@ smStatus_t Se05x_API_CipherUpdate(pSe05xSession_t session_ctx,
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "CipherUpdate []");
+    nLog("APDU", NX_LEVEL_WARN, "CipherUpdate [] APDU causes NVM Writes");
 #endif /* VERBOSE_APDU_LOGS */
     tlvRet = TLVSET_CryptoObjectID("cryptoObjectID", &pCmdbuf, &cmdbufLen, kSE05x_TAG_2, cryptoObjectID);
     if (0 != tlvRet) {
@@ -2463,6 +2374,7 @@ smStatus_t Se05x_API_CipherFinal(pSe05xSession_t session_ctx,
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "CipherFinal []");
+    nLog("APDU", NX_LEVEL_WARN, "CipherFinal [] APDU causes NVM Writes");
 #endif /* VERBOSE_APDU_LOGS */
     tlvRet = TLVSET_CryptoObjectID("cryptoObjectID", &pCmdbuf, &cmdbufLen, kSE05x_TAG_2, cryptoObjectID);
     if (0 != tlvRet) {
@@ -2593,6 +2505,7 @@ smStatus_t Se05x_API_MACInit(pSe05xSession_t session_ctx,
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "MACInit []");
+    nLog("APDU", NX_LEVEL_WARN, "MACInit [] APDU causes NVM Writes");
 #endif /* VERBOSE_APDU_LOGS */
     tlvRet = TLVSET_U32("objectID", &pCmdbuf, &cmdbufLen, kSE05x_TAG_1, objectID);
     if (0 != tlvRet) {
@@ -2621,6 +2534,7 @@ smStatus_t Se05x_API_MACUpdate(
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "MACUpdate []");
+    nLog("APDU", NX_LEVEL_WARN, "MACUpdate [] APDU causes NVM Writes");
 #endif /* VERBOSE_APDU_LOGS */
     tlvRet = TLVSET_u8bufOptional("inputData", &pCmdbuf, &cmdbufLen, kSE05x_TAG_1, inputData, inputDataLen);
     if (0 != tlvRet) {
@@ -2658,6 +2572,7 @@ smStatus_t Se05x_API_MACFinal(pSe05xSession_t session_ctx,
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "MACFinal []");
+    nLog("APDU", NX_LEVEL_WARN, "MACFinal [] APDU causes NVM Writes");
 #endif /* VERBOSE_APDU_LOGS */
     tlvRet = TLVSET_u8buf("inputData", &pCmdbuf, &cmdbufLen, kSE05x_TAG_1, inputData, inputDataLen);
     if (0 != tlvRet) {
@@ -2819,6 +2734,9 @@ smStatus_t Se05x_API_HKDF(pSe05xSession_t session_ctx,
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "HKDF []");
+    nLog("APDU",
+        NX_LEVEL_DEBUG,
+        "Se05x_API_HKDF [] APDU causes NVM Writes on the first occurence after selecting the applet");
 #endif /* VERBOSE_APDU_LOGS */
     tlvRet = TLVSET_U32("hmacID", &pCmdbuf, &cmdbufLen, kSE05x_TAG_1, hmacID);
     if (0 != tlvRet) {
@@ -2885,6 +2803,11 @@ smStatus_t Se05x_API_HKDF_Extended(pSe05xSession_t session_ctx,
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "HKDF []");
 #endif /* VERBOSE_APDU_LOGS */
+
+    if (session_ctx == NULL) {
+        return retStatus;
+    }
+
     tlvRet = TLVSET_U32("hmacID", &pCmdbuf, &cmdbufLen, kSE05x_TAG_1, hmacID);
     if (0 != tlvRet) {
         goto cleanup;
@@ -2893,10 +2816,12 @@ smStatus_t Se05x_API_HKDF_Extended(pSe05xSession_t session_ctx,
     if (0 != tlvRet) {
         goto cleanup;
     }
-    if ((salt != NULL) && (hkdfMode != kSE05x_HkdfMode_ExpandOnly)) {
-        tlvRet = TLVSET_u8bufOptional("salt", &pCmdbuf, &cmdbufLen, kSE05x_TAG_3, salt, saltLen);
-        if (0 != tlvRet) {
-            goto cleanup;
+    if ((salt != NULL)) {
+        if ((SE05X_CHECK_52F_VERSION(session_ctx->applet_version)) || (hkdfMode != kSE05x_HkdfMode_ExpandOnly)) {
+            tlvRet = TLVSET_u8bufOptional("salt", &pCmdbuf, &cmdbufLen, kSE05x_TAG_3, salt, saltLen);
+            if (0 != tlvRet) {
+                goto cleanup;
+            }
         }
     }
     tlvRet = TLVSET_u8bufOptional("info", &pCmdbuf, &cmdbufLen, kSE05x_TAG_4, info, infoLen);
@@ -2908,10 +2833,12 @@ smStatus_t Se05x_API_HKDF_Extended(pSe05xSession_t session_ctx,
         goto cleanup;
     }
     // Warning: TAGS must be in numerical order, so this cannot be the else statement of (salt != null)
-    if ((salt == NULL) && (hkdfMode != kSE05x_HkdfMode_ExpandOnly)) {
-        tlvRet = TLVSET_U32("saltID", &pCmdbuf, &cmdbufLen, kSE05x_TAG_6, saltID);
-        if (0 != tlvRet) {
-            goto cleanup;
+    if (salt == NULL) {
+        if ((SE05X_CHECK_52F_VERSION(session_ctx->applet_version)) || (hkdfMode != kSE05x_HkdfMode_ExpandOnly)) {
+            tlvRet = TLVSET_U32("saltID", &pCmdbuf, &cmdbufLen, kSE05x_TAG_6, saltID);
+            if (0 != tlvRet) {
+                goto cleanup;
+            }
         }
     }
     if (hkdfOuput == NULL) {
@@ -3662,6 +3589,7 @@ smStatus_t Se05x_API_DigestInit(pSe05xSession_t session_ctx, SE05x_CryptoObjectI
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "DigestInit []");
+    nLog("APDU", NX_LEVEL_DEBUG, "DigestInit [] APDU causes NVM Writes");
 #endif /* VERBOSE_APDU_LOGS */
     tlvRet = TLVSET_CryptoObjectID("cryptoObjectID", &pCmdbuf, &cmdbufLen, kSE05x_TAG_2, cryptoObjectID);
     if (0 != tlvRet) {
@@ -3685,6 +3613,7 @@ smStatus_t Se05x_API_DigestUpdate(
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "DigestUpdate []");
+    nLog("APDU", NX_LEVEL_WARN, "DigestUpdate [] APDU causes NVM Writes");
 #endif /* VERBOSE_APDU_LOGS */
     tlvRet = TLVSET_CryptoObjectID("cryptoObjectID", &pCmdbuf, &cmdbufLen, kSE05x_TAG_2, cryptoObjectID);
     if (0 != tlvRet) {
@@ -3720,6 +3649,7 @@ smStatus_t Se05x_API_DigestFinal(pSe05xSession_t session_ctx,
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "DigestFinal []");
+    nLog("APDU", NX_LEVEL_WARN, "DigestFinal [] APDU causes NVM Writes");
 #endif /* VERBOSE_APDU_LOGS */
     tlvRet = TLVSET_CryptoObjectID("cryptoObjectID", &pCmdbuf, &cmdbufLen, kSE05x_TAG_2, cryptoObjectID);
     if (0 != tlvRet) {
@@ -3852,7 +3782,7 @@ cleanup:
     return retStatus;
 }
 
-smStatus_t Se05x_API_GetFreeMemory(pSe05xSession_t session_ctx, SE05x_MemoryType_t memoryType, uint16_t *pfreeMem)
+smStatus_t Se05x_API_GetFreeMemory(pSe05xSession_t session_ctx, SE05x_MemoryType_t memoryType, uint32_t *pfreeMem)
 {
     smStatus_t retStatus = SM_NOT_OK;
     tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_MGMT, kSE05x_P1_DEFAULT, kSE05x_P2_MEMORY}};
@@ -3863,6 +3793,7 @@ smStatus_t Se05x_API_GetFreeMemory(pSe05xSession_t session_ctx, SE05x_MemoryType
     uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP] = {0};
     uint8_t *pRspbuf                       = &rspbuf[0];
     size_t rspbufLen                       = ARRAY_SIZE(rspbuf);
+    uint16_t freeMem                       = 0;
     size_t rspIndex                        = 0;
 #if VERBOSE_APDU_LOGS
     NEWLINE();
@@ -3875,9 +3806,22 @@ smStatus_t Se05x_API_GetFreeMemory(pSe05xSession_t session_ctx, SE05x_MemoryType
     retStatus = DoAPDUTxRx_s_Case4(session_ctx, &hdr, cmdbuf, cmdbufLen, rspbuf, &rspbufLen);
     if (retStatus == SM_OK) {
         retStatus = SM_NOT_OK;
-        tlvRet    = tlvGet_U16(pRspbuf, &rspIndex, rspbufLen, kSE05x_TAG_1, pfreeMem); /* - */
+        if (SE05X_CHECK_52F_VERSION(session_ctx->applet_version)) {
+            tlvRet = tlvGet_U32(pRspbuf, &rspIndex, rspbufLen, kSE05x_TAG_1, pfreeMem); /* - */
+        }
+        else {
+            tlvRet = tlvGet_U16(pRspbuf, &rspIndex, rspbufLen, kSE05x_TAG_1, &freeMem); /* - */
+        }
         if (0 != tlvRet) {
             goto cleanup;
+        }
+        if (!SE05X_CHECK_52F_VERSION(session_ctx->applet_version)) {
+            if (pfreeMem != NULL) {
+                *pfreeMem = freeMem;
+            }
+            else {
+                goto cleanup;
+            }
         }
         if ((rspIndex + 2) == rspbufLen) {
             retStatus = (smStatus_t)((pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]));
@@ -3934,6 +3878,7 @@ smStatus_t Se05x_API_DeleteAll(pSe05xSession_t session_ctx)
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "DeleteAll []");
+    nLog("APDU", NX_LEVEL_WARN, "DeleteAll [] APDU causes NVM Writes");
 #endif /* VERBOSE_APDU_LOGS */
     retStatus = DoAPDUTx_s_Case3(session_ctx, &hdr, cmdbuf, cmdbufLen);
     return retStatus;

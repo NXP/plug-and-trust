@@ -4,6 +4,8 @@
 * SPDX-License-Identifier: Apache-2.0
 */
 
+#if !defined(USE_THREADX_RTOS)
+
 #if defined(SSS_USE_FTR_FILE)
 #include "fsl_sss_ftr.h"
 #else
@@ -31,7 +33,7 @@
 #error "No hostcrypto"
 #endif // SSS_HAVE_HOSTCRYPTO_MBEDTLS
 
-#if SSS_HAVE_SE05X_VER_GTE_06_00
+#if SSS_HAVE_SE05X_VER_GTE_07_02
 #if defined(SE05X_MAX_BUF_SIZE_CMD) && (SE05X_MAX_BUF_SIZE_CMD != 1024)
 #   error "Expect hard coded for SE05X_MAX_BUF_SIZE_CMD = 1024"
 #endif
@@ -101,6 +103,7 @@ sss_status_t nxSCP03_Encrypt_CommandAPDU(NXSCP03_DynCtx_t *pdySCP03SessCtx, uint
         ENSURE_OR_GO_CLEANUP(sss_status == kStatus_SSS_Success);
         dataLen = *pCmdBufLen;
         LOG_D("Encrypt CommandAPDU");
+        pIv = (uint8_t *)iv;
         sss_status = sss_host_cipher_one_go(&symm, pIv, SCP_KEY_SIZE, apduPayloadToEncrypt, cmdBuf, dataLen);
         ENSURE_OR_GO_CLEANUP(sss_status == kStatus_SSS_Success);
         LOG_AU8_D(cmdBuf, dataLen);
@@ -450,3 +453,5 @@ static void nxSCP03_PadCommandAPDU(uint8_t *cmdBuf, size_t *pCmdBufLen)
 exit:
     return;
 }
+
+#endif /* USE_THREADX_RTOS */

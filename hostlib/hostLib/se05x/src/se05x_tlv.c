@@ -236,7 +236,12 @@ int tlvSet_u8buf_features(uint8_t **buf, size_t *bufLen, SE05x_TAG_t tag, pSe05x
 {
     uint8_t features[32] = {0};
     size_t features_size = 0;
-    features[0]          = (uint8_t)((appletVariant->variant >> 1 * 8) & 0xFF);
+
+    if (appletVariant == NULL) {
+        return 1;
+    }
+
+    features[0] = (uint8_t)((appletVariant->variant >> 1 * 8) & 0xFF);
     features_size++;
     features[1] = (uint8_t)((appletVariant->variant >> 0 * 8) & 0xFF);
     features_size++;
@@ -260,8 +265,10 @@ int tlvGet_U8(uint8_t *buf, size_t *pBufIndex, const size_t bufLen, SE05x_TAG_t 
     if (bufLen < 3) {
         goto cleanup;
     }
-
-    if ((*pBufIndex) > bufLen - 3) {
+    if ((*pBufIndex) > (bufLen - 3)) {
+        goto cleanup;
+    }
+    if (pRsp == NULL) {
         goto cleanup;
     }
 
@@ -326,7 +333,10 @@ int tlvGet_U16(uint8_t *buf, size_t *pBufIndex, const size_t bufLen, SE05x_TAG_t
     if (bufLen < 4) {
         goto cleanup;
     }
-    if ((*pBufIndex) > bufLen - 4) {
+    if ((*pBufIndex) > (bufLen - 4)) {
+        goto cleanup;
+    }
+    if (pRsp == NULL) {
         goto cleanup;
     }
 
@@ -341,6 +351,53 @@ int tlvGet_U16(uint8_t *buf, size_t *pBufIndex, const size_t bufLen, SE05x_TAG_t
     *pRsp = (*pBuf++) << 8;
     *pRsp |= *pBuf++;
     *pBufIndex += (1 + 1 + (rspLen));
+    retVal = 0;
+cleanup:
+    return retVal;
+}
+
+int tlvGet_U32(uint8_t *buf, size_t *pBufIndex, const size_t bufLen, SE05x_TAG_t tag, uint32_t *pRsp)
+{
+    int retVal    = 1;
+    uint8_t *pBuf = buf + (*pBufIndex);
+    uint8_t got_tag;
+    size_t rspLen;
+    uint8_t lenLen = 0;
+
+    if (bufLen < 4) {
+        goto cleanup;
+    }
+    if ((*pBufIndex) > (bufLen - 6)) {
+        goto cleanup;
+    }
+    if (pRsp == NULL) {
+        goto cleanup;
+    }
+
+    got_tag = *pBuf++;
+    if (got_tag != tag) {
+        goto cleanup;
+    }
+    rspLen = *pBuf++;
+    if (rspLen & 0x80) {
+        if ((*pBufIndex) > (bufLen - 8)) {
+            goto cleanup;
+        }
+        lenLen = rspLen & 0x7F;
+        if (lenLen != 2) {
+            goto cleanup;
+        }
+        rspLen = (*pBuf++) << (8 * 1);
+        rspLen = rspLen + (*pBuf++);
+    }
+    if (rspLen > 4) {
+        goto cleanup;
+    }
+    *pRsp = (*pBuf++) << (8 * 3);
+    *pRsp |= (*pBuf++) << (8 * 2);
+    *pRsp |= (*pBuf++) << (8 * 1);
+    *pRsp |= *pBuf++;
+    *pBufIndex += (1 + 1 + 2 + (rspLen));
     retVal = 0;
 cleanup:
     return retVal;
@@ -366,7 +423,7 @@ int tlvGet_u8buf(uint8_t *buf, size_t *pBufIndex, const size_t bufLen, SE05x_TAG
     if (bufLen < 2) {
         goto cleanup;
     }
-    if ((*pBufIndex) > bufLen - 2 /* Tag + len */) {
+    if ((*pBufIndex) > (bufLen - 2) /* Tag + len */) {
         goto cleanup;
     }
 
@@ -381,14 +438,14 @@ int tlvGet_u8buf(uint8_t *buf, size_t *pBufIndex, const size_t bufLen, SE05x_TAG
         *pBufIndex += (1 + 1);
     }
     else if (rspLen == 0x81) {
-        if ((*pBufIndex) > bufLen - 3 /* Ext len */) {
+        if ((*pBufIndex) > (bufLen - 3) /* Ext len */) {
             goto cleanup;
         }
         extendedLen = *pBuf++;
         *pBufIndex += (1 + 1 + 1);
     }
     else if (rspLen == 0x82) {
-        if ((*pBufIndex) > bufLen - 4 /* Ext len */) {
+        if ((*pBufIndex) > (bufLen - 4) /* Ext len */) {
             goto cleanup;
         }
         extendedLen = *pBuf++;
@@ -432,7 +489,7 @@ int tlvGet_ValueIndex(uint8_t *buf, size_t *pBufIndex, const size_t bufLen, SE05
     if (bufLen < 2) {
         goto cleanup;
     }
-    if ((*pBufIndex) > bufLen - 2 /* Tag + len */) {
+    if ((*pBufIndex) > (bufLen - 2) /* Tag + len */) {
         goto cleanup;
     }
     got_tag = *pBuf++;
@@ -446,14 +503,14 @@ int tlvGet_ValueIndex(uint8_t *buf, size_t *pBufIndex, const size_t bufLen, SE05
         *pBufIndex += (1 + 1);
     }
     else if (rspLen == 0x81) {
-        if ((*pBufIndex) > bufLen - 3 /* Ext len */) {
+        if ((*pBufIndex) > (bufLen - 3) /* Ext len */) {
             goto cleanup;
         }
         extendedLen = *pBuf++;
         *pBufIndex += (1 + 1 + 1);
     }
     else if (rspLen == 0x82) {
-        if ((*pBufIndex) > bufLen - 4 /* Ext len */) {
+        if ((*pBufIndex) > (bufLen - 4) /* Ext len */) {
             goto cleanup;
         }
         extendedLen = *pBuf++;
@@ -489,6 +546,11 @@ smStatus_t DoAPDUTx_s_Case3(Se05xSession_t *pSessionCtx, const tlvHeader_t *hdr,
     uint8_t rxBuf[SE05X_TLV_BUF_SIZE_RSP + 2] = {0};
     size_t rxBufLen                           = sizeof(rxBuf);
     smStatus_t apduStatus                     = SM_NOT_OK;
+
+    if (pSessionCtx == NULL) {
+        return apduStatus;
+    }
+
     if (pSessionCtx->fp_TXn == NULL) {
         apduStatus = SM_NOT_OK;
     }
@@ -506,6 +568,11 @@ smStatus_t DoAPDUTxRx_s_Case2(Se05xSession_t *pSessionCtx,
     size_t *pRspBufLen)
 {
     smStatus_t apduStatus;
+
+    if (pSessionCtx == NULL) {
+        return SM_NOT_OK;
+    }
+
     if (pSessionCtx->fp_TXn == NULL) {
         apduStatus = SM_NOT_OK;
     }
@@ -523,6 +590,11 @@ smStatus_t DoAPDUTxRx_s_Case4(Se05xSession_t *pSessionCtx,
     size_t *pRspBufLen)
 {
     smStatus_t apduStatus;
+
+    if (pSessionCtx == NULL) {
+        return SM_NOT_OK;
+    }
+
     if (pSessionCtx->fp_TXn == NULL) {
         apduStatus = SM_NOT_OK;
     }
@@ -540,6 +612,11 @@ smStatus_t DoAPDUTxRx_s_Case4_ext(Se05xSession_t *pSessionCtx,
     size_t *pRspBufLen)
 {
     smStatus_t apduStatus = SM_NOT_OK;
+
+    if (pSessionCtx == NULL) {
+        return apduStatus;
+    }
+
     if (pSessionCtx->fp_TXn == NULL) {
         apduStatus = SM_NOT_OK;
     }
@@ -721,10 +798,11 @@ smStatus_t se05x_DeCrypt(
     AX_UNUSED_ARG(hasle);
 
     if (*rspLength >= 2) {
-        rv = rsp[(*rspLength) - 2] << 8 | rsp[(*rspLength) - 1];
+        rv = (smStatus_t)(rsp[(*rspLength) - 2] << 8 | rsp[(*rspLength) - 1]);
         if ((rv == SM_OK) && (pSessionCtx->pdynScp03Ctx != NULL)) {
 #if SSS_HAVE_SCP_SCP03_SSS
-            rv = nxpSCP03_Decrypt_ResponseAPDU(pSessionCtx->pdynScp03Ctx, cmd_cmacLen, rsp, rspLength, hasle);
+            rv = (smStatus_t)nxpSCP03_Decrypt_ResponseAPDU(
+                pSessionCtx->pdynScp03Ctx, cmd_cmacLen, rsp, rspLength, hasle);
 #else
             LOG_W("Decrypting without SSS_HAVE_SCP_SCP03_SSS");
             rv = SM_NOT_OK;

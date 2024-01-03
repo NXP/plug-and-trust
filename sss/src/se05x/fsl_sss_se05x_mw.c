@@ -113,7 +113,7 @@ uint32_t se05x_sssKeyTypeLenToCurveId(sss_cipher_type_t cipherType, size_t keyBi
     case kSSS_CipherType_EC_MONTGOMERY: {
         SE05x_ECCurve_t eCurveID;
         switch (keyBits) {
-#if SSS_HAVE_SE05X_VER_GTE_06_00
+#if SSS_HAVE_SE05X_VER_GTE_07_02
         case 448:
             eCurveID = kSE05x_ECCurve_RESERVED_ID_ECC_MONT_DH_448;
             break;
@@ -134,20 +134,6 @@ uint32_t se05x_sssKeyTypeLenToCurveId(sss_cipher_type_t cipherType, size_t keyBi
         switch (keyBits) {
         case 256:
             eCurveID = kSE05x_ECCurve_RESERVED_ID_ECC_ED_25519;
-            break;
-        default:
-            eCurveID = kSE05x_ECCurve_NA;
-        }
-        u32_curve_id = (uint32_t)eCurveID;
-        break;
-    }
-#endif
-#if SSS_HAVE_TPM_BN
-    case kSSS_CipherType_EC_BARRETO_NAEHRIG: {
-        SE05x_ECCurve_t eCurveID;
-        switch (keyBits) {
-        case 256:
-            eCurveID = kSE05x_ECCurve_TPM_ECC_BN_P256;
             break;
         default:
             eCurveID = kSE05x_ECCurve_NA;
@@ -312,7 +298,7 @@ smStatus_t Se05x_i2c_master_txn(sss_session_t *sess, SE05x_I2CM_cmd_t *p, uint8_
             if (*rspTag == kSE05x_I2CM_StructuralIssue) {
                 // Modify TLV type of command to report back error
                 p[iCnt].type                  = kSE05x_I2CM_StructuralIssue;
-                p[iCnt].cmd.issue.issueStatus = rspbuffer[rspPos];
+                p[iCnt].cmd.issue.issueStatus = (SE05x_I2CM_status_t)rspbuffer[rspPos];
                 break;
             }
             else if (p[iCnt].type == kSE05x_I2CM_Configure) {
@@ -321,7 +307,7 @@ smStatus_t Se05x_i2c_master_txn(sss_session_t *sess, SE05x_I2CM_cmd_t *p, uint8_
                     LOG_W("Response out-of-order");
                     break;
                 }
-                p[iCnt].cmd.cfg.status = rspbuffer[rspPos];
+                p[iCnt].cmd.cfg.status = (SE05x_I2CM_status_t)rspbuffer[rspPos];
             }
             //else if (p[iCnt].type == kSE05x_I2CM_Security) {
             //}
@@ -331,7 +317,7 @@ smStatus_t Se05x_i2c_master_txn(sss_session_t *sess, SE05x_I2CM_cmd_t *p, uint8_
                     LOG_W("Response out-of-order");
                     break;
                 }
-                p[iCnt].cmd.w.wrStatus = rspbuffer[rspPos];
+                p[iCnt].cmd.w.wrStatus = (SE05x_I2CM_status_t)rspbuffer[rspPos];
             }
             else if (p[iCnt].type == kSE05x_I2CM_Read) {
                 // Check whether response is in expected order
@@ -339,7 +325,7 @@ smStatus_t Se05x_i2c_master_txn(sss_session_t *sess, SE05x_I2CM_cmd_t *p, uint8_
                     LOG_W("Response out-of-order");
                     break;
                 }
-                p[iCnt].cmd.rd.rdStatus = rspbuffer[rspPos];
+                p[iCnt].cmd.rd.rdStatus = (SE05x_I2CM_status_t)rspbuffer[rspPos];
                 if (p[iCnt].cmd.rd.rdStatus == kSE05x_I2CM_Success) {
                     // Receiving less data than requested is not considered an error
                     uint16_t reportedRead = (rspbuffer[rspPos + 1] << 8) + rspbuffer[rspPos + 2];
@@ -515,7 +501,7 @@ smStatus_t Se05x_i2c_master_attst_txn(sss_session_t *sess,
                 ENSURE_OR_GO_CLEANUP(*rspbufferLen > rspPos);
                 /* Modify TLV type of command to report back error */
                 p[iCnt].type                  = kSE05x_I2CM_StructuralIssue;
-                p[iCnt].cmd.issue.issueStatus = rspbuffer[rspPos];
+                p[iCnt].cmd.issue.issueStatus = (SE05x_I2CM_status_t)rspbuffer[rspPos];
                 break;
             }
             else if (p[iCnt].type == kSE05x_I2CM_Configure) {

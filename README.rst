@@ -158,11 +158,9 @@ PTMW_SE05X_Ver
     SE05X Applet version.
 
     Selection of Applet version 03_XX enables SE050 features.
-    Selection of Applet version 06_00 and 07_00 enables SE051 features.
+    Selection of Applet version 07_00 enables SE051 features.
 
     ``-DPTMW_SE05X_Ver=03_XX``: SE050
-
-    ``-DPTMW_SE05X_Ver=06_00``: SE051
 
     ``-DPTMW_SE05X_Ver=07_02``: SE051
 
@@ -173,9 +171,7 @@ PTMW_HostCrypto
     Counterpart Crypto on Host
 
     What is being used as a cryptographic library on the host.
-    As of now only OpenSSL / mbedTLS is supported
-
-    ``-DPTMW_HostCrypto=MBEDTLS``: Use mbedTLS as host crypto
+    As of now only OpenSSL is supported
 
     ``-DPTMW_HostCrypto=OPENSSL``: Use OpenSSL as host crypto
 
@@ -189,7 +185,7 @@ PTMW_SE05X_Auth
 
     This settings is used by examples to connect using various options
     to authenticate with the Applet.
-    Make sure you set PTMW_HostCrypto to Openssl / Mbedtls to use any Authentication.
+    Make sure you set PTMW_HostCrypto to Openssl to use any Authentication.
 
     ``-DPTMW_SE05X_Auth=None``: Use the default session (i.e. session less) login
 

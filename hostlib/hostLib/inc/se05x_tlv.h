@@ -328,24 +328,38 @@ typedef Se05xPolicy_t *pSe05xPolicy_t;
     tlvSet_ECCurve(PBUF, PBUFLEN, TAG, VALUE);                 \
     DO_LOG_V(TAG, DESCRIPTION, VALUE)
 
+/** See @ref TLVSET_U8 */
 #define TLVSET_ECCurveParam TLVSET_U8
-#define TLVSET_ECDAASignatureAlgo TLVSET_U8
+/** See @ref TLVSET_U8 */
 #define TLVSET_ECSignatureAlgo TLVSET_U8
+/** See @ref TLVSET_U8 */
 #define TLVSET_EDSignatureAlgo TLVSET_U8
+/** See @ref TLVSET_U8 */
 #define TLVSET_MacOperation TLVSET_U8
+/** See @ref TLVSET_U8 */
 #define TLVSET_RSAEncryptionAlgo TLVSET_U8
+/** See @ref TLVSET_U8 */
 #define TLVSET_RSAKeyComponent TLVSET_U8
+/** See @ref TLVSET_U8 */
 #define TLVSET_RSASignatureAlgo TLVSET_U8
+/** See @ref TLVSET_U8 */
 #define TLVSET_DigestMode TLVSET_U8
+/** See @ref TLVSET_U8 */
 #define TLVSET_Variant tlvSet_u8buf_features
+/** See @ref TLVSET_U8 */
 #define TLVSET_RSAPubKeyComp TLVSET_U8
+/** See @ref TLVSET_U8 */
 #define TLVSET_PlatformSCPRequest TLVSET_U8
+/** See @ref TLVSET_U8 */
 #define TLVSET_MemoryType TLVSET_U8
 
+/** See @ref TLVSET_U8 */
 #define TLVSET_CryptoContext TLVSET_U8
+/** See @ref TLVSET_U8 */
 #define TLVSET_CryptoModeSubType(DESCRIPTION, PBUF, PBUFLEN, TAG, VALUE) \
     TLVSET_U8(DESCRIPTION, PBUF, PBUFLEN, TAG, ((VALUE).union_8bit))
 
+/** See @ref TLVSET_U16 */
 #define TLVSET_CryptoObjectID TLVSET_U16
 
 // #define TLVSET_pVoid(DESCRIPTION, PBUF, PBUFLEN, TAG, VALUE) (0)

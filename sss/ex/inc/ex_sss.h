@@ -19,18 +19,11 @@
 
 #include <fsl_sss_api.h>
 
-#if SSS_HAVE_APPLET_A71CH || SSS_HAVE_APPLET_A71CH_SIM
-#include <fsl_sscp_a71ch.h>
-#endif
 #if SSS_HAVE_HOSTCRYPTO_MBEDTLS
 #include <fsl_sss_mbedtls_apis.h>
 #endif
 #if SSS_HAVE_HOSTCRYPTO_OPENSSL
 #include <fsl_sss_openssl_apis.h>
-#endif
-
-#if SSS_HAVE_SSCP
-#include <fsl_sss_sscp.h>
 #endif
 
 /* ************************************************************************** */
@@ -44,6 +37,39 @@
 /* ************************************************************************** */
 /* Structrues and Typedefs                                                    */
 /* ************************************************************************** */
+
+#if 0
+typedef struct
+{
+    sss_session_t currentSession;
+
+    sss_key_store_t ks;
+
+    sss_sscp_session_t *sscp_session;
+
+    sscp_context_t sscp;
+    sss_asymmetric_t asymVerifyCtx;
+    sss_asymmetric_t asymm;
+    sss_object_t keyPair;
+    sss_object_t extPubkey;
+
+    sss_object_t Device_Cert;
+    sss_object_t Pubkey;
+    sss_object_t interCaCert;
+    sss_object_t interkeyPair;
+    sss_object_t clientCert;
+#if SSS_HAVE_APPLET_SE05X_IOT
+    sss_session_t hostSession;
+    sss_key_store_t hostKs;
+    sss_object_t hostKey;
+#endif
+    sss_symmetric_t symm;
+    sss_rng_context_t rng;
+    sss_mac_t mac;
+
+} sss_ex_ctx_t;
+
+#endif
 
 /* ************************************************************************** */
 /* Global Variables                                                           */
