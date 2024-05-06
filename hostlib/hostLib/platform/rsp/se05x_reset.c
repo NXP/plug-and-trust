@@ -12,7 +12,9 @@
 #include "ax_reset.h"
 #include "se05x_apis.h"
 
-#define EN_PIN 22
+#ifndef SE050_EN_PIN
+#define SE050_EN_PIN 22
+#endif
 
 void axReset_HostConfigure()
 {
@@ -25,7 +27,7 @@ void axReset_HostConfigure()
         return;
     }
     /* Export GPIO pin to toggle */
-    if (snprintf(buf, sizeof(buf), "%d", EN_PIN) < 0) {
+    if (snprintf(buf, sizeof(buf), "%d", SE050_EN_PIN) < 0) {
         perror("snprintf failed");
         return;
     }
@@ -36,7 +38,7 @@ void axReset_HostConfigure()
     close(fd);
 
     /* Open direction file to configure GPIO direction */
-    if (snprintf(buf, sizeof(buf), "/sys/class/gpio/gpio%d/direction", EN_PIN) < 0) {
+    if (snprintf(buf, sizeof(buf), "/sys/class/gpio/gpio%d/direction", SE050_EN_PIN) < 0) {
         perror("snprintf failed");
         return;
     }
@@ -72,7 +74,7 @@ void axReset_HostUnconfigure()
         return;
     }
 
-    if (snprintf(buf, sizeof(buf), "%d", EN_PIN) < 0) {
+    if (snprintf(buf, sizeof(buf), "%d", SE050_EN_PIN) < 0) {
         perror("snprintf error");
         return;
     }
@@ -107,7 +109,7 @@ void axReset_PowerDown()
     int fd;
     char buf[50];
     char logic[10];
-    if (snprintf(buf, sizeof(buf), "/sys/class/gpio/gpio%d/value", EN_PIN) < 0) {
+    if (snprintf(buf, sizeof(buf), "/sys/class/gpio/gpio%d/value", SE050_EN_PIN) < 0) {
         perror("snprintf failed");
         return;
     }
@@ -140,7 +142,7 @@ void axReset_PowerUp()
     int fd;
     char buf[50];
     char logic[10];
-    if (snprintf(buf, sizeof(buf), "/sys/class/gpio/gpio%d/value", EN_PIN) < 0) {
+    if (snprintf(buf, sizeof(buf), "/sys/class/gpio/gpio%d/value", SE050_EN_PIN) < 0) {
         perror("snprintf failed");
         return;
     }
