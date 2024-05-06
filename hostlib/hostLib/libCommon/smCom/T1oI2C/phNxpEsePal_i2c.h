@@ -1,17 +1,7 @@
 /*
- * Copyright 2010-2014,2018-2020,2023 NXP
+ * Copyright 2010-2014,2018-2020,2023-2024 NXP
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
  /**
@@ -29,26 +19,22 @@
  * \brief ESE Poll timeout (min 1 miliseconds)
  */
 #define ESE_POLL_DELAY_MS (1)
+
 /*!
  * \brief ESE Poll timeout.
- * As Max WTX timeout is 1sec, select ESE_NAD_POLLING_MAX count in such a way that WTX request frm SE is not skiped
+ * As Max WTX timeout is 1sec, select ESE_NAD_POLLING_MAX count in such a way that WTX request frm SE is not skiped.
  * select target value is 2 sec.
  *
  * Note: Here ESE_NAD_POLLING_MAX is depend on platform, If i2c driver does not have backoff delay implemented,
- * then set ESE_NAD_POLLING_MAX value to >=300
+ * then set ESE_NAD_POLLING_MAX value to higher value.
  *
  */
-#if AX_EMBEDDED //back off delay is implemented for AX_EMBEDDED devices
-  /*TODO:semslite need more than 20 polling count right now max is set to 60 as 46 was the max sof counter observed
-   SIMW-2927*/
-#if defined(LPC_55x) || defined(IMX_RT)
-  #define ESE_NAD_POLLING_MAX (2*250)
- #else
+#if defined(QN9090DK6)
   #define ESE_NAD_POLLING_MAX (2*30)
-#endif
 #else
-  #define ESE_NAD_POLLING_MAX (2*250)
+  #define ESE_NAD_POLLING_MAX (30)  // With backoff delay implementation, this will have the read duration of ~20 seconds.
 #endif
+
 /*!
  * \brief Max retry count for Write
  */

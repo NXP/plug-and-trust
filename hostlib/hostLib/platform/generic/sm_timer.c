@@ -1,7 +1,7 @@
 /*
  *
- * Copyright 2017 NXP
- * SPDX-License-Identifier: Apache-2.0
+ * Copyright 2017,2024 NXP
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 /**

@@ -1,7 +1,7 @@
 /*
 *
-* Copyright 2019,2020 NXP
-* SPDX-License-Identifier: Apache-2.0
+* Copyright 2019,2020,2024 NXP
+* SPDX-License-Identifier: BSD-3-Clause
 */
 
 #ifndef SE05X_TLV_H_INC
@@ -127,6 +127,7 @@ typedef struct Se05xSession
     SE_AuthType_t authType;
     /** auth ID associated with session*/
     uint32_t auth_id;
+    uint8_t logical_channel;
     /** Meta Funciton
      *
      * Internall first calls fp_Transform

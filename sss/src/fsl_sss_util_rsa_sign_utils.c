@@ -1,40 +1,6 @@
 /*
-*  The RSA public-key cryptosystem
-*
-*  Copyright (C) 2006-2015, ARM Limited, All Rights Reserved
-*  Copyright 2019,2020 NXP, All Rights Reserved
-*  SPDX-License-Identifier: Apache-2.0
-*
-*  Licensed under the Apache License, Version 2.0 (the "License"); you may
-*  not use this file except in compliance with the License.
-*  You may obtain a copy of the License at
-*
-*  http://www.apache.org/licenses/LICENSE-2.0
-*
-*  Unless required by applicable law or agreed to in writing, software
-*  distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-*  WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-*  See the License for the specific language governing permissions and
-*  limitations under the License.
-*
-*  This file is part of mbed TLS (https://tls.mbed.org)
-*/
-
-/*
-*  The following sources were referenced in the design of this implementation
-*  of the RSA algorithm:
-*
-*  [1] A method for obtaining digital signatures and public-key cryptosystems
-*      R Rivest, A Shamir, and L Adleman
-*      http://people.csail.mit.edu/rivest/pubs.html#RSA78
-*
-*  [2] Handbook of Applied Cryptography - 1997, Chapter 8
-*      Menezes, van Oorschot and Vanstone
-*
-*  [3] Malware Guard Extension: Using SGX to Conceal Cache Attacks
-*      Michael Schwarz, Samuel Weiser, Daniel Gruss, Clementine Maurice and
-*      Stefan Mangard
-*      https://arxiv.org/abs/1702.08719v2
+* Copyright 2024 NXP
+* SPDX-License-Identifier: BSD-3-Clause
 *
 */
 
@@ -56,18 +22,18 @@
 #include "se05x_APDU.h"
 
 /*
-* Return:  0-Success, 1-Error, 2-ThroughPut error
+* Return:  SM_OK (0x9000): Success, SM_NOT_OK (0xFFFF): Error, SM_ERR_APDU_THROUGHPUT (0x66A6): ThroughPut error
 */
-uint8_t pkcs1_v15_encode(
-    sss_se05x_asymmetric_t *context, const uint8_t *hash, size_t hashlen, uint8_t *out, size_t *outLen)
+smStatus_t pkcs1_v15_encode(
+    sss_se05x_asymmetric_t *context, const uint8_t *hash, size_t hash_len, uint8_t *out, size_t *out_len)
 {
     size_t oid_size  = 0;
-    size_t nb_pad    = 0;
-    unsigned char *p = out;
+    size_t pad_len    = 0;
+    unsigned char *out_ptr = out;
     /* clang-format off */
-    unsigned char oid1[16] = { 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, };
+    unsigned char oid[16] = { 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, };
     /* clang-format on */
-    size_t outlength        = 0;
+    size_t out_length        = 0;
     uint16_t key_size_bytes = 0;
     smStatus_t ret_val      = SM_NOT_OK;
 
@@ -82,96 +48,97 @@ uint8_t pkcs1_v15_encode(
     ret_val = Se05x_API_ReadSize(&context->session->s_ctx, context->keyObject->keyId, &key_size_bytes);
     if (ret_val != SM_OK) {
         if (ret_val == SM_ERR_APDU_THROUGHPUT) {
-            return 2;
+            return SM_ERR_APDU_THROUGHPUT;
         }
         else {
-            return 1;
+            return SM_NOT_OK;
         }
     }
 
-    outlength = key_size_bytes;
-    nb_pad    = outlength;
+    out_length = key_size_bytes;
+    pad_len    = out_length;
 
     switch (context->algorithm) {
     case kAlgorithm_SSS_RSASSA_PKCS1_V1_5_SHA1:
-        oid1[0]  = 0x2b;
-        oid1[1]  = 0x0e;
-        oid1[2]  = 0x03;
-        oid1[3]  = 0x02;
-        oid1[4]  = 0x1a;
+        oid[0]  = 0x2B;
+        oid[1]  = 0x0E;
+        oid[2]  = 0x03;
+        oid[3]  = 0x02;
+        oid[4]  = 0x1A;
         oid_size = 5;
         break;
     case kAlgorithm_SSS_RSASSA_PKCS1_V1_5_SHA224:
-        oid1[8]  = 0x04;
+        oid[8]  = 0x04;
         oid_size = 9;
         break;
     case kAlgorithm_SSS_RSASSA_PKCS1_V1_5_SHA256:
-        oid1[8]  = 0x01;
+        oid[8]  = 0x01;
         oid_size = 9;
         break;
     case kAlgorithm_SSS_RSASSA_PKCS1_V1_5_SHA384:
-        oid1[8]  = 0x02;
+        oid[8]  = 0x02;
         oid_size = 9;
         break;
     case kAlgorithm_SSS_RSASSA_PKCS1_V1_5_SHA512:
-        oid1[8]  = 0x03;
+        oid[8]  = 0x03;
         oid_size = 9;
         break;
     default:
-        return 1;
+        return SM_NOT_OK;
     }
 
-    if (outlength < (hashlen + oid_size + 6 /* DigestInfo TLV overhead */)) {
+    if (out_length < (hash_len + oid_size + 6 /* DigestInfo TLV overhead */)) {
         LOG_E("Intended encoded message length too short");
-        return 1;
+        return SM_NOT_OK;
     }
 
-    if (*outLen < outlength) {
+    if (*out_len < out_length) {
         LOG_E("Out buffer memory is less ");
-        return 1;
+        return SM_NOT_OK;
     }
-    *outLen = outlength;
+    *out_len = out_length;
 
-    /* Double-check that 8 + hashlen + oid_size can be used as a
-        * 1-byte ASN.1 length encoding and that there's no overflow. */
-    if (8 + hashlen + oid_size >= 0x80) {
-        return 1;
+    /* Check if 1-byte ASN.1 length encoding can be used to
+        * represent 8 + hash_len + oid_size without overflow. */
+    if (8 + hash_len + oid_size >= 0x80) {
+        return SM_NOT_OK;
     }
 
     /*
-        * Static bounds check:
-        * - Need 10 bytes for five tag-length pairs.
-        *   (Insist on 1-byte length encodings to protect against variants of
-        *    Bleichenbacher's forgery attack against lax PKCS#1v1.5 verification)
-        * - Need hashlen bytes for hash
-        * - Need oid_size bytes for hash alg OID.
+        * Check if following can be accomodated:
+        * - 5 tag-length pairs (5 * 2 = 10 Bytes)
+        *   (To protect against variants of Bleichenbacher's forgery attack
+        *    against lax PKCS#1v1.5 verification,  1-Byte length encoding is used)
+        * - For hash, hash_len number of bytes
+        * - For hash algorithm, oid_size number of bytes
         */
-    if (hashlen > (SIZE_MAX - (10 + oid_size))) {
-        return 1;
+    if (hash_len > (SIZE_MAX - (10 + oid_size))) {
+        return SM_NOT_OK;
     }
-    if (nb_pad < 10 + hashlen + oid_size) {
-        return 1;
+    if (pad_len < 10 + hash_len + oid_size) {
+        return SM_NOT_OK;
     }
-    nb_pad -= 10 + hashlen + oid_size;
+    pad_len -= 10 + hash_len + oid_size;
 
-    /* Need space for signature header and padding delimiter (3 bytes),
-        * and 8 bytes for the minimal padding */
-    if (nb_pad < 3 + 8) {
-        return 1;
+    /* 3 Bytes (signature header) + 8 Bytes (minimal padding)*/
+    if (pad_len < 3 + 8) {
+        return SM_NOT_OK;
     }
-    nb_pad -= 3;
+    pad_len -= 3;
 
-    /* Now nb_pad is the amount of memory to be filled
+    /* Now pad_len is the amount of memory to be filled
         * with padding, and at least 8 bytes long. */
 
     /* Write signature header and padding */
-    *p++ = 0;
-    *p++ = RSA_Sign;
-    memset(p, 0xFF, nb_pad);
-    p += nb_pad;
-    *p++ = 0;
+    *out_ptr++ = 0;
+    *out_ptr++ = RSA_Sign;
+    memset(out_ptr, 0xFF, pad_len);
+    out_ptr += pad_len;
+    *out_ptr++ = 0;
 
     /* Signing hashed data, add corresponding ASN.1 structure
+        *
+        * Reference: PKCS #1: RSA Cryptography Specifications Version 2.2: Section 9.2.  EMSA-PKCS1-v1_5
         *
         * DigestInfo ::= SEQUENCE {
         *   digestAlgorithm DigestAlgorithmIdentifier,
@@ -180,46 +147,51 @@ uint8_t pkcs1_v15_encode(
         * Digest ::= OCTET STRING
         *
         * Schematic:
-        * TAG-SEQ + LEN [ TAG-SEQ + LEN [ TAG-OID  + LEN [ OID  ]
-        *                                 TAG-NULL + LEN [ NULL ] ]
-        *                 TAG-OCTET + LEN [ HASH ] ]
+        * TAG_SEQ +
+        * LEN [ TAG_SEQ + LEN [ TAG_OID  + LEN [ OID  ]
+        *                       + TAG_NULL + LEN [ NULL ]
+        *                     ]
+        *       + TAG_OCTET + LEN [ HASH ]
+        *     ]
         */
-    *p++ = ASN1_sequence | ASN1_constructed;
-    *p++ = (unsigned char)(0x08 + oid_size + hashlen);
-    *p++ = ASN1_sequence | ASN1_constructed;
-    *p++ = (unsigned char)(0x04 + oid_size);
-    *p++ = ASN1_oid;
-    *p++ = (unsigned char)oid_size;
-    memcpy(p, oid1, oid_size);
-    p += oid_size;
-    *p++ = ASN1_null;
-    *p++ = 0x00;
-    *p++ = ASN1_octat_string;
-    *p++ = (unsigned char)hashlen;
-    memcpy(p, hash, hashlen);
-    p += hashlen;
+    *out_ptr++ = ASN1_sequence | ASN1_constructed;
+    *out_ptr++ = (unsigned char)(0x08 + oid_size + hash_len);
+    *out_ptr++ = ASN1_sequence | ASN1_constructed;
+    *out_ptr++ = (unsigned char)(0x04 + oid_size);
+    *out_ptr++ = ASN1_oid;
+    *out_ptr++ = (unsigned char)oid_size;
+    memcpy(out_ptr, oid, oid_size);
+    out_ptr += oid_size;
+    *out_ptr++ = ASN1_null;
+    *out_ptr++ = 0x00;
+    *out_ptr++ = ASN1_octat_string;
+    *out_ptr++ = (unsigned char)hash_len;
+    memcpy(out_ptr, hash, hash_len);
+    out_ptr += hash_len;
 
-    /* Just a sanity-check, should be automatic
-    * after the initial bounds check. */
-    if (p != out + outlength) {
-        memset(out, 0, outlength);
-        return 1;
+    /* Sanity check. */
+    if (out_ptr != out + out_length) {
+        memset(out, 0, out_length);
+        return SM_NOT_OK;
     }
 
-    return 0;
+    return SM_OK;
 }
 
 /*
-* Return:  0-Success, 1-Error, 2-ThroughPut error
+* Return:  SM_OK (0x9000): Success, SM_NOT_OK (0xFFFF): Error, SM_ERR_APDU_THROUGHPUT (0x66A6): ThroughPut error
 */
-uint8_t pkcs1_v15_encode_no_hash(
-    sss_se05x_asymmetric_t *context, const uint8_t *hash, size_t hashlen, uint8_t *out, size_t *outLen)
+smStatus_t pkcs1_v15_encode_no_hash(
+    sss_se05x_asymmetric_t *context, const uint8_t *hash, size_t hash_len, uint8_t *out, size_t *outLen)
 {
     uint16_t key_size_bytes = 0;
     smStatus_t ret_val      = SM_NOT_OK;
 
     if ((out == NULL) || (outLen == NULL)) {
-        return 1;
+        return SM_NOT_OK;
+    }
+    if (*outLen < 2) {
+        return SM_NOT_OK;
     }
     if (*outLen < 2) {
         return 1;
@@ -235,27 +207,37 @@ uint8_t pkcs1_v15_encode_no_hash(
         }
     }
 
-    if (hashlen > (size_t)(key_size_bytes - 11)) {
-        return 1;
+    ret_val = Se05x_API_ReadSize(&context->session->s_ctx, context->keyObject->keyId, &key_size_bytes);
+    if ((ret_val != SM_OK) || (key_size_bytes == 0)) {
+        if (ret_val == SM_ERR_APDU_THROUGHPUT) {
+            return SM_ERR_APDU_THROUGHPUT;
+        }
+        else {
+            return SM_NOT_OK;
+        }
+    }
+
+    if (hash_len > (size_t)(key_size_bytes - 11)) {
+        return SM_NOT_OK;
     }
 
     if (*outLen < key_size_bytes) {
-        return 1;
+        return SM_NOT_OK;
     }
 
     memset(out, 0xFF, *outLen);
     out[0] = 0x00;
     out[1] = 0x01;
 
-    if ((key_size_bytes > *outLen) || (key_size_bytes <= hashlen)) {
-        return 1;
+    if ((key_size_bytes > *outLen) || (key_size_bytes <= hash_len)) {
+        return SM_NOT_OK;
     }
 
-    out[key_size_bytes - hashlen - 1] = 0x00;
-    memcpy(&out[key_size_bytes - hashlen], hash, hashlen);
+    out[key_size_bytes - hash_len - 1] = 0x00;
+    memcpy(&out[key_size_bytes - hash_len], hash, hash_len);
     *outLen = key_size_bytes;
 
-    return 0;
+    return SM_OK;
 }
 
 uint8_t sss_mgf_mask_func(uint8_t *dst, size_t dlen, uint8_t *src, size_t slen, sss_algorithm_t sha_algorithm)
@@ -274,7 +256,7 @@ uint8_t sss_mgf_mask_func(uint8_t *dst, size_t dlen, uint8_t *src, size_t slen, 
         0,
     };
     size_t digestLen           = 512; /* MAX - SHA512*/
-    size_t hashlength          = slen;
+    size_t hash_length          = slen;
     sss_session_t host_session = {0};
 #if SSS_HAVE_HOSTCRYPTO_MBEDTLS
     const sss_type_t host_crypto = kType_SSS_mbedTLS;
@@ -296,8 +278,8 @@ uint8_t sss_mgf_mask_func(uint8_t *dst, size_t dlen, uint8_t *src, size_t slen, 
     p = dst;
 
     while (dlen > 0) {
-        use_len = hashlength;
-        if (dlen < hashlength) {
+        use_len = hash_length;
+        if (dlen < hash_length) {
             use_len = dlen;
         }
 
@@ -356,8 +338,8 @@ exit:
 //         the hash requested for the signature (kAlgorithm_SSS_RSASSA_PKCS1_PSS_MGF1_SHAxxx)
 //         will be rejected.
 //
-//Return:  0-Success, 1-Error, 2-ThroughPut error
-uint8_t emsa_encode(sss_se05x_asymmetric_t *context, const uint8_t *hash, size_t hashlen, uint8_t *out, size_t *outLen)
+// Return:  SM_OK (0x9000): Success, SM_NOT_OK (0xFFFF): Error, SM_ERR_APDU_THROUGHPUT (0x66A6): ThroughPut error
+smStatus_t emsa_encode(sss_se05x_asymmetric_t *context, const uint8_t *hash, size_t hash_len, uint8_t *out, size_t *outLen)
 {
     size_t outlength = 0;
     uint8_t *p       = out;
@@ -365,9 +347,8 @@ uint8_t emsa_encode(sss_se05x_asymmetric_t *context, const uint8_t *hash, size_t
         0,
     };
     uint32_t saltlength = 0;
-    uint32_t hashlength = 0;
+    uint32_t hash_length = 0;
     uint32_t offset     = 0;
-    uint8_t ret         = 1;
     size_t msb;
     sss_rng_context_t rng;
     sss_digest_t digest;
@@ -392,9 +373,6 @@ uint8_t emsa_encode(sss_se05x_asymmetric_t *context, const uint8_t *hash, size_t
 
     ret_val = Se05x_API_ReadSize(&context->session->s_ctx, context->keyObject->keyId, &key_size_bytes);
     if (ret_val != SM_OK) {
-        if (ret_val == SM_ERR_APDU_THROUGHPUT) {
-            ret = 2;
-        }
         goto exit;
     }
 
@@ -403,11 +381,11 @@ uint8_t emsa_encode(sss_se05x_asymmetric_t *context, const uint8_t *hash, size_t
 
     switch (context->algorithm) {
     case kAlgorithm_SSS_RSASSA_PKCS1_PSS_MGF1_SHA1:
-        hashlength    = 20;
+        hash_length    = 20;
         sha_algorithm = kAlgorithm_SSS_SHA1;
         break;
     case kAlgorithm_SSS_RSASSA_PKCS1_PSS_MGF1_SHA224:
-        hashlength    = 28;
+        hash_length    = 28;
         sha_algorithm = kAlgorithm_SSS_SHA224;
         break;
     case kAlgorithm_SSS_RSASSA_PKCS1_PSS_MGF1_SHA256:
@@ -415,7 +393,7 @@ uint8_t emsa_encode(sss_se05x_asymmetric_t *context, const uint8_t *hash, size_t
             LOG_E("SHA256 not supported with this RSA key");
             goto exit;
         }
-        hashlength    = 32;
+        hash_length    = 32;
         sha_algorithm = kAlgorithm_SSS_SHA256;
         break;
     case kAlgorithm_SSS_RSASSA_PKCS1_PSS_MGF1_SHA384:
@@ -423,7 +401,7 @@ uint8_t emsa_encode(sss_se05x_asymmetric_t *context, const uint8_t *hash, size_t
             LOG_E("SHA384 not supported with this RSA key");
             goto exit;
         }
-        hashlength    = 48;
+        hash_length    = 48;
         sha_algorithm = kAlgorithm_SSS_SHA384;
         break;
     case kAlgorithm_SSS_RSASSA_PKCS1_PSS_MGF1_SHA512:
@@ -431,19 +409,19 @@ uint8_t emsa_encode(sss_se05x_asymmetric_t *context, const uint8_t *hash, size_t
             LOG_E("SHA512 not supported with this RSA key");
             goto exit;
         }
-        hashlength    = 64;
+        hash_length    = 64;
         sha_algorithm = kAlgorithm_SSS_SHA512;
         break;
     default:
         goto exit;
     }
 
-    if (hashlength != hashlen) {
+    if (hash_length != hash_len) {
         ret_val = SM_NOT_OK;
         goto exit;
     }
 
-    saltlength = hashlength;
+    saltlength = hash_length;
     *outLen    = outlength;
 
     /* Generate salt of length saltlength */
@@ -458,7 +436,7 @@ uint8_t emsa_encode(sss_se05x_asymmetric_t *context, const uint8_t *hash, size_t
     }
 
     msb = (outlength * 8) - 1;
-    p += outlength - hashlength * 2 - 2;
+    p += outlength - hash_length * 2 - 2;
     *p++ = 0x01;
     memcpy(p, salt, saltlength);
     p += saltlength;
@@ -478,7 +456,7 @@ uint8_t emsa_encode(sss_se05x_asymmetric_t *context, const uint8_t *hash, size_t
         goto exit;
     }
 
-    status = sss_digest_update(&digest, hash, hashlen);
+    status = sss_digest_update(&digest, hash, hash_len);
     if (status != kStatus_SSS_Success) {
         goto exit;
     }
@@ -500,29 +478,29 @@ uint8_t emsa_encode(sss_se05x_asymmetric_t *context, const uint8_t *hash, size_t
     }
 
     /* Apply MGF Mask */
-    if (0 != sss_mgf_mask_func(out + offset, outlength - hashlength - 1 - offset, p, hashlength, sha_algorithm)) {
+    if (0 != sss_mgf_mask_func(out + offset, outlength - hash_length - 1 - offset, p, hash_length, sha_algorithm)) {
         goto exit;
     }
 
     out[0] &= 0xFF >> (outlength * 8 - msb);
 
-    p += hashlength;
+    p += hash_length;
     *p++ = 0xBC;
 
-    ret = 0;
+    ret_val = SM_OK;
 
 exit:
     sss_host_session_close(&host_session);
-    return ret;
+    return ret_val;
 }
 
-uint8_t emsa_decode_and_compare(
-    sss_se05x_asymmetric_t *context, uint8_t *sig, size_t siglen, const uint8_t *hash, size_t hashlen)
+smStatus_t emsa_decode_and_compare(
+    sss_se05x_asymmetric_t *context, uint8_t *sig, size_t sig_len, const uint8_t *hash, size_t hash_len)
 {
     uint8_t *p;
     uint8_t *hash_start;
     uint8_t result[512] = {0};
-    uint8_t ret         = 1;
+    smStatus_t ret      = SM_NOT_OK;
     uint32_t hlen;
     uint8_t zeros[8];
     uint32_t observed_salt_len, msb;
@@ -541,10 +519,15 @@ uint8_t emsa_decode_and_compare(
 #endif
 
     ENSURE_OR_GO_EXIT(sig != NULL);
-    ENSURE_OR_GO_EXIT(siglen > 0);
+    ENSURE_OR_GO_EXIT(sig_len > 0);
     ENSURE_OR_GO_EXIT(hash != NULL);
 
-    memcpy(buf, sig, siglen);
+    memcpy(buf, sig, sig_len);
+
+    status = sss_host_session_open(&host_session, host_crypto, 0, kSSS_ConnectionType_Plain, NULL);
+    if (kStatus_SSS_Success != status) {
+        goto exit;
+    }
 
     status = sss_host_session_open(&host_session, host_crypto, 0, kSSS_ConnectionType_Plain, NULL);
     if (kStatus_SSS_Success != status) {
@@ -578,29 +561,29 @@ uint8_t emsa_decode_and_compare(
 
     p = buf;
 
-    ENSURE_OR_GO_EXIT(siglen <= sizeof(buf));
-    if (buf[siglen - 1] != 0xBC) {
+    ENSURE_OR_GO_EXIT(sig_len <= sizeof(buf));
+    if (buf[sig_len - 1] != 0xBC) {
         goto exit;
     }
 
     memset(zeros, 0, 8);
 
-    msb = (siglen * 8) - 1;
-
-    if (buf[0] >> (8 - siglen * 8 + msb)) {
+    msb = (sig_len * 8) - 1;
+    /* Check if Most Significant bit is SET/UNSET */
+    if (buf[0] >> (8 - 1)) {
         goto exit;
     }
 
-    if (siglen < hlen + 2) {
+    if (sig_len < hlen + 2) {
         goto exit;
     }
-    hash_start = p + siglen - hlen - 1;
+    hash_start = p + sig_len - hlen - 1;
 
-    if (0 != sss_mgf_mask_func(p, siglen - hlen - 1, hash_start, hlen, sha_algorithm)) {
+    if (0 != sss_mgf_mask_func(p, sig_len - hlen - 1, hash_start, hlen, sha_algorithm)) {
         goto exit;
     }
 
-    buf[0] &= 0xFF >> ((siglen * 8 - msb) % 8);
+    buf[0] &= 0xFF >> ((sig_len * 8 - msb) % 8);
 
     while (p < hash_start - 1 && *p == 0)
         p++;
@@ -626,7 +609,7 @@ uint8_t emsa_decode_and_compare(
         goto exit;
     }
 
-    status = sss_digest_update(&digest, hash, hashlen);
+    status = sss_digest_update(&digest, hash, hash_len);
     if (status != kStatus_SSS_Success) {
         goto exit;
     }
@@ -647,7 +630,7 @@ uint8_t emsa_decode_and_compare(
         goto exit;
     }
 
-    ret = 0;
+    ret = SM_OK;
 
 exit:
     sss_host_session_close(&host_session);

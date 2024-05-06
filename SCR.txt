@@ -2,13 +2,13 @@
 
 NXP Software Content Register
 Release:  plug-and-trust.git
-Version: 04.05.00
-Outgoing License: Apache-2.0
+Version: 04.05.03
+Outgoing License: BSD-3-Clause
 License File: LICENSE.txt
 Description and comments: Plug&Trust Mini Package
 Release Location: https://github.com/nxp/plug-and-trust
-Origin: NXP (Apache-2.0)
-             Mbed-TLS (Apache-2.0) Version: 2.26.0 - https://github.com/Mbed-TLS/mbedtls
+Origin: NXP ( BSD-3-Clause)
+            Mbed-TLS ([Apache-2.0] OR [GPL-2.0-or-later]) Version: 2.26.0 - https://github.com/Mbed-TLS/mbedtls
             OpenSSL 1.1 (OpenSSL License) - https://github.com/openssl/openssl/tree/OpenSSL_1_1_1-stable
 
 -----------------------------------

@@ -1,7 +1,7 @@
 /*
  *
- * Copyright 2018-2022 NXP
- * SPDX-License-Identifier: Apache-2.0
+ * Copyright 2018-2022,2024 NXP
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #ifndef SSS_APIS_INC_FSL_SSS_FTR_H_
@@ -32,8 +32,8 @@
 /** SE050 Type B (RSA) */
 #define SSS_HAVE_APPLET_SE05X_B 0
 
-/** SE050 (Super set of A + B) */
-#define SSS_HAVE_APPLET_SE05X_C 0
+/** SE050 (Super set of A + B), SE051, SE052 */
+#define SSS_HAVE_APPLET_SE05X_C 1
 
 /** SE051 with SPAKE Support */
 #define SSS_HAVE_APPLET_SE051_H 0
@@ -86,7 +86,7 @@
 /** SE050 */
 #define SSS_HAVE_SE05X_VER_03_XX 0
 
-/** SE051 */
+/** SE051, SE052 */
 #define SSS_HAVE_SE05X_VER_07_02 1
 
 #if (( 0                             \
@@ -550,6 +550,7 @@
 #define SSS_PFSCP_ENABLE_SE050E_0001A921 0
 #define SSS_PFSCP_ENABLE_A5000_0004A736 0
 #define SSS_PFSCP_ENABLE_SE050F2_0001A92A 0
+#define SSS_PFSCP_ENABLE_SE052_B501 0
 #define SSS_PFSCP_ENABLE_OTHER 0
 
 /* ========= Calculated values : START ====================== */

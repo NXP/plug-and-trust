@@ -1,7 +1,7 @@
 /*
  *
- * Copyright 2016 NXP
- * SPDX-License-Identifier: Apache-2.0
+ * Copyright 2016,2024 NXP
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #ifndef _SM_TIMER_H_

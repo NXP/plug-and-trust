@@ -1,17 +1,7 @@
 /*
- * Copyright 2012-2014,2018-2020 NXP
+ * Copyright 2012-2014,2018-2020,2024 NXP
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 #include <phNxpEseProto7816_3.h>
 #include <phNxpEsePal_i2c.h>
@@ -274,6 +264,14 @@ static bool_t phNxpEseProto7816_SendSFrame(void* conn_ctx, sFrameInfo_t sFrameDa
             pcb_byte |= PH_PROTO_7816_S_GET_ATR;
             break;
 #endif
+        case DEEP_PWR_DOWN_REQ:
+            frame_len = (PH_PROTO_7816_HEADER_LEN + PH_PROTO_7816_CRC_LEN);
+            p_framebuff[PH_PROPTO_7816_LEN_UPPER_OFFSET] = 0;
+            p_framebuff[PH_PROPTO_7816_INF_BYTE_OFFSET] = 0x00;
+
+            pcb_byte |= PH_PROTO_7816_S_BLOCK_REQ; /* PCB */
+            pcb_byte |= PH_PROTO_7816_S_DEEP_PWR_DOWN;
+            break;
         case WTX_RSP:
             frame_len = (PH_PROTO_7816_HEADER_LEN + 1 + PH_PROTO_7816_CRC_LEN);
 #if defined(T1oI2C_UM11225)
@@ -1066,6 +1064,14 @@ static bool_t phNxpEseProto7816_DecodeFrame(uint8_t *p_data, uint32_t data_len)
                 phNxpEseProto7816_3_Var.phNxpEseProto7816_nextTransceiveState = IDLE_STATE;
                 break;
 #endif
+            case DEEP_PWR_DOWN_RES:
+                pRx_lastRcvdSframeInfo->sFrameType = DEEP_PWR_DOWN_RES;
+                if(p_data[PH_PROPTO_7816_FRAME_LENGTH_OFFSET] > 0) {
+                    phNxpEseProto7816_DecodeSFrameData(p_data);
+                }
+                phNxpEseProto7816_3_Var.phNxpEseNextTx_Cntx.FrameType= UNKNOWN;
+                phNxpEseProto7816_3_Var.phNxpEseProto7816_nextTransceiveState = IDLE_STATE;
+                break;
             default:
                 LOG_E("%s Wrong S-Frame Received ", __FUNCTION__);
                 break;
@@ -1224,8 +1230,6 @@ static bool_t TransceiveProcess(void* conn_ctx)
     sFrameInfo_t sFrameInfo;
     sFrameInfo.sFrameType = INVALID_REQ_RES;
 
-    sFrameInfo.sFrameType = INVALID_REQ_RES;
-
     while(phNxpEseProto7816_3_Var.phNxpEseProto7816_nextTransceiveState != IDLE_STATE)
     {
         LOG_D("%s nextTransceiveState %x ", __FUNCTION__, phNxpEseProto7816_3_Var.phNxpEseProto7816_nextTransceiveState);
@@ -1246,6 +1250,10 @@ static bool_t TransceiveProcess(void* conn_ctx)
                 break;
             case SEND_S_WTX_RSP:
                 sFrameInfo.sFrameType = WTX_RSP;
+                status = phNxpEseProto7816_SendSFrame(conn_ctx, sFrameInfo);
+                break;
+            case SEND_DEEP_PWR_DOWN:
+                sFrameInfo.sFrameType = DEEP_PWR_DOWN_REQ;
                 status = phNxpEseProto7816_SendSFrame(conn_ctx, sFrameInfo);
                 break;
 #if defined(T1oI2C_UM11225)
@@ -1473,6 +1481,7 @@ bool_t phNxpEseProto7816_Open(void* conn_ctx, phNxpEseProto7816InitParam_t initP
         /*After power ON , initialization state takes 5ms after which slave enters active
         state where slave can exchange data with the master */
         sm_sleep(WAKE_UP_DELAY_MS);
+        phNxpEse_waitForWTX(conn_ctx);
         phNxpEse_clearReadBuffer(conn_ctx);
 #if defined(T1oI2C_UM11225)
         /* Interface Reset respond with ATR*/
@@ -1700,6 +1709,43 @@ bool_t phNxpEseProto7816_SetIfscSize(uint16_t IFSC_Size)
     return TRUE;
 }
 
+/******************************************************************************
+ * Function         phNxpEseProto7816_WTXRsp
+ *
+ * Description      This function is used to send WTX response
+ *
+ * param[in]        void* conn_ctx
+ *
+ * Returns          On success return TRUE or else FALSE.
+ *
+ ******************************************************************************/
+bool_t phNxpEseProto7816_WTXRsp(void* conn_ctx)
+{
+    sFrameInfo_t sFrameInfo;
+    sFrameInfo.sFrameType = WTX_RSP;
+    LOG_D(" %s - Sending WTX Response", __FUNCTION__);
+    return phNxpEseProto7816_SendSFrame(conn_ctx, sFrameInfo);
+}
+
+
+/******************************************************************************
+ * Function         phNxpEseProto7816_SendRSync
+ *
+ * Description      This function is used to send Rsync
+ *
+ * param[in]        void* conn_ctx
+ *
+ * Returns          On success return TRUE or else FALSE.
+ *
+ ******************************************************************************/
+bool_t phNxpEseProto7816_SendRSync(void* conn_ctx)
+{
+    sFrameInfo_t sFrameInfo;
+    sFrameInfo.sFrameType = RESYNCH_REQ;
+    LOG_D(" %s - Sending Rsync", __FUNCTION__);
+    return phNxpEseProto7816_SendSFrame(conn_ctx, sFrameInfo);
+}
+
 
 #if defined(T1oI2C_UM11225)
 /******************************************************************************
@@ -1737,6 +1783,7 @@ bool_t phNxpEseProto7816_GetAtr(void* conn_ctx, phNxpEse_data *pRsp)
 exit:
     return status ;
 }
+
 #endif
 
 #if defined(T1oI2C_GP1_0)
@@ -1777,4 +1824,30 @@ exit:
     return status ;
 }
 #endif
+
+/******************************************************************************
+ * Function         phNxpEseProto7816_RSync
+ *
+ * Description      This function is used to send deep power down command
+ *
+ * param[in]        void
+ *
+ * Returns          On success return TRUE or else FALSE.
+ *
+ ******************************************************************************/
+bool_t phNxpEseProto7816_Deep_Pwr_Down(void* conn_ctx)
+{
+    bool_t status = FALSE;
+    sFrameInfo_t *pNextTx_SframeInfo = &phNxpEseProto7816_3_Var.phNxpEseNextTx_Cntx.SframeInfo;
+
+    phNxpEseProto7816_3_Var.phNxpEseProto7816_CurrentState = PH_NXP_ESE_PROTO_7816_TRANSCEIVE;
+    /* send the end of session s-frame */
+    phNxpEseProto7816_3_Var.phNxpEseNextTx_Cntx.FrameType= SFRAME;
+    pNextTx_SframeInfo->sFrameType = DEEP_PWR_DOWN_REQ;
+    phNxpEseProto7816_3_Var.phNxpEseProto7816_nextTransceiveState = SEND_DEEP_PWR_DOWN;
+    status = TransceiveProcess(conn_ctx);
+    phNxpEseProto7816_3_Var.phNxpEseProto7816_CurrentState = PH_NXP_ESE_PROTO_7816_IDLE;
+    return status;
+}
+
 /** @} */

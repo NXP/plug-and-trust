@@ -1,7 +1,7 @@
 /*
  *
- * Copyright 2018-2020 NXP
- * SPDX-License-Identifier: Apache-2.0
+ * Copyright 2018-2020,2024 NXP
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #include <fsl_sss_mbedtls_apis.h>
@@ -1835,7 +1835,8 @@ sss_status_t sss_mbedtls_cipher_finish(
     */
     if (context->mode == kMode_SSS_Decrypt) {
         blockoutLen = outBuffSize;
-        mbedtls_cipher_update(context->cipher_ctx, temp, temp_len, destData + output_offset, &blockoutLen);
+        retMbedtlsVal = mbedtls_cipher_update(context->cipher_ctx, temp, temp_len, destData + output_offset, &blockoutLen);
+        ENSURE_OR_GO_EXIT(retMbedtlsVal == 0);
         ENSURE_OR_GO_EXIT((UINT_MAX - *destLen) >= blockoutLen);
         *destLen += blockoutLen;
     }

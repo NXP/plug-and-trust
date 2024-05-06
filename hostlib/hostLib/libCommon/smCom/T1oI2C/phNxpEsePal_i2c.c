@@ -1,17 +1,7 @@
 /*
- * Copyright 2010-2014,2018-2020,2023 NXP
+ * Copyright 2010-2014,2018-2020,2023-2024 NXP
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 /*
@@ -149,7 +139,7 @@ int phPalEse_i2c_read(void *pDevHandle, uint8_t *pBuffer, int nNbBytesToRead)
                 retryCount++;
                 /* 1ms delay to give ESE polling delay */
                 /*i2c driver back off delay is providing 1ms wait time so ignoring waiting time at this level*/
-#ifdef T1OI2C_RETRY_ON_I2C_FAILED /* Add delay only for linux */
+#ifdef T1OI2C_RETRY_ON_I2C_FAILED /* Add delay only for linux (T1OI2C_RETRY_ON_I2C_FAILED is enabled only on SSS_HAVE_HOST_LINUX_LIKE) */
                 sm_sleep(ESE_POLL_DELAY_MS);
 #endif
                 LOG_D("_i2c_read() failed. Going to retry, counter:%d  !", retryCount);

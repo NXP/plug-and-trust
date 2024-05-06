@@ -17,8 +17,8 @@ platforms.
 It also includes other api usage examples, ssscli (command line tool to use
 SE05x), cloud connectivity examples, openssl engine, pkcs11 interface, AWS
 Greengrass, OPCUA and more. More details regarding SE05x and other detailed
-application notes can be found at https://www.nxp.com/products/:SE050 &
-https://www.nxp.com/products/:SE051.
+application notes can be found at https://www.nxp.com/products/:SE050,
+https://www.nxp.com/products/:SE051 and https://www.nxp.com/products/:SE052F .
 
 To contact NXP or to report issues, please use https://www.nxp.com/support/support:SUPPORTHOME
 
@@ -79,7 +79,7 @@ Prerequisite
 -------------------------------------------------------------
 - Linux should be running on the Raspberry Pi development board,
   the release was tested with Raspbian Buster (``4.19.75-v7l+``)
-- SE050 or SE051 connected to i2c-1 port of Raspberry Pi.
+- SE050/SE051/SE052/A5000 connected to i2c-1 port of Raspberry Pi.
 
 
 ECC example
@@ -158,11 +158,11 @@ PTMW_SE05X_Ver
     SE05X Applet version.
 
     Selection of Applet version 03_XX enables SE050 features.
-    Selection of Applet version 07_00 enables SE051 features.
+    Selection of Applet version 07_00 enables SE051 / SE052 features.
 
     ``-DPTMW_SE05X_Ver=03_XX``: SE050
 
-    ``-DPTMW_SE05X_Ver=07_02``: SE051
+    ``-DPTMW_SE05X_Ver=07_02``: SE051 / SE052
 
 PTMW_HostCrypto
 ***************

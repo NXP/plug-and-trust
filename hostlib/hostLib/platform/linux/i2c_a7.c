@@ -1,7 +1,7 @@
 /*
  *
- * Copyright 2017-2020 NXP
- * SPDX-License-Identifier: Apache-2.0
+ * Copyright 2017-2020,2024 NXP
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 /**
@@ -32,6 +32,19 @@ static char* default_axSmDevice_name = "/dev/i2c-1";
 static int default_axSmDevice_addr = 0x48;      // 7-bit address
 
 #define DEV_NAME_BUFFER_SIZE 64
+
+static int gBackoffDelay = 0;
+
+void resetBackoffDelay() {
+    gBackoffDelay = 0;
+}
+
+static void BackOffDelay_Wait() {
+    if (gBackoffDelay < 200 ) {
+        gBackoffDelay += 1;
+    }
+    usleep(gBackoffDelay * 1000);
+}
 
 /**
 * Opens the communication channel to I2C device
@@ -373,23 +386,26 @@ i2c_error_t axI2CRead(void* conn_ctx, unsigned char bus, unsigned char addr, uns
         LOG_E("axI2CRead on wrong bus %x (addr %x)\n", bus, addr);
     }
 
-   nrRead = read(axSmDevice, pRx, rxLen);
-   if (nrRead < 0)
-   {
-      //LOG_E("Failed Read data (nrRead=%d).\n", nrRead);
-      rv = I2C_FAILED;
-   }
-   else
-   {
+    nrRead = read(axSmDevice, pRx, rxLen);
+    if (nrRead < 0)
+    {
+        //LOG_E("Failed Read data (nrRead=%d).\n", nrRead);
+        rv = I2C_FAILED;
+        BackOffDelay_Wait();
+    }
+    else
+    {
         if (nrRead == rxLen) // okay
         {
             rv = I2C_OK;
+            resetBackoffDelay();
         }
         else
         {
             rv = I2C_FAILED;
+            BackOffDelay_Wait();
         }
-   }
+    }
     LOG_D("Done with rv = %02x ", rv);
     LOG_MAU8_D("TX (axI2CRead): ",pRx,rxLen);
     return rv;

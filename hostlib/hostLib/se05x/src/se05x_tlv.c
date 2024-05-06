@@ -1,7 +1,7 @@
 /*
  *
- * Copyright 2019-2020 NXP
- * SPDX-License-Identifier: Apache-2.0
+ * Copyright 2019-2020,2024 NXP
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #include "se05x_tlv.h"
@@ -36,6 +36,9 @@ int tlvSet_U8(uint8_t **buf, size_t *bufLen, SE05x_TAG_t tag, uint8_t value)
         return 1;
     }
     if (((*bufLen) + size_of_tlv) > SE05X_TLV_BUF_SIZE_CMD) {
+        return 1;
+    }
+    if ((UINTPTR_MAX - 3) < (uintptr_t)pBuf) {
         return 1;
     }
     *pBuf++ = (uint8_t)tag;
@@ -83,6 +86,9 @@ int tlvSet_U32(uint8_t **buf, size_t *bufLen, SE05x_TAG_t tag, uint32_t value)
         return 1;
     }
     if (((*bufLen) + size_of_tlv) > SE05X_TLV_BUF_SIZE_CMD) {
+        return 1;
+    }
+    if ((UINTPTR_MAX - 6) < (uintptr_t)pBuf) {
         return 1;
     }
     *pBuf++ = (uint8_t)tag;
@@ -203,16 +209,28 @@ int tlvSet_u8buf(uint8_t **buf, size_t *bufLen, SE05x_TAG_t tag, const uint8_t *
         LOG_E("Not enough buffer");
         return 1;
     }
+    if ((UINTPTR_MAX - 1) < (uintptr_t)pBuf) {
+        return 1;
+    }
     *pBuf++ = (uint8_t)tag;
 
     if (cmdLen <= 0x7Fu) {
+        if ((UINTPTR_MAX - 1) < (uintptr_t)pBuf) {
+            return 1;
+        }
         *pBuf++ = (uint8_t)cmdLen;
     }
     else if (cmdLen <= 0xFFu) {
+        if ((UINTPTR_MAX - 2) < (uintptr_t)pBuf) {
+            return 1;
+        }
         *pBuf++ = (uint8_t)(0x80 /* Extended */ | 0x01 /* Additional Length */);
         *pBuf++ = (uint8_t)((cmdLen >> 0 * 8) & 0xFF);
     }
     else if (cmdLen <= 0xFFFFu) {
+        if ((UINTPTR_MAX - 3) < (uintptr_t)pBuf) {
+            return 1;
+        }
         *pBuf++ = (uint8_t)(0x80 /* Extended */ | 0x02 /* Additional Length */);
         *pBuf++ = (uint8_t)((cmdLen >> 1 * 8) & 0xFF);
         *pBuf++ = (uint8_t)((cmdLen >> 0 * 8) & 0xFF);
@@ -222,6 +240,9 @@ int tlvSet_u8buf(uint8_t **buf, size_t *bufLen, SE05x_TAG_t tag, const uint8_t *
     }
     if ((cmdLen > 0) && (cmd != NULL)) {
         while (cmdLen-- > 0) {
+            if ((UINTPTR_MAX - 1) < (uintptr_t)pBuf) {
+                return 1;
+            }
             *pBuf++ = *cmd++;
         }
     }
@@ -271,7 +292,9 @@ int tlvGet_U8(uint8_t *buf, size_t *pBufIndex, const size_t bufLen, SE05x_TAG_t 
     if (pRsp == NULL) {
         goto cleanup;
     }
-
+    if ((UINTPTR_MAX - 2) < (uintptr_t)pBuf) {
+        return 1;
+    }
     got_tag = *pBuf++;
 
     if (got_tag != tag) {

@@ -1,7 +1,7 @@
 /*
 *
-* Copyright 2016,2020 NXP
-* SPDX-License-Identifier: Apache-2.0
+* Copyright 2016,2020,2024 NXP
+* SPDX-License-Identifier: BSD-3-Clause
 */
 
 #ifndef _A71CH_CONST_H_

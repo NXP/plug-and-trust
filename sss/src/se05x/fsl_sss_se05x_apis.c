@@ -1,7 +1,7 @@
 /*
  *
- * Copyright 2018-2020 NXP
- * SPDX-License-Identifier: Apache-2.0
+ * Copyright 2018-2020,2024 NXP
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 /** @file */
@@ -5573,12 +5573,12 @@ sss_status_t sss_se05x_asymmetric_sign_digest(
             /* clang-format off */
             uint8_t emsa_data[512] = {0,}; /* MAX - SHA512*/
             size_t emsa_len = sizeof(emsa_data);
-            uint8_t encode_ret = 0;
+            smStatus_t encode_ret = SM_OK;
             /* clang-format on */
 
             encode_ret = emsa_encode(context, digest, digestLen, emsa_data, &emsa_len);
-            if (0 != encode_ret) {
-                if (encode_ret == 2) {
+            if (SM_OK != encode_ret) {
+                if (encode_ret == SM_ERR_APDU_THROUGHPUT) {
                     return kStatus_SSS_ApduThroughputError;
                 }
                 else {
@@ -5598,7 +5598,7 @@ sss_status_t sss_se05x_asymmetric_sign_digest(
         }
         else if ((context->algorithm <= kAlgorithm_SSS_RSASSA_PKCS1_V1_5_SHA512) &&
                  (context->algorithm >= kAlgorithm_SSS_RSASSA_PKCS1_V1_5_SHA1)) {
-            uint8_t encode_ret = 0;
+            smStatus_t encode_ret = SM_OK;
             /* Perform PKCS1-v15 encoding on input data and and RSA decrypt on PKCS1-v15 data --> RSA sign without hash */
             /* clang-format off */
             uint8_t pkcs1v15_encode_data[512] = {0,}; /* MAX - SHA512*/
@@ -5606,8 +5606,8 @@ sss_status_t sss_se05x_asymmetric_sign_digest(
             /* clang-format on */
 
             encode_ret = pkcs1_v15_encode(context, digest, digestLen, pkcs1v15_encode_data, &encode_data_len);
-            if (0 != encode_ret) {
-                if (encode_ret == 2) {
+            if (SM_OK != encode_ret) {
+                if (encode_ret == SM_ERR_APDU_THROUGHPUT) {
                     return kStatus_SSS_ApduThroughputError;
                 }
                 else {
@@ -5626,7 +5626,7 @@ sss_status_t sss_se05x_asymmetric_sign_digest(
             }
         }
         else if (context->algorithm == kAlgorithm_SSS_RSASSA_PKCS1_V1_5_NO_HASH) {
-            uint8_t encode_ret = 0;
+            smStatus_t encode_ret = SM_OK;
             /* Perform PKCS1-v15 encoding on input data and and RSA decrypt on PKCS1-v15 data --> RSA sign without hash */
             /* clang-format off */
             uint8_t pkcs1v15_encode_data[512] = {0,}; /* MAX - SHA512*/
@@ -5634,8 +5634,8 @@ sss_status_t sss_se05x_asymmetric_sign_digest(
             /* clang-format on */
 
             encode_ret = pkcs1_v15_encode_no_hash(context, digest, digestLen, pkcs1v15_encode_data, &encode_data_len);
-            if (0 != encode_ret) {
-                if (encode_ret == 2) {
+            if (SM_OK != encode_ret) {
+                if (encode_ret == SM_ERR_APDU_THROUGHPUT) {
                     return kStatus_SSS_ApduThroughputError;
                 }
                 else {
@@ -5881,7 +5881,7 @@ sss_status_t sss_se05x_asymmetric_verify_digest(sss_se05x_asymmetric_t *context,
                 dec_data,
                 &dec_len);
             if (status == SM_OK) {
-                if (0 == emsa_decode_and_compare(context, dec_data, dec_len, digest, digestLen)) {
+                if (SM_OK == emsa_decode_and_compare(context, dec_data, dec_len, digest, digestLen)) {
                     result = kSE05x_Result_SUCCESS;
                 }
             }
@@ -5903,10 +5903,10 @@ sss_status_t sss_se05x_asymmetric_verify_digest(sss_se05x_asymmetric_t *context,
                 dec_data,
                 &dec_len);
             if (status == SM_OK) {
-                uint8_t encode_ret = 0;
+                smStatus_t encode_ret = SM_OK;
                 encode_ret = pkcs1_v15_encode(context, digest, digestLen, pkcs1v15_encode_data, &encode_data_len);
-                if (0 != encode_ret) {
-                    if (encode_ret == 2) {
+                if (SM_OK != encode_ret) {
+                    if (encode_ret == SM_ERR_APDU_THROUGHPUT) {
                         return kStatus_SSS_ApduThroughputError;
                     }
                     else {
@@ -5935,11 +5935,11 @@ sss_status_t sss_se05x_asymmetric_verify_digest(sss_se05x_asymmetric_t *context,
                 dec_data,
                 &dec_len);
             if (status == SM_OK) {
-                uint8_t encode_ret = 0;
+                smStatus_t encode_ret = SM_OK;
                 encode_ret =
                     pkcs1_v15_encode_no_hash(context, digest, digestLen, pkcs1v15_encode_data, &encode_data_len);
-                if (0 != encode_ret) {
-                    if (encode_ret == 2) {
+                if (SM_OK != encode_ret) {
+                    if (encode_ret == SM_ERR_APDU_THROUGHPUT) {
                         return kStatus_SSS_ApduThroughputError;
                     }
                     else {

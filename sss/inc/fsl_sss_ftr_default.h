@@ -1,7 +1,7 @@
 /*
  *
- * Copyright 2018-2022 NXP
- * SPDX-License-Identifier: Apache-2.0
+ * Copyright 2018-2022,2024 NXP
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #ifndef SSS_APIS_INC_FSL_SSS_FTR_H_
@@ -550,6 +550,7 @@
 #define SSS_PFSCP_ENABLE_SE050E_0001A921 0
 #define SSS_PFSCP_ENABLE_A5000_0004A736 0
 #define SSS_PFSCP_ENABLE_SE050F2_0001A92A 0
+#define SSS_PFSCP_ENABLE_SE052_B501 0
 #define SSS_PFSCP_ENABLE_OTHER 0
 
 /* ========= Calculated values : START ====================== */

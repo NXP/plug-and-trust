@@ -1,7 +1,7 @@
 /*
  *
- * Copyright 2019 NXP
- * SPDX-License-Identifier: Apache-2.0
+ * Copyright 2019,2024 NXP
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #ifndef SSS_AUTH_SE050_OEF_20191211_1809_
@@ -58,6 +58,7 @@
      SSS_PFSCP_ENABLE_SE050E_0001A921 + \
      SSS_PFSCP_ENABLE_A5000_0004A736 + \
      SSS_PFSCP_ENABLE_SE050F2_0001A92A + \
+     SSS_PFSCP_ENABLE_SE052_B501 + \
      SSS_PFSCP_ENABLE_OTHER + \
      0) == 0)
 #if defined(SSS_HAVE_SE05X_VER_03_XX) && SSS_HAVE_SE05X_VER_03_XX == 1
@@ -86,6 +87,7 @@
      SSS_PFSCP_ENABLE_SE050E_0001A921 + \
      SSS_PFSCP_ENABLE_A5000_0004A736 + \
      SSS_PFSCP_ENABLE_SE050F2_0001A92A + \
+     SSS_PFSCP_ENABLE_SE052_B501 + \
      SSS_PFSCP_ENABLE_OTHER + \
      0) > 1)
 #error "Select only one Platform SCP configuration"
@@ -240,6 +242,16 @@
 #define SSS_AUTH_KEY_DEK \
     { 0x86, 0x95, 0x93, 0x23, 0x98, 0x54, 0xDC, 0x0D, 0x86, 0x99, 0x00, 0x50, 0x0C, 0xA7, 0x9C, 0x15, }
 #endif // SSS_PFSCP_ENABLE_SE050F2_0001A92A
+
+// SSS_PFSCP_ENABLE_SE052_B501
+#if defined (SSS_PFSCP_ENABLE_SE052_B501) && SSS_PFSCP_ENABLE_SE052_B501 == 1
+#define SSS_AUTH_KEY_ENC \
+    { 0x3A, 0xE4, 0x41, 0xC7, 0x47, 0xE3, 0x2E, 0xBC, 0x16, 0xB3, 0xBB, 0x2D, 0x84, 0x3C, 0x6D, 0xD8, }
+#define SSS_AUTH_KEY_MAC \
+    { 0x6C, 0x18, 0xF3, 0xD0, 0x8F, 0xEE, 0x1C, 0xB9, 0x6A, 0x3C, 0x8D, 0xE5, 0xD3, 0x53, 0x8A, 0xAA, }
+#define SSS_AUTH_KEY_DEK \
+    { 0xB0, 0xE6, 0xA5, 0x69, 0x7D, 0xBD, 0x92, 0x92, 0x43, 0xA4, 0x82, 0xCF, 0x9E, 0x4D, 0x65, 0x22, }
+#endif // SSS_PFSCP_ENABLE_SE052_B501
 
 // SSS_PFSCP_ENABLE_OTHER
 #if defined (SSS_PFSCP_ENABLE_OTHER) && SSS_PFSCP_ENABLE_OTHER == 1

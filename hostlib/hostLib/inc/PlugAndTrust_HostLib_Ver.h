@@ -1,6 +1,6 @@
-/* Copyright 2019-2021 NXP
+/* Copyright 2019-2021,2024 NXP
  *
- * SPDX-License-Identifier: Apache-2.0
+ * SPDX-License-Identifier: BSD-3-Clause
  *
  *
  */
@@ -11,18 +11,18 @@
 
 /* clang-format off */
 #define PLUGANDTRUST_HOSTLIB_PROD_NAME          "PlugAndTrust_HostLib"
-#define PLUGANDTRUST_HOSTLIB_VER_STRING_NUM     "v04.05.00_20231201"
-#define PLUGANDTRUST_HOSTLIB_PROD_NAME_VER_FULL "PlugAndTrust_HostLib_v04.05.00_20231201"
+#define PLUGANDTRUST_HOSTLIB_VER_STRING_NUM     "v04.05.03_20240502"
+#define PLUGANDTRUST_HOSTLIB_PROD_NAME_VER_FULL "PlugAndTrust_HostLib_v04.05.03_20240502"
 #define PLUGANDTRUST_HOSTLIB_VER_MAJOR          (4u)
 #define PLUGANDTRUST_HOSTLIB_VER_MINOR          (5u)
-#define PLUGANDTRUST_HOSTLIB_VER_DEV            (0u)
+#define PLUGANDTRUST_HOSTLIB_VER_DEV            (3u)
 
 /* v04.05 = 40005u */
 #define PLUGANDTRUST_HOSTLIB_VER_MAJOR_MINOR ( 0 \
     | (PLUGANDTRUST_HOSTLIB_VER_MAJOR * 10000u)    \
     | (PLUGANDTRUST_HOSTLIB_VER_MINOR))
 
-/* v04.05.00 = 400050000ULL */
+/* v04.05.03 = 400050003ULL */
 #define PLUGANDTRUST_HOSTLIB_VER_MAJOR_MINOR_DEV ( 0 \
     | (PLUGANDTRUST_HOSTLIB_VER_MAJOR * 10000*10000u)    \
     | (PLUGANDTRUST_HOSTLIB_VER_MINOR * 10000u)    \
@@ -51,7 +51,7 @@
  *
  * v_minor  = "05"
  *
- * v_dev    = "00"
+ * v_dev    = "03"
  *
  * v_meta   = ""
  *

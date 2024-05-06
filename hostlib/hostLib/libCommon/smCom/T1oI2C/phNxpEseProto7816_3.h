@@ -1,17 +1,7 @@
 /*
- * Copyright 2010-2014,2018-2020 NXP
+ * Copyright 2010-2014,2018-2020,2024 NXP
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 #ifndef _PHNXPESEPROTO7816_3_H_
 #define _PHNXPESEPROTO7816_3_H_
@@ -56,6 +46,8 @@ typedef enum sFrameTypes {
       CIP_REQ = 0x04,/*!< Get CIP request */
       CIP_RES = 0x24,/*!< Get CIP response */
 #endif
+      DEEP_PWR_DOWN_REQ= 0x1F, /*deep power down*/
+      DEEP_PWR_DOWN_RES= 0x3F, /*deep power down*/
       INVALID_REQ_RES /*!< Invalid request */
   } sFrameTypes_t;
 
@@ -125,7 +117,7 @@ typedef enum phNxpEseProto7816_TransceiveStates
 #endif
   SEND_S_WTX_REQ, /*!< 7816-3 protocol transceive state: S-frame WTX command to be sent */
   SEND_S_WTX_RSP, /*!< 7816-3 protocol transceive state: S-frame WTX response to be sent */
-
+  SEND_DEEP_PWR_DOWN, /*!< Deep power down */
 }phNxpEseProto7816_TransceiveStates_t;
 
 /*!
@@ -366,6 +358,10 @@ typedef struct phNxpEseProto7816_PCB_bits {
  */
 #define PH_PROTO_7816_S_GET_ATR      0x07
 /*!
+ * \brief 7816-3 S-block deep power down
+ */
+#define PH_PROTO_7816_S_DEEP_PWR_DOWN   0x1F
+/*!
  * \brief 7816-3 S-block software reset mask
  */
 #define PH_PROTO_7816_S_SWR      0x0F
@@ -440,5 +436,8 @@ bool_t phNxpEseProto7816_GetCip(void* conn_ctx, phNxpEse_data *pRsp);
 bool_t phNxpEseProto7816_ColdReset(void* conn_ctx);
 #endif
 uint8_t getMaxSupportedSendIFrameSize(void);
+bool_t phNxpEseProto7816_WTXRsp(void* conn_ctx);
+bool_t phNxpEseProto7816_SendRSync(void* conn_ctx);
+bool_t phNxpEseProto7816_Deep_Pwr_Down(void* conn_ctx);
 /** @} */
 #endif /* _PHNXPESEPROTO7816_3_H_ */

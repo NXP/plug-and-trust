@@ -1,6 +1,29 @@
 # Plug-And-Trust Mini Package Change Log
 
 
+## Release v04.05.03
+
+- IMPORTANT: Package License changed to BSD-3 from Apache-2. Please refer and accept the LICENSE.txt at the root folder before using the software.
+
+- Fixes for static analysis findings
+
+
+## Release v04.05.01
+
+- SE052 secure element support added.
+
+- Deep power down (T1oI2C command) API added for SE052 - :func:`phNxpEse_deepPwrDown`.
+
+- I2C Wrapper for Linux/RT1060/RT1170 : I2C read back-of-delay extended to additional platforms including Linux.
+This leads to consistent timeout of appr 20 seconds across all platforms when there is no response from secure element.
+
+- T=1oI2C : During session open, added logic in T=1oI2C to wait till previous transaction is complete (by sending WTX response to up to 40 WTX requests).
+This helps in case the previous transaction was not completed or middleware was re-started.
+
+- I2C Wrapper for RT1060/RT1170 : Add workaround to send I2C Master stop if NAK received in I2C driver (:file:`simw-top/hostlib/hostLib/platform/ksdk/i2c_imxrt.c`)
+
+- NVM write warning log messages are added in SE05x APDU APIs. (in release v04.05.00).
+
 ## Release v04.05.00
 
 - Appler version `06_00` removed from `PTMW_SE05X_Ver`
