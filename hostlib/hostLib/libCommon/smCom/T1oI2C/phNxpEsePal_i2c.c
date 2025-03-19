@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2014,2018-2020,2023-2024 NXP
+ * Copyright 2010-2014,2018-2020,2023-2025 NXP
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -24,7 +24,7 @@
 #include "nxLog_smCom.h"
 #include "sm_timer.h"
 
-#include "se05x_apis.h"
+#include "se05x_reset_apis.h"
 #if defined(Android) || defined(LINUX)
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -80,9 +80,6 @@ ESESTATUS phPalEse_i2c_open_and_configure(pphPalEse_Config_t pConfig)
     unsigned int i2c_ret = 0;
 
     LOG_D("%s Opening port", __FUNCTION__);
-    /* open port */
-    /*Disable as interface reset happens on every session open*/
-    //se05x_ic_reset();
 retry:
     i2c_ret = axI2CInit(&conn_ctx, (const char *)pConfig->pDevName);
     if (i2c_ret != I2C_OK) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014,2018-2020,2024 NXP
+ * Copyright 2012-2014,2018-2020,2024-2025 NXP
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -681,6 +681,10 @@ static void phNxpEseProto7816_DecodeSFrameData(uint8_t *p_data)
     {
         frameOffset += 1; /* To get the Type (TLV) */
         LOG_D("%s frameoffset=%d value=0x%x ", __FUNCTION__, frameOffset, p_data[frameOffset]);
+        if ((UINT8_MAX - frameOffset) < p_data[frameOffset + 1]) {
+            LOG_E("frameOffset will wrap");
+            return;
+        }
         frameOffset += p_data[frameOffset + 1]; /* Goto the end of current marker */
 
     }
@@ -710,7 +714,6 @@ static bool_t phNxpEseProto7816_DecodeFrame(uint8_t *p_data, uint32_t data_len)
 {
     bool_t status = TRUE;
     uint8_t pcb;
-    phNxpEseProto7816_PCB_bits_t pcb_bits;
     iFrameInfo_t *pRx_lastRcvdIframeInfo = &phNxpEseProto7816_3_Var.phNxpEseRx_Cntx.lastRcvdIframeInfo;
     rFrameInfo_t *pNextTx_RframeInfo = &phNxpEseProto7816_3_Var.phNxpEseNextTx_Cntx.RframeInfo;
     sFrameInfo_t *pNextTx_SframeInfo = &phNxpEseProto7816_3_Var.phNxpEseNextTx_Cntx.SframeInfo;
@@ -725,26 +728,25 @@ static bool_t phNxpEseProto7816_DecodeFrame(uint8_t *p_data, uint32_t data_len)
     ENSURE_OR_GO_EXIT(p_data != NULL);
 
     pcb = p_data[PH_PROPTO_7816_PCB_OFFSET];
-    phNxpEse_memset(&pcb_bits, 0x00, sizeof(phNxpEseProto7816_PCB_bits_t));
-    phNxpEse_memcpy(&pcb_bits, &pcb, sizeof(uint8_t));
     if(data_len < PH_PROTO_7816_INF_FILED)
     {
         return FALSE;
     }
 
-    if (0x00 == pcb_bits.msb) /* I-FRAME decoded should come here */
+    if (!(pcb & 0x80)) /* I-FRAME decoded should come here */
     {
         LOG_D("%s I-Frame Received ", __FUNCTION__);
         phNxpEseProto7816_3_Var.wtx_counter = 0;
         phNxpEseProto7816_3_Var.phNxpEseRx_Cntx.lastRcvdFrameType = IFRAME ;
-        if (pRx_lastRcvdIframeInfo->seqNo != pcb_bits.bit7) //   != pcb_bits->bit7)
+
+        if (pRx_lastRcvdIframeInfo->seqNo != ((pcb & 0x40) >> 6))
         {
-            LOG_D("%s I-Frame lastRcvdIframeInfo.seqNo:0x%x ", __FUNCTION__, pcb_bits.bit7);
+            LOG_D("%s I-Frame lastRcvdIframeInfo.seqNo:0x%x ", __FUNCTION__, ((pcb & 0x40) >> 6));
             phNxpEseProto7816_ResetRecovery();
             pRx_lastRcvdIframeInfo->seqNo = 0x00;
-            pRx_lastRcvdIframeInfo->seqNo |= pcb_bits.bit7;
+            pRx_lastRcvdIframeInfo->seqNo |= ((pcb & 0x40) >> 6);
 
-            if (pcb_bits.bit6)
+            if (pcb & 0x20)
             {
                 pRx_lastRcvdIframeInfo->isChained = TRUE;
                 phNxpEseProto7816_3_Var.phNxpEseNextTx_Cntx.FrameType = RFRAME;
@@ -783,15 +785,14 @@ static bool_t phNxpEseProto7816_DecodeFrame(uint8_t *p_data, uint32_t data_len)
             }
         }
     }
-    else if ((0x01 == pcb_bits.msb) && (0x00 == pcb_bits.bit7)) /* R-FRAME decoded should come here */
+    else if ((pcb & 0x80) && (!(0x40 & pcb))) /* R-FRAME decoded should come here */
     {
-        LOG_D("%s R-Frame Received", __FUNCTION__);
         phNxpEseProto7816_3_Var.wtx_counter = 0;
         phNxpEseProto7816_3_Var.phNxpEseRx_Cntx.lastRcvdFrameType = RFRAME;
         pRx_lastRcvdRframeInfo->seqNo = 0; // = 0;
-        pRx_lastRcvdRframeInfo->seqNo |= pcb_bits.bit5;
+        pRx_lastRcvdRframeInfo->seqNo |= ((pcb & 0x10) >> 4);
 
-        if ((pcb_bits.lsb == 0x00) && (pcb_bits.bit2 == 0x00))
+        if ((!(pcb & 0x01)) && (!(pcb & 0x02)))
         {
             pRx_lastRcvdRframeInfo->errCode = NO_ERROR;
             phNxpEseProto7816_ResetRecovery();
@@ -801,12 +802,12 @@ static bool_t phNxpEseProto7816_DecodeFrame(uint8_t *p_data, uint32_t data_len)
             }
 
         } /* Error handling 1 : Parity error */
-        else if (((pcb_bits.lsb == 0x01) && (pcb_bits.bit2 == 0x00)) ||
+        else if (((pcb & 0x01) && (!(pcb & 0x02))) ||
             /* Error handling 2: Other indicated error */
-            ((pcb_bits.lsb == 0x00) && (pcb_bits.bit2 == 0x01)))
+            ((!(pcb & 0x01)) && (pcb & 0x02)))
         {
             sm_sleep(DELAY_ERROR_RECOVERY/1000);
-            if((pcb_bits.lsb == 0x00) && (pcb_bits.bit2 == 0x01)) {
+            if((!(pcb & 0x01)) && (pcb & 0x02)) {
                 pRx_lastRcvdRframeInfo->errCode = OTHER_ERROR;
             }
             else {
@@ -865,7 +866,7 @@ static bool_t phNxpEseProto7816_DecodeFrame(uint8_t *p_data, uint32_t data_len)
             //resend previously send I frame
         }
         /* Error handling 3 */
-        else if ((pcb_bits.lsb == 0x01) && (pcb_bits.bit2 == 0x01))
+        else if ((pcb & 0x01) && (pcb & 0x02))
         {
             sm_sleep(DELAY_ERROR_RECOVERY/1000);
             if(phNxpEseProto7816_3_Var.recoveryCounter < PH_PROTO_7816_FRAME_RETRY_COUNT)
@@ -881,7 +882,7 @@ static bool_t phNxpEseProto7816_DecodeFrame(uint8_t *p_data, uint32_t data_len)
             }
         }
     }
-    else if ((0x01 == pcb_bits.msb) && (0x01 == pcb_bits.bit7)) /* S-FRAME decoded should come here */
+    else if ((0x80 & pcb) && (0x40 & pcb)) /* S-FRAME decoded should come here */
     {
         LOG_D("%s S-Frame Received ", __FUNCTION__);
         frameType = (int32_t)(pcb & 0x3F); /*discard upper 2 bits */
@@ -960,10 +961,6 @@ static bool_t phNxpEseProto7816_DecodeFrame(uint8_t *p_data, uint32_t data_len)
             case INTF_RESET_RSP:
                 if(p_data[PH_PROPTO_7816_FRAME_LENGTH_OFFSET] > 0) {
                     phNxpEseProto7816_DecodeSFrameData(p_data);
-                }
-                if(data_len < PH_PROTO_7816_INF_FILED)
-                {
-                    return FALSE;
                 }
                 if (FALSE == phNxpEseProro7816_SaveRxframeData(&p_data[PH_PROPTO_7816_INF_BYTE_OFFSET], data_len - PH_PROTO_7816_INF_FILED))
                 {

@@ -1,6 +1,6 @@
 /*
 *
-* Copyright 2016,2020,2024 NXP
+* Copyright 2016,2020,2024-2025 NXP
 * SPDX-License-Identifier: BSD-3-Clause
 */
 
@@ -77,7 +77,7 @@ U16 GP_Select(void *conn_ctx, const U8 *appletName, U16 appletNameLen, U8 *respo
 
     rv = smCom_TransceiveRaw(conn_ctx, tx_buf, tx_len, responseData, &u32RXLen);
     if (rv == SW_OK && u32RXLen >= 2) {
-        if ((u32RXLen - 2) > UINT16_MAX) {
+        if ((u32RXLen - 2) > (*responseDataLen)) {
             return ERR_COMM_ERROR;
         }
         *responseDataLen = u32RXLen - 2;

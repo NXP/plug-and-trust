@@ -1,6 +1,6 @@
 /*
  *
- * Copyright 2019-2020,2024 NXP
+ * Copyright 2019-2020,2024-2025 NXP
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
@@ -27,6 +27,9 @@
 #include "ex_sss_boot_int.h"
 #include "nxLog_App.h"
 #include "nxScp03_Types.h"
+#if defined(SECURE_WORLD)
+#include "fsl_sss_lpc55s_apis.h"
+#endif
 /* *****************************************************************************************************************
 * Internal Definitions
 * ***************************************************************************************************************** */
@@ -430,33 +433,62 @@ static sss_status_t ex_sss_se05x_prepare_host_platformscp(
     NXSCP03_AuthCtx_t *pAuthCtx, ex_SE05x_authCtx_t *pEx_auth, sss_key_store_t *pKs)
 {
     sss_status_t status = kStatus_SSS_Fail;
-    uint8_t KEY_ENC[]   = EX_SSS_AUTH_SE05X_KEY_ENC;
-    uint8_t KEY_MAC[]   = EX_SSS_AUTH_SE05X_KEY_MAC;
+#if defined(SECURE_WORLD)
+    uint8_t KEY_ENC[] = EX_SSS_AUTH_SE05X_KEY_ENC;
+    uint8_t KEY_MAC[] = EX_SSS_AUTH_SE05X_KEY_MAC;
+#else
+    uint8_t KEY_ENC[32] = EX_SSS_AUTH_SE05X_KEY_ENC;
+    uint8_t KEY_MAC[32] = EX_SSS_AUTH_SE05X_KEY_MAC;
+#endif
+    size_t enc_len = EX_SSS_AUTH_SE05X_KEY_LEN;
+    size_t mac_len = EX_SSS_AUTH_SE05X_KEY_LEN;
     //uint8_t KEY_DEK[]   = EX_SSS_AUTH_SE05X_KEY_DEK;
     NXSCP03_StaticCtx_t *pStatic_ctx = NULL;
     NXSCP03_DynCtx_t *pDyn_ctx       = NULL;
 
 #ifdef EX_SSS_SCP03_FILE_PATH
 
-    uint8_t enc[AUTH_KEY_SIZE] = {0};
-    uint8_t mac[AUTH_KEY_SIZE] = {0};
+    uint8_t enc[SCP03_MAX_AUTH_KEY_SIZE] = {0};
+    uint8_t mac[SCP03_MAX_AUTH_KEY_SIZE] = {0};
     //uint8_t dek[AUTH_KEY_SIZE] = {0};
 
     //status = scp03_keys_from_path(&enc[0], sizeof(enc), &mac[0], sizeof(mac), &dek[0], sizeof(dek));
-    status = scp03_keys_from_path(&enc[0], sizeof(enc), &mac[0], sizeof(mac));
+    enc_len = SCP03_MAX_AUTH_KEY_SIZE;
+    mac_len = SCP03_MAX_AUTH_KEY_SIZE;
+    status  = scp03_keys_from_path(&enc[0], &enc_len, &mac[0], &mac_len);
 
     if (status == kStatus_SSS_Success) {
-        memcpy(KEY_ENC, enc, sizeof(KEY_ENC));
-        memcpy(KEY_MAC, mac, sizeof(KEY_MAC));
+        if (enc_len <= sizeof(KEY_ENC)) {
+            memcpy(KEY_ENC, enc, enc_len);
+        }
+        else {
+            LOG_E("enc_len is more than the buffer size");
+            return kStatus_SSS_Fail;
+        }
+        if (mac_len <= sizeof(KEY_MAC)) {
+            memcpy(KEY_MAC, mac, mac_len);
+        }
+        else {
+            LOG_E("mac_len is more than the buffer size");
+            return kStatus_SSS_Fail;
+        }
         //memcpy(KEY_DEK, dek, sizeof(KEY_DEK));
     }
-
+    else {
+        enc_len = EX_SSS_AUTH_SE05X_KEY_LEN;
+        mac_len = EX_SSS_AUTH_SE05X_KEY_LEN;
+    }
 #endif // EX_SSS_SCP03_FILE_PATH
 
     pAuthCtx->pStatic_ctx = &pEx_auth->scp03.ex_static;
     pAuthCtx->pDyn_ctx    = &pEx_auth->scp03.ex_dyn;
-    pStatic_ctx           = pAuthCtx->pStatic_ctx;
-    pDyn_ctx              = pAuthCtx->pDyn_ctx;
+#if defined(SECURE_WORLD)
+    pAuthCtx->pStatic_ctx->key_len = AUTH_KEY_SIZE;
+#else
+    pAuthCtx->pStatic_ctx->key_len = enc_len;
+#endif
+    pStatic_ctx = pAuthCtx->pStatic_ctx;
+    pDyn_ctx    = pAuthCtx->pDyn_ctx;
 
     pStatic_ctx->keyVerNo = EX_SSS_AUTH_SE05X_KEY_VERSION_NO;
 
@@ -466,7 +498,7 @@ static sss_status_t ex_sss_se05x_prepare_host_platformscp(
         return status;
     }
     /* Set ENC Static Key */
-    status = sss_host_key_store_set_key(pKs, &pStatic_ctx->Enc, KEY_ENC, sizeof(KEY_ENC), sizeof(KEY_ENC) * 8, NULL, 0);
+    status = sss_host_key_store_set_key(pKs, &pStatic_ctx->Enc, KEY_ENC, enc_len, enc_len * 8, NULL, 0);
     if (status != kStatus_SSS_Success) {
         return status;
     }
@@ -477,7 +509,7 @@ static sss_status_t ex_sss_se05x_prepare_host_platformscp(
         return status;
     }
     /* Set MAC Static Key */
-    status = sss_host_key_store_set_key(pKs, &pStatic_ctx->Mac, KEY_MAC, sizeof(KEY_MAC), sizeof(KEY_MAC) * 8, NULL, 0);
+    status = sss_host_key_store_set_key(pKs, &pStatic_ctx->Mac, KEY_MAC, mac_len, mac_len * 8, NULL, 0);
     if (status != kStatus_SSS_Success) {
         return status;
     }
@@ -615,6 +647,8 @@ static sss_status_t ex_sss_se05x_prepare_host_AppletScp03Keys(
     pAuthCtx->pDyn_ctx               = &pEx_auth->scp03.ex_dyn;
     pStatic_ctx                      = pAuthCtx->pStatic_ctx;
     pDyn_ctx                         = pAuthCtx->pDyn_ctx;
+
+    pAuthCtx->pStatic_ctx->key_len = 16;
 
     /* Init Allocate ENC Static Key */
     status = Alloc_AppletScp03key_toSE05xAuthctx(&pStatic_ctx->Enc, MAKE_TEST_ID(__LINE__), host_k);

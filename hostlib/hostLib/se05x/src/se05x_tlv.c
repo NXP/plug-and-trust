@@ -1,6 +1,6 @@
 /*
  *
- * Copyright 2019-2020,2024 NXP
+ * Copyright 2019-2020,2024-2025 NXP
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
@@ -28,11 +28,39 @@
 #define SE05X_TLV_BUF_SIZE_RSP 900
 #endif
 
+#if !FLOW_SILENT
+static const char *getErrorMessage(smStatus_t status)
+{
+    switch (status) {
+    case SM_NOT_OK:
+        return "Error";
+    case SM_ERR_WRONG_LENGTH:
+        return "Wrong length (e.g. C-APDU does not fit into APDU buffer)";
+    case SM_ERR_CONDITIONS_NOT_SATISFIED:
+        return "Conditions not satisfied";
+    case SM_ERR_COMMAND_NOT_ALLOWED:
+        return "Command not allowed - access denied based on object policy";
+    case SM_ERR_SECURITY_STATUS:
+        return "Security status not satisfied";
+    case SM_ERR_WRONG_DATA:
+        return "Wrong data provided";
+    case SM_ERR_DATA_INVALID:
+        return "Data invalid - policy set invalid for the given object";
+    case SM_ERR_FILE_FULL:
+        return "Not enough memory space available (either transient or persistent memory)";
+    case SM_ERR_APDU_THROUGHPUT:
+        return "APDU Throughput error";
+    default:
+        return "Error Not listed";
+    }
+}
+#endif //!FLOW_SILENT
+
 int tlvSet_U8(uint8_t **buf, size_t *bufLen, SE05x_TAG_t tag, uint8_t value)
 {
     uint8_t *pBuf            = *buf;
     const size_t size_of_tlv = 1 + 1 + 1;
-    if ((UINT_MAX - size_of_tlv) < (*bufLen)) {
+    if ((SIZE_MAX - size_of_tlv) < (*bufLen)) {
         return 1;
     }
     if (((*bufLen) + size_of_tlv) > SE05X_TLV_BUF_SIZE_CMD) {
@@ -63,7 +91,7 @@ int tlvSet_U16(uint8_t **buf, size_t *bufLen, SE05x_TAG_t tag, uint16_t value)
 {
     const size_t size_of_tlv = 1 + 1 + 2;
     uint8_t *pBuf            = *buf;
-    if ((UINT_MAX - size_of_tlv) < (*bufLen)) {
+    if ((SIZE_MAX - size_of_tlv) < (*bufLen)) {
         return 1;
     }
     if (((*bufLen) + size_of_tlv) > SE05X_TLV_BUF_SIZE_CMD) {
@@ -82,7 +110,7 @@ int tlvSet_U32(uint8_t **buf, size_t *bufLen, SE05x_TAG_t tag, uint32_t value)
 {
     const size_t size_of_tlv = 1 + 1 + 4;
     uint8_t *pBuf            = *buf;
-    if ((UINT_MAX - size_of_tlv) < (*bufLen)) {
+    if ((SIZE_MAX - size_of_tlv) < (*bufLen)) {
         return 1;
     }
     if (((*bufLen) + size_of_tlv) > SE05X_TLV_BUF_SIZE_CMD) {
@@ -107,7 +135,7 @@ int tlvSet_U64_size(uint8_t **buf, size_t *bufLen, SE05x_TAG_t tag, uint64_t val
     int8_t pos               = (uint8_t)size;
     const size_t size_of_tlv = 1 + 1 + size;
     uint8_t *pBuf            = *buf;
-    if ((UINT_MAX - (*bufLen)) < size_of_tlv) {
+    if ((SIZE_MAX - (*bufLen)) < size_of_tlv) {
         return 1;
     }
     if (((*bufLen) + size_of_tlv) > SE05X_TLV_BUF_SIZE_CMD) {
@@ -201,7 +229,7 @@ int tlvSet_u8buf(uint8_t **buf, size_t *bufLen, SE05x_TAG_t tag, const uint8_t *
     const size_t size_of_length = (cmdLen <= 0x7f ? 1 : (cmdLen <= 0xFf ? 2 : 3));
     const size_t size_of_tlv    = 1 + size_of_length + cmdLen;
 
-    if ((UINT_MAX - (*bufLen)) < size_of_tlv) {
+    if ((SIZE_MAX - (*bufLen)) < size_of_tlv) {
         return 1;
     }
 
@@ -580,6 +608,9 @@ smStatus_t DoAPDUTx_s_Case3(Se05xSession_t *pSessionCtx, const tlvHeader_t *hdr,
     else {
         apduStatus = pSessionCtx->fp_TXn(pSessionCtx, hdr, cmdBuf, cmdBufLen, rxBuf, &rxBufLen, 0);
     }
+    if (apduStatus != SM_OK) {
+        LOG_W("APDU Transaction Error: %s (0x%04X)\n", getErrorMessage(apduStatus), apduStatus);
+    }
     return apduStatus;
 }
 
@@ -601,6 +632,9 @@ smStatus_t DoAPDUTxRx_s_Case2(Se05xSession_t *pSessionCtx,
     }
     else {
         apduStatus = pSessionCtx->fp_TXn(pSessionCtx, hdr, cmdBuf, cmdBufLen, rspBuf, pRspBufLen, 0);
+    }
+    if (apduStatus != SM_OK) {
+        LOG_W("APDU Transaction Error: %s (0x%04X)\n", getErrorMessage(apduStatus), apduStatus);
     }
     return apduStatus;
 }
@@ -624,6 +658,9 @@ smStatus_t DoAPDUTxRx_s_Case4(Se05xSession_t *pSessionCtx,
     else {
         apduStatus = pSessionCtx->fp_TXn(pSessionCtx, hdr, cmdBuf, cmdBufLen, rspBuf, pRspBufLen, 0);
     }
+    if (apduStatus != SM_OK) {
+        LOG_W("APDU Transaction Error: %s (0x%04X)\n", getErrorMessage(apduStatus), apduStatus);
+    }
     return apduStatus;
 }
 
@@ -645,6 +682,9 @@ smStatus_t DoAPDUTxRx_s_Case4_ext(Se05xSession_t *pSessionCtx,
     }
     else {
         apduStatus = pSessionCtx->fp_TXn(pSessionCtx, hdr, cmdBuf, cmdBufLen, rspBuf, pRspBufLen, 1);
+    }
+    if (apduStatus != SM_OK) {
+        LOG_W("APDU Transaction Error: %s (0x%04X)\n", getErrorMessage(apduStatus), apduStatus);
     }
     return apduStatus;
 }
@@ -683,6 +723,9 @@ smStatus_t DoAPDUTxRx(
             break;
         }
     }
+    if (apduStatus != SM_OK) {
+        LOG_W("APDU Transaction Error: %s (0x%04X)\n", getErrorMessage(apduStatus), apduStatus);
+    }
     return apduStatus;
 }
 
@@ -699,7 +742,7 @@ int tlvSet_u8buf_I2CM(uint8_t **buf, size_t *bufLen, SE05x_I2CM_TAG_t tag, const
     const size_t size_of_length = 2;
     const size_t size_of_tlv    = 1 + size_of_length + cmdLen;
     uint8_t *pBuf               = *buf;
-    if ((UINT_MAX - (*bufLen)) < size_of_tlv) {
+    if ((SIZE_MAX - (*bufLen)) < size_of_tlv) {
         return 1;
     }
     if (((*bufLen) + size_of_tlv) > SE05X_I2CM_MAX_BUF_SIZE_CMD) {
@@ -892,6 +935,7 @@ smStatus_t se05x_Transform_scp(struct Se05xSession *pSession,
         outhdr->hdr[3] = kSE05x_P2_DEFAULT;
 
         /* Add CMAC Length in SE05X command LC */
+        ENSURE_OR_GO_CLEANUP((SIZE_MAX - SCP_GP_IU_CARD_CRYPTOGRAM_LEN) >= se05xApdu.se05xCmdLen);
         se05xApdu.se05xCmdLC  = se05xApdu.se05xCmdLen + SCP_GP_IU_CARD_CRYPTOGRAM_LEN;
         se05xApdu.se05xCmdLCW = (se05xApdu.se05xCmdLC == 0) ? 0 : (((se05xApdu.se05xCmdLC < 0xFF) && !(hasle)) ? 1 : 3);
 
@@ -928,7 +972,7 @@ smStatus_t se05x_Transform_scp(struct Se05xSession *pSession,
         }
         se05xApdu.wsSe05x_tag1Cmd = &wsCmd[i];
         ENSURE_OR_GO_CLEANUP(
-            (UINT_MAX - sizeof(*(se05xApdu.se05xCmd_hdr)) - se05xApdu.se05xCmdLCW) >= se05xApdu.se05xCmdLen);
+            (SIZE_MAX - sizeof(*(se05xApdu.se05xCmd_hdr)) - se05xApdu.se05xCmdLCW) >= se05xApdu.se05xCmdLen);
         se05xApdu.wsSe05x_tag1CmdLen =
             sizeof(*(se05xApdu.se05xCmd_hdr)) + se05xApdu.se05xCmdLCW + se05xApdu.se05xCmdLen;
 
@@ -955,7 +999,7 @@ smStatus_t se05x_Transform_scp(struct Se05xSession *pSession,
             }
         }
         memcpy(&wsCmd[i], se05xApdu.se05xCmd, se05xApdu.se05xCmdLen);
-        ENSURE_OR_GO_CLEANUP((UINT_MAX - i) >= se05xApdu.se05xCmdLen);
+        ENSURE_OR_GO_CLEANUP((SIZE_MAX - i) >= se05xApdu.se05xCmdLen);
         i += se05xApdu.se05xCmdLen;
         se05xApdu.wsSe05x_cmdLen = i;
         se05xApdu.dataToMac      = se05xApdu.wsSe05x_tag1Cmd;
@@ -964,6 +1008,7 @@ smStatus_t se05x_Transform_scp(struct Se05xSession *pSession,
     }
     else {
         /* If there is no session create the tx buffer with SE05X command only*/
+        ENSURE_OR_GO_CLEANUP((SIZE_MAX - SCP_GP_IU_CARD_CRYPTOGRAM_LEN) >= se05xApdu.se05xCmdLen);
         se05xApdu.se05xCmdLC  = se05xApdu.se05xCmdLen + SCP_GP_IU_CARD_CRYPTOGRAM_LEN;
         se05xApdu.se05xCmdLCW = (se05xApdu.se05xCmdLC == 0) ? 0 : (((se05xApdu.se05xCmdLC < 0xFF) && !(hasle)) ? 1 : 3);
 
@@ -977,7 +1022,7 @@ smStatus_t se05x_Transform_scp(struct Se05xSession *pSession,
 
         memcpy(&txBuf[i], se05xApdu.se05xCmd_hdr, sizeof(*se05xApdu.se05xCmd_hdr));
         txBuf[i] |= 0x4;
-        if ((UINT_MAX - i) < sizeof(*se05xApdu.se05xCmd_hdr)) {
+        if ((SIZE_MAX - i) < sizeof(*se05xApdu.se05xCmd_hdr)) {
             goto cleanup;
         }
         i += sizeof(*se05xApdu.se05xCmd_hdr);
@@ -1004,7 +1049,7 @@ smStatus_t se05x_Transform_scp(struct Se05xSession *pSession,
         pSession->pdynScp03Ctx, se05xApdu.dataToMac, se05xApdu.dataToMacLen, macToAdd, &macLen);
     ENSURE_OR_GO_CLEANUP(sss_status == kStatus_SSS_Success);
     memcpy(&txBuf[i], macToAdd, SCP_GP_IU_CARD_CRYPTOGRAM_LEN);
-    ENSURE_OR_GO_CLEANUP((UINT_MAX - i) >= SCP_GP_IU_CARD_CRYPTOGRAM_LEN);
+    ENSURE_OR_GO_CLEANUP((SIZE_MAX - i) >= SCP_GP_IU_CARD_CRYPTOGRAM_LEN);
     i += SCP_GP_IU_CARD_CRYPTOGRAM_LEN;
 
     if (!pSession->hasSession) {

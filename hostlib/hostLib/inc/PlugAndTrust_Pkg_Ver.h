@@ -1,4 +1,4 @@
-/* Copyright 2019-2021,2024 NXP
+/* Copyright 2019-2021,2024-2025 NXP
  *
  * SPDX-License-Identifier: BSD-3-Clause
  *
@@ -11,18 +11,18 @@
 
 /* clang-format off */
 #define PLUGANDTRUST_PROD_NAME          "PlugAndTrust"
-#define PLUGANDTRUST_VER_STRING_NUM     "v04.05.03_20240502"
-#define PLUGANDTRUST_PROD_NAME_VER_FULL "PlugAndTrust_v04.05.03_20240502"
+#define PLUGANDTRUST_VER_STRING_NUM     "v04.07.00_20250210"
+#define PLUGANDTRUST_PROD_NAME_VER_FULL "PlugAndTrust_v04.07.00_20250210"
 #define PLUGANDTRUST_VER_MAJOR          (4u)
-#define PLUGANDTRUST_VER_MINOR          (5u)
-#define PLUGANDTRUST_VER_DEV            (3u)
+#define PLUGANDTRUST_VER_MINOR          (7u)
+#define PLUGANDTRUST_VER_DEV            (0u)
 
-/* v04.05 = 40005u */
+/* v04.07 = 40007u */
 #define PLUGANDTRUST_VER_MAJOR_MINOR ( 0 \
     | (PLUGANDTRUST_VER_MAJOR * 10000u)    \
     | (PLUGANDTRUST_VER_MINOR))
 
-/* v04.05.03 = 400050003ULL */
+/* v04.07.00 = 400070000ULL */
 #define PLUGANDTRUST_VER_MAJOR_MINOR_DEV ( 0 \
     | (PLUGANDTRUST_VER_MAJOR * 10000*10000u)    \
     | (PLUGANDTRUST_VER_MINOR * 10000u)    \
@@ -48,9 +48,9 @@
  *
  * v_major  = "04"
  *
- * v_minor  = "05"
+ * v_minor  = "07"
  *
- * v_dev    = "03"
+ * v_dev    = "00"
  *
  * # Develop Branch
  * v_meta   = ""

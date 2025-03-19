@@ -1,6 +1,6 @@
 /*
  *
- * Copyright 2018-2022,2024 NXP
+ * Copyright 2018-2022,2024-2025 NXP
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
@@ -32,8 +32,8 @@
 /** SE050 Type B (RSA) */
 #define SSS_HAVE_APPLET_SE05X_B 0
 
-/** SE050 (Super set of A + B) */
-#define SSS_HAVE_APPLET_SE05X_C 1
+/** SE050 (Super set of A + B), SE051, SE052 */
+#define SSS_HAVE_APPLET_SE05X_C 0
 
 /** SE051 with SPAKE Support */
 #define SSS_HAVE_APPLET_SE051_H 0
@@ -42,7 +42,7 @@
 #define SSS_HAVE_APPLET_AUTH 0
 
 /** SE050E */
-#define SSS_HAVE_APPLET_SE050_E 0
+#define SSS_HAVE_APPLET_SE050_E 1
 
 /** NXP Internal testing Applet */
 #define SSS_HAVE_APPLET_LOOPBACK 0
@@ -76,17 +76,17 @@
 
 
 
-/** PTMW_SE05X_Ver : SE05X Applet version.
+/** PTMW_SE05X_Ver : Configures supported applet version.
+ * Set it to match the version used on the SE.
+ * Examples: for SE050A/B/C/F set 03_XX, for SE050E/51/A5000/SE052 set 07_02.
  *
- * Selection of Applet version 03_XX enables SE050 features.
- * Selection of Applet version 07_02 enables SE051 features.
  *
  */
 
-/** SE050 */
+/** SE050A/B/C/F */
 #define SSS_HAVE_SE05X_VER_03_XX 0
 
-/** SE051 */
+/** SE050E/51/A5000/SE052 */
 #define SSS_HAVE_SE05X_VER_07_02 1
 
 #if (( 0                             \
@@ -113,7 +113,7 @@
  */
 
 /** Use mbedTLS as host crypto */
-#define SSS_HAVE_HOSTCRYPTO_MBEDTLS 1
+#define SSS_HAVE_HOSTCRYPTO_MBEDTLS 0
 
 /** Use OpenSSL as host crypto */
 #define SSS_HAVE_HOSTCRYPTO_OPENSSL 0
@@ -131,7 +131,7 @@
  * Note, this is unsecure and only provided for experimentation
  * on platforms that do not have an mbedTLS PORT
  * Many :ref:`sssftr-control` have to be disabled to have a valid build. */
-#define SSS_HAVE_HOSTCRYPTO_NONE 0
+#define SSS_HAVE_HOSTCRYPTO_NONE 1
 
 #if (( 0                             \
     + SSS_HAVE_HOSTCRYPTO_MBEDTLS    \
@@ -196,10 +196,10 @@
  */
 
 /**  */
-#define SSS_HAVE_SCP_NONE 0
+#define SSS_HAVE_SCP_NONE 1
 
 /** Use SSS Layer for SCP.  Used for SE050 family. */
-#define SSS_HAVE_SCP_SCP03_SSS 1
+#define SSS_HAVE_SCP_SCP03_SSS 0
 
 #if (( 0                             \
     + SSS_HAVE_SCP_NONE              \
@@ -288,7 +288,7 @@
  *
  * This settings is used by examples to connect using various options
  * to authenticate with the Applet.
- * The SE05X_Auth options can be changed for KSDK Demos and Examples.
+ * The SE05X_Auth options can be changed for MCU-SDK Demos and Examples.
  * To change SE05X_Auth option follow below steps.
  * Set flag ``SSS_HAVE_SCP_SCP03_SSS`` to 1 and Reset flag ``SSS_HAVE_SCP_NONE`` to 0.
  * To change SE05X_Auth option other than ``None`` and  ``PlatfSCP03``,
@@ -359,7 +359,7 @@
  */
 
 /** Use 1.1.1 version (Only applicable on PC) */
-#define SSS_HAVE_OPENSSL_1_1_1 1
+#define SSS_HAVE_OPENSSL_1_1_1 0
 
 /** Use 3.0 version (Only applicable on PC) */
 #define SSS_HAVE_OPENSSL_3_0 0
@@ -376,7 +376,59 @@
     + SSS_HAVE_OPENSSL_1_1_1         \
     + SSS_HAVE_OPENSSL_3_0           \
     ) == 0)
-// #        error "Enable at-least one of 'PTMW_OpenSSL'"
+//#        error "Enable at-least one of 'PTMW_OpenSSL'"
+#endif
+
+
+
+/** PTMW_MBedTLS : Which MBedTLS version to choose
+ */
+
+/** Use 2.X version */
+#define SSS_HAVE_MBEDTLS_2_X 0
+
+/** Use 3.X version */
+#define SSS_HAVE_MBEDTLS_3_X 0
+
+#if (( 0                             \
+    + SSS_HAVE_MBEDTLS_2_X           \
+    + SSS_HAVE_MBEDTLS_3_X           \
+    ) > 1)
+#        error "Enable only one of 'PTMW_MBedTLS'"
+#endif
+
+
+#if (( 0                             \
+    + SSS_HAVE_MBEDTLS_2_X           \
+    + SSS_HAVE_MBEDTLS_3_X           \
+    ) == 0)
+//#        error "Enable at-least one of 'PTMW_MBedTLS'"
+#endif
+
+
+
+/** PTMW_SE_RESET_LOGIC : Reset logic of Secure Element. The value of this will be used for 'SE_RESET_LOGIC' define in 'se05x_ic_reset' function. Select 1 (Active High) for SE050 and 51. Select 0 (Active low) for SE052.
+ */
+
+/** reset logic is set to 1 */
+#define SSS_HAVE_SE_RESET_LOGIC_1 1
+
+/** reset logic is set to 0 */
+#define SSS_HAVE_SE_RESET_LOGIC_0 0
+
+#if (( 0                             \
+    + SSS_HAVE_SE_RESET_LOGIC_1      \
+    + SSS_HAVE_SE_RESET_LOGIC_0      \
+    ) > 1)
+#        error "Enable only one of 'PTMW_SE_RESET_LOGIC'"
+#endif
+
+
+#if (( 0                             \
+    + SSS_HAVE_SE_RESET_LOGIC_1      \
+    + SSS_HAVE_SE_RESET_LOGIC_0      \
+    ) == 0)
+#        error "Enable at-least one of 'PTMW_SE_RESET_LOGIC'"
 #endif
 
 
@@ -392,7 +444,7 @@
 #define SSSFTR_SE05X_ECC 1
 
 /** SE05X Secure Element : RSA */
-#define SSSFTR_SE05X_RSA 1
+#define SSSFTR_SE05X_RSA 0
 
 /** SE05X Secure Element : KEY operations : SET Key */
 #define SSSFTR_SE05X_KEY_SET 1
@@ -408,7 +460,7 @@
  * If the intended deployment only uses Platform SCP
  * Or it is a pure session less integration, this can
  * save some code size. */
-#define SSSFTR_SE05X_AuthSession 1
+#define SSSFTR_SE05X_AuthSession 0
 
 /** SE05X Secure Element : Allow creation/deletion of Crypto Objects
  *
@@ -504,7 +556,7 @@
 #define SSS_HAVE_ECC 1
 
 /* RSA is available */
-#define SSS_HAVE_RSA 1
+#define SSS_HAVE_RSA 0
 
 /* Edwards Curve is enabled */
 #define SSS_HAVE_EC_ED 1

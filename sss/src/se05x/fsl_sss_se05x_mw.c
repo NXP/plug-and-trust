@@ -1,6 +1,6 @@
 /*
  *
- * Copyright 2018-2020,2024 NXP
+ * Copyright 2018-2020,2024-2025 NXP
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
@@ -17,8 +17,13 @@
 #include <nxEnsure.h>
 #include <string.h>
 
-int add_taglength_to_data(
-    uint8_t **buf, size_t *bufLen, SE05x_TAG_t tag, const uint8_t *cmd, size_t cmdLen, bool extendedLength);
+int add_taglength_to_data(uint8_t **buf,
+    size_t *bufLen,
+    const size_t actualBufLen,
+    SE05x_TAG_t tag,
+    const uint8_t *cmd,
+    size_t cmdLen,
+    bool extendedLength);
 
 uint32_t se05x_sssKeyTypeLenToCurveId(sss_cipher_type_t cipherType, size_t keyBits)
 {
@@ -161,8 +166,13 @@ smStatus_t Se05x_API_EC_CurveGetId(pSe05xSession_t session_ctx, uint32_t objectI
     return ret;
 }
 
-int add_taglength_to_data(
-    uint8_t **buf, size_t *bufLen, SE05x_TAG_t tag, const uint8_t *cmd, size_t cmdLen, bool extendedLength)
+int add_taglength_to_data(uint8_t **buf,
+    size_t *bufLen,
+    const size_t actualBufLen,
+    SE05x_TAG_t tag,
+    const uint8_t *cmd,
+    size_t cmdLen,
+    bool extendedLength)
 {
     uint8_t *pBuf         = NULL;
     size_t size_of_length = 3;
@@ -178,16 +188,26 @@ int add_taglength_to_data(
         return 1;
     }
 
+    if ((*bufLen + 1) > actualBufLen) {
+        return 1;
+    }
+
     *pBuf++ = (uint8_t)tag;
 
     if (!extendedLength) {
         if (cmdLen > UINT8_MAX) {
             return 1;
         }
+        if ((*bufLen + 2) > actualBufLen) {
+            return 1;
+        }
         *pBuf++        = (uint8_t)cmdLen;
         size_of_length = 1;
     }
     else if (cmdLen <= 0xFFFFu) {
+        if ((*bufLen + 4) > actualBufLen) {
+            return 1;
+        }
         *pBuf++ = (uint8_t)(0x80 /* Extended */ | 0x02 /* Additional Length */);
         *pBuf++ = (uint8_t)((cmdLen >> 1 * 8) & 0xFF);
         *pBuf++ = (uint8_t)((cmdLen >> 0 * 8) & 0xFF);
@@ -203,6 +223,10 @@ int add_taglength_to_data(
     size_of_tlv = 1 + size_of_length + cmdLen;
 
     if ((size_t)(*bufLen + size_of_tlv) >= (size_t)(1UL << ((sizeof(size_t) * 4) - 1))) {
+        return 1;
+    }
+
+    if ((*bufLen + size_of_tlv) >= actualBufLen) {
         return 1;
     }
 

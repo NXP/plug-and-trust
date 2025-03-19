@@ -1,6 +1,6 @@
 /*
 *
-* Copyright 2018-2020,2024 NXP
+* Copyright 2018-2020,2024-2025 NXP
 * SPDX-License-Identifier: BSD-3-Clause
 */
 
@@ -27,6 +27,7 @@
 #define ASN_TAG_CNT_SPECIFIC_PRIMITIVE 0x80
 #define ASN_TAG_CRL_EXTENSIONS 0xA0
 
+extern const uint8_t grsa512PubHeader[];
 extern const uint8_t grsa1kPubHeader[];
 extern const uint8_t grsa1152PubHeader[];
 extern const uint8_t grsa2kPubHeader[];
@@ -71,6 +72,12 @@ extern const size_t der_ecc_bp512_header_len;
 extern const size_t der_ecc_mont_dh_448_header_len;
 extern const size_t der_ecc_mont_dh_25519_header_len;
 extern const size_t der_ecc_twisted_ed_25519_header_len;
+extern const size_t der_rsa_512_len;
+extern const size_t der_rsa_1024_len;
+extern const size_t der_rsa_1152_len;
+extern const size_t der_rsa_2048_len;
+extern const size_t der_rsa_3072_len;
+extern const size_t der_rsa_4096_len;
 
 /* ************************************************************************** */
 /* Functions                                                                  */
@@ -149,7 +156,7 @@ sss_status_t sss_util_rfc8410_asn1_get_ec_pair_key_index(const uint8_t *input,
     uint16_t *prvkeyIndex,
     size_t *privateKeyLen);
 
-int asn_1_parse_tlv(uint8_t *pbuf, size_t *taglen, size_t *bufindex);
+int asn_1_parse_tlv(uint8_t *pbuf, size_t *taglen, size_t *bufindex, size_t bufLen);
 
 sss_status_t sss_util_asn1_rsa_parse_public_nomalloc(
     const uint8_t *key, size_t keylen, uint8_t *modulus, size_t *modlen, uint8_t *pubExp, size_t *pubExplen);

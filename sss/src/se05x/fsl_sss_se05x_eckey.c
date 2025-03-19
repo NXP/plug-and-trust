@@ -1,4 +1,4 @@
-/* Copyright 2019,2020,2024 NXP
+/* Copyright 2019,2020,2024-2025 NXP
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
@@ -21,6 +21,8 @@
 #include <smCom.h>
 #include <sm_const.h>
 #include <string.h>
+#include <limits.h>
+
 #if SSS_HAVE_HOSTCRYPTO_MBEDTLS
 #include "fsl_sss_mbedtls_types.h"
 #elif SSS_HAVE_HOSTCRYPTO_OPENSSL
@@ -103,7 +105,7 @@ sss_status_t nxECKey_AuthenticateChannel(
     }
     memcpy(
         hostEckaPub + offset, hostPubkey + ASN_ECC_NIST_256_HEADER_LEN, hostEckaPubLen - ASN_ECC_NIST_256_HEADER_LEN);
-    if ((UINT_MAX - offset) < (hostEckaPubLen - ASN_ECC_NIST_256_HEADER_LEN)) {
+    if ((SIZE_MAX - offset) < (hostEckaPubLen - ASN_ECC_NIST_256_HEADER_LEN)) {
         goto exit;
     }
     offset += hostEckaPubLen - ASN_ECC_NIST_256_HEADER_LEN;
@@ -249,14 +251,14 @@ static sss_status_t nxECKey_calculate_master_secret(
     ENSURE_OR_GO_CLEANUP(sharedSecretLen <= sizeof(derivationInput) - derivationInputLen);
     memcpy(&derivationInput[derivationInputLen], sharedSecret, sharedSecretLen);
 
-    if ((UINT_MAX - derivationInputLen) < sharedSecretLen) {
+    if ((SIZE_MAX - derivationInputLen) < sharedSecretLen) {
         goto cleanup;
     }
     derivationInputLen += sharedSecretLen;
     ENSURE_OR_GO_CLEANUP(rndLen <= (sizeof(derivationInput) - derivationInputLen));
     memcpy(&derivationInput[derivationInputLen], rnd, rndLen);
 
-    if ((UINT_MAX - derivationInputLen) < rndLen) {
+    if ((SIZE_MAX - derivationInputLen) < rndLen) {
         goto cleanup;
     }
     derivationInputLen += rndLen;
@@ -296,7 +298,7 @@ static void set_secp256r1nist_header(uint8_t *pbKey, size_t *pbKeyByteLen)
         temp[26 + i] = pbKey[i];
     }
 
-    if ((UINT_MAX - (*pbKeyByteLen)) < 26) {
+    if ((SIZE_MAX - (*pbKeyByteLen)) < 26) {
         return;
     }
     *pbKeyByteLen = *pbKeyByteLen + 26;
@@ -365,7 +367,7 @@ sss_status_t nxECKey_InternalAuthenticate(pSe05xSession_t se05xSession,
     *pCmdbuf++ = (uint8_t)hostEckaPubKeyLen;
     cmdbufLen++;
     memcpy(pCmdbuf, hostEckaPubKey, hostEckaPubKeyLen);
-    if ((UINT_MAX - cmdbufLen) < hostEckaPubKeyLen) {
+    if ((SIZE_MAX - cmdbufLen) < hostEckaPubKeyLen) {
         goto cleanup;
     }
     cmdbufLen += hostEckaPubKeyLen;
@@ -402,7 +404,7 @@ sss_status_t nxECKey_InternalAuthenticate(pSe05xSession_t se05xSession,
     *pCmdbuf++ = (uint8_t)sig_host5F37Len;
     cmdbufLen++;
     memcpy(pCmdbuf, sig_host5F37, sig_host5F37Len);
-    if ((UINT_MAX - cmdbufLen) < sig_host5F37Len) {
+    if ((SIZE_MAX - cmdbufLen) < sig_host5F37Len) {
         status = kStatus_SSS_Fail;
         goto cleanup;
     }

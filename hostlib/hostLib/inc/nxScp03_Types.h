@@ -1,6 +1,6 @@
 /*
 *
-* Copyright 2018,2020,2024 NXP
+* Copyright 2018,2020,2024-2025 NXP
 * SPDX-License-Identifier: BSD-3-Clause
 */
 
@@ -116,6 +116,8 @@ typedef struct
     /** Key version no to use for chanel
         authentication in SCP03     */
     uint8_t keyVerNo;
+    /** AES Key size */
+    int key_len;
     /** Encryption key object */
     sss_object_t Enc;
     sss_object_t Mac; //!< static secure channel authentication key obj

@@ -1,5 +1,24 @@
 # Plug-And-Trust Mini Package Change Log
 
+## Release v04.07.00
+
+- Platform SCP03 support extended for AES-256 (32 byte) keys.
+
+- SSS APIs are updated to support Mbed TLS 3.x
+
+- T=1oI2C Stack updated to remove the endianness dependent code.
+
+- se05x_apis.h is renamed to se05x_reset_apis.h (file path - simw-top/hostlib/hostLib/platform/inc).
+
+- New compile time option `SE_RESET_LOGIC` is added to select the reset logic for SE051/SE052.
+
+- se05x_ic_reset API updated to receive applet version as input parameter. This is used to decide the reset logic for SE051 and SE052.
+  (file path - hostlib/hostLib/platform/inc/se05x_reset_apis.h)
+
+- Fixes for memory leaks (emsa_decode_and_compare function).
+
+- Fixes for static analysis findings.
+
 
 ## Release v04.05.03
 

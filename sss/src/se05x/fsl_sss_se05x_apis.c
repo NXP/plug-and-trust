@@ -1,6 +1,6 @@
 /*
  *
- * Copyright 2018-2020,2024 NXP
+ * Copyright 2018-2020,2024-2025 NXP
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
@@ -309,8 +309,13 @@ typedef smStatus_t (*fp_RSA_KeyWrite_t)(pSe05xSession_t session_ctx,
 
 #define SSS_SE05X_RESID_ATTESTATION_KEY 0xF0000012
 #if SSS_HAVE_SE05X_VER_GTE_07_02
-extern int add_taglength_to_data(
-    uint8_t **buf, size_t *bufLen, SE05x_TAG_t tag, const uint8_t *cmd, size_t cmdLen, bool extendedLength);
+extern int add_taglength_to_data(uint8_t **buf,
+    size_t *bufLen,
+    const size_t actualBufLen,
+    SE05x_TAG_t tag,
+    const uint8_t *cmd,
+    size_t cmdLen,
+    bool extendedLength);
 
 #endif // SSS_HAVE_SE05X_VER_GTE_07_02
 
@@ -1668,10 +1673,10 @@ sss_status_t sss_se05x_derive_key_dh(
     {
         if (otherPartyKeyObject->cipherType == kSSS_CipherType_EC_MONTGOMERY) {
             for (size_t keyValueIdx = 0; keyValueIdx < (publicKeyLen >> 1); keyValueIdx++) {
-                ENSURE_OR_GO_EXIT((UINT_MAX - publicKeyIndex) >= keyValueIdx);
+                ENSURE_OR_GO_EXIT((SIZE_MAX - publicKeyIndex) >= keyValueIdx);
                 swapByte                             = pubkey[publicKeyIndex + keyValueIdx];
                 pubkey[publicKeyIndex + keyValueIdx] = pubkey[publicKeyIndex + publicKeyLen - 1 - keyValueIdx];
-                ENSURE_OR_GO_EXIT((UINT_MAX - publicKeyIndex) >= publicKeyLen);
+                ENSURE_OR_GO_EXIT((SIZE_MAX - publicKeyIndex) >= publicKeyLen);
                 pubkey[publicKeyIndex + publicKeyLen - 1 - keyValueIdx] = swapByte;
             }
         }
@@ -4563,7 +4568,7 @@ sss_status_t sss_se05x_key_store_get_key(
             int ret         = 0;
             size_t taglen   = 0;
             size_t bufIndex = 0;
-            ret             = asn_1_parse_tlv(key, &taglen, &bufIndex);
+            ret             = asn_1_parse_tlv(key, &taglen, &bufIndex, *keylen);
             if (ret != 0) {
                 goto exit;
             }
@@ -5783,7 +5788,7 @@ sss_status_t sss_se05x_asymmetric_sign(
 
         for (size_t keyValueIdx = 0; keyValueIdx < (*destLen >> 2); keyValueIdx++) {
             uint8_t swapByte = destData[offset + keyValueIdx];
-            if ((UINT_MAX - offset) < keyValueIdx) {
+            if ((SIZE_MAX - offset) < keyValueIdx) {
                 return kStatus_SSS_Fail;
             }
             destData[offset + keyValueIdx]                       = destData[offset + (*destLen >> 1) - 1 - keyValueIdx];
@@ -5973,9 +5978,6 @@ sss_status_t sss_se05x_asymmetric_verify_digest(sss_se05x_asymmetric_t *context,
                 status = Se05x_API_ReadSize(&context->session->s_ctx, context->keyObject->keyId, &u16parsedKeyByteLen);
                 if (status == SM_OK) {
                     parsedKeyByteLen = u16parsedKeyByteLen;
-                    if (status != SM_OK) {
-                        return kStatus_SSS_Fail;
-                    }
 
                     if (digestLen <= parsedKeyByteLen && digestLen > 0) {
                         memset(padded_data, 0x00, padded_len);
@@ -6101,7 +6103,7 @@ sss_status_t sss_se05x_asymmetric_verify(sss_se05x_asymmetric_t *context,
 
         for (size_t keyValueIdx = 0; keyValueIdx < (signatureLen >> 2); keyValueIdx++) {
             uint8_t swapByte = signature_temp[offset + keyValueIdx];
-            if ((UINT_MAX - offset) < keyValueIdx) {
+            if ((SIZE_MAX - offset) < keyValueIdx) {
                 return kStatus_SSS_Fail;
             }
             signature_temp[offset + keyValueIdx] = signature_temp[offset + (signatureLen >> 1) - 1 - keyValueIdx];
@@ -6901,7 +6903,7 @@ sss_status_t sss_se05x_aead_update(
     outBuffSize = *destLen;
 
     /* Check overflow */
-    ENSURE_OR_GO_EXIT((UINT_MAX - context->cache_data_len) >= srcLen);
+    ENSURE_OR_GO_EXIT((SIZE_MAX - context->cache_data_len) >= srcLen);
     ENSURE_OR_GO_EXIT((context->cache_data_len + srcLen) >= context->cache_data_len);
 
     if ((context->cache_data_len + srcLen) < AEAD_BLOCK_SIZE) {
@@ -7881,7 +7883,7 @@ static smStatus_t sss_se05x_channel_txnRaw(void *conn_ctx,
             txBuf[i++] = 0xFFu & (cmdBufLen);
         }
         memcpy(&txBuf[i], cmdBuf, cmdBufLen);
-        if ((UINT_MAX - i) < cmdBufLen) {
+        if ((SIZE_MAX - i) < cmdBufLen) {
             goto exit;
         }
         i += cmdBufLen;
@@ -8316,6 +8318,7 @@ sss_status_t nxECKey_ReadEckaPublicKey(pSe05xSession_t se05xSession,
     uint8_t *pRspBuf                   = &rspBuf[0];
     size_t rspBufLen                   = 0;
 #if SSS_HAVE_SE05X_VER_GTE_07_02
+    size_t buffLen       = sizeof(rspBuf);
     uint8_t objectSize[] = {0x00, 0x20};
     size_t objectSizeLen = sizeof(objectSize);
     int tlvRet           = 0;
@@ -8396,18 +8399,19 @@ sss_status_t nxECKey_ReadEckaPublicKey(pSe05xSession_t se05xSession,
     ENSURE_OR_GO_CLEANUP(
         ((1 + *pSePubEckaLen + 3) + (1 + att_data.data[0].chipIdLen + 3) + (1 + att_data.data[0].attributeLen + 3) +
             (1 + sizeof(objectSize) + 3) + (1 + sizeof(att_data.data[0].timeStamp) + 3)) <= sizeof(rspBuf));
-    tlvRet = add_taglength_to_data(&pRspBuf, &rspBufLen, kSE05x_TAG_1, key, *pSePubEckaLen, true);
+    tlvRet = add_taglength_to_data(&pRspBuf, &rspBufLen, buffLen, kSE05x_TAG_1, key, *pSePubEckaLen, true);
     ENSURE_OR_GO_CLEANUP(tlvRet == 0);
     tlvRet = add_taglength_to_data(
-        &pRspBuf, &rspBufLen, kSE05x_TAG_2, att_data.data[0].chipId, att_data.data[0].chipIdLen, true);
+        &pRspBuf, &rspBufLen, buffLen, kSE05x_TAG_2, att_data.data[0].chipId, att_data.data[0].chipIdLen, true);
     ENSURE_OR_GO_CLEANUP(tlvRet == 0);
     tlvRet = add_taglength_to_data(
-        &pRspBuf, &rspBufLen, kSE05x_TAG_3, att_data.data[0].attribute, att_data.data[0].attributeLen, true);
+        &pRspBuf, &rspBufLen, buffLen, kSE05x_TAG_3, att_data.data[0].attribute, att_data.data[0].attributeLen, true);
     ENSURE_OR_GO_CLEANUP(tlvRet == 0);
-    tlvRet = add_taglength_to_data(&pRspBuf, &rspBufLen, kSE05x_TAG_4, objectSize, sizeof(objectSize), true);
+    tlvRet = add_taglength_to_data(&pRspBuf, &rspBufLen, buffLen, kSE05x_TAG_4, objectSize, sizeof(objectSize), true);
     ENSURE_OR_GO_CLEANUP(tlvRet == 0);
     tlvRet = add_taglength_to_data(&pRspBuf,
         &rspBufLen,
+        buffLen,
         kSE05x_TAG_TIMESTAMP,
         att_data.data[0].timeStamp.ts,
         sizeof(att_data.data[0].timeStamp),

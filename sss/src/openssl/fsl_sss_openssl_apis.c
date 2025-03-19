@@ -1,6 +1,6 @@
 /*
  *
- * Copyright 2018-2020,2024 NXP
+ * Copyright 2018-2020,2024-2025 NXP
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
@@ -1421,23 +1421,23 @@ exit:
 }
 #endif
 
-static void *openssl_get_hash_ptr_set_padding(sss_algorithm_t algorithm, uint32_t cipherType, EVP_PKEY_CTX *pKey_Ctx)
+static int openssl_get_hash_ptr_set_padding(
+    sss_algorithm_t algorithm, uint32_t cipherType, EVP_PKEY_CTX *pKey_Ctx, void **hashfPtr)
 {
-    void *hashfPtr = NULL;
     switch (algorithm) {
     case kAlgorithm_SSS_SHA1:
     case kAlgorithm_SSS_ECDSA_SHA1:
     case kAlgorithm_SSS_RSASSA_PKCS1_V1_5_SHA1:
     case kAlgorithm_SSS_RSASSA_PKCS1_PSS_MGF1_SHA1:
     case kAlgorithm_SSS_RSAES_PKCS1_OAEP_SHA1: {
-        hashfPtr = (void *)EVP_sha1();
+        *hashfPtr = (void *)EVP_sha1();
     } break;
     case kAlgorithm_SSS_SHA224:
     case kAlgorithm_SSS_ECDSA_SHA224:
     case kAlgorithm_SSS_RSASSA_PKCS1_V1_5_SHA224:
     case kAlgorithm_SSS_RSASSA_PKCS1_PSS_MGF1_SHA224:
     case kAlgorithm_SSS_RSAES_PKCS1_OAEP_SHA224: {
-        hashfPtr = (void *)EVP_sha224();
+        *hashfPtr = (void *)EVP_sha224();
     } break;
     case kAlgorithm_SSS_SHA256:
     case kAlgorithm_SSS_ECDSA_SHA256:
@@ -1446,36 +1446,38 @@ static void *openssl_get_hash_ptr_set_padding(sss_algorithm_t algorithm, uint32_
     case kAlgorithm_SSS_RSASSA_NO_PADDING:
     case kAlgorithm_SSS_RSAES_PKCS1_V1_5:
     case kAlgorithm_SSS_RSAES_PKCS1_OAEP_SHA256: {
-        hashfPtr = (void *)EVP_sha256();
+        *hashfPtr = (void *)EVP_sha256();
     } break;
     case kAlgorithm_SSS_SHA384:
     case kAlgorithm_SSS_ECDSA_SHA384:
     case kAlgorithm_SSS_RSASSA_PKCS1_V1_5_SHA384:
     case kAlgorithm_SSS_RSASSA_PKCS1_PSS_MGF1_SHA384:
     case kAlgorithm_SSS_RSAES_PKCS1_OAEP_SHA384: {
-        hashfPtr = (void *)EVP_sha384();
+        *hashfPtr = (void *)EVP_sha384();
     } break;
     case kAlgorithm_SSS_SHA512:
     case kAlgorithm_SSS_ECDSA_SHA512:
     case kAlgorithm_SSS_RSASSA_PKCS1_V1_5_SHA512:
     case kAlgorithm_SSS_RSASSA_PKCS1_PSS_MGF1_SHA512:
     case kAlgorithm_SSS_RSAES_PKCS1_OAEP_SHA512: {
-        hashfPtr = (void *)EVP_sha512();
+        *hashfPtr = (void *)EVP_sha512();
     } break;
     case kAlgorithm_SSS_RSASSA_PKCS1_V1_5_NO_HASH:
     default:
-        hashfPtr = NULL;
+        *hashfPtr = NULL;
     }
 
     if (cipherType == kSSS_CipherType_RSA || cipherType == kSSS_CipherType_RSA_CRT) {
-        EVP_PKEY_CTX_set_rsa_padding(pKey_Ctx, openssl_get_padding(algorithm));
+        if ((EVP_PKEY_CTX_set_rsa_padding(pKey_Ctx, openssl_get_padding(algorithm))) <= 0) {
+            return 1;
+        }
     }
     else {
         //No padding for ECC Sign
         //EVP_CIPHER_CTX_set_padding(pKey_Ctx, 0);
     }
 
-    return hashfPtr;
+    return 0;
 }
 
 sss_status_t sss_openssl_asymmetric_sign_digest(sss_openssl_asymmetric_t *context,
@@ -1521,7 +1523,11 @@ sss_status_t sss_openssl_asymmetric_sign_digest(sss_openssl_asymmetric_t *contex
     }
 
     /* Set the Signing MD. */
-    hashfPtr = openssl_get_hash_ptr_set_padding(context->algorithm, context->keyObject->cipherType, pKey_Ctx);
+    if (openssl_get_hash_ptr_set_padding(context->algorithm, context->keyObject->cipherType, pKey_Ctx, &hashfPtr) !=
+        0) {
+        retval = kStatus_SSS_Fail;
+        goto exit;
+    }
 
     /*
     * For RSA, null hash pointer is valid, as sign with no hash is available.
@@ -1531,7 +1537,10 @@ sss_status_t sss_openssl_asymmetric_sign_digest(sss_openssl_asymmetric_t *contex
         context->keyObject->cipherType == kSSS_CipherType_EC_NIST_K ||
         context->keyObject->cipherType == kSSS_CipherType_EC_BRAINPOOL ||
         context->keyObject->cipherType == kSSS_CipherType_EC_TWISTED_ED) {
-        ENSURE_OR_GO_EXIT(NULL != hashfPtr);
+        if (NULL == hashfPtr) {
+            retval = kStatus_SSS_Fail;
+            goto exit;
+        }
     }
 
     /* Explicitly set the salt length to match the digest size (-1)
@@ -1615,7 +1624,11 @@ sss_status_t sss_openssl_asymmetric_verify_digest(sss_openssl_asymmetric_t *cont
     }
 
     /* Set the Signing MD. */
-    hashfPtr = openssl_get_hash_ptr_set_padding(context->algorithm, context->keyObject->cipherType, pKey_Ctx);
+    if (openssl_get_hash_ptr_set_padding(context->algorithm, context->keyObject->cipherType, pKey_Ctx, &hashfPtr) !=
+        0) {
+        retval = kStatus_SSS_Fail;
+        goto exit;
+    }
 
     /*
     * For RSA, null hash pointer is valid, as sign with no hash is available.
@@ -1625,7 +1638,10 @@ sss_status_t sss_openssl_asymmetric_verify_digest(sss_openssl_asymmetric_t *cont
         context->keyObject->cipherType == kSSS_CipherType_EC_NIST_K ||
         context->keyObject->cipherType == kSSS_CipherType_EC_BRAINPOOL ||
         context->keyObject->cipherType == kSSS_CipherType_EC_TWISTED_ED) {
-        ENSURE_OR_GO_EXIT(NULL != hashfPtr);
+        if (NULL == hashfPtr) {
+            retval = kStatus_SSS_Fail;
+            goto exit;
+        }
     }
 
     if (hashfPtr != NULL) {
@@ -2258,7 +2274,7 @@ sss_status_t sss_openssl_cipher_update(
         }
         ENSURE_OR_GO_EXIT(outBuffSize >= blockoutLen);
         outBuffSize -= blockoutLen;
-        ENSURE_OR_GO_EXIT((UINT_MAX - output_offset) >= blockoutLen);
+        ENSURE_OR_GO_EXIT((SIZE_MAX - output_offset) >= blockoutLen);
         output_offset += blockoutLen;
 
         ENSURE_OR_GO_EXIT(srcLen >= src_offset);
@@ -2278,7 +2294,7 @@ sss_status_t sss_openssl_cipher_update(
             }
             ENSURE_OR_GO_EXIT(outBuffSize >= blockoutLen);
             outBuffSize -= blockoutLen;
-            ENSURE_OR_GO_EXIT((UINT_MAX - output_offset) >= blockoutLen);
+            ENSURE_OR_GO_EXIT((SIZE_MAX - output_offset) >= blockoutLen);
             output_offset += blockoutLen;
         }
 
@@ -2816,14 +2832,14 @@ sss_status_t sss_openssl_aead_update(
 
             ENSURE_OR_GO_CLEANUP(outBuffSize >= blockoutLen);
             outBuffSize -= blockoutLen;
-            ENSURE_OR_GO_CLEANUP((UINT_MAX - output_offset) >= blockoutLen);
+            ENSURE_OR_GO_CLEANUP((SIZE_MAX - output_offset) >= blockoutLen);
             output_offset += blockoutLen;
             if (srcLen < src_offset) {
                 return retval;
             }
             while (srcLen - src_offset >= CIPHER_BLOCK_SIZE) {
                 memcpy(inputData, (srcData + src_offset), 16);
-                ENSURE_OR_GO_CLEANUP((UINT_MAX - CIPHER_BLOCK_SIZE) >= src_offset);
+                ENSURE_OR_GO_CLEANUP((SIZE_MAX - CIPHER_BLOCK_SIZE) >= src_offset);
                 src_offset += CIPHER_BLOCK_SIZE;
                 blockoutLen = outBuffSize;
 
@@ -2834,7 +2850,7 @@ sss_status_t sss_openssl_aead_update(
 
                 ENSURE_OR_GO_CLEANUP(outBuffSize >= blockoutLen);
                 outBuffSize -= blockoutLen;
-                ENSURE_OR_GO_CLEANUP((UINT_MAX - output_offset) >= blockoutLen);
+                ENSURE_OR_GO_CLEANUP((SIZE_MAX - output_offset) >= blockoutLen);
                 output_offset += blockoutLen;
             }
             *destLen = output_offset;
@@ -3044,8 +3060,10 @@ static sss_status_t sss_openssl_aead_ccm_Encryptfinal(sss_openssl_aead_t *contex
 
     /* Provide any AAD data*/
     ENSURE_OR_GO_EXIT(context->ccm_aadLen <= INT_MAX);
+    if ((NULL != context->pCcm_aad) && (context->ccm_aadLen > 0)) {
     ret = EVP_EncryptUpdate(context->aead_ctx, NULL, &len, context->pCcm_aad, context->ccm_aadLen);
     ENSURE_OR_GO_EXIT(ret == 1);
+    }
 
     /* Provide the message to be decrypted*/
     ENSURE_OR_GO_EXIT(context->ccm_dataTotalLen <= INT_MAX);
@@ -3095,8 +3113,10 @@ static sss_status_t sss_openssl_aead_ccm_Decryptfinal(sss_openssl_aead_t *contex
 
     /* Provide any AAD data*/
     ENSURE_OR_GO_EXIT(context->ccm_aadLen <= INT_MAX);
+    if ((NULL != context->pCcm_aad) && (context->ccm_aadLen > 0)) {
     ret = EVP_DecryptUpdate(context->aead_ctx, NULL, &len, context->pCcm_aad, context->ccm_aadLen);
     ENSURE_OR_GO_EXIT(ret == 1);
+    }
     /* Provide the message to be decrypted*/
     ENSURE_OR_GO_EXIT(context->ccm_dataTotalLen <= INT_MAX);
     ret = EVP_DecryptUpdate(context->aead_ctx, destData, &len, context->pCcm_data, context->ccm_dataTotalLen);
@@ -4580,10 +4600,10 @@ static sss_status_t openssl_convert_to_bio(sss_openssl_object_t *keyObject, char
         goto exit;
     }
 
-    ENSURE_OR_GO_EXIT((UINT_MAX - strlen(start)) >= strlen(end));
+    ENSURE_OR_GO_EXIT((SIZE_MAX - strlen(start)) >= strlen(end));
     ENSURE_OR_GO_EXIT((base64_format_len) >= 0);
-    ENSURE_OR_GO_EXIT((UINT_MAX - base64_format_len) >= (strlen(start) + strlen(end)));
-    ENSURE_OR_GO_EXIT((UINT_MAX - 1) >= (base64_format_len + strlen(start) + strlen(end)));
+    ENSURE_OR_GO_EXIT((SIZE_MAX - base64_format_len) >= (strlen(start) + strlen(end)));
+    ENSURE_OR_GO_EXIT((SIZE_MAX - 1) >= (base64_format_len + strlen(start) + strlen(end)));
     pem_format = (char *)SSS_CALLOC(1, base64_format_len + strlen(start) + strlen(end) + 1);
     if (pem_format == NULL) {
         LOG_E("Memory allocation failed");
@@ -4591,9 +4611,9 @@ static sss_status_t openssl_convert_to_bio(sss_openssl_object_t *keyObject, char
     }
     else {
         /* Convert Base64 to PEM format. */
-        ENSURE_OR_GO_EXIT((UINT_MAX - strlen(start)) >= strlen(end));
-        ENSURE_OR_GO_EXIT((UINT_MAX - strlen(base64_format)) >= (strlen(start) + strlen(end)));
-        ENSURE_OR_GO_EXIT((UINT_MAX - 1) >= (strlen(base64_format) + strlen(start) + strlen(end)));
+        ENSURE_OR_GO_EXIT((SIZE_MAX - strlen(start)) >= strlen(end));
+        ENSURE_OR_GO_EXIT((SIZE_MAX - strlen(base64_format)) >= (strlen(start) + strlen(end)));
+        ENSURE_OR_GO_EXIT((SIZE_MAX - 1) >= (strlen(base64_format) + strlen(start) + strlen(end)));
         if ((snprintf(pem_format,
                 (strlen(base64_format) + strlen(start) + strlen(end) + 1),
                 "%s"
@@ -4697,14 +4717,13 @@ static sss_status_t sss_openssl_set_key(
             goto exit;
         }
 
-        ENSURE_OR_GO_EXIT(BIO_flush(pBio_64) <= INT_MAX);
         if (BIO_flush(pBio_64) < 1) {
             LOG_E("sss_openssl_set_key: flushing failed.");
             goto exit;
         }
 
         BIO_get_mem_ptr(pBio_64, &pBufMem);
-        ENSURE_OR_GO_EXIT((UINT_MAX - 1) >= (pBufMem->length));
+        ENSURE_OR_GO_EXIT((SIZE_MAX - 1) >= (pBufMem->length));
         base64_format = SSS_CALLOC(1, (pBufMem->length) + 1);
         if (base64_format == NULL) {
             LOG_E("sss_openssl_set_key: memory allocation failed");
@@ -4931,7 +4950,7 @@ static sss_status_t sss_openssl_hkdf_expand(const EVP_MD *md,
         }
 
         memcpy(okm + where, T, (i != N) ? hash_len : (okm_len - where));
-        if ((UINT_MAX - where) < hash_len) {
+        if ((SIZE_MAX - where) < hash_len) {
             goto exit;
         }
         where += hash_len;

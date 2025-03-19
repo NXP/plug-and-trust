@@ -1,6 +1,6 @@
 /*
  *
- * Copyright 2019,2024 NXP
+ * Copyright 2019,2024-2025 NXP
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
@@ -10,9 +10,11 @@
 #include <stdio.h>
 #include "sm_timer.h"
 #include "ax_reset.h"
-#include "se05x_apis.h"
+#include "se05x_reset_apis.h"
 
-#define EN_PIN 22
+#ifndef SE05X_EN_PIN
+#define SE05X_EN_PIN 22
+#endif
 
 void axReset_HostConfigure()
 {
@@ -25,7 +27,7 @@ void axReset_HostConfigure()
         return;
     }
     /* Export GPIO pin to toggle */
-    if (snprintf(buf, sizeof(buf), "%d", EN_PIN) < 0) {
+    if (snprintf(buf, sizeof(buf), "%d", SE05X_EN_PIN) < 0) {
         perror("snprintf failed");
         return;
     }
@@ -36,10 +38,11 @@ void axReset_HostConfigure()
     close(fd);
 
     /* Open direction file to configure GPIO direction */
-    if (snprintf(buf, sizeof(buf), "/sys/class/gpio/gpio%d/direction", EN_PIN) < 0) {
+    if (snprintf(buf, sizeof(buf), "/sys/class/gpio/gpio%d/direction", SE05X_EN_PIN) < 0) {
         perror("snprintf failed");
         return;
     }
+    printf("**** buf **** = %s\n", buf);
     fd = open(buf, O_WRONLY);
     if (fd < 0) {
         sm_usleep(1000 * 1000);
@@ -72,7 +75,7 @@ void axReset_HostUnconfigure()
         return;
     }
 
-    if (snprintf(buf, sizeof(buf), "%d", EN_PIN) < 0) {
+    if (snprintf(buf, sizeof(buf), "%d", SE05X_EN_PIN) < 0) {
         perror("snprintf error");
         return;
     }
@@ -89,11 +92,11 @@ void axReset_HostUnconfigure()
  *
  * Pre-Requisite: @ref axReset_Configure has been called
  */
-void axReset_ResetPluseDUT()
+void axReset_ResetPulseDUT(int reset_logic)
 {
-    axReset_PowerDown();
+    axReset_PowerDown(reset_logic);
     sm_usleep(2000);
-    axReset_PowerUp();
+    axReset_PowerUp(reset_logic);
     return;
 }
 
@@ -102,12 +105,12 @@ void axReset_ResetPluseDUT()
  *
  * Pre-Requisite: @ref axReset_Configure has been called
  */
-void axReset_PowerDown()
+void axReset_PowerDown(int reset_logic)
 {
     int fd;
     char buf[50];
     char logic[10];
-    if (snprintf(buf, sizeof(buf), "/sys/class/gpio/gpio%d/value", EN_PIN) < 0) {
+    if (snprintf(buf, sizeof(buf), "/sys/class/gpio/gpio%d/value", SE05X_EN_PIN) < 0) {
         perror("snprintf failed");
         return;
     }
@@ -118,7 +121,7 @@ void axReset_PowerDown()
         return;
     }
 
-    if (snprintf(logic, sizeof(logic), "%d", !SE_RESET_LOGIC) < 0) {
+    if (snprintf(logic, sizeof(logic), "%d", !reset_logic) < 0) {
         perror("snprintf failed");
         return;
     }
@@ -135,12 +138,12 @@ void axReset_PowerDown()
  *
  * Pre-Requisite: @ref axReset_Configure has been called
  */
-void axReset_PowerUp()
+void axReset_PowerUp(int reset_logic)
 {
     int fd;
     char buf[50];
     char logic[10];
-    if (snprintf(buf, sizeof(buf), "/sys/class/gpio/gpio%d/value", EN_PIN) < 0) {
+    if (snprintf(buf, sizeof(buf), "/sys/class/gpio/gpio%d/value", SE05X_EN_PIN) < 0) {
         perror("snprintf failed");
         return;
     }
@@ -151,7 +154,7 @@ void axReset_PowerUp()
         return;
     }
 
-    if (snprintf(logic, sizeof(logic), "%d", SE_RESET_LOGIC) < 0) {
+    if (snprintf(logic, sizeof(logic), "%d", reset_logic) < 0) {
         perror("snprintf failed");
         return;
     }
@@ -165,10 +168,18 @@ void axReset_PowerUp()
 
 #if SSS_HAVE_APPLET_SE05X_IOT || SSS_HAVE_APPLET_LOOPBACK
 
-void se05x_ic_reset()
+#define SE05X_RESET_CHECK_52F_VERSION(app_ver) ((((app_ver >> 8) & 0xFF) >= 0x10) && (((app_ver >> 8) & 0xFF) <= 0x1F))
+
+void se05x_ic_reset(uint32_t applet_version)
 {
-    axReset_ResetPluseDUT();
-    smComT1oI2C_ComReset();
+    if (SE05X_RESET_CHECK_52F_VERSION(applet_version)){
+        axReset_ResetPulseDUT(0);
+    }
+    else {
+        axReset_ResetPulseDUT(SE_RESET_LOGIC);
+    }
+
+    smComT1oI2C_ComReset(NULL);
     sm_usleep(3000);
     return;
 }

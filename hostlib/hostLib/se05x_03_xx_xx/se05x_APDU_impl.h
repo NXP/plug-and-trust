@@ -1,6 +1,6 @@
 /*
  *
- * Copyright 2019-2020,2024 NXP
+ * Copyright 2019-2020,2024-2025 NXP
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
@@ -1313,7 +1313,7 @@ smStatus_t Se05x_API_ExportObject(
         goto cleanup;
     }
 
-    retStatus = DoAPDUTxRx_s_Case4(session_ctx, &hdr, cmdbuf, cmdbufLen, rspbuf, &rspbufLen);
+    retStatus = DoAPDUTxRx_s_Case4_ext(session_ctx, &hdr, cmdbuf, cmdbufLen, rspbuf, &rspbufLen);
     if (retStatus == SM_OK) {
         retStatus = SM_NOT_OK;
         tlvRet    = tlvGet_u8buf(pRspbuf, &rspIndex, rspbufLen, kSE05x_TAG_1, data, pdataLen); /*  */

@@ -1,5 +1,5 @@
 /*
-* Copyright 2024 NXP
+* Copyright 2024-2025 NXP
 * SPDX-License-Identifier: BSD-3-Clause
 *
 */
@@ -27,13 +27,13 @@
 smStatus_t pkcs1_v15_encode(
     sss_se05x_asymmetric_t *context, const uint8_t *hash, size_t hash_len, uint8_t *out, size_t *out_len)
 {
-    size_t oid_size  = 0;
-    size_t pad_len    = 0;
+    size_t oid_size        = 0;
+    size_t pad_len         = 0;
     unsigned char *out_ptr = out;
     /* clang-format off */
     unsigned char oid[16] = { 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, };
     /* clang-format on */
-    size_t out_length        = 0;
+    size_t out_length       = 0;
     uint16_t key_size_bytes = 0;
     smStatus_t ret_val      = SM_NOT_OK;
 
@@ -60,27 +60,27 @@ smStatus_t pkcs1_v15_encode(
 
     switch (context->algorithm) {
     case kAlgorithm_SSS_RSASSA_PKCS1_V1_5_SHA1:
-        oid[0]  = 0x2B;
-        oid[1]  = 0x0E;
-        oid[2]  = 0x03;
-        oid[3]  = 0x02;
-        oid[4]  = 0x1A;
+        oid[0]   = 0x2B;
+        oid[1]   = 0x0E;
+        oid[2]   = 0x03;
+        oid[3]   = 0x02;
+        oid[4]   = 0x1A;
         oid_size = 5;
         break;
     case kAlgorithm_SSS_RSASSA_PKCS1_V1_5_SHA224:
-        oid[8]  = 0x04;
+        oid[8]   = 0x04;
         oid_size = 9;
         break;
     case kAlgorithm_SSS_RSASSA_PKCS1_V1_5_SHA256:
-        oid[8]  = 0x01;
+        oid[8]   = 0x01;
         oid_size = 9;
         break;
     case kAlgorithm_SSS_RSASSA_PKCS1_V1_5_SHA384:
-        oid[8]  = 0x02;
+        oid[8]   = 0x02;
         oid_size = 9;
         break;
     case kAlgorithm_SSS_RSASSA_PKCS1_V1_5_SHA512:
-        oid[8]  = 0x03;
+        oid[8]   = 0x03;
         oid_size = 9;
         break;
     default:
@@ -256,7 +256,7 @@ uint8_t sss_mgf_mask_func(uint8_t *dst, size_t dlen, uint8_t *src, size_t slen, 
         0,
     };
     size_t digestLen           = 512; /* MAX - SHA512*/
-    size_t hash_length          = slen;
+    size_t hash_length         = slen;
     sss_session_t host_session = {0};
 #if SSS_HAVE_HOSTCRYPTO_MBEDTLS
     const sss_type_t host_crypto = kType_SSS_mbedTLS;
@@ -339,16 +339,17 @@ exit:
 //         will be rejected.
 //
 // Return:  SM_OK (0x9000): Success, SM_NOT_OK (0xFFFF): Error, SM_ERR_APDU_THROUGHPUT (0x66A6): ThroughPut error
-smStatus_t emsa_encode(sss_se05x_asymmetric_t *context, const uint8_t *hash, size_t hash_len, uint8_t *out, size_t *outLen)
+smStatus_t emsa_encode(
+    sss_se05x_asymmetric_t *context, const uint8_t *hash, size_t hash_len, uint8_t *out, size_t *outLen)
 {
     size_t outlength = 0;
     uint8_t *p       = out;
     uint8_t salt[64] = {
         0,
     };
-    uint32_t saltlength = 0;
+    uint32_t saltlength  = 0;
     uint32_t hash_length = 0;
-    uint32_t offset     = 0;
+    uint32_t offset      = 0;
     size_t msb;
     sss_rng_context_t rng;
     sss_digest_t digest;
@@ -381,11 +382,11 @@ smStatus_t emsa_encode(sss_se05x_asymmetric_t *context, const uint8_t *hash, siz
 
     switch (context->algorithm) {
     case kAlgorithm_SSS_RSASSA_PKCS1_PSS_MGF1_SHA1:
-        hash_length    = 20;
+        hash_length   = 20;
         sha_algorithm = kAlgorithm_SSS_SHA1;
         break;
     case kAlgorithm_SSS_RSASSA_PKCS1_PSS_MGF1_SHA224:
-        hash_length    = 28;
+        hash_length   = 28;
         sha_algorithm = kAlgorithm_SSS_SHA224;
         break;
     case kAlgorithm_SSS_RSASSA_PKCS1_PSS_MGF1_SHA256:
@@ -393,7 +394,7 @@ smStatus_t emsa_encode(sss_se05x_asymmetric_t *context, const uint8_t *hash, siz
             LOG_E("SHA256 not supported with this RSA key");
             goto exit;
         }
-        hash_length    = 32;
+        hash_length   = 32;
         sha_algorithm = kAlgorithm_SSS_SHA256;
         break;
     case kAlgorithm_SSS_RSASSA_PKCS1_PSS_MGF1_SHA384:
@@ -401,7 +402,7 @@ smStatus_t emsa_encode(sss_se05x_asymmetric_t *context, const uint8_t *hash, siz
             LOG_E("SHA384 not supported with this RSA key");
             goto exit;
         }
-        hash_length    = 48;
+        hash_length   = 48;
         sha_algorithm = kAlgorithm_SSS_SHA384;
         break;
     case kAlgorithm_SSS_RSASSA_PKCS1_PSS_MGF1_SHA512:
@@ -409,7 +410,7 @@ smStatus_t emsa_encode(sss_se05x_asymmetric_t *context, const uint8_t *hash, siz
             LOG_E("SHA512 not supported with this RSA key");
             goto exit;
         }
-        hash_length    = 64;
+        hash_length   = 64;
         sha_algorithm = kAlgorithm_SSS_SHA512;
         break;
     default:
@@ -523,11 +524,6 @@ smStatus_t emsa_decode_and_compare(
     ENSURE_OR_GO_EXIT(hash != NULL);
 
     memcpy(buf, sig, sig_len);
-
-    status = sss_host_session_open(&host_session, host_crypto, 0, kSSS_ConnectionType_Plain, NULL);
-    if (kStatus_SSS_Success != status) {
-        goto exit;
-    }
 
     status = sss_host_session_open(&host_session, host_crypto, 0, kSSS_ConnectionType_Plain, NULL);
     if (kStatus_SSS_Success != status) {

@@ -286,6 +286,11 @@ ESESTATUS phNxpEse_EndOfApdu(void* conn_ctx)
 {
     ESESTATUS status = ESESTATUS_SUCCESS;
     phNxpEse_Context_t* nxpese_ctxt = (conn_ctx == NULL) ? &gnxpese_ctxt : (phNxpEse_Context_t*)conn_ctx;
+
+    if (ESE_STATUS_CLOSE == nxpese_ctxt->EseLibStatus) {
+        return status;
+    }
+
     bool_t bStatus = phNxpEseProto7816_Close((void*)nxpese_ctxt);
     if(!bStatus) {
         status = ESESTATUS_FAILED;
@@ -374,7 +379,7 @@ ESESTATUS phNxpEse_close(void* conn_ctx)
 
     if ((ESE_STATUS_CLOSE == nxpese_ctxt->EseLibStatus))
     {
-        LOG_E(" %s ESE Not Initialized previously ", __FUNCTION__);
+        LOG_W(" %s ESE Not Initialized previously ", __FUNCTION__);
         return ESESTATUS_NOT_INITIALISED;
     }
 
@@ -503,7 +508,7 @@ void phNxpEse_clearReadBuffer(void* conn_ctx)
     }
     else
     {
-        LOG_W("Previous transaction buffer is now cleard");
+        LOG_W("Previous transaction buffer is now cleared");
         LOG_MAU8_D("RAW Rx<",readBuf,ret );
     }
     return;
@@ -634,7 +639,7 @@ static int phNxpEse_readPacket(void* conn_ctx, void *pDevHandle, uint8_t * pBuff
             nNbBytesToRead = (pBuffer[2] << 8 & 0xFF00) | (pBuffer[3] & 0xFF) ;
 #endif
             /* Read the Complete data + two byte CRC*/
-            ret = phPalEse_i2c_read(pDevHandle, &pBuffer[PH_PROTO_7816_HEADER_LEN], (nNbBytesToRead+PH_PROTO_7816_CRC_LEN));
+            ret = phPalEse_i2c_read(pDevHandle,&pBuffer[PH_PROTO_7816_HEADER_LEN], (nNbBytesToRead+PH_PROTO_7816_CRC_LEN));
             if (ret < 0)
             {
                 LOG_D("_i2c_read() [HDR]errno : %x ret : %X", errno, ret);

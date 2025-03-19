@@ -1,6 +1,6 @@
 /*
 *
-* Copyright 2019,2020,2024 NXP
+* Copyright 2019,2020,2024-2025 NXP
 * SPDX-License-Identifier: BSD-3-Clause
 */
 
@@ -114,12 +114,12 @@ typedef struct
 struct Se05xSession;
 struct _sss_se05x_tunnel_context;
 
-/** struct Se05xSession represnting a session in SE05x
+/** struct Se05xSession representing a session in SE05x
 *
 */
 typedef struct Se05xSession
 {
-    /** Array of 8 bytes represnting session value.*/
+    /** Array of 8 bytes representing session value.*/
     uint8_t value[8];
     /** Indicating session is active*/
     uint8_t hasSession : 1;
@@ -128,9 +128,9 @@ typedef struct Se05xSession
     /** auth ID associated with session*/
     uint32_t auth_id;
     uint8_t logical_channel;
-    /** Meta Funciton
+    /** Meta Function
      *
-     * Internall first calls fp_Transform
+     * Internal first calls fp_Transform
      * Then calls fp_RawTXn
      * Then calls fp_DeCrypt
      */
@@ -158,7 +158,7 @@ typedef struct Se05xSession
         tlvHeader_t *outHdr,
         /** OUT: For Session less, this will be copy of inCmdBuf
          *
-         * For session based impelementation, this will have
+         * For session based implementation, this will have
          * TAG=Session, L=8,V=Session,TAG=TAG1,L=inCmdBufLen,inCmdBuf */
         uint8_t * pTxBuf,
         /** IN,OUT: */
@@ -175,7 +175,7 @@ typedef struct Se05xSession
         size_t *pInRxBufLen,
         uint8_t hasle);
 #if SSS_HAVE_APPLET_SE05X_IOT
-    /** It's either a minimal/single implemntation that calls smCom_TransceiveRaw()
+    /** It's either a minimal/single implementation that calls smCom_TransceiveRaw()
      *
      * if pTunnelCtx is Null, directly call smCom_TransceiveRaw()
      *

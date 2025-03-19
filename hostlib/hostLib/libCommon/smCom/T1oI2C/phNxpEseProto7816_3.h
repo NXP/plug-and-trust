@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2014,2018-2020,2024 NXP
+ * Copyright 2010-2014,2018-2020,2024-2025 NXP
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -245,24 +245,6 @@ typedef struct phNxpEseProto7816InitParam
     bool_t interfaceReset;               /*!< INTF reset required or not>*/
     unsigned long int rnack_retry_limit;
 }phNxpEseProto7816InitParam_t;
-
-/*!
- * \brief 7816-3 protocol PCB bit level structure
- *
- * This structure holds the bit level information of PCB byte
- * as per 7816-3 protocol
- *
- */
-typedef struct phNxpEseProto7816_PCB_bits {
-    uint8_t lsb :1; /*!< PCB: lsb */
-    uint8_t bit2 :1; /*!< PCB: bit2 */
-    uint8_t bit3 :1; /*!< PCB: bit3 */
-    uint8_t bit4 :1; /*!< PCB: bit4 */
-    uint8_t bit5 :1; /*!< PCB: bit5 */
-    uint8_t bit6 :1; /*!< PCB: bit6 */
-    uint8_t bit7 :1; /*!< PCB: bit7 */
-    uint8_t msb :1; /*!< PCB: msb */
-}phNxpEseProto7816_PCB_bits_t;
 
 /*!
  * \brief 7816_3 protocol stack instance

@@ -17,6 +17,7 @@
 #endif
 
 #include <string.h>
+#include <limits.h>
 #include <assert.h>
 #include <nxLog_scp.h>
 #include "nxScp03_Apis.h"
@@ -440,6 +441,7 @@ static void nxSCP03_PadCommandAPDU(uint8_t *cmdBuf, size_t *pCmdBufLen)
     LOG_MAU8_D("Input: cmdBuf", cmdBuf, *pCmdBufLen);
     // pad the payload and adjust the length of the APDU
     cmdBuf[(*pCmdBufLen)] = SCP_DATA_PAD_BYTE;
+    ENSURE_OR_GO_EXIT((SIZE_MAX - 1) >= (*pCmdBufLen));
     *pCmdBufLen += 1;
     zeroBytesToPad = (SCP_KEY_SIZE - ((*pCmdBufLen) % SCP_KEY_SIZE)) % SCP_KEY_SIZE;
 

@@ -180,6 +180,8 @@ IF("${PTMW_Applet}" STREQUAL "SE050_E")
     SET(SSS_HAVE_RSA "0")
 ENDIF()
 
+SET(SSS_HAVE_SE_RESET_LOGIC_1 "1")
+
 #########################################################
 IF(WithCodeCoverage)
     IF(CMAKE_COMPILER_IS_GNUCXX)

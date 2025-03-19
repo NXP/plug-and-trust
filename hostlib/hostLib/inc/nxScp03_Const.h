@@ -1,6 +1,6 @@
 /*
 *
-* Copyright 2018,2024 NXP
+* Copyright 2018,2024-2025 NXP
 * SPDX-License-Identifier: BSD-3-Clause
 */
 
@@ -64,6 +64,8 @@
 #define DATA_DERIVATION_INITIAL_MCV (0x08)//!< Data Derivation to generate Initial MCV
 #define DATA_DERIVATION_L_64BIT (0x0040)  //!< Data Derivation length
 #define DATA_DERIVATION_L_128BIT (0x0080) //!< Data Derivation length
+#define DATA_DERIVATION_L_192BIT (0x00C0) //!< Data Derivation length
+#define DATA_DERIVATION_L_256BIT (0x0100) //!< Data Derivation length
 #define DATA_DERIVATION_KDF_CTR (0x01)    //!< Data Derivation counter
 
 #define DD_LABEL_LEN 12 //!< Data Derivation length

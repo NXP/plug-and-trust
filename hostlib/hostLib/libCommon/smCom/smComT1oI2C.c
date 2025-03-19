@@ -1,6 +1,6 @@
 /*
  *
- * Copyright 2016-2018,2020,2024 NXP
+ * Copyright 2016-2018,2020,2024-2025 NXP
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
@@ -48,31 +48,25 @@ U16 smComT1oI2C_Close(void *conn_ctx, U8 mode)
 
     (void)mode;
 
-    if (conn_ctx) {
-        status=phNxpEse_EndOfApdu(conn_ctx);
-        //status=phNxpEse_chipReset();
-        if(status != ESESTATUS_SUCCESS)
-        {
-            LOG_E("Failed to close session ");
-        }
+    status=phNxpEse_EndOfApdu(conn_ctx);
+    //status=phNxpEse_chipReset();
+    if(status != ESESTATUS_SUCCESS)
+    {
+        LOG_E("Failed to close session ");
+    }
 
-        status2 = phNxpEse_close(conn_ctx);
-        if(status2 != ESESTATUS_SUCCESS){
-            LOG_E("Failed to close ESE interface and free all resources ");
-        }
+    status2 = phNxpEse_close(conn_ctx);
+    if(status2 != ESESTATUS_SUCCESS){
+        LOG_E("Failed to close ESE interface and free all resources ");
+    }
 
-        if (status  == ESESTATUS_SUCCESS && status2 == ESESTATUS_SUCCESS)
-        {
-            return SMCOM_OK;
-        }
-        else {
-             return SMCOM_COM_FAILED;
-        }
+    if (status  == ESESTATUS_SUCCESS && status2 == ESESTATUS_SUCCESS)
+    {
+        return SMCOM_OK;
     }
     else {
-        LOG_W("Invalid conn_ctx");
+         return SMCOM_COM_FAILED;
     }
-    return SMCOM_OK;
 }
 
 

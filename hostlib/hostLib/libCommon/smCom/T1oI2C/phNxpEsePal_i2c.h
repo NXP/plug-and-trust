@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2014,2018-2020,2023-2024 NXP
+ * Copyright 2010-2014,2018-2020,2023-2025 NXP
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -32,7 +32,7 @@
 #if defined(QN9090DK6)
   #define ESE_NAD_POLLING_MAX (2*30)
 #else
-  #define ESE_NAD_POLLING_MAX (30)  // With backoff delay implementation, this will have the read duration of ~20 seconds.
+  #define ESE_NAD_POLLING_MAX (500)  // With backoff delay implementation, this will have the read duration of minimum 20 seconds.
 #endif
 
 /*!

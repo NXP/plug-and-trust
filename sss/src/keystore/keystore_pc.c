@@ -1,6 +1,6 @@
 /*
  *
- * Copyright 2018-2020,2024 NXP
+ * Copyright 2018-2020,2024-2025 NXP
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
@@ -403,6 +403,13 @@ sss_status_t ks_mbedtls_store_key(const sss_mbedtls_object_t *sss_key)
             LOG_E("Invalid objectType");
         }
         if (ret > 0 && retval != kStatus_SSS_Success) {
+            if (((int)(sizeof(key_buf))) < ret) {
+                fret = fclose(fp);
+                if (fret != 0) {
+                    LOG_E("fclose error");
+                }
+                goto exit;
+            }
             c = key_buf + sizeof(key_buf) - ret;
             if (fwrite(c, ret, 1, fp) != 1) {
                 LOG_E("fwrite error, hence calling fclose");
