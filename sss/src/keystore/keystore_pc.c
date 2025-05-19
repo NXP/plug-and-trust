@@ -1,7 +1,7 @@
 /*
  *
- * Copyright 2018-2020 NXP
- * SPDX-License-Identifier: Apache-2.0
+ * Copyright 2018-2020,2024-2025 NXP
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 /* Key store in PC : For testing */
@@ -68,19 +68,38 @@ void ks_sw_getKeyFileName(
     char *const file_name, const size_t size, const sss_object_t *sss_key, const char *root_folder)
 {
     uint32_t keyId      = sss_key->keyId;
-    uint16_t keyType    = sss_key->objectType;
-    uint16_t cipherType = sss_key->cipherType;
-    SNPRINTF(file_name, size - 1, "%s/sss_%08X_%04d_%04d.bin", root_folder, keyId, keyType, cipherType);
+    uint16_t keyType    = 0;
+    uint16_t cipherType = 0;
+
+    if (sss_key->objectType > UINT16_MAX) {
+        LOG_E("objectType should be 2 Bytes.");
+        return;
+    }
+    if (sss_key->cipherType > UINT16_MAX) {
+        LOG_E("cipherType should be 2 Bytes.");
+        return;
+    }
+    if (size < 1) {
+        LOG_E("size should be a non-zero positive value");
+        return;
+    }
+    keyType    = sss_key->objectType;
+    cipherType = sss_key->cipherType;
+    if (SNPRINTF(file_name, size - 1, "%s/sss_%08X_%04d_%04d.bin", root_folder, keyId, keyType, cipherType) < 0) {
+        LOG_E("snprintf error");
+        return;
+    }
 }
 
 void ks_sw_fat_allocate(keyStoreTable_t **keystore_shadow)
 {
-    keyStoreTable_t *pKeyStoreShadow = SSS_MALLOC(sizeof(keyStoreTable_t));
+    keyIdAndTypeIndexLookup_t *ppLookupEntires = NULL;
+    keyStoreTable_t *pKeyStoreShadow           = SSS_MALLOC(sizeof(keyStoreTable_t));
     if (pKeyStoreShadow == NULL) {
         LOG_E("Error in pKeyStoreShadow mem allocation");
         return;
     }
-    keyIdAndTypeIndexLookup_t *ppLookupEntires = SSS_MALLOC(KS_N_ENTIRES * sizeof(keyIdAndTypeIndexLookup_t));
+    ppLookupEntires = SSS_MALLOC(KS_N_ENTIRES * sizeof(keyIdAndTypeIndexLookup_t));
     if (ppLookupEntires == NULL) {
         LOG_E("Error in ppLookupEntires mem allocation");
         SSS_FREE(pKeyStoreShadow);
@@ -109,41 +128,81 @@ void ks_sw_fat_free(keyStoreTable_t *keystore_shadow)
     }
 }
 
+static void unlink_file(const char *szRootPath)
+{
+    char file_name[MAX_FILE_NAME_SIZE] = {0};
+    if (SNPRINTF(file_name, sizeof(file_name), "%s/" FAT_FILENAME, szRootPath) < 0) {
+        LOG_E("snprintf error");
+        return;
+    }
+#ifdef _WIN32
+    _unlink(file_name);
+#else
+    unlink(file_name);
+#endif
+}
+
 void ks_sw_fat_remove(const char *szRootPath)
 {
-    char file_name[MAX_FILE_NAME_SIZE];
-    FILE *fp = NULL;
-    SNPRINTF(file_name, sizeof(file_name), "%s/" FAT_FILENAME, szRootPath);
+    char file_name[MAX_FILE_NAME_SIZE] = {0};
+    FILE *fp                           = NULL;
+    if (SNPRINTF(file_name, sizeof(file_name), "%s/" FAT_FILENAME, szRootPath) < 0) {
+        LOG_E("snprintf error");
+        return;
+    }
     fp = fopen(file_name, "rb");
     if (fp == NULL) {
         /* OK. File does not exist. */
     }
     else {
-        fclose(fp);
-#ifdef _WIN32
-        _unlink(file_name);
-#else
-        unlink(file_name);
-#endif
+        if (fclose(fp)) {
+            LOG_E("fclose Error");
+        }
+        unlink_file(szRootPath);
     }
 }
 
 static sss_status_t ks_sw_fat_update(keyStoreTable_t *keystore_shadow, const char *szRootPath)
 {
-    sss_status_t retval = kStatus_SSS_Success;
-    char file_name[MAX_FILE_NAME_SIZE];
-    FILE *fp = NULL;
-    SNPRINTF(file_name, sizeof(file_name), "%s/" FAT_FILENAME, szRootPath);
+    sss_status_t retval                = kStatus_SSS_Success;
+    char file_name[MAX_FILE_NAME_SIZE] = {0};
+    FILE *fp                           = NULL;
+    if (SNPRINTF(file_name, sizeof(file_name), "%s/" FAT_FILENAME, szRootPath) < 0) {
+        LOG_E("snprintf error");
+        return kStatus_SSS_Fail;
+    }
     fp = fopen(file_name, "wb+");
     if (fp == NULL) {
         LOG_E("Can not open the file");
         retval = kStatus_SSS_Fail;
     }
     else {
-        fseek(fp, 0, SEEK_SET);
-        fwrite(keystore_shadow, sizeof(*keystore_shadow), 1, fp);
-        fwrite(keystore_shadow->entries, sizeof(*keystore_shadow->entries) * keystore_shadow->maxEntries, 1, fp);
-        fclose(fp);
+        if (fseek(fp, 0, SEEK_SET) != 0) {
+            LOG_E("fseek failed,hence calling fclose");
+            if (fclose(fp) != 0) {
+                LOG_E("fclose error");
+            }
+            return kStatus_SSS_Fail;
+        }
+        if (fwrite(keystore_shadow, sizeof(*keystore_shadow), 1, fp) != 1) {
+            LOG_E("fwrite error,hence calling fclose");
+            if (fclose(fp) != 0) {
+                LOG_E("fclose error");
+            }
+            return kStatus_SSS_Fail;
+        }
+        if (fwrite(keystore_shadow->entries, sizeof(*keystore_shadow->entries) * keystore_shadow->maxEntries, 1, fp) !=
+            1) {
+            LOG_E("fwrite failed, hence calling fclose");
+            if (fclose(fp)) {
+                LOG_E("fclose error");
+            }
+            return kStatus_SSS_Fail;
+        }
+        if (fclose(fp) != 0) {
+            LOG_E("fclose failed");
+            return kStatus_SSS_Fail;
+        }
     }
     return retval;
 }
@@ -164,13 +223,18 @@ sss_status_t ks_openssl_fat_update(sss_openssl_key_store_t *keyStore)
 
 sss_status_t ks_sw_fat_load(const char *szRootPath, keyStoreTable_t *pKeystore_shadow)
 {
-    sss_status_t retval = kStatus_SSS_Fail;
-    char file_name[MAX_FILE_NAME_SIZE];
-    FILE *fp = NULL;
+    sss_status_t retval                = kStatus_SSS_Fail;
+    char file_name[MAX_FILE_NAME_SIZE] = {0};
+    FILE *fp                           = NULL;
     size_t ret;
-    ENSURE_OR_GO_CLEANUP(pKeystore_shadow);
     keyStoreTable_t fileShadow;
-    SNPRINTF(file_name, sizeof(file_name), "%s/" FAT_FILENAME, szRootPath);
+
+    ENSURE_OR_GO_CLEANUP(pKeystore_shadow);
+
+    if (SNPRINTF(file_name, sizeof(file_name), "%s/" FAT_FILENAME, szRootPath) < 0) {
+        LOG_E("snprintf error");
+        goto cleanup;
+    }
     fp = fopen(file_name, "rb");
     if (fp == NULL) {
         /* File did not exist, and it's OK most of the time
@@ -191,7 +255,11 @@ sss_status_t ks_sw_fat_load(const char *szRootPath, keyStoreTable_t *pKeystore_s
     else {
         LOG_E("ERROR! keystore_shadow != pKeystore_shadow");
     }
-    fclose(fp);
+    if (fclose(fp) != 0) {
+        LOG_E("fclose failed");
+        retval = kStatus_SSS_Fail;
+        goto cleanup;
+    }
 cleanup:
     return retval;
 }
@@ -199,13 +267,14 @@ cleanup:
 #if defined(MBEDTLS_FS_IO)
 sss_status_t ks_mbedtls_load_key(sss_mbedtls_object_t *sss_key, keyStoreTable_t *keystore_shadow, uint32_t extKeyId)
 {
-    sss_status_t retval = kStatus_SSS_Fail;
-    char file_name[MAX_FILE_NAME_SIZE];
-    FILE *fp = NULL;
-    //const char *root_folder = sss_key->keyStore->session->szRootPath;
-    size_t size = 0;
-    uint32_t i;
+    sss_status_t retval                = kStatus_SSS_Fail;
+    char file_name[MAX_FILE_NAME_SIZE] = {0};
+    FILE *fp                           = NULL;
+    size_t size = 0, fread_size = 0;
+    uint32_t i                             = 0;
     keyIdAndTypeIndexLookup_t *shadowEntry = NULL;
+    uint8_t *keyBuf                        = NULL;
+    int fret                               = 0;
 
     for (i = 0; i < sss_key->keyStore->max_object_count; i++) {
         if (keystore_shadow->entries[i].extKeyId == extKeyId) {
@@ -220,65 +289,87 @@ sss_status_t ks_mbedtls_load_key(sss_mbedtls_object_t *sss_key, keyStoreTable_t 
             break;
         }
     }
-    if (retval == kStatus_SSS_Success) {
-        fp = fopen(file_name, "rb");
-        if (fp == NULL) {
-            LOG_E("Can not open file");
-            retval = kStatus_SSS_Fail;
+    ENSURE_OR_GO_CLEANUP(kStatus_SSS_Success == retval)
+
+    fp = fopen(file_name, "rb");
+    if (fp == NULL) {
+        LOG_E("Can not open file");
+        retval = kStatus_SSS_Fail;
+        goto cleanup;
+    }
+    /* Buffer to hold max RSA Key*/
+    if (fseek(fp, 0, SEEK_END) != 0) {
+        LOG_E("fseek failed,hence calling fclose");
+        if (fclose(fp) != 0) {
+            LOG_E("fclose error");
         }
-        else {
-            /* Buffer to hold max RSA Key*/
-            uint8_t *keyBuf = NULL;
-            int signed_val  = 0;
-            fseek(fp, 0, SEEK_END);
-            signed_val = ftell(fp);
-            if (signed_val < 0) {
-                LOG_E("File does not contain any data");
-                retval = kStatus_SSS_Fail;
-                fclose(fp);
-                return retval;
-            }
-            size = (size_t)signed_val;
-            fseek(fp, 0, SEEK_SET);
-            keyBuf = SSS_CALLOC(1, size);
-            if (keyBuf == NULL) {
-                fclose(fp);
-                return kStatus_SSS_Fail;
-            }
-            signed_val = (int)fread(keyBuf, size, 1, fp);
-            if (signed_val < 0) {
-                LOG_E("fread faild");
-                retval = kStatus_SSS_Fail;
-                fclose(fp);
-                if (keyBuf != NULL) {
-                    SSS_FREE(keyBuf);
-                }
-                return retval;
-            }
-            fclose(fp);
-            retval = ks_mbedtls_key_object_create(sss_key,
-                shadowEntry->extKeyId,
-                (sss_key_part_t)(shadowEntry->keyPart & 0x0F),
-                (sss_cipher_type_t)(shadowEntry->cipherType),
-                size,
-                kKeyObject_Mode_Persistent);
-            if (retval == kStatus_SSS_Success) {
-                retval = sss_mbedtls_key_store_set_key(
-                    sss_key->keyStore, sss_key, keyBuf, size, size * 8 /* FIXME */, NULL, 0);
-            }
-            if (keyBuf != NULL) {
-                SSS_FREE(keyBuf);
-            }
+        retval = kStatus_SSS_Fail;
+        goto cleanup;
+    }
+    fret = ftell(fp);
+    if (fret < 0) {
+        LOG_E("File does not contain any data");
+        retval = kStatus_SSS_Fail;
+        if (fclose(fp) != 0) {
+            LOG_E("fclose error");
         }
+        goto cleanup;
+    }
+    size = (size_t)fret;
+    if (fseek(fp, 0, SEEK_SET) != 0) {
+        LOG_E("fseek faild,hence calling fclose");
+        retval = kStatus_SSS_Fail;
+        if (fclose(fp) != 0) {
+            LOG_E("fclose error");
+        }
+        goto cleanup;
+    }
+    keyBuf = SSS_CALLOC(1, size);
+    if (keyBuf == NULL) {
+        retval = kStatus_SSS_Fail;
+        if (fclose(fp) != 0) {
+            LOG_E("fclose error");
+        }
+        goto cleanup;
+    }
+    fread_size = fread(keyBuf, size, 1, fp);
+    if (fread_size != 1) {
+        retval = kStatus_SSS_Fail;
+        LOG_E("fread error");
+    }
+    if (fclose(fp) != 0) {
+        retval = kStatus_SSS_Fail;
+        LOG_E("fclose error");
+        goto cleanup;
+    }
+    retval = ks_mbedtls_key_object_create(sss_key,
+        shadowEntry->extKeyId,
+        (sss_key_part_t)(shadowEntry->keyPart & 0x0F),
+        (sss_cipher_type_t)(shadowEntry->cipherType),
+        size,
+        kKeyObject_Mode_Persistent);
+    ENSURE_OR_GO_CLEANUP(kStatus_SSS_Success == retval)
+
+    retval = sss_mbedtls_key_store_set_key(sss_key->keyStore, sss_key, keyBuf, size, size * 8 /* FIXME */, NULL, 0);
+cleanup:
+    if (keyBuf != NULL) {
+        SSS_FREE(keyBuf);
     }
     return retval;
 }
 
 sss_status_t ks_mbedtls_store_key(const sss_mbedtls_object_t *sss_key)
 {
-    sss_status_t retval = kStatus_SSS_Fail;
-    char file_name[MAX_FILE_NAME_SIZE];
-    FILE *fp = NULL;
+    sss_status_t retval                = kStatus_SSS_Fail;
+    int fret                           = -1;
+    char file_name[MAX_FILE_NAME_SIZE] = {0};
+    FILE *fp                           = NULL;
+    /* Buffer to hold max RSA Key*/
+    uint8_t key_buf[3000];
+    int ret          = 0;
+    unsigned char *c = key_buf;
+    mbedtls_pk_context *pk;
+
     ks_sw_getKeyFileName(
         file_name, sizeof(file_name), (const sss_object_t *)sss_key, sss_key->keyStore->session->szRootPath);
     fp = fopen(file_name, "wb+");
@@ -287,16 +378,18 @@ sss_status_t ks_mbedtls_store_key(const sss_mbedtls_object_t *sss_key)
         retval = kStatus_SSS_Fail;
     }
     else {
-        /* Buffer to hold max RSA Key*/
-        uint8_t key_buf[3000];
-        int ret          = 0;
-        unsigned char *c = key_buf;
         memset(key_buf, 0, sizeof(key_buf));
-        mbedtls_pk_context *pk;
         pk = (mbedtls_pk_context *)sss_key->contents;
         switch (sss_key->objectType) {
         case kSSS_KeyPart_Default:
-            fwrite(sss_key->contents, sss_key->contents_max_size, 1, fp);
+            if (fwrite(sss_key->contents, sss_key->contents_max_size, 1, fp) != 1) {
+                LOG_E("fwrite error, hence calling fclose");
+                fret = fclose(fp);
+                if (fret != 0) {
+                    LOG_E("fclose error");
+                }
+                goto exit;
+            }
             retval = kStatus_SSS_Success; /* Allows to skip writing pem/der files */
             break;
         case kSSS_KeyPart_Pair:
@@ -310,13 +403,34 @@ sss_status_t ks_mbedtls_store_key(const sss_mbedtls_object_t *sss_key)
             LOG_E("Invalid objectType");
         }
         if (ret > 0 && retval != kStatus_SSS_Success) {
+            if (((int)(sizeof(key_buf))) < ret) {
+                fret = fclose(fp);
+                if (fret != 0) {
+                    LOG_E("fclose error");
+                }
+                goto exit;
+            }
             c = key_buf + sizeof(key_buf) - ret;
-            fwrite(c, ret, 1, fp);
+            if (fwrite(c, ret, 1, fp) != 1) {
+                LOG_E("fwrite error, hence calling fclose");
+                fret = fclose(fp);
+                if (fret != 0) {
+                    LOG_E("fclose error");
+                }
+                goto exit;
+            }
             retval = kStatus_SSS_Success;
         }
-        fflush(fp);
-        fclose(fp);
+        fret = fflush(fp);
+        if (fret != 0) {
+            LOG_E("fflush error");
+        }
+        fret = fclose(fp);
+        if (fret != 0) {
+            LOG_E("fclose error");
+        }
     }
+exit:
     return retval;
 }
 
@@ -328,8 +442,8 @@ sss_status_t ks_mbedtls_store_key(const sss_mbedtls_object_t *sss_key)
 
 sss_status_t ks_mbedtls_remove_key(const sss_mbedtls_object_t *sss_key)
 {
-    sss_status_t retval = kStatus_SSS_Fail;
-    char file_name[MAX_FILE_NAME_SIZE];
+    sss_status_t retval                = kStatus_SSS_Fail;
+    char file_name[MAX_FILE_NAME_SIZE] = {0};
     ks_sw_getKeyFileName(
         file_name, sizeof(file_name), (const sss_object_t *)sss_key, sss_key->keyStore->session->szRootPath);
     if (0 == UNLINK(file_name)) {

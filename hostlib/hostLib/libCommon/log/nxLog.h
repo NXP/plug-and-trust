@@ -1,7 +1,7 @@
 /*
 *
-* Copyright 2018 NXP
-* SPDX-License-Identifier: Apache-2.0
+* Copyright 2018,2024 NXP
+* SPDX-License-Identifier: BSD-3-Clause
 */
 
 #ifndef NX_LOG_H
@@ -93,8 +93,8 @@ extern "C" {
  * If running on system where mutex or semaphore is not available, return
  * success without doing anything.
  */
-uint8_t nLog_Init();
-void nLog_DeInit();
+uint8_t nLog_Init(void);
+void nLog_DeInit(void);
 
 void nLog(const char *comp, int level, const char *format, ...);
 

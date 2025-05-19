@@ -1,7 +1,7 @@
 /*
 *
-* Copyright 2018 NXP
-* SPDX-License-Identifier: Apache-2.0
+* Copyright 2018,2024 NXP
+* SPDX-License-Identifier: BSD-3-Clause
 */
 
 #ifndef NXSCP03_APIS_H_

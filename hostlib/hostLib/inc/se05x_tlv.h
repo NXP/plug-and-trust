@@ -1,7 +1,7 @@
 /*
 *
-* Copyright 2019,2020 NXP
-* SPDX-License-Identifier: Apache-2.0
+* Copyright 2019,2020,2024-2025 NXP
+* SPDX-License-Identifier: BSD-3-Clause
 */
 
 #ifndef SE05X_TLV_H_INC
@@ -14,6 +14,15 @@
 #include "nxLog.h"
 #include "nxScp03_Types.h"
 //#include <smCom.h>
+
+#if SSS_HAVE_SCP_SCP03_SSS
+#if (defined(USE_RTOS) && (USE_RTOS == 1))
+#include "semphr.h"
+#elif (__GNUC__ && !AX_EMBEDDED)
+#include <errno.h>
+#include <pthread.h>
+#endif
+#endif // SSS_HAVE_SCP_SCP03_SSS
 
 // #define VERBOSE_APDU_LOGS 1
 
@@ -31,6 +40,7 @@ typedef enum
     SM_ERR_WRONG_DATA = 0x6A80,                 // Wrong data provided
     SM_ERR_DATA_INVALID = 0x6984,               // Data invalid - policy set invalid for the given object
     SM_ERR_FILE_FULL = 0x6A84,                  // Not enough memory space available (either transient or persistent memory)
+    SM_ERR_APDU_THROUGHPUT = 0x66A6,            // APDU Throughput error
 } smStatus_t;
 
 
@@ -56,39 +66,71 @@ typedef enum
  *
  * @{ */
 
+/** Se05xApdu_t struct representing an APDU for
+* SE05x communication.
+*/
+
 typedef struct
 {
+    /** transmit buffer */
     uint8_t *se05xTxBuf;
+    /** Length of transmit buffer */
     size_t se05xTxBufLen;
-    size_t ws_LC;            // With Session LC
-    size_t ws_LCW;           // With Session LC Width 1 or 3 bytes
-    uint8_t *wsSe05x_cmd;          // WithSession SE05X command
-    size_t wsSe05x_cmdLen;         // WithSession SE05X command Length
-    size_t wsSe05x_tag1Len;         // WithSession SE05X Tag1 len
-    size_t wsSe05x_tag1W;         // WithSession SE05X Tag1 Width
-    uint8_t *wsSe05x_tag1Cmd;     // WithSession SE05X Tag1 Command Data
-    size_t wsSe05x_tag1CmdLen;    // WithSession SE05X Tag1 Command Data Len
-    const tlvHeader_t *se05xCmd_hdr;     // SE05x Command Header
-    size_t se05xCmdLC;       // SE05x Command LC
-    size_t se05xCmdLCW;      // SE05x Command LC width
-    uint8_t *se05xCmd;       // SE05x Command
-    size_t se05xCmdLen;       // SE05x Command Length
+    /** With Session LC */
+    size_t ws_LC;
+    /** With Session LC Width 1 or 3 bytes */
+    size_t ws_LCW;
+    /** WithSession SE05X command */
+    uint8_t *wsSe05x_cmd;
+    /** WithSession SE05X command Length */
+    size_t wsSe05x_cmdLen;
+    /** WithSession SE05X Tag1 len */
+    size_t wsSe05x_tag1Len;
+    /** WithSession SE05X Tag1 Width */
+    size_t wsSe05x_tag1W;
+    /** WithSession SE05X Tag1 Command Data */
+    uint8_t *wsSe05x_tag1Cmd;
+    /** WithSession SE05X Tag1 Command Data Len */
+    size_t wsSe05x_tag1CmdLen;
+     /** SE05x Command Header */
+    const tlvHeader_t *se05xCmd_hdr;
+    /** SE05x Command LC */
+    size_t se05xCmdLC;
+    /** SE05x Command LC width */
+    size_t se05xCmdLCW;
+    /** SE05x Command */
+    uint8_t *se05xCmd;
+    /** SE05x Command Length */
+    size_t se05xCmdLen;
+    /** Pointer to data for MAC Calculation*/
     uint8_t *dataToMac;
+     /** Length of data for MAC Calculation */
     size_t dataToMacLen;
 } Se05xApdu_t;
+/**
+ *
+ * @} */
 
 struct Se05xSession;
 struct _sss_se05x_tunnel_context;
 
+/** struct Se05xSession representing a session in SE05x
+*
+*/
 typedef struct Se05xSession
 {
+    /** Array of 8 bytes representing session value.*/
     uint8_t value[8];
+    /** Indicating session is active*/
     uint8_t hasSession : 1;
+    /** Type of authentication for the session*/
     SE_AuthType_t authType;
+    /** auth ID associated with session*/
     uint32_t auth_id;
-    /** Meta Funciton
+    uint8_t logical_channel;
+    /** Meta Function
      *
-     * Internall first calls fp_Transform
+     * Internal first calls fp_Transform
      * Then calls fp_RawTXn
      * Then calls fp_DeCrypt
      */
@@ -116,7 +158,7 @@ typedef struct Se05xSession
         tlvHeader_t *outHdr,
         /** OUT: For Session less, this will be copy of inCmdBuf
          *
-         * For session based impelementation, this will have
+         * For session based implementation, this will have
          * TAG=Session, L=8,V=Session,TAG=TAG1,L=inCmdBufLen,inCmdBuf */
         uint8_t * pTxBuf,
         /** IN,OUT: */
@@ -124,7 +166,7 @@ typedef struct Se05xSession
         /** IN */
         uint8_t hasle);
 
-    /* API called by fp_TXn. Helps handle Applet/Fast SCP to decrypt buffer.
+    /** API called by fp_TXn. Helps handle Applet/Fast SCP to decrypt buffer.
     *
     * But this API never reads any data */
     smStatus_t(*fp_DeCrypt)(struct Se05xSession * pSession,
@@ -133,7 +175,7 @@ typedef struct Se05xSession
         size_t *pInRxBufLen,
         uint8_t hasle);
 #if SSS_HAVE_APPLET_SE05X_IOT
-    /* It's either a minimal/single implemntation that calls smCom_TransceiveRaw()
+    /** It's either a minimal/single implementation that calls smCom_TransceiveRaw()
      *
      * if pTunnelCtx is Null, directly call smCom_TransceiveRaw()
      *
@@ -147,7 +189,9 @@ typedef struct Se05xSession
         uint8_t *rsp,
         size_t *rspLen,
         uint8_t hasle);
-
+    /** pChannelCtx holds the context information for SE05x tunnel communication.
+    *
+    */
     struct _sss_se05x_tunnel_context * pChannelCtx;
 #endif
 #if SSS_HAVE_APPLET
@@ -160,32 +204,62 @@ typedef struct Se05xSession
         size_t *rspLen,
         uint8_t hasle);
 #endif
+    /** pdynScp03Ctx holds the dynamic context information for SCP03 channel */
     NXSCP03_DynCtx_t *pdynScp03Ctx;
 
     /**Connection data context */
     void *conn_ctx;
+    /** applet version*/
+    uint32_t applet_version;
+
+/*
+#if SSS_HAVE_SCP_SCP03_SSS
+#if (defined(USE_RTOS) && (USE_RTOS == 1))
+    SemaphoreHandle_t scp03_lock;
+    uint8_t scp03_lock_init;
+#elif (__GNUC__ && !AX_EMBEDDED)
+    pthread_mutex_t scp03_lock;
+    uint8_t scp03_lock_init;
+#endif
+#endif // SSS_HAVE_SCP_SCP03_SSS
+*/
 } Se05xSession_t;
 
-
+/** Se05xPolicy_t representing policy in SE05x
+* Se05xPolicy_t structure defines a policy in SE05x with a policy value
+* and its length
+*/
 typedef struct
 {
+    /** policy value */
     uint8_t *value;
+    /** Length of Policy value */
     size_t value_len;
 } Se05xPolicy_t;
 
+/**SE05x_TimeStamp_t Representing timestamp in SE05x
+*/
 typedef struct
 {
+    /** TimeStamp Array */
     uint8_t ts[12];
 } SE05x_TimeStamp_t;
 
+/**SE05x_ExtendedFeatures_t Representing Extended feature in SE05x
+*/
 typedef struct
 {
+    /** Extended feature array */
     uint8_t features[30];
 } SE05x_ExtendedFeatures_t;
 
+/**Se05x_AppletFeatures_t Representing features of SE05x applet
+*/
 typedef struct
 {
+    /** Variant of the SE05x applet features. */
     SE05x_Variant_t variant;
+    /** Pointer to extended_features. */
     SE05x_ExtendedFeatures_t *extended_features;
 } Se05x_AppletFeatures_t;
 
@@ -202,65 +276,91 @@ typedef Se05xPolicy_t *pSe05xPolicy_t;
 #define DO_LOG_A(TAG, DESCRIPTION, ARRAY, ARRAY_LEN)
 #endif
 
+/** Creates a TLV set for SE05x Session*/
 #define TLVSET_Se05xSession(DESCRIPTION, PBUF, PBUFLEN, TAG, SESSIONID) \
     TLVSET_u8buf(DESCRIPTION, PBUF, PBUFLEN, TAG, SESSIONID->value, sizeof(SESSIONID->value))
 
+/** Creates a TLV set using parameters for SE05xPolicy information*/
 #define TLVSET_Se05xPolicy(DESCRIPTION, PBUF, PBUFLEN, TAG, POLICY) \
     tlvSet_Se05xPolicy(DESCRIPTION, PBUF, PBUFLEN, TAG, POLICY)
 
+/** Creates a TLV set with 8-bit unsigned integer value*/
 #define TLVSET_U8(DESCRIPTION, PBUF, PBUFLEN, TAG, VALUE) \
     tlvSet_U8(PBUF, PBUFLEN, TAG, VALUE);                 \
     DO_LOG_V(TAG, DESCRIPTION, VALUE)
 
+/** Creates a TLV set with -bit unsigned integer value*/
 #define TLVSET_U16(DESCRIPTION, PBUF, PBUFLEN, TAG, VALUE) \
     tlvSet_U16(PBUF, PBUFLEN, TAG, VALUE);                 \
     DO_LOG_V(TAG, DESCRIPTION, VALUE)
 
+/** Creates a TLV set with 16-bit unsigned integer value*/
 #define TLVSET_U16Optional(DESCRIPTION, PBUF, PBUFLEN, TAG, VALUE) \
     tlvSet_U16Optional(PBUF, PBUFLEN, TAG, VALUE);                 \
     DO_LOG_V(TAG, DESCRIPTION, VALUE)
 
+/** Creates a TLV set with 32-bit unsigned integer value*/
 #define TLVSET_U32(DESCRIPTION, PBUF, PBUFLEN, TAG, VALUE) \
     tlvSet_U32(PBUF, PBUFLEN, TAG, VALUE);                 \
     DO_LOG_V(TAG, DESCRIPTION, VALUE)
 
+/** Creates a TLV set with 64-bit unsigned integer value and a specified size*/
 #define TLVSET_U64_SIZE(DESCRIPTION, PBUF, PBUFLEN, TAG, VALUE,SIZE) \
     tlvSet_U64_size(PBUF, PBUFLEN, TAG, VALUE,SIZE);                 \
     DO_LOG_V(TAG, DESCRIPTION, VALUE)
 
+/** Creates a TLV set with KeyID*/
 #define TLVSET_KeyID(DESCRIPTION, PBUF, PBUFLEN, TAG, VALUE) \
     tlvSet_KeyID(PBUF, PBUFLEN, TAG, VALUE);                 \
     DO_LOG_V(TAG, DESCRIPTION, VALUE)
 
+/** Creates a TLV set with maximum attempts value*/
 #define TLVSET_MaxAttemps(DESCRIPTION, PBUF, PBUFLEN, TAG, VALUE) \
     tlvSet_MaxAttemps(PBUF, PBUFLEN, TAG, VALUE);                 \
     DO_LOG_V(TAG, DESCRIPTION, VALUE)
 
+/** See @ref TLVSET_U8 */
 #define TLVSET_AttestationAlgo TLVSET_U8
+/** See @ref TLVSET_U8 */
 #define TLVSET_CipherMode TLVSET_U8
 
+/** Creates a TLV set with EC Curve value*/
 #define TLVSET_ECCurve(DESCRIPTION, PBUF, PBUFLEN, TAG, VALUE) \
     tlvSet_ECCurve(PBUF, PBUFLEN, TAG, VALUE);                 \
     DO_LOG_V(TAG, DESCRIPTION, VALUE)
 
+/** See @ref TLVSET_U8 */
 #define TLVSET_ECCurveParam TLVSET_U8
-#define TLVSET_ECDAASignatureAlgo TLVSET_U8
+/** See @ref TLVSET_U8 */
 #define TLVSET_ECSignatureAlgo TLVSET_U8
+/** See @ref TLVSET_U8 */
 #define TLVSET_EDSignatureAlgo TLVSET_U8
+/** See @ref TLVSET_U8 */
 #define TLVSET_MacOperation TLVSET_U8
+/** See @ref TLVSET_U8 */
 #define TLVSET_RSAEncryptionAlgo TLVSET_U8
+/** See @ref TLVSET_U8 */
 #define TLVSET_RSAKeyComponent TLVSET_U8
+/** See @ref TLVSET_U8 */
 #define TLVSET_RSASignatureAlgo TLVSET_U8
+/** See @ref TLVSET_U8 */
 #define TLVSET_DigestMode TLVSET_U8
+/** See @ref TLVSET_U8 */
 #define TLVSET_Variant tlvSet_u8buf_features
+/** See @ref TLVSET_U8 */
 #define TLVSET_RSAPubKeyComp TLVSET_U8
+/** See @ref TLVSET_U8 */
 #define TLVSET_PlatformSCPRequest TLVSET_U8
+/** See @ref TLVSET_U8 */
 #define TLVSET_MemoryType TLVSET_U8
 
+/** See @ref TLVSET_U8 */
 #define TLVSET_CryptoContext TLVSET_U8
+/** See @ref TLVSET_U8 */
 #define TLVSET_CryptoModeSubType(DESCRIPTION, PBUF, PBUFLEN, TAG, VALUE) \
     TLVSET_U8(DESCRIPTION, PBUF, PBUFLEN, TAG, ((VALUE).union_8bit))
 
+/** See @ref TLVSET_U16 */
 #define TLVSET_CryptoObjectID TLVSET_U16
 
 // #define TLVSET_pVoid(DESCRIPTION, PBUF, PBUFLEN, TAG, VALUE) (0)

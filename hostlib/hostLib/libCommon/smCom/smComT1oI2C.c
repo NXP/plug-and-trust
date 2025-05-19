@@ -1,7 +1,7 @@
 /*
  *
- * Copyright 2016-2018,2020 NXP
- * SPDX-License-Identifier: Apache-2.0
+ * Copyright 2016-2018,2020,2024-2025 NXP
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 /**
@@ -31,6 +31,7 @@
 
 #include "nxLog_smCom.h"
 #include "nxEnsure.h"
+#include <limits.h>
 
 static U32 smComT1oI2C_Transceive(void* conn_ctx, apdu_t * pApdu);
 static U32 smComT1oI2C_TransceiveRaw(void* conn_ctx, U8 * pTx, U16 txLen, U8 * pRx, U32 * pRxLen);
@@ -38,34 +39,34 @@ U16 smComT1oI2C_AnswerToReset(void* conn_ctx, U8 *T1oI2Catr, U16 *T1oI2CatrLen);
 
 U16 smComT1oI2C_Close(void *conn_ctx, U8 mode)
 {
-    ESESTATUS status;
+    ESESTATUS status, status2;
     /* Do not pass conn_ctx = NULL to next layer.
      * Multiple sessions can be present to different SEs.
      * Since the port information is contained in the conn_ctx,
      * the application must pass conn_ctx to close the connection.
      */
-    if (conn_ctx) {
-        status=phNxpEse_EndOfApdu(conn_ctx);
-        //status=phNxpEse_chipReset();
-        if(status ==ESESTATUS_SUCCESS)
-        {
-            status = phNxpEse_close(conn_ctx);
-            if(status != ESESTATUS_SUCCESS)
-            {
-                LOG_E("Failed to close ESE interface and free all resources ");
-                return SMCOM_COM_FAILED;
-            }
-        }
-        else
-        {
-            LOG_E("Failed to close session ");
-            return SMCOM_COM_FAILED;
-        }
+
+    (void)mode;
+
+    status=phNxpEse_EndOfApdu(conn_ctx);
+    //status=phNxpEse_chipReset();
+    if(status != ESESTATUS_SUCCESS)
+    {
+        LOG_E("Failed to close session ");
+    }
+
+    status2 = phNxpEse_close(conn_ctx);
+    if(status2 != ESESTATUS_SUCCESS){
+        LOG_E("Failed to close ESE interface and free all resources ");
+    }
+
+    if (status  == ESESTATUS_SUCCESS && status2 == ESESTATUS_SUCCESS)
+    {
+        return SMCOM_OK;
     }
     else {
-        LOG_W("Invalid conn_ctx");
+         return SMCOM_COM_FAILED;
     }
-    return SMCOM_OK;
 }
 
 
@@ -113,6 +114,9 @@ U16 smComT1oI2C_Open(void *conn_ctx, U8 mode, U8 seqCnt, U8 *T1oI2Catr, U16 *T1o
     initParams.initMode = ESE_MODE_NORMAL;
     AtrRsp.len = *T1oI2CatrLen;
     AtrRsp.p_data = T1oI2Catr;
+
+    (void)mode;
+    (void)seqCnt;
 
     if (conn_ctx == NULL) {
         // Connection context is stored in global variable contained in phNxpEse_Api.c
@@ -175,6 +179,7 @@ static U32 smComT1oI2C_TransceiveRaw(void* conn_ctx, U8 * pTx, U16 txLen, U8 * p
     return SMCOM_OK;
 }
 
+// LCOV_EXCL_START
 U16 smComT1oI2C_AnswerToReset(void* conn_ctx, U8 *T1oI2Catr, U16 *T1oI2CatrLen)
 {
     phNxpEse_data pRsp= {0};
@@ -190,6 +195,7 @@ U16 smComT1oI2C_AnswerToReset(void* conn_ctx, U8 *T1oI2Catr, U16 *T1oI2CatrLen)
 #endif
     if(txnStatus == ESESTATUS_SUCCESS)
     {
+        ENSURE_OR_GO_EXIT(pRsp.len <= UINT16_MAX);
         *T1oI2CatrLen = pRsp.len;
         if (pRsp.len > 0) {
             memcpy(T1oI2Catr, pRsp.p_data, pRsp.len);
@@ -207,6 +213,7 @@ U16 smComT1oI2C_AnswerToReset(void* conn_ctx, U8 *T1oI2Catr, U16 *T1oI2CatrLen)
 exit:
     return status;
 }
+// LCOV_EXCL_STOP
 
 U16 smComT1oI2C_ComReset(void* conn_ctx)
 {

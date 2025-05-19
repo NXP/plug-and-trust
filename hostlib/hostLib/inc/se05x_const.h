@@ -1,7 +1,7 @@
 /*
 *
-* Copyright 2019,2020 NXP
-* SPDX-License-Identifier: Apache-2.0
+* Copyright 2019,2020,2024 NXP
+* SPDX-License-Identifier: BSD-3-Clause
 */
 
 #ifndef FSL_SSS_SE05X_CONST_H
@@ -31,7 +31,7 @@
  * there is no easy way how many Exact bytes the host can
  * send to SE05x.
  */
-#if SSS_HAVE_SE05X_VER_GTE_06_00
+#if SSS_HAVE_SE05X_VER_GTE_07_02
 /* SE051 MAX_APDU_PAYLOAD_LENGTH 1024 */
 #define SE05X_MAX_BUF_SIZE_CMD (1024)
 #define SE05X_MAX_BUF_SIZE_RSP (1024)
@@ -157,10 +157,10 @@ example : B1b8 : 0x80000000
 #define POLICY_OBJ_ALLOW_DESFIRE_AUTHENTICATION     0x00004000
 #define POLICY_OBJ_ALLOW_DESFIRE_DUMP_SESSION_KEYS  0x00002000
 #define POLICY_OBJ_ALLOW_IMPORT_EXPORT              0x00001000
-#if SSS_HAVE_SE05X_VER_GTE_06_00 // 4.4
+#if SSS_HAVE_SE05X_VER_GTE_07_02 // 4.4
 #define POLICY_OBJ_FORBID_DERIVED_OUTPUT            0x00000800
 #endif
-#if SSS_HAVE_SE05X_VER_GTE_06_00 // 5.4
+#if SSS_HAVE_SE05X_VER_GTE_07_02 // 5.4
 #define POLICY_OBJ_ALLOW_KDF_EXT_RANDOM     0x00000400
 #endif
 

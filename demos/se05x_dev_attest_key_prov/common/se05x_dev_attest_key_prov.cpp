@@ -1,7 +1,7 @@
 /*
  *
- * Copyright 2021 NXP
- * SPDX-License-Identifier: Apache-2.0
+ * Copyright 2021,2025 NXP
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 /* ************************************************************************** */
@@ -179,7 +179,7 @@ void se05x_dev_attest_key_prov(void) {
 
   memset(&gex_sss_chip_ctx, 0, sizeof(gex_sss_chip_ctx));
 
-  status = ex_sss_boot_connectstring(0, NULL, &portName);
+  status = ex_sss_boot_connectstring(0, NULL, (char**)&portName);
   if (kStatus_SSS_Success != status) {
     printf("se05x error: %s\n", "ex_sss_boot_connectstring failed");
     return;

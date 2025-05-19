@@ -1,7 +1,7 @@
 /*
 *
-* Copyright 2016,2020 NXP
-* SPDX-License-Identifier: Apache-2.0
+* Copyright 2016,2020,2024 NXP
+* SPDX-License-Identifier: BSD-3-Clause
 */
 
 #ifndef _A71CH_CONST_H_
@@ -17,43 +17,12 @@ extern "C" {
 #include "fsl_sss_ftr_default.h"
 #endif
 
-#if SSS_HAVE_APPLET_A71CH && (!(SSS_HAVE_APPLET_A71CH_SIM))
-#   define APPLET_NAME "a71ch" // 0x61.37.31.63.68
-#   define APPLET_NAME_LEN (sizeof(APPLET_NAME) - 1)
-#   define SE_NAME  "A71CH"
-#endif
 #if SSS_HAVE_APPLET_LOOPBACK
 #   define APPLET_NAME  \
     { 0xD2, 0x76, 0x00, 0x00,  0x85, 0x54, 0x65, 0x73, \
       0x74, 0x01, 0x01 } //echo applet
 #   define APPLET_NAME_LEN (11)
 #   define SE_NAME  "LoopBack"
-#endif
-#if SSS_HAVE_APPLET_A71CL
-#   define APPLET_NAME   \
-  { 0xA0, 0x00, 0x00, 0x00,   0x41, 0x6C, 0x69, 0x59, \
-    0x75, 0x6E, 0x2E, 0x49,   0x44, 0x32, 0x01}// "Ali Yun"
-#   define APPLET_NAME_LEN (15)
-#   define SE_NAME  "A71CL"
-#endif
-
-#if SSS_HAVE_APPLET_SE05X_L
-#   define APPLET_NAME   \
-{   0xA0, 0x00, 0x00, 0x00,   0x41, 0x6C, 0x69, 0x59, \
-    0x75, 0x6E, 0x2E, 0x49,   0x44, 0x32 \
-}// "Ali Yun"
-
-
-#   define APPLET_NAME_LEN (14)
-#   define SE_NAME  "SE050_L"
-#endif
-
-#if SSS_HAVE_APPLET_A71CH_SIM
-#   define APPLET_NAME \
-        {0xa0, 0x00, 0x00, 0x03,     0x96, 0x54, 0x53, 0x00, \
-         0x00, 0x00, 0x01, 0x03,     0x00, 0x00, 0x00, 0x00}
-#   define APPLET_NAME_LEN (16)
-#   define SE_NAME  "SE050:EAR:CH"
 #endif
 
 #if SSS_HAVE_APPLET_SE05X_IOT

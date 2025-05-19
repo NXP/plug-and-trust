@@ -1,7 +1,7 @@
 /*
  *
- * Copyright 2018-2020 NXP
- * SPDX-License-Identifier: Apache-2.0
+ * Copyright 2018-2020,2024-2025 NXP
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #ifndef SSS_EX_INC_EX_SSS_AUTH_H_
@@ -65,6 +65,15 @@
  * See https://www.nxp.com/docs/en/application-note/AN12436.pdf
  */
 
+#if defined(SECURE_WORLD)
+/* Length of PUF keycode */
+#define EX_SSS_AUTH_SE05X_KEY_LEN 52
+#else
+/* Length of SCP03 keys */
+#define EX_SSS_AUTH_SE05X_KEY_LEN 16
+#endif
+/* Ensure to change the length 'EX_SSS_AUTH_SE05X_KEY_LEN' to 32, in case if the SCP keys are updated to 32 bytes below. */
+
 #if  1 /* Customer facing */
 
 #ifndef EX_SSS_AUTH_SE05X_KEY_ENC
@@ -96,7 +105,6 @@
 #endif
 
 #endif
-
 
 #define EX_SSS_AUTH_SE05X_KEY_VERSION_NO 0x0B
 

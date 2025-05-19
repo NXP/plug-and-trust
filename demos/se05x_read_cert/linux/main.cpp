@@ -1,6 +1,6 @@
 /*
- * Copyright 2023 NXP
- * SPDX-License-Identifier: Apache-2.0
+ * Copyright 2023,2025 NXP
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #include "se05x_read_cert.h"

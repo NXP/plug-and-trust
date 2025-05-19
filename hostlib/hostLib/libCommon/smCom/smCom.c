@@ -1,7 +1,7 @@
 /*
  *
- * Copyright 2016-2020 NXP
- * SPDX-License-Identifier: Apache-2.0
+ * Copyright 2016-2020,2024 NXP
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 /**
@@ -14,7 +14,10 @@
 #include "smCom.h"
 #include "nxLog_smCom.h"
 
-#if defined(USE_RTOS) && (USE_RTOS == 1)
+#if defined(USE_THREADX_RTOS)
+#include "tx_api.h"
+
+#elif (defined(USE_RTOS) && (USE_RTOS == 1))
 #include "FreeRTOS.h"
 #include "semphr.h"
 #endif
@@ -23,7 +26,10 @@
 #include "smComJRCP.h"
 #endif
 
-#if defined(USE_RTOS) && (USE_RTOS == 1)
+#if defined(USE_THREADX_RTOS)
+static TX_MUTEX  gSmComlock;
+
+#elif (defined(USE_RTOS) && (USE_RTOS == 1))
 static SemaphoreHandle_t gSmComlock;
 #elif (__GNUC__ && !AX_EMBEDDED)
 #include<pthread.h>
@@ -31,13 +37,29 @@ static SemaphoreHandle_t gSmComlock;
     static pthread_mutex_t gSmComlock;
 #endif
 
-#if (__GNUC__ && !AX_EMBEDDED) || (USE_RTOS)
+#if (__GNUC__ && !AX_EMBEDDED) || (USE_RTOS) || defined(USE_THREADX_RTOS)
 #define USE_LOCK 1
 #else
 #define USE_LOCK 0
 #endif
 
-#if defined(USE_RTOS) && (USE_RTOS == 1)
+
+#if defined(USE_THREADX_RTOS)
+#define LOCK_TXN()                                               \
+    LOG_D("Trying to Acquire Lock");                             \
+    if (tx_mutex_get(&gSmComlock,TX_WAIT_FOREVER) == TX_SUCCESS) \
+        LOG_D("LOCK Acquired");                                  \
+    else                                                         \
+        LOG_D("LOCK Acquisition failed");
+
+#define UNLOCK_TXN()                                             \
+    LOG_D("Trying to Released Lock");                            \
+    if (tx_mutex_put(&gSmComlock ) == TX_SUCCESS)                \
+        LOG_D("LOCK Released");                                  \
+    else                                                         \
+        LOG_D("LOCK Releasing failed");
+
+#elif (defined(USE_RTOS) && (USE_RTOS == 1))
 #define LOCK_TXN()                                             \
     LOG_D("Trying to Acquire Lock");                           \
     if (xSemaphoreTake(gSmComlock, portMAX_DELAY) == pdTRUE) { \
@@ -57,12 +79,16 @@ static SemaphoreHandle_t gSmComlock;
 #elif (__GNUC__ && !AX_EMBEDDED)
 #define LOCK_TXN()                                               \
     LOG_D("Trying to Acquire Lock thread: %ld", pthread_self()); \
-    pthread_mutex_lock(&gSmComlock);                             \
+    if (pthread_mutex_lock(&gSmComlock) != 0) {                  \
+        LOG_W("pthread_mutex_lock failed");                      \
+    }                                                            \
     LOG_D("LOCK Acquired by thread: %ld", pthread_self());
 
 #define UNLOCK_TXN()                                                 \
     LOG_D("Trying to Released Lock by thread: %ld", pthread_self()); \
-    pthread_mutex_unlock(&gSmComlock);                               \
+    if (pthread_mutex_unlock(&gSmComlock) != 0) {                    \
+        LOG_W("pthread_mutex_unlock failed");                        \
+    }                                                                \
     LOG_D("LOCK Released by thread: %ld", pthread_self());
 #else
 #define LOCK_TXN() LOG_D("no lock mode");
@@ -79,7 +105,13 @@ static ApduTransceiveRawFunction_t pSmCom_TransceiveRaw = NULL;
 U16 smCom_Init(ApduTransceiveFunction_t pTransceive, ApduTransceiveRawFunction_t pTransceiveRaw)
 {
     U16 ret = SMCOM_COM_INIT_FAILED;
-#if defined(USE_RTOS) && (USE_RTOS == 1)
+
+#if defined(USE_THREADX_RTOS)
+    if(tx_mutex_create(&gSmComlock, "gSmComlock_mutex", TX_NO_INHERIT) != TX_SUCCESS) {
+        LOG_E("\n tx_mutex_create failed");
+        return ret;
+    }
+#elif (defined(USE_RTOS) && (USE_RTOS == 1))
     gSmComlock = xSemaphoreCreateMutex();
     if (gSmComlock == NULL) {
         LOG_E("\n xSemaphoreCreateMutex failed");
@@ -100,13 +132,18 @@ U16 smCom_Init(ApduTransceiveFunction_t pTransceive, ApduTransceiveRawFunction_t
 
 void smCom_DeInit(void)
 {
-#if defined(USE_RTOS) && (USE_RTOS == 1)
+#if defined(USE_THREADX_RTOS)
+    tx_mutex_delete(&gSmComlock);
+
+#elif (defined(USE_RTOS) && (USE_RTOS == 1))
     if (gSmComlock != NULL) {
     	vSemaphoreDelete(gSmComlock);
         gSmComlock = NULL;
     }
 #elif (__GNUC__ && !AX_EMBEDDED)
-    pthread_mutex_destroy(&gSmComlock);
+    if (pthread_mutex_destroy(&gSmComlock) != 0) {
+        return;
+    }
 #endif
     pSmCom_Transceive = NULL;
     pSmCom_TransceiveRaw = NULL;

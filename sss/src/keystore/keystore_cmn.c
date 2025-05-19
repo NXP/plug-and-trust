@@ -1,7 +1,7 @@
 /*
  *
- * Copyright 2018-2020 NXP
- * SPDX-License-Identifier: Apache-2.0
+ * Copyright 2018-2020,2024 NXP
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 /* Common Key store implementation between keystore_a7x and keystore_pc */
@@ -48,8 +48,14 @@ void ks_common_init_fat(keyStoreTable_t *keystore_shadow, keyIdAndTypeIndexLooku
     memset(keystore_shadow, 0, sizeof(*keystore_shadow));
     keystore_shadow->magic      = KEYSTORE_MAGIC;
     keystore_shadow->version    = KEYSTORE_VERSION;
-    keystore_shadow->maxEntries = (uint16_t)max_entries;
+    keystore_shadow->maxEntries = 0;
     keystore_shadow->entries    = lookup_entires;
+
+    if (max_entries > UINT16_MAX) {
+        LOG_E("max_entries should be 2 bytes");
+        return;
+    }
+    keystore_shadow->maxEntries = (uint16_t)max_entries;
     memset(keystore_shadow->entries, 0, sizeof(*lookup_entires) * max_entries);
 }
 
@@ -61,14 +67,16 @@ sss_status_t ks_common_update_fat(keyStoreTable_t *keystore_shadow,
     uint32_t accessPermission,
     uint16_t keyLen)
 {
-    AX_UNUSED_ARG(accessPermission);
     sss_status_t retval = kStatus_SSS_Fail;
     uint32_t i;
     bool found_entry         = FALSE;
     uint8_t slots_req        = 1;
     uint8_t entries_written  = 0;
     uint16_t keyLen_roundoff = 0;
-    retval                   = isValidKeyStoreShadow(keystore_shadow);
+
+    AX_UNUSED_ARG(accessPermission);
+
+    retval = isValidKeyStoreShadow(keystore_shadow);
     if (retval != kStatus_SSS_Success) {
         goto cleanup;
     }
@@ -83,8 +91,16 @@ sss_status_t ks_common_update_fat(keyStoreTable_t *keystore_shadow,
     }
 
     if (key_part == kSSS_KeyPart_Default && (cipherType == kSSS_CipherType_AES || cipherType == kSSS_CipherType_HMAC)) {
-        keyLen_roundoff = ((keyLen / 16) * 16) + ((keyLen % 16) == 0 ? 0 : 16);
-        slots_req       = (keyLen_roundoff / 16);
+        if ((keyLen > (UINT16_MAX - 16)) || (keyLen == 0)) {
+            retval = kStatus_SSS_Fail;
+            goto cleanup;
+        }
+        keyLen_roundoff = ((keyLen / 16u) * 16u) + ((keyLen % 16u) == 0u ? 0u : 16u);
+        if ((keyLen_roundoff / 16) > UINT8_MAX) {
+            retval = kStatus_SSS_Fail;
+            goto cleanup;
+        }
+        slots_req = (keyLen_roundoff / 16u);
     }
 
     if (!found_entry) {
@@ -94,7 +110,7 @@ sss_status_t ks_common_update_fat(keyStoreTable_t *keystore_shadow,
             if (keyEntry->extKeyId == 0) {
                 keyEntry->extKeyId    = extId;
                 keyEntry->keyIntIndex = intIndex;
-                keyEntry->keyPart     = key_part | ((slots_req - 1) << 4);
+                keyEntry->keyPart     = key_part | ((slots_req - 1u) << 4);
                 keyEntry->cipherType  = cipherType;
                 //keyEntry->accessPermission = accessPermission;
 
@@ -229,6 +245,9 @@ sss_status_t keystore_shadow_From2_To_3(keyStoreTable_t *keystore_shadow)
                 return kStatus_SSS_Fail;
             }
 
+            if (org_keyIntIndex > UINT8_MAX) {
+                return kStatus_SSS_Fail;
+            }
             keyEntry->keyIntIndex = (uint8_t)org_keyIntIndex;
         }
     }

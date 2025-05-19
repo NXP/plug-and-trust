@@ -1,11 +1,97 @@
 # Plug-And-Trust Mini Package Change Log
 
+## Release v04.07.00
+
+- Platform SCP03 support extended for AES-256 (32 byte) keys.
+
+- SSS APIs are updated to support Mbed TLS 3.x
+
+- T=1oI2C Stack updated to remove the endianness dependent code.
+
+- se05x_apis.h is renamed to se05x_reset_apis.h (file path - simw-top/hostlib/hostLib/platform/inc).
+
+- New compile time option `SE_RESET_LOGIC` is added to select the reset logic for SE051/SE052.
+
+- se05x_ic_reset API updated to receive applet version as input parameter. This is used to decide the reset logic for SE051 and SE052.
+  (file path - hostlib/hostLib/platform/inc/se05x_reset_apis.h)
+
+- Fixes for memory leaks (emsa_decode_and_compare function).
+
+- Fixes for static analysis findings.
+
+
+## Release v04.05.03
+
+- IMPORTANT: Package License changed to BSD-3 from Apache-2. Please refer and accept the LICENSE.txt at the root folder before using the software.
+
+- Fixes for static analysis findings
+
+
+## Release v04.05.01
+
+- SE052 secure element support added.
+
+- Deep power down (T1oI2C command) API added for SE052 - :func:`phNxpEse_deepPwrDown`.
+
+- I2C Wrapper for Linux/RT1060/RT1170 : I2C read back-of-delay extended to additional platforms including Linux.
+This leads to consistent timeout of appr 20 seconds across all platforms when there is no response from secure element.
+
+- T=1oI2C : During session open, added logic in T=1oI2C to wait till previous transaction is complete (by sending WTX response to up to 40 WTX requests).
+This helps in case the previous transaction was not completed or middleware was re-started.
+
+- I2C Wrapper for RT1060/RT1170 : Add workaround to send I2C Master stop if NAK received in I2C driver (:file:`simw-top/hostlib/hostLib/platform/ksdk/i2c_imxrt.c`)
+
+- NVM write warning log messages are added in SE05x APDU APIs. (in release v04.05.00).
+
+## Release v04.05.00
+
+- Appler version `06_00` removed from `PTMW_SE05X_Ver`
+
+- Private key (ECC and RSA) create disabled at SE05x APDU layer
+
+- BN Curve and ECDAA APIs removed.
+
+- Thread safety when using SCP03 in SSS layer. (Disabled by default. To enable, uncomment `//#define SSS_USE_SCP03_THREAD_SAFETY` in fsl_sss_se05x_apis.c)
+
+- Issue of polices passed to the SSS API being modified - is Fixed.
+
+- Fixes for compilation warnings and static analysis findings.
+
+- Input pointers are updated with const qualifiers for asymmetric_sign APIs
+(:cpp:type:`sss_se05x_asymmetric_sign_digest`, :cpp:type:`sss_se05x_asymmetric_sign`, :cpp:type:`sss_se05x_asymmetric_verify_digest`,
+:cpp:type:`sss_se05x_asymmetric_verify`, :cpp:type:`sss_asymmetric_sign_digest`, :cpp:type:`sss_asymmetric_verify_digest`)
+
+- New APDUs for RSA sign and verify with salt length added - :cpp:func:`Se05x_API_RSASign_WithSalt` and :cpp:func:`Se05x_API_RSAVerify_WithSalt`.
+
+- Bug fix : failing phNxpEse_chipReset does not return failure
+
+- phNxpEse_open memory leak fix
+
+- APDU throughput error code (SM_ERR_APDU_THROUGHPUT) added in smStatus_t.
+
+- APDU throughput error code (kStatus_SSS_ApduThroughputError) added in sss_status_t. SSS APIs are updated return new throughput error code.
+
+
+## Release v04.04.00
+
+- Fixes for compilation warnings and static analysis findings.
+
+- Feature configurations via cmake​. Refer readme for more details.
+
+- Memory leak fixes in SSS OpenSSL APIs.
+
+- T1OI2C read retry ON I2C_FAILED error. Also retry count is increased.
+
+- added optional workaround for SE050A/B/C/F for I2C communication. Enabled via define T1OI2C_SEND_SHORT_APDU.
+
+- Mbedtls ALT files and Mbedtls client server example removed.
+
 
 ## Release v04.03.01
 
 **Important Security Updates**
 
-- Added security fixes on 24 Feb 2023 to prevent buffer overflow on the T=IoI2C stack. It is important to use the updated "hostlib\hostLib\libCommon\smCom\T1oI2C\� and smCom module.
+- Added security fixes on 24 Feb 2023 to prevent buffer overflow on the T=IoI2C stack. It is important to use the updated "hostlib\hostLib\libCommon\smCom\T1oI2C\” and smCom module.
 
 ## Release v04.03.00
 
@@ -112,13 +198,52 @@
 - Bugfix: Write of large binary files with policy fails on applet 3.x.
 
 
-## Release v03.02.01_Spake
+## Release v03.03.00
 
-- Updated with v03.01.00 of Plug-and-trust
+- sss_openssl_cipher_one_go() api modified to use EVP calls for AES (ECB, CBC, CTR)
 
-## Release v03.02.00_Spake
+- sss_se05x_cipher_update() api modified to use block size of 256 to enhance performance.
 
-- Pake protocol support in APDU layer
+
+## Release v03.01.00
+
+- Extended kSSS_KeyPart_Default for other objectType.
+
+  - Earlier: Object type ``kSSS_KeyPart_Default`` is used for Binary Files,
+    Certificates, Symmetric Keys, PCR and HMAC-key.
+
+  - Now: UserID and Counter are added for ``kSSS_KeyPart_Default``.
+    This means objectType of UserID and Counter will be ``kSSS_KeyPart_Default`` after
+    calling :cpp:type:`sss_key_object_get_handle`.
+    Comment for enum ``sss_key_part_t`` is updated accordingly.
+
+- Added new API :cpp:func:`Se05x_API_WritePCR_WithType` with support to
+  write transient PCR objects also.
+
+- Deprecated API :cpp:func:`Se05x_API_WritePCR`. Added macro :c:macro:`ENABLE_DEPRECATED_API_WritePCR`
+  to enable compilation of deprecated API :cpp:func:`Se05x_API_WritePCR`.
+  Support will be removed by Q1 2022.
+
+- Bugfix - Handling of result tag in case of failure in :cpp:func:`Se05x_API_AeadOneShot`,
+  :cpp:func:`Se05x_API_AeadFinal` and
+  :cpp:func:`Se05x_API_AeadCCMFinal`
+
+- Bugfix - KVN12 key can be used for PlatformSCP authentication now in SE051.
+
+- SE05x APDU - Response length set to 0 in error condition - :cpp:func:`tlvGet_u8buf`.
+
+- Created separate library (``mwlog``) for logging framework. See :numref:`stack-logging`
+  :ref:`stack-logging`
+
+- Order of log level reversed. Current log level is - ``{"ERROR", "WARN ", "INFO ", "DEBUG"}``.
+
+- Mbedtls ALT is extended with ECDSA verify operation using ``MBEDTLS_ECDSA_VERIFY_ALT`` define. (Disabled by default).
+  Using this all EC public key verify operations can be performed using SE05x.
+
+- Changed files under BSD3 License with NXP Copyright to Apache2 License.
+
+- Changed files under Proprietary license to Apache 2 License.
+
 
 ## Release v03.00.06
 

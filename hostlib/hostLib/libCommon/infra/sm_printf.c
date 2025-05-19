@@ -1,7 +1,7 @@
 /*
  *
- * Copyright 2016 NXP
- * SPDX-License-Identifier: Apache-2.0
+ * Copyright 2016,2024 NXP
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #include <stdio.h>
@@ -22,9 +22,15 @@ void sm_printf(uint8_t dev, const char * format, ...)
 
     va_start(vArgs, format);
 #if defined(_WIN32) && defined(_MSC_VER)
-    vsnprintf_s((char *)buffer, MAX_SER_BUF_SIZE, MAX_SER_BUF_SIZE, (char const *)format, vArgs);
+    if ((vsnprintf_s((char *)buffer, MAX_SER_BUF_SIZE, MAX_SER_BUF_SIZE, (char const *)format, vArgs)) < 0) {
+        PRINTF("vsnprintf_s Error");
+        return;
+    }
 #else
-    vsnprintf((char *)buffer, MAX_SER_BUF_SIZE, (char const *)format, vArgs);
+    if ((vsnprintf((char *)buffer, MAX_SER_BUF_SIZE, (char const *)format, vArgs)) < 0) {
+        PRINTF("vsnprintf Error");
+        return;
+    }
 #endif
     va_end(vArgs);
 

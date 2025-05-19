@@ -1,7 +1,7 @@
 /*
  *
- * Copyright 2018-2020 NXP
- * SPDX-License-Identifier: Apache-2.0
+ * Copyright 2018-2020,2024 NXP
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 /** @file */
 #ifndef _FSL_SSS_H_
@@ -52,6 +52,8 @@ typedef enum
      * */
     kStatus_SSS_ResourceBusy = 0x3c3c0002u,
     // LCOV_EXCL_STOP
+    /** APDU Throughput error */
+    kStatus_SSS_ApduThroughputError = 0x3c3c0003u,
 } sss_status_t;
 
 /** Helper macro to set enum value */
@@ -134,7 +136,6 @@ typedef enum
 #define SSS_ALGORITHM_START_RSAES_PKCS1_V1_5 (0x0A)
 #define SSS_ALGORITHM_START_RSASSA_NO_PADDING (0x0B)
 #define SSS_ALGORITHM_START_ECDSA (0x0C)
-#define SSS_ALGORITHM_START_ECDAA (0x0D)
 
 /* Not available outside this file */
 #define SSS_ENUM_ALGORITHM(GROUP, INDEX) (((SSS_ALGORITHM_START_##GROUP) << 8) | (INDEX))
@@ -228,11 +229,6 @@ typedef enum /* _sss_algorithm */
     kAlgorithm_SSS_ECDSA_SHA384 = SSS_ENUM_ALGORITHM(ECDSA, 0x04),
     kAlgorithm_SSS_ECDSA_SHA512 = SSS_ENUM_ALGORITHM(ECDSA, 0x05),
     /* doc:end ecc_sign_algo */
-
-    /* ECDAA */
-    /* doc:start ecc_bn_sign_algo */
-    kAlgorithm_SSS_ECDAA = SSS_ENUM_ALGORITHM(ECDAA, 0x01),
-    /* doc:end ecc_bn_sign_algo */
 } sss_algorithm_t;
 
 #undef SSS_ENUM_ALGORITHM
@@ -360,8 +356,6 @@ typedef enum
     kSSS_CipherType_EC_TWISTED_ED = 51,
     /** Brainpool form elliptic curve public key */
     kSSS_CipherType_EC_BRAINPOOL = 52,
-    /** Barreto Naehrig curve (BARRETO NAEHRIG is deprecated. This will be removed in next release) */
-    kSSS_CipherType_EC_BARRETO_NAEHRIG = 53,
 
     kSSS_CipherType_UserID = 70,
 
@@ -1192,7 +1186,7 @@ sss_status_t sss_cipher_one_go(
  * @param srcData Buffer containing the input data (block aligned).
  * @param srcLen  Length of buffer srcData.
  * @param destData Buffer containing the output data.
- * @param pDataLen Pointer to Size of buffer destData in bytes.
+ * @param dataLen Pointer to Size of buffer destData in bytes.
  * @returns Status of the operation
  * @retval #kStatus_SSS_Success The operation has completed successfully.
  * @retval #kStatus_SSS_Fail The operation has failed.
@@ -1323,7 +1317,7 @@ sss_status_t sss_aead_context_init(
  * 11, 12, or 13.
  * @param aad Input additional authentication data AAD
  * @param aadLen Input size in bytes of AAD
- * @param tag Encryption: Output buffer filled with computed tag
+ * @param tag Encryption: Output buffer filled with computed tag (Default value is 16 bytes).
  *            Decryption: Input buffer filled with received tag
  * @param tagLen Length of the tag in bytes.
  *               For AES-GCM it must be 4,8,12,13,14,15 or 16.
@@ -1956,7 +1950,7 @@ const char *sss_status_sz(sss_status_t status);
 /**
 * @brief      Returns string error code for @ref sss_cipher_type_t
 *
-* @param[in]  status  See @ref sss_cipher_type_t
+* @param[in]  cipher_type  See @ref sss_cipher_type_t
 *
 * @return     String conversion of ``cipher_type`` to String.
 */

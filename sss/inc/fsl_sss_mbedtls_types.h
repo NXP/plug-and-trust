@@ -1,7 +1,7 @@
 /*
  *
- * Copyright 2018-2020 NXP
- * SPDX-License-Identifier: Apache-2.0
+ * Copyright 2018-2020,2024-2025 NXP
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #ifndef SSS_APIS_INC_FSL_SSS_MBEDTLS_TYPES_H_
@@ -22,7 +22,11 @@
 #if SSS_HAVE_HOSTCRYPTO_MBEDTLS
 
 #if !defined(MBEDTLS_CONFIG_FILE)
+#if SSS_HAVE_MBEDTLS_2_X
 #include "mbedtls/config.h"
+#else
+#include "mbedtls/mbedtls_config.h"
+#endif
 #else
 #include MBEDTLS_CONFIG_FILE
 #endif

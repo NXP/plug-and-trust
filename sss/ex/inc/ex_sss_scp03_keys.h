@@ -1,7 +1,7 @@
 /*
  *
- * Copyright 2018,2019 NXP
- * SPDX-License-Identifier: Apache-2.0
+ * Copyright 2018,2019,2024-2025 NXP
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #ifndef SSS_EX_INC_EX_SSS_SCP03_KEYS_H_
@@ -41,7 +41,7 @@
 #endif
 
 #ifdef EX_SSS_SCP03_FILE_PATH
-sss_status_t scp03_keys_from_path(uint8_t *penc, size_t enc_len, uint8_t *pmac, size_t mac_len);
+sss_status_t scp03_keys_from_path(uint8_t *penc, size_t *enc_len, uint8_t *pmac, size_t *mac_len);
 #endif
 
 #define SSS_AUTH_SE050_OEF_0004A2D0_KEY_ENC                                                            \

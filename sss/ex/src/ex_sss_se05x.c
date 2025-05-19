@@ -1,7 +1,7 @@
 /*
  *
- * Copyright 2018-2020 NXP
- * SPDX-License-Identifier: Apache-2.0
+ * Copyright 2018-2020,2024 NXP
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 /* ************************************************************************** */
@@ -16,9 +16,9 @@
 #include <stdio.h>
 
 #include "ex_sss_boot_int.h"
-// #if AX_EMBEDDED
-// #include <app_boot.h>
-// #endif
+#if AX_EMBEDDED
+#include <app_boot.h>
+#endif
 
 #include "ex_sss_auth.h"
 
@@ -124,6 +124,7 @@ sss_status_t ex_sss_boot_se05x_open(ex_sss_boot_ctx_t *pCtx, const char *portNam
 #if (SSS_HAVE_SE05X_AUTH_USERID_PLATFSCP03) || (SSS_HAVE_SE05X_AUTH_AESKEY_PLATFSCP03) || \
     (SSS_HAVE_SE05X_AUTH_ECKEY_PLATFSCP03)
     sss_connection_type_t connectType = kSSS_ConnectionType_Plain;
+    SE05x_Connect_Ctx_t *pchannlCtxt  = NULL;
 #endif
 
 #if defined SSS_EX_SE05x_AUTH_ID
@@ -231,8 +232,8 @@ sss_status_t ex_sss_boot_se05x_open(ex_sss_boot_ctx_t *pCtx, const char *portNam
 
 #if (SSS_HAVE_SE05X_AUTH_USERID_PLATFSCP03) || (SSS_HAVE_SE05X_AUTH_AESKEY_PLATFSCP03) || \
     (SSS_HAVE_SE05X_AUTH_ECKEY_PLATFSCP03)
-    SE05x_Connect_Ctx_t *pchannlCtxt = &pCtx->se05x_open_ctx;
-    pchannlCtxt->auth.authType       = SSS_EX_SE05x_TUNN_AUTH_MECH;
+    pchannlCtxt                = &pCtx->se05x_open_ctx;
+    pchannlCtxt->auth.authType = SSS_EX_SE05x_TUNN_AUTH_MECH;
 
     status = ex_sss_se05x_prepare_host(
         &pCtx->host_session, &pCtx->host_ks, pchannlCtxt, &pPlatfCtx->ex_se05x_auth, SSS_EX_SE05x_TUNN_AUTH_MECH);
@@ -261,6 +262,8 @@ sss_status_t ex_sss_boot_se05x_open(ex_sss_boot_ctx_t *pCtx, const char *portNam
         goto cleanup;
     }
 
+    ((sss_se05x_session_t *)(&pCtx->session))->s_ctx.applet_version =
+        ((sss_se05x_session_t *)(pPfSession))->s_ctx.applet_version;
     ((sss_se05x_session_t *)&pCtx->session)->s_ctx.conn_ctx = ((sss_se05x_session_t *)pPfSession)->s_ctx.conn_ctx;
 
 #endif
@@ -277,15 +280,22 @@ sss_status_t ex_sss_boot_se05x_open_on_Id(ex_sss_boot_ctx_t *pCtx, const char *p
 #if (SSS_HAVE_SE05X_AUTH_USERID_PLATFSCP03) || (SSS_HAVE_SE05X_AUTH_AESKEY_PLATFSCP03) || \
     (SSS_HAVE_SE05X_AUTH_ECKEY_PLATFSCP03)
     sss_connection_type_t connectType = kSSS_ConnectionType_Plain;
+    ex_sss_platf_ctx_t *pPlatfCtx     = NULL;
+    SE05x_Connect_Ctx_t *pchannlCtxt  = NULL;
 #endif
 
 #ifdef SSS_EX_SE05x_AUTH_ID
-    const uint32_t auth_id = authID;
+    uint32_t auth_id = 0;
+    if (authID < 0) {
+        goto cleanup;
+    }
+    auth_id = authID;
 #endif
+    (void)authID;
 
 #if (SSS_HAVE_SE05X_AUTH_USERID_PLATFSCP03) || (SSS_HAVE_SE05X_AUTH_AESKEY_PLATFSCP03) || \
     (SSS_HAVE_SE05X_AUTH_ECKEY_PLATFSCP03)
-    ex_sss_platf_ctx_t *pPlatfCtx = &gPlatfCtx;
+    pPlatfCtx = &gPlatfCtx;
 
     pCtx->pTunnel_ctx                       = &gTunnel_ctx;
     pPlatfCtx->phost_session                = &pCtx->host_session;
@@ -385,8 +395,8 @@ sss_status_t ex_sss_boot_se05x_open_on_Id(ex_sss_boot_ctx_t *pCtx, const char *p
 #ifdef SSS_EX_SE05x_AUTH_ID
 #if (SSS_HAVE_SE05X_AUTH_USERID_PLATFSCP03) || (SSS_HAVE_SE05X_AUTH_AESKEY_PLATFSCP03) || \
     (SSS_HAVE_SE05X_AUTH_ECKEY_PLATFSCP03)
-    SE05x_Connect_Ctx_t *pchannlCtxt = &pCtx->se05x_open_ctx;
-    pchannlCtxt->auth.authType       = SSS_EX_SE05x_TUNN_AUTH_MECH;
+    pchannlCtxt                = &pCtx->se05x_open_ctx;
+    pchannlCtxt->auth.authType = SSS_EX_SE05x_TUNN_AUTH_MECH;
 
     status = ex_sss_se05x_prepare_host_keys(
         &pCtx->host_session, &pCtx->host_ks, pchannlCtxt, &pPlatfCtx->ex_se05x_auth, auth_id);

@@ -1,7 +1,7 @@
 /*
  *
- * Copyright 2019-2020 NXP
- * SPDX-License-Identifier: Apache-2.0
+ * Copyright 2019-2020,2024 NXP
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 /** @file
@@ -57,14 +57,6 @@ sss_status_t ex_sss_boot_mbedtls_open(ex_sss_boot_ctx_t *pCtx, const char *portN
 
 #if SSS_HAVE_HOSTCRYPTO_OPENSSL
 sss_status_t ex_sss_boot_openssl_open(ex_sss_boot_ctx_t *pCtx, const char *portName);
-#endif
-
-#if SSS_HAVE_APPLET_A71CH || SSS_HAVE_APPLET_A71CH_SIM
-sss_status_t ex_sss_boot_a71ch_open(ex_sss_boot_ctx_t *pCtx, const char *portName);
-#endif
-
-#if SSS_HAVE_APPLET_A71CL || SSS_HAVE_APPLET_SE05X_L
-sss_status_t ex_sss_boot_a71cl_open(ex_sss_boot_ctx_t *pCtx, const char *portName);
 #endif
 
 #endif /* SSS_EX_SRC_EX_SSS_BOOT_INT_H_ */

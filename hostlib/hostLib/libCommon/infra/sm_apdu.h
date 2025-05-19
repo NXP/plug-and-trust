@@ -1,7 +1,7 @@
 /*
  *
- * Copyright 2016 NXP
- * SPDX-License-Identifier: Apache-2.0
+ * Copyright 2016,2024 NXP
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 /**
@@ -41,69 +41,6 @@ extern "C" {
 #define APDU_STD_MAX_DATA               (255)
 
 // <Should be in a TLV specific header file>
-#ifdef TGT_A70CI
-#define TAG_SST_IDENTIFIER             (0x01)
-#define TAG_SST_INDEX                  (0x02)
-#define TAG_ECC_PRIVATE_KEY            (0x03)
-#define TAG_ECC_PUBLIC_KEY             (0x04)
-#define TAG_SHARED_SECRET              (0x05)
-#define TAG_RSA_PRIVATE_KEY_P          (0x06)
-#define TAG_RSA_PRIVATE_KEY_Q          (0x07)
-#define TAG_RSA_PRIVATE_KEY_DP         (0x08)
-#define TAG_RSA_PRIVATE_KEY_DQ         (0x09)
-#define TAG_RSA_PRIVATE_KEY_IPQ        (0x0A)
-#define TAG_PUBLIC_KEY                 (0x0B)
-#define TAG_AES_KEY                    (0x0C)
-#define TAG_AUTH_PUBLIC_KEY_ID         (0x0D)
-#define TAG_CONTEXT                    (0x0F)
-#define TAG_DIRECTION                  (0x10)
-#define TAG_IV                         (0x11)
-#define TAG_INPUT_DATA                 (0x12)
-#define TAG_OUTPUT_DATA                (0x13)
-#define TAG_AUTHENTICATION_DATA        (0x14)
-#define TAG_GMAC_DATA                  (0x15)
-#define TAG_GMAC_LENGTH                (0x16)
-#define TAG_KEYWRAP_ALGO               (0x17)
-#define TAG_HASH                       (0x18)
-#define TAG_SIGNATURE                  (0x19)
-#define TAG_VERIFICATION               (0x1A)
-#define TAG_CERTIFICATE                (0x1B)
-#define TAG_SIZE                       (0x1C)
-#define TAG_SALT                       (0x1E)
-#elif defined(TGT_A70CM)
-#define TAG_DLMS_SECURITY_BYTE         (0x00)
-#define TAG_SST_IDENTIFIER             (0x01)
-#define TAG_SST_INDEX                  (0x02)
-#define TAG_ECC_PRIVATE_KEY            (0x03)
-#define TAG_ECC_PUBLIC_KEY             (0x04)
-#define TAG_SHARED_SECRET              (0x05)
-#define TAG_RSA_PRIVATE_KEY_P          (0x06)
-#define TAG_RSA_PRIVATE_KEY_Q          (0x07)
-#define TAG_RSA_PRIVATE_KEY_DP         (0x08)
-#define TAG_RSA_PRIVATE_KEY_DQ         (0x09)
-#define TAG_RSA_PRIVATE_KEY_IPQ        (0x0A)
-#define TAG_RSA_PUBLIC_KEY_MOD         (0x0B)
-#define TAG_AES_KEY                    (0x0C)
-#define TAG_WRAPPED_AES_KEY            (0x0D)
-#define TAG_CONTEXT                    (0x0E)
-#define TAG_DIRECTION                  (0x0F)
-#define TAG_IV                         (0x10)
-#define TAG_INPUT_DATA                 (0x11)
-#define TAG_OUTPUT_DATA                (0x12)
-#define TAG_AUTHENTICATION_DATA        (0x13)
-#define TAG_GMAC_DATA                  (0x14)
-#define TAG_GMAC_LENGTH                (0x15)
-#define TAG_KEYWRAP_ALGO               (0x16)
-#define TAG_HASH                       (0x17)
-#define TAG_SIGNATURE                  (0x18)
-#define TAG_DLMS_AK_INDEX              (0x19)
-#define TAG_VERIFICATION               (0x1A)
-#define TAG_CERTIFICATE                (0x1B)
-#define TAG_OFFSET                     (0x1C)
-#define TAG_SIZE                       (0x1D)
-#define TAG_SST_WRAPPING_KEY_INDEX     (0x1E)
-#else //
-/// @cond not_relevant_for_A71ch & A71cl
 #define TAG_DLMS_SECURITY_BYTE         (0x00)
 #define TAG_SST_IDENTIFIER             (0x01)
 #define TAG_SST_INDEX                  (0x02)
@@ -139,8 +76,6 @@ extern "C" {
 #define TAG_CHUNK_NUMBER               (0x23)
 #define TAG_SCP_MIN_SEC_LEVEL          (0x24)
 #define TAG_STATUS_WORD                (0x25)
-/// @endcond
-#endif // TGT_A70CI
 // </Should be in a TLV specific header file>
 
 /* ------------------------------ */

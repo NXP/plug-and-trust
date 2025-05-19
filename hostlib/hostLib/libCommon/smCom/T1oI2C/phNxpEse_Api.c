@@ -1,17 +1,7 @@
 /*
- * Copyright 2012-2014,2018-2020 NXP
+ * Copyright 2012-2014,2018-2020,2024 NXP
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 #include <phEseTypes.h>
 #include <phNxpEseProto7816_3.h>
@@ -32,11 +22,15 @@
 #include "FreeRTOS.h"
 #endif
 
-#define RECIEVE_PACKET_SOF      0xA5
-#define CHAINED_PACKET_WITHSEQN      0x60
+#define RECIEVE_PACKET_SOF              0xA5
+#define CHAINED_PACKET_WITHSEQN         0x60
 #define CHAINED_PACKET_WITHOUTSEQN      0x20
+#define WTX_REQ_ID                      0xC3
 static int phNxpEse_readPacket(void* conn_ctx, void *pDevHandle, uint8_t * pBuffer, int nNbBytesToRead);
 static int poll_sof_chained_delay = 0;
+
+/* Duration for which session open should wait for previous transaction to complete */
+#define T1OI2C_WAIT_FOR_PREV_TXN        40
 
 /*********************** Global Variables *************************************/
 
@@ -158,6 +152,10 @@ ESESTATUS phNxpEse_open(void **conn_ctx, phNxpEse_initParams initParams, const c
         phNxpEse_memset (pnxpese_ctxt, 0x00, sizeof (phNxpEse_Context_t));
     }
     pnxpese_ctxt->EseLibStatus = ESE_STATUS_CLOSE;
+    if (conn_ctx != NULL) {
+        phNxpEse_free(pnxpese_ctxt);
+        *conn_ctx = NULL;
+    }
     return ESESTATUS_FAILED;
 }
 
@@ -179,6 +177,12 @@ ESESTATUS phNxpEse_Transceive(void* conn_ctx, phNxpEse_data *pCmd, phNxpEse_data
     ESESTATUS status = ESESTATUS_FAILED;
     bool_t bStatus = FALSE;
     phNxpEse_Context_t* nxpese_ctxt = (conn_ctx == NULL) ? &gnxpese_ctxt : (phNxpEse_Context_t*)conn_ctx;
+#ifdef T1OI2C_SEND_SHORT_APDU
+    const uint8_t short_apdu[5] = {0};
+    uint32_t short_apdu_len = 5;
+    uint8_t *p_rsp_data = NULL;
+    uint32_t rsp_len = 0;
+#endif //#ifdef T1OI2C_SEND_SHORT_APDU
 
     if((NULL == pCmd) || (NULL == pRsp)) {
         return ESESTATUS_INVALID_PARAMETER;
@@ -201,6 +205,25 @@ ESESTATUS phNxpEse_Transceive(void* conn_ctx, phNxpEse_data *pCmd, phNxpEse_data
     }
     else
     {
+#ifdef T1OI2C_SEND_SHORT_APDU
+        // Workaround for SE050 I2C errata I2C.1 and I2C.2 (https://www.nxp.com/docs/en/errata/SE050_Erratasheet.pdf)
+        // By default Plug & Trust MW only covers the I2C erratas on session opening
+        // this should cover cases when the errata causing error condition can happen at any time
+        // LOG_D("******* Clear Buffer *********");
+        // Clear Read buffer for errata I2C.1 (erroneous APDU sequence)
+        phNxpEse_clearReadBuffer(nxpese_ctxt);
+        // Send short T1oI2C frame for errata I2C.2 (unresponsive after sending empty I2C frame)
+        LOG_D("Sending short apdu command - for SE050 I2C errata I2C.2 ");
+        status = phNxpEse_WriteFrame(conn_ctx, short_apdu_len, short_apdu);
+        if (ESESTATUS_SUCCESS != status) {
+            LOG_E("%s Error in writing frame ", __FUNCTION__);
+        }
+        status = phNxpEse_read(conn_ctx, &rsp_len, &p_rsp_data);
+        if (ESESTATUS_SUCCESS != status) {
+            LOG_E("%s Error in reading buffer ", __FUNCTION__);
+        }
+#endif //#ifdef T1OI2C_SEND_SHORT_APDU
+
         nxpese_ctxt->EseLibStatus = ESE_STATUS_BUSY;
         bStatus = phNxpEseProto7816_Transceive((void*)nxpese_ctxt, pCmd, pRsp);
         if(TRUE == bStatus)
@@ -263,6 +286,11 @@ ESESTATUS phNxpEse_EndOfApdu(void* conn_ctx)
 {
     ESESTATUS status = ESESTATUS_SUCCESS;
     phNxpEse_Context_t* nxpese_ctxt = (conn_ctx == NULL) ? &gnxpese_ctxt : (phNxpEse_Context_t*)conn_ctx;
+
+    if (ESE_STATUS_CLOSE == nxpese_ctxt->EseLibStatus) {
+        return status;
+    }
+
     bool_t bStatus = phNxpEseProto7816_Close((void*)nxpese_ctxt);
     if(!bStatus) {
         status = ESESTATUS_FAILED;
@@ -286,12 +314,14 @@ ESESTATUS phNxpEse_chipReset(void* conn_ctx)
     ESESTATUS status = ESESTATUS_SUCCESS;
     bool_t bStatus = FALSE;
     phNxpEse_Context_t* nxpese_ctxt = (conn_ctx == NULL) ? &gnxpese_ctxt : (phNxpEse_Context_t*)conn_ctx;
+
     bStatus = phNxpEseProto7816_Reset();
     if(!bStatus)
     {
-        status = ESESTATUS_FAILED;
         LOG_E("phNxpEseProto7816_Reset Failed");
+        return ESESTATUS_FAILED;
     }
+
 #if defined(T1oI2C_UM11225)
     bStatus = phNxpEseProto7816_ChipReset((void*)nxpese_ctxt);
 #elif defined(T1oI2C_GP1_0)
@@ -299,7 +329,8 @@ ESESTATUS phNxpEse_chipReset(void* conn_ctx)
 #endif
     if (bStatus != TRUE)
     {
-        LOG_E("phNxpEse_chipReset  Failed");
+        status = ESESTATUS_FAILED;
+        LOG_E("phNxpEseProto7816_ColdReset Failed");
     }
     return status;
 }
@@ -348,7 +379,7 @@ ESESTATUS phNxpEse_close(void* conn_ctx)
 
     if ((ESE_STATUS_CLOSE == nxpese_ctxt->EseLibStatus))
     {
-        LOG_E(" %s ESE Not Initialized previously ", __FUNCTION__);
+        LOG_W(" %s ESE Not Initialized previously ", __FUNCTION__);
         return ESESTATUS_NOT_INITIALISED;
     }
 
@@ -361,6 +392,92 @@ ESESTATUS phNxpEse_close(void* conn_ctx)
         phNxpEse_free(conn_ctx);
     }
     return status;
+}
+
+/******************************************************************************
+ * Function         phNxpEse_waitWTX
+ *
+ * Description      This function read out any wtx requests received from the previous
+ *                  session and send wtx response.
+ *                  Additionally read any response at end of WTX and ignore it.
+ *                  Just to make sure that if host was not able to finish previous operation,
+ *                  the response of that must not cause an error in current session.
+ *
+ * param[in]        void*: connection context
+ *
+ * Returns          void
+ *
+ ******************************************************************************/
+void phNxpEse_waitForWTX(void* conn_ctx)
+{
+    int ret = -1;
+    int loopcnt = 0;
+    //int wtx_cnt = 0;
+    uint8_t readBuf[MAX_DATA_LEN] = {0};
+    phNxpEse_Context_t* nxpese_ctxt = (conn_ctx == NULL) ? &gnxpese_ctxt : (phNxpEse_Context_t*)conn_ctx;
+
+    LOG_D("%s Enter ..", __FUNCTION__);
+
+    /* Send Rsync - To check if there is a pending operation (by checking for WTX) */
+    if(!phNxpEseProto7816_SendRSync(conn_ctx)){
+        LOG_E(" %s - Error in phNxpEseProto7816_SendRSync ", __FUNCTION__);
+        return;
+    }
+
+    ret = phPalEse_i2c_read(nxpese_ctxt->pDevHandle, readBuf, MAX_DATA_LEN);
+    if(ret < 0){
+        return;
+    }
+    else {
+        if (readBuf[0] == RECIEVE_PACKET_SOF && readBuf[1] == WTX_REQ_ID)
+        {
+            /** 0xC3 corresponds to WTX request. Send WTX response. */
+            LOG_D(" %s - Received WTX Request", __FUNCTION__);
+            if (!phNxpEseProto7816_WTXRsp(conn_ctx))
+            {
+                LOG_E(" %s - Error in phNxpEseProto7816_WTXRsp ", __FUNCTION__);
+                return;
+            }
+            LOG_D("Wait till previous transaction is complete");
+        }
+        else {
+            LOG_D("No WTX request received. Continue with session open");
+            return;
+        }
+    }
+
+    while(loopcnt < T1OI2C_WAIT_FOR_PREV_TXN)
+    {
+        sm_sleep(1000); /* WTX is expected every 1 sec */
+        ret = phPalEse_i2c_read(nxpese_ctxt->pDevHandle, readBuf, MAX_DATA_LEN);
+        if(ret < 0)
+        {
+            LOG_E(" %s - Error in phPalEse_i2c_read ", __FUNCTION__);
+        }
+        else
+        {
+            LOG_MAU8_D("Previous RAW Rx < ",readBuf,ret );
+            if (readBuf[0] == RECIEVE_PACKET_SOF && readBuf[1] == WTX_REQ_ID)
+            {
+                /** 0xC3 corresponds to WTX request. Send WTX response. */
+                LOG_D(" %s - Received WTX Request", __FUNCTION__);
+                //LOG_I("WTX REQ received  (CNT = %d).. Send WTX Resp \n", ++wtx_cnt);
+                if (!phNxpEseProto7816_WTXRsp(conn_ctx))
+                {
+                    LOG_E(" %s - Error in phNxpEseProto7816_WTXRsp ", __FUNCTION__);
+                    return;
+                }
+            }
+            else {
+                LOG_D("Ignoring response other than WTX Request. Continue with session open");
+                return;
+            }
+        }
+        loopcnt++;
+    }
+    LOG_W("Last operation took more time than expected");
+    LOG_W("Either increase waiting time (T1OI2C_WAIT_FOR_PREV_TXN) or do a physical reset of IC");
+    return;
 }
 
 /******************************************************************************
@@ -391,7 +508,7 @@ void phNxpEse_clearReadBuffer(void* conn_ctx)
     }
     else
     {
-        LOG_W("Previous transaction buffer is now cleard");
+        LOG_W("Previous transaction buffer is now cleared");
         LOG_MAU8_D("RAW Rx<",readBuf,ret );
     }
     return;
@@ -519,10 +636,10 @@ static int phNxpEse_readPacket(void* conn_ctx, void *pDevHandle, uint8_t * pBuff
             nNbBytesToRead = pBuffer[2];
 #elif defined(T1oI2C_GP1_0)
             total_count = 4;
-            nNbBytesToRead = (pBuffer[2] << 8 & 0xFF) | (pBuffer[3] & 0xFF) ;
+            nNbBytesToRead = (pBuffer[2] << 8 & 0xFF00) | (pBuffer[3] & 0xFF) ;
 #endif
             /* Read the Complete data + two byte CRC*/
-            ret = phPalEse_i2c_read(pDevHandle, &pBuffer[PH_PROTO_7816_HEADER_LEN], (nNbBytesToRead+PH_PROTO_7816_CRC_LEN));
+            ret = phPalEse_i2c_read(pDevHandle,&pBuffer[PH_PROTO_7816_HEADER_LEN], (nNbBytesToRead+PH_PROTO_7816_CRC_LEN));
             if (ret < 0)
             {
                 LOG_D("_i2c_read() [HDR]errno : %x ret : %X", errno, ret);
@@ -570,7 +687,7 @@ static int phNxpEse_readPacket(void* conn_ctx, void *pDevHandle, uint8_t * pBuff
         nNbBytesToRead = pBuffer[2];
 #elif defined(T1oI2C_GP1_0)
         total_count = 4;
-        nNbBytesToRead = (pBuffer[2] << 8 & 0xFF) | (pBuffer[3] & 0xFF) ;
+        nNbBytesToRead = (pBuffer[2] << 8 & 0xFF00) | (pBuffer[3] & 0xFF) ;
 #endif
         /* Read the Complete data + two byte CRC*/
         ret = phPalEse_i2c_read(pDevHandle, &pBuffer[PH_PROTO_7816_HEADER_LEN], (nNbBytesToRead+PH_PROTO_7816_CRC_LEN));
@@ -780,3 +897,25 @@ ESESTATUS phNxpEse_getCip(void* conn_ctx, phNxpEse_data *pRsp)
     return ESESTATUS_SUCCESS;
 }
 #endif
+
+/******************************************************************************
+ * Function         phNxpEse_deepPwrDown
+ *
+ * Description      This function is used to send deep power down command
+ *
+ * param[out]
+ *
+ * Returns          On Success ESESTATUS_SUCCESS else ESESTATUS_FAILED.
+ *
+ ******************************************************************************/
+ESESTATUS phNxpEse_deepPwrDown(void* conn_ctx)
+{
+    bool_t status = FALSE;
+    status =phNxpEseProto7816_Deep_Pwr_Down(conn_ctx);
+    if (status == FALSE)
+    {
+        LOG_E("%s Deep Pwr Down Failed ", __FUNCTION__);
+        return ESESTATUS_FAILED;
+    }
+    return ESESTATUS_SUCCESS;
+}

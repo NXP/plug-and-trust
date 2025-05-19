@@ -1,6 +1,6 @@
 /*
- * Copyright 2018,2019 NXP
- * SPDX-License-Identifier: Apache-2.0
+ * Copyright 2018,2019,2024 NXP
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #ifndef FSL_SSS_TYPES_H

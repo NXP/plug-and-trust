@@ -1,7 +1,7 @@
 /*
  *
- * Copyright 2019-2020 NXP
- * SPDX-License-Identifier: Apache-2.0
+ * Copyright 2019-2020,2024 NXP
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #include <stdio.h>
@@ -43,7 +43,7 @@ extern "C" {
 /* Generated implementation */
 #include "se05x_APDU_impl.h"
 
-#if SSS_HAVE_SE05X_VER_GTE_06_00
+#if SSS_HAVE_SE05X_VER_GTE_07_02
 #include "se05x_04_xx_APDU_impl.h"
 #endif
 
@@ -64,6 +64,7 @@ smStatus_t Se05x_API_I2CM_Send(
     uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP] = {0};
     uint8_t *pRspbuf                       = &rspbuf[0];
     size_t rspbufLen                       = ARRAY_SIZE(rspbuf);
+    size_t rspIndex                        = 0;
 
 #if VERBOSE_APDU_LOGS
     NEWLINE();
@@ -82,9 +83,8 @@ smStatus_t Se05x_API_I2CM_Send(
 
     LOG_AU8_D(rspbuf, rspbufLen);
     if (retStatus == SM_OK) {
-        retStatus       = SM_NOT_OK;
-        size_t rspIndex = 0;
-        tlvRet          = tlvGet_u8buf(pRspbuf, &rspIndex, rspbufLen, kSE05x_TAG_1, result, presultLen);
+        retStatus = SM_NOT_OK;
+        tlvRet    = tlvGet_u8buf(pRspbuf, &rspIndex, rspbufLen, kSE05x_TAG_1, result, presultLen);
         if (0 != tlvRet) { //Response check is skipped to be corrected.
             goto cleanup;
         }

@@ -1,7 +1,7 @@
 /*
 *
-* Copyright 2018-2020 NXP
-* SPDX-License-Identifier: Apache-2.0
+* Copyright 2018-2020,2024-2025 NXP
+* SPDX-License-Identifier: BSD-3-Clause
 */
 
 /** @file */
@@ -36,6 +36,8 @@
 #include "fsl_sss_lpc55s_apis.h"
 #endif
 
+#define AES_MAX_KEY_LEN_nBYTE 32
+
 /* ************************************************************************** */
 /* Functions : Private function declaration                                   */
 /* ************************************************************************** */
@@ -62,6 +64,8 @@ static sss_status_t nxScp03_GP_InitializeUpdate(pSe05xSession_t se05xSession,
 
 static sss_status_t nxScp03_HostLocal_CalculateSessionKeys(
     NXSCP03_AuthCtx_t *pAuthScp03, uint8_t *hostChallenge, uint8_t *cardChallenge);
+
+static uint16_t getDataDerivationValue(int keyLen);
 
 /**
 * To authenticate the initiated secure channel
@@ -228,7 +232,12 @@ static sss_status_t nxScp03_GP_ExternalAuthenticate(
     st = DoAPDUTx_s_Case3(se05xSession, &hdr, &txBuf[5], 16);
     if (st != SM_OK) {
         LOG_E("GP_ExternalAuthenticate transmit failed");
-        status = kStatus_SSS_Fail;
+        if (st == SM_ERR_APDU_THROUGHPUT) {
+            status = kStatus_SSS_ApduThroughputError;
+        }
+        else {
+            status = kStatus_SSS_Fail;
+        }
     }
     else {
         status = kStatus_SSS_Success;
@@ -258,7 +267,7 @@ sss_status_t nxScp03_HostLocal_CalculateHostCryptogram(
     contextLen = SCP_GP_HOST_CHALLENGE_LEN + SCP_GP_CARD_CHALLENGE_LEN;
 
     nxScp03_setDerivationData(
-        ddA, &ddALen, DATA_HOST_CRYPTOGRAM, DATA_DERIVATION_L_64BIT, DATA_DERIVATION_KDF_CTR, context, contextLen);
+        ddA, &ddALen, DATA_HOST_CRYPTOGRAM, getDataDerivationValue(8), DATA_DERIVATION_KDF_CTR, context, contextLen);
 
     status = nxScp03_Generate_SessionKey(keyObj, ddA, ddALen, hostCryptogramFullLength, &signatureLen);
     ENSURE_OR_GO_EXIT(status == kStatus_SSS_Success);
@@ -291,7 +300,7 @@ sss_status_t nxScp03_HostLocal_VerifyCardCryptogram(
     contextLen = SCP_GP_HOST_CHALLENGE_LEN + SCP_GP_CARD_CHALLENGE_LEN;
 
     nxScp03_setDerivationData(
-        ddA, &ddALen, DATA_CARD_CRYPTOGRAM, DATA_DERIVATION_L_64BIT, DATA_DERIVATION_KDF_CTR, context, contextLen);
+        ddA, &ddALen, DATA_CARD_CRYPTOGRAM, getDataDerivationValue(8), DATA_DERIVATION_KDF_CTR, context, contextLen);
 
     status = nxScp03_Generate_SessionKey(keyObj, ddA, ddALen, cardCryptogramFullLength, &signatureLen);
     ENSURE_OR_GO_EXIT(status == kStatus_SSS_Success);
@@ -312,14 +321,14 @@ static sss_status_t nxScp03_HostLocal_CalculateSessionKeys(
     uint8_t ddA[128];
     uint16_t ddALen = sizeof(ddA);
     uint8_t context[128];
-    uint16_t contextLen                       = 0;
-    uint8_t sessionEncKey[AES_KEY_LEN_nBYTE]  = {0};
-    uint8_t sessionMacKey[AES_KEY_LEN_nBYTE]  = {0};
-    uint8_t sessionRmacKey[AES_KEY_LEN_nBYTE] = {0};
-    uint32_t signatureLen                     = AES_KEY_LEN_nBYTE;
-    sss_status_t status                       = kStatus_SSS_Fail;
-    NXSCP03_StaticCtx_t *pStatic_ctx          = pAuthScp03->pStatic_ctx;
-    NXSCP03_DynCtx_t *pDyn_ctx                = pAuthScp03->pDyn_ctx;
+    uint16_t contextLen                           = 0;
+    uint8_t sessionEncKey[AES_MAX_KEY_LEN_nBYTE]  = {0};
+    uint8_t sessionMacKey[AES_MAX_KEY_LEN_nBYTE]  = {0};
+    uint8_t sessionRmacKey[AES_MAX_KEY_LEN_nBYTE] = {0};
+    uint32_t signatureLen                         = AES_MAX_KEY_LEN_nBYTE;
+    sss_status_t status                           = kStatus_SSS_Fail;
+    NXSCP03_StaticCtx_t *pStatic_ctx              = pAuthScp03->pStatic_ctx;
+    NXSCP03_DynCtx_t *pDyn_ctx                    = pAuthScp03->pDyn_ctx;
 
     // Calculate the Derviation data
     memcpy(context, hostChallenge, SCP_GP_HOST_CHALLENGE_LEN);
@@ -333,45 +342,98 @@ static sss_status_t nxScp03_HostLocal_CalculateSessionKeys(
 
     // Set the Derviation data
     LOG_D("Set the Derviation data to generate Session ENC key");
-    nxScp03_setDerivationData(
-        ddA, &ddALen, DATA_DERIVATION_SENC, DATA_DERIVATION_L_128BIT, DATA_DERIVATION_KDF_CTR, context, contextLen);
+    nxScp03_setDerivationData(ddA,
+        &ddALen,
+        DATA_DERIVATION_SENC,
+        getDataDerivationValue(pStatic_ctx->key_len),
+        DATA_DERIVATION_KDF_CTR,
+        context,
+        contextLen);
     // Calculate the Session-ENC key
-    status = nxScp03_Generate_SessionKey(&pStatic_ctx->Enc, ddA, ddALen, sessionEncKey, &signatureLen);
+    status = nxScp03_Generate_SessionKey(&pStatic_ctx->Enc, ddA, ddALen, &sessionEncKey[0], &signatureLen);
     ENSURE_OR_GO_EXIT(status == kStatus_SSS_Success);
-    LOG_MAU8_D(" Output:sessionEncKey", sessionEncKey, AES_KEY_LEN_nBYTE);
+
+    if (pStatic_ctx->key_len == 32) {
+        ddA[15] = DATA_DERIVATION_KDF_CTR + 0x01;
+        status  = nxScp03_Generate_SessionKey(&pStatic_ctx->Enc, ddA, ddALen, &sessionEncKey[16], &signatureLen);
+        ENSURE_OR_GO_EXIT(status == kStatus_SSS_Success);
+    }
+
+    LOG_MAU8_D(" Output:sessionEncKey", sessionEncKey, pStatic_ctx->key_len);
 
     // Set the Session-ENC key
-    status = sss_host_key_store_set_key(pDyn_ctx->Enc.keyStore, &pDyn_ctx->Enc, sessionEncKey, 16, (16) * 8, NULL, 0);
+    status = sss_host_key_store_set_key(pDyn_ctx->Enc.keyStore,
+        &pDyn_ctx->Enc,
+        sessionEncKey,
+        pStatic_ctx->key_len,
+        (size_t)(pStatic_ctx->key_len) * 8,
+        NULL,
+        0);
     ENSURE_OR_GO_EXIT(status == kStatus_SSS_Success);
 
     /* Generation and Creation of Session MAC SSS Key Object */
 
     // Set the Derviation data
     LOG_D("Set the Derviation data to generate Session MAC key");
-    nxScp03_setDerivationData(
-        ddA, &ddALen, DATA_DERIVATION_SMAC, DATA_DERIVATION_L_128BIT, DATA_DERIVATION_KDF_CTR, context, contextLen);
+    nxScp03_setDerivationData(ddA,
+        &ddALen,
+        DATA_DERIVATION_SMAC,
+        getDataDerivationValue(pStatic_ctx->key_len),
+        DATA_DERIVATION_KDF_CTR,
+        context,
+        contextLen);
     // Calculate the Session-MAC key
-    status = nxScp03_Generate_SessionKey(&pStatic_ctx->Mac, ddA, ddALen, sessionMacKey, &signatureLen);
+    status = nxScp03_Generate_SessionKey(&pStatic_ctx->Mac, ddA, ddALen, &sessionMacKey[0], &signatureLen);
     ENSURE_OR_GO_EXIT(status == kStatus_SSS_Success);
-    LOG_MAU8_D(" Output:sessionMacKey", sessionMacKey, AES_KEY_LEN_nBYTE);
+
+    if (pStatic_ctx->key_len == 32) {
+        ddA[15] = DATA_DERIVATION_KDF_CTR + 0x01;
+        status  = nxScp03_Generate_SessionKey(&pStatic_ctx->Mac, ddA, ddALen, &sessionMacKey[16], &signatureLen);
+        ENSURE_OR_GO_EXIT(status == kStatus_SSS_Success);
+    }
+
+    LOG_MAU8_D(" Output:sessionMacKey", sessionMacKey, pStatic_ctx->key_len);
 
     // Set the Session-MAC key
-    status = sss_host_key_store_set_key(pDyn_ctx->Mac.keyStore, &pDyn_ctx->Mac, sessionMacKey, 16, (16) * 8, NULL, 0);
+    status = sss_host_key_store_set_key(pDyn_ctx->Mac.keyStore,
+        &pDyn_ctx->Mac,
+        sessionMacKey,
+        pStatic_ctx->key_len,
+        (size_t)(pStatic_ctx->key_len) * 8,
+        NULL,
+        0);
     ENSURE_OR_GO_EXIT(status == kStatus_SSS_Success);
 
     /* Generation and Creation of Session RMAC SSS Key Object */
     // Set the Derviation data
     LOG_D("Set the Derviation data to generate Session RMAC key");
-    nxScp03_setDerivationData(
-        ddA, &ddALen, DATA_DERIVATION_SRMAC, DATA_DERIVATION_L_128BIT, DATA_DERIVATION_KDF_CTR, context, contextLen);
+    nxScp03_setDerivationData(ddA,
+        &ddALen,
+        DATA_DERIVATION_SRMAC,
+        getDataDerivationValue(pStatic_ctx->key_len),
+        DATA_DERIVATION_KDF_CTR,
+        context,
+        contextLen);
     // Calculate the Session-RMAC key
-    status = nxScp03_Generate_SessionKey(&pStatic_ctx->Mac, ddA, ddALen, sessionRmacKey, &signatureLen);
+    status = nxScp03_Generate_SessionKey(&pStatic_ctx->Mac, ddA, ddALen, &sessionRmacKey[0], &signatureLen);
     ENSURE_OR_GO_EXIT(status == kStatus_SSS_Success);
-    LOG_MAU8_D(" Output:sessionRmacKey", sessionRmacKey, AES_KEY_LEN_nBYTE);
+
+    if (pStatic_ctx->key_len == 32) {
+        ddA[15] = DATA_DERIVATION_KDF_CTR + 0x01;
+        status  = nxScp03_Generate_SessionKey(&pStatic_ctx->Mac, ddA, ddALen, &sessionRmacKey[16], &signatureLen);
+        ENSURE_OR_GO_EXIT(status == kStatus_SSS_Success);
+    }
+
+    LOG_MAU8_D(" Output:sessionRmacKey", sessionRmacKey, pStatic_ctx->key_len);
 
     // Set the Session-RMAC key
-    status =
-        sss_host_key_store_set_key(pDyn_ctx->Rmac.keyStore, &pDyn_ctx->Rmac, sessionRmacKey, 16, (16) * 8, NULL, 0);
+    status = sss_host_key_store_set_key(pDyn_ctx->Rmac.keyStore,
+        &pDyn_ctx->Rmac,
+        sessionRmacKey,
+        pStatic_ctx->key_len,
+        (size_t)(pStatic_ctx->key_len) * 8,
+        NULL,
+        0);
 exit:
     return status;
 }
@@ -418,8 +480,6 @@ static sss_status_t nxScp03_GP_InitializeUpdate(pSe05xSession_t se05xSession,
     uint16_t *pSeqCounterLen,
     uint8_t keyVerNo)
 {
-    AX_UNUSED_ARG(seqCounter);
-    AX_UNUSED_ARG(pSeqCounterLen);
     smStatus_t st = SM_NOT_OK;
     uint8_t response[64];
     size_t responseLen          = 64;
@@ -432,6 +492,12 @@ static sss_status_t nxScp03_GP_InitializeUpdate(pSe05xSession_t se05xSession,
     sss_status_t status = kStatus_SSS_Fail;
     /* Default Key version no for applet scp is 0x00*/
     uint8_t keyVersion = 0x00;
+    tlvHeader_t hdr    = {{CLA_GP_7816, INS_GP_INITIALIZE_UPDATE, keyVersion, 0x00}};
+    uint8_t cmdBuf[60];
+
+    AX_UNUSED_ARG(seqCounter);
+    AX_UNUSED_ARG(pSeqCounterLen);
+
     if (se05xSession->authType == kSSS_AuthType_SCP03) {
         /* Key version no. for Platform SCP03 passed by user*/
         keyVersion = keyVerNo;
@@ -440,9 +506,8 @@ static sss_status_t nxScp03_GP_InitializeUpdate(pSe05xSession_t se05xSession,
         se05xSession->authType = kSSS_AuthType_None;
     }
 
-    tlvHeader_t hdr = {{CLA_GP_7816, INS_GP_INITIALIZE_UPDATE, keyVersion, 0x00}};
+    hdr.hdr[2] = keyVersion;
 
-    uint8_t cmdBuf[60];
     ENSURE_OR_GO_CLEANUP(hostChallengeLen == SCP_GP_HOST_CHALLENGE_LEN);
     ENSURE_OR_GO_CLEANUP(*pKeyDivDataLen == SCP_GP_IU_KEY_DIV_DATA_LEN);
     ENSURE_OR_GO_CLEANUP(*pKeyInfoLen == SCP_GP_IU_KEY_INFO_LEN);
@@ -457,7 +522,12 @@ static sss_status_t nxScp03_GP_InitializeUpdate(pSe05xSession_t se05xSession,
     st = DoAPDUTxRx_s_Case4(se05xSession, &hdr, cmdBuf, hostChallengeLen, response, &responseLen);
     if (st != SM_OK) {
         LOG_E("GP_InitializeUpdate Failure on communication Link %04X", st);
-        return status;
+        if (st == SM_ERR_APDU_THROUGHPUT) {
+            return kStatus_SSS_ApduThroughputError;
+        }
+        else {
+            return status;
+        }
     }
 
     // Parse Response
@@ -487,6 +557,9 @@ static sss_status_t nxScp03_GP_InitializeUpdate(pSe05xSession_t se05xSession,
         LOG_MAU8_D(" Output: cardCryptoGram", cardCryptoGram, *pCardCryptoGramLen);
         status = kStatus_SSS_Success;
     }
+    if (sw == SM_ERR_APDU_THROUGHPUT) {
+        status = kStatus_SSS_ApduThroughputError;
+    }
 cleanup:
     return status;
 }
@@ -508,13 +581,30 @@ void nxScp03_setDerivationData(uint8_t ddA[],
     memset(ddA, 0, DD_LABEL_LEN - 1);
     ddA[DD_LABEL_LEN - 1] = ddConstant;
     ddA[DD_LABEL_LEN]     = 0x00; // Separation Indicator
-    ddA[DD_LABEL_LEN + 1] = (uint8_t)(ddL >> 8);
-    ddA[DD_LABEL_LEN + 2] = (uint8_t)ddL;
+    ddA[DD_LABEL_LEN + 1] = (uint8_t)(ddL >> 8) & 0xFF;
+    ddA[DD_LABEL_LEN + 2] = (uint8_t)(ddL & 0xFF);
     ddA[DD_LABEL_LEN + 3] = iCounter;
     memcpy(&ddA[DD_LABEL_LEN + 4], context, contextLen);
     *pDdALen = DD_LABEL_LEN + 4 + contextLen;
 
     LOG_MAU8_D("Output: KeyDivData", ddA, *pDdALen);
+}
+
+// Determine the data derivation value based on key length
+static uint16_t getDataDerivationValue(int keyLen)
+{
+    switch (keyLen * 8) {
+    case 64:
+        return DATA_DERIVATION_L_64BIT;
+    case 128:
+        return DATA_DERIVATION_L_128BIT;
+    case 192:
+        return DATA_DERIVATION_L_192BIT;
+    case 256:
+        return DATA_DERIVATION_L_256BIT;
+    default:
+        return 0;
+    }
 }
 
 #endif // SSS_HAVE_HOSTCRYPTO_ANY

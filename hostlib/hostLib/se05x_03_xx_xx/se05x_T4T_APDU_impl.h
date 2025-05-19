@@ -1,7 +1,7 @@
 /*
- * Copyright 2022 NXP
+ * Copyright 2022,2024 NXP
  *
- * SPDX-License-Identifier: Apache-2.0
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #include <se05x_tlv.h>
@@ -36,11 +36,9 @@ smStatus_t Se05x_T4T_API_SelectT4TApplet(pSe05xSession_t session_ctx)
     unsigned char appletName[] = T4T_APPLET_NAME;
     U8 selectResponseData[256] = {0};
     U16 selectResponseDataLen  = sizeof(selectResponseData);
-    U16 ret = 0;
 
-    ret = GP_Select(
-        session_ctx->conn_ctx, (const U8*)&appletName, sizeof(appletName), selectResponseData, &selectResponseDataLen);
-    return (smStatus_t)ret;
+    return GP_Select(
+        session_ctx->conn_ctx, (U8 *)&appletName, sizeof(appletName), selectResponseData, &selectResponseDataLen);
 }
 
 smStatus_t Se05x_T4T_API_SelectFile(pSe05xSession_t session_ctx, uint8_t *fileId, size_t fileIDLen)
@@ -207,8 +205,8 @@ smStatus_t Se05x_T4T_API_ReadAccessCtrl(pSe05xSession_t session_ctx,
         }
         retStatus = (smStatus_t)((pRspbuf[2] << 8) | (pRspbuf[3]));
         if (retStatus == SM_OK) {
-            *readOperation = (SE05x_T4T_Access_Ctrl_t)pRspbuf[0];
-            *writeOperation = (SE05x_T4T_Access_Ctrl_t)pRspbuf[1];
+            *readOperation  = pRspbuf[0];
+            *writeOperation = pRspbuf[1];
         }
     }
 cleanup:

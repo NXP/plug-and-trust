@@ -1,7 +1,7 @@
 /*
 *
-* Copyright 2019 NXP
-* SPDX-License-Identifier: Apache-2.0
+* Copyright 2019,2024 NXP
+* SPDX-License-Identifier: BSD-3-Clause
 */
 
 
@@ -23,44 +23,58 @@ PROCESS_ECC_CURVE(secp521r1);
 /* RFC 5639 curve over a 160 bit prime field */
 PROCESS_ECC_CURVE(brainpoolP160r1);
 
+// LCOV_EXCL_START
 /* RFC 5639 curve over a 160 bit prime field */
 PROCESS_ECC_CURVE(brainpoolP160t1);
+// LCOV_EXCL_STOP
 
 /* RFC 5639 curve over a 192 bit prime field */
 PROCESS_ECC_CURVE(brainpoolP192r1);
 
+// LCOV_EXCL_START
 /* RFC 5639 curve over a 192 bit prime field */
 PROCESS_ECC_CURVE(brainpoolP192t1);
+// LCOV_EXCL_STOP
 
 /* RFC 5639 curve over a 224 bit prime field */
 PROCESS_ECC_CURVE(brainpoolP224r1);
 
+// LCOV_EXCL_START
 /* RFC 5639 curve over a 224 bit prime field */
 PROCESS_ECC_CURVE(brainpoolP224t1);
+// LCOV_EXCL_STOP
 
 /* RFC 5639 curve over a 256 bit prime field */
 PROCESS_ECC_CURVE(brainpoolP256r1);
 
+// LCOV_EXCL_START
 /* RFC 5639 curve over a 256 bit prime field */
 PROCESS_ECC_CURVE(brainpoolP256t1);
+// LCOV_EXCL_STOP
 
 /* RFC 5639 curve over a 320 bit prime field */
 PROCESS_ECC_CURVE(brainpoolP320r1);
 
+// LCOV_EXCL_START
 /* RFC 5639 curve over a 320 bit prime field */
 PROCESS_ECC_CURVE(brainpoolP320t1);
+// LCOV_EXCL_STOP
 
 /* RFC 5639 curve over a 384 bit prime field */
 PROCESS_ECC_CURVE(brainpoolP384r1);
 
+// LCOV_EXCL_START
 /* RFC 5639 curve over a 384 bit prime field */
 PROCESS_ECC_CURVE(brainpoolP384t1);
+// LCOV_EXCL_STOP
 
 /* RFC 5639 curve over a 512 bit prime field */
 PROCESS_ECC_CURVE(brainpoolP512r1);
 
+// LCOV_EXCL_START
 /* RFC 5639 curve over a 512 bit prime field */
 PROCESS_ECC_CURVE(brainpoolP512t1);
+// LCOV_EXCL_STOP
 
 /* SECG curve over a 160 bit prime field */
 PROCESS_ECC_CURVE(secp160k1);
@@ -73,9 +87,6 @@ PROCESS_ECC_CURVE(secp224k1);
 
 /* SECG curve over a 256 bit prime field */
 PROCESS_ECC_CURVE(secp256k1);
-
-/* BN curve 256 bits */
-PROCESS_ECC_CURVE(tpm_bm_p256);
 
 #if 0
 /* clang-format off */

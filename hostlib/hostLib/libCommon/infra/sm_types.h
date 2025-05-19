@@ -1,7 +1,7 @@
 /*
  *
- * Copyright 2016-2020 NXP
- * SPDX-License-Identifier: Apache-2.0
+ * Copyright 2016-2020,2024 NXP
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 /**
@@ -146,6 +146,8 @@ typedef U16 SM_Error_t;
 #define ERR_IDENT_IDX_RANGE (0x7032)        //!< Identifier or Index of Reference Key is out of bounds
 #define ERR_CRC_CHKSUM_VERIFY (0x7033)      //!< CRC checksum verify error
 #define ERR_INTERNAL_BUF_TOO_SMALL (0x7034) //!< In A71CH PSP 1.6 this had value 0x7033. Code was already taken by A71CL
+
+#define ERR_APDU_THROUGHPUT (0x66A6) //!< APDU Throughput error code
 
 #define SCP_OK (SW_OK)
 #define SCP_UNDEFINED_CHANNEL_ID (0x7041) //!< Undefined SCP channel identifier

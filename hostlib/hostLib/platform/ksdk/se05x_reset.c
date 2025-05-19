@@ -1,5 +1,5 @@
 /* Copyright 2018,2020 NXP
- * SPDX-License-Identifier: Apache-2.0
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #include "se05x_apis.h"

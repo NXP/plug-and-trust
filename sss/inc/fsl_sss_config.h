@@ -1,7 +1,7 @@
 /*
  *
- * Copyright 2018,2019 NXP
- * SPDX-License-Identifier: Apache-2.0
+ * Copyright 2018,2019,2024 NXP
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #ifndef _FSL_SSS_CONFIG_H_
@@ -12,6 +12,7 @@
     + (1 * sizeof(void *)) \
     + (1 * sizeof(void *)) \
     + (8 * sizeof(void *)) \
+    + (7 * sizeof(void *)) \
     + 32)
 #define SSS_KEY_STORE_MAX_CONTEXT_SIZE      ( 0 \
     + (1 * sizeof(void *)) \

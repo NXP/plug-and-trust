@@ -1,7 +1,7 @@
 /*
 *
-* Copyright 2018,2020 NXP
-* SPDX-License-Identifier: Apache-2.0
+* Copyright 2018,2020,2024 NXP
+* SPDX-License-Identifier: BSD-3-Clause
 */
 
 #ifdef __cplusplus
@@ -151,7 +151,7 @@ static void nLog_ReleaseLock()
 #endif
 }
 
-uint8_t nLog_Init()
+uint8_t nLog_Init(void)
 {
 #if USE_LOCK
 #if defined(USE_RTOS) && (USE_RTOS == 1)
@@ -171,7 +171,7 @@ uint8_t nLog_Init()
     return 0;
 }
 
-void nLog_DeInit()
+void nLog_DeInit(void)
 {
 #if USE_LOCK
 #if defined(USE_RTOS) && (USE_RTOS == 1)
@@ -180,7 +180,9 @@ void nLog_DeInit()
         gLogginglock = NULL;
     }
 #elif (__GNUC__ && !AX_EMBEDDED)
-    pthread_mutex_destroy(&gLogginglock);
+    if (pthread_mutex_destroy(&gLogginglock) != 0) {
+        return;
+    }
 #endif
     lockInitialised = false;
 #endif
@@ -219,7 +221,12 @@ void nLog(const char *comp, int level, const char *format, ...)
         size_t size_buff = sizeof(buffer) / sizeof(buffer[0]) - 1;
         va_list vArgs;
         va_start(vArgs, format);
-        vsnprintf(buffer, size_buff, format, vArgs);
+        if ((vsnprintf(buffer, size_buff, format, vArgs)) < 0) {
+            PRINTF("vsnprintf Error");
+            reSetColor();
+            nLog_ReleaseLock();
+            return;
+        }
         va_end(vArgs);
         PRINTF("%s", buffer);
 #ifdef SMCOM_JRCP_V2
@@ -237,9 +244,19 @@ void nLog_au8(const char *comp, int level, const char *message, const unsigned c
     if (level > (int)(sizeof(szLevel) / sizeof(char*))) {
         return;
     }
+    if (array_len > 0) {
+        if (array == NULL) {
+            return;
+        }
+    }
     nLog_AcquireLock();
     setColor(level);
     if (level >= 1) {
+        if (array_len > INT32_MAX) {
+            reSetColor();
+            nLog_ReleaseLock();
+            return;
+        }
         PRINTF("%-6s:%s:%s (Len=%" PRId32 ")", comp, szLevel[level-1], message, (int32_t)array_len);
     }
     else {

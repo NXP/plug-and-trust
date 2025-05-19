@@ -1,7 +1,7 @@
 /*
  *
- * Copyright 2018-2020 NXP
- * SPDX-License-Identifier: Apache-2.0
+ * Copyright 2018-2020,2024 NXP
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #ifndef FSL_SSS_OPENSSL_APIS_H
@@ -295,14 +295,20 @@ sss_status_t sss_openssl_asymmetric_decrypt(
 /** @copydoc sss_asymmetric_sign_digest
  *
  */
-sss_status_t sss_openssl_asymmetric_sign_digest(
-    sss_openssl_asymmetric_t *context, uint8_t *digest, size_t digestLen, uint8_t *signature, size_t *signatureLen);
+sss_status_t sss_openssl_asymmetric_sign_digest(sss_openssl_asymmetric_t *context,
+    const uint8_t *digest,
+    size_t digestLen,
+    uint8_t *signature,
+    size_t *signatureLen);
 
 /** @copydoc sss_asymmetric_verify_digest
  *
  */
-sss_status_t sss_openssl_asymmetric_verify_digest(
-    sss_openssl_asymmetric_t *context, uint8_t *digest, size_t digestLen, uint8_t *signature, size_t signatureLen);
+sss_status_t sss_openssl_asymmetric_verify_digest(sss_openssl_asymmetric_t *context,
+    const uint8_t *digest,
+    size_t digestLen,
+    const uint8_t *signature,
+    size_t signatureLen);
 
 /** @copydoc sss_asymmetric_context_free
  *

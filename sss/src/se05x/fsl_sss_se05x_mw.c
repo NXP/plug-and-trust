@@ -1,7 +1,7 @@
 /*
  *
- * Copyright 2018-2020 NXP
- * SPDX-License-Identifier: Apache-2.0
+ * Copyright 2018-2020,2024-2025 NXP
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 /** @file */
@@ -17,8 +17,13 @@
 #include <nxEnsure.h>
 #include <string.h>
 
-int add_taglength_to_data(
-    uint8_t **buf, size_t *bufLen, SE05x_TAG_t tag, const uint8_t *cmd, size_t cmdLen, bool extendedLength);
+int add_taglength_to_data(uint8_t **buf,
+    size_t *bufLen,
+    const size_t actualBufLen,
+    SE05x_TAG_t tag,
+    const uint8_t *cmd,
+    size_t cmdLen,
+    bool extendedLength);
 
 uint32_t se05x_sssKeyTypeLenToCurveId(sss_cipher_type_t cipherType, size_t keyBits)
 {
@@ -113,7 +118,7 @@ uint32_t se05x_sssKeyTypeLenToCurveId(sss_cipher_type_t cipherType, size_t keyBi
     case kSSS_CipherType_EC_MONTGOMERY: {
         SE05x_ECCurve_t eCurveID;
         switch (keyBits) {
-#if SSS_HAVE_SE05X_VER_GTE_06_00
+#if SSS_HAVE_SE05X_VER_GTE_07_02
         case 448:
             eCurveID = kSE05x_ECCurve_RESERVED_ID_ECC_MONT_DH_448;
             break;
@@ -142,20 +147,6 @@ uint32_t se05x_sssKeyTypeLenToCurveId(sss_cipher_type_t cipherType, size_t keyBi
         break;
     }
 #endif
-#if SSS_HAVE_TPM_BN
-    case kSSS_CipherType_EC_BARRETO_NAEHRIG: {
-        SE05x_ECCurve_t eCurveID;
-        switch (keyBits) {
-        case 256:
-            eCurveID = kSE05x_ECCurve_TPM_ECC_BN_P256;
-            break;
-        default:
-            eCurveID = kSE05x_ECCurve_NA;
-        }
-        u32_curve_id = (uint32_t)eCurveID;
-        break;
-    }
-#endif
     default:
         break;
     }
@@ -175,8 +166,13 @@ smStatus_t Se05x_API_EC_CurveGetId(pSe05xSession_t session_ctx, uint32_t objectI
     return ret;
 }
 
-int add_taglength_to_data(
-    uint8_t **buf, size_t *bufLen, SE05x_TAG_t tag, const uint8_t *cmd, size_t cmdLen, bool extendedLength)
+int add_taglength_to_data(uint8_t **buf,
+    size_t *bufLen,
+    const size_t actualBufLen,
+    SE05x_TAG_t tag,
+    const uint8_t *cmd,
+    size_t cmdLen,
+    bool extendedLength)
 {
     uint8_t *pBuf         = NULL;
     size_t size_of_length = 3;
@@ -192,13 +188,26 @@ int add_taglength_to_data(
         return 1;
     }
 
+    if ((*bufLen + 1) > actualBufLen) {
+        return 1;
+    }
+
     *pBuf++ = (uint8_t)tag;
 
     if (!extendedLength) {
+        if (cmdLen > UINT8_MAX) {
+            return 1;
+        }
+        if ((*bufLen + 2) > actualBufLen) {
+            return 1;
+        }
         *pBuf++        = (uint8_t)cmdLen;
         size_of_length = 1;
     }
     else if (cmdLen <= 0xFFFFu) {
+        if ((*bufLen + 4) > actualBufLen) {
+            return 1;
+        }
         *pBuf++ = (uint8_t)(0x80 /* Extended */ | 0x02 /* Additional Length */);
         *pBuf++ = (uint8_t)((cmdLen >> 1 * 8) & 0xFF);
         *pBuf++ = (uint8_t)((cmdLen >> 0 * 8) & 0xFF);
@@ -207,13 +216,17 @@ int add_taglength_to_data(
         return 1;
     }
 
-    if ((size_t)(1 + size_of_length + cmdLen) > (size_t)(1 << ((sizeof(size_t) * 4) - 1))) {
+    if ((size_t)(1 + size_of_length + cmdLen) >= (size_t)(1UL << ((sizeof(size_t) * 4) - 1))) {
         return 1;
     }
 
     size_of_tlv = 1 + size_of_length + cmdLen;
 
-    if ((size_t)(*bufLen + size_of_tlv) > (size_t)(1 << ((sizeof(size_t) * 4) - 1))) {
+    if ((size_t)(*bufLen + size_of_tlv) >= (size_t)(1UL << ((sizeof(size_t) * 4) - 1))) {
+        return 1;
+    }
+
+    if ((*bufLen + size_of_tlv) >= actualBufLen) {
         return 1;
     }
 
@@ -309,7 +322,7 @@ smStatus_t Se05x_i2c_master_txn(sss_session_t *sess, SE05x_I2CM_cmd_t *p, uint8_
             if (*rspTag == kSE05x_I2CM_StructuralIssue) {
                 // Modify TLV type of command to report back error
                 p[iCnt].type                  = kSE05x_I2CM_StructuralIssue;
-                p[iCnt].cmd.issue.issueStatus = rspbuffer[rspPos];
+                p[iCnt].cmd.issue.issueStatus = (SE05x_I2CM_status_t)rspbuffer[rspPos];
                 break;
             }
             else if (p[iCnt].type == kSE05x_I2CM_Configure) {
@@ -318,7 +331,7 @@ smStatus_t Se05x_i2c_master_txn(sss_session_t *sess, SE05x_I2CM_cmd_t *p, uint8_
                     LOG_W("Response out-of-order");
                     break;
                 }
-                p[iCnt].cmd.cfg.status = rspbuffer[rspPos];
+                p[iCnt].cmd.cfg.status = (SE05x_I2CM_status_t)rspbuffer[rspPos];
             }
             //else if (p[iCnt].type == kSE05x_I2CM_Security) {
             //}
@@ -328,7 +341,7 @@ smStatus_t Se05x_i2c_master_txn(sss_session_t *sess, SE05x_I2CM_cmd_t *p, uint8_
                     LOG_W("Response out-of-order");
                     break;
                 }
-                p[iCnt].cmd.w.wrStatus = rspbuffer[rspPos];
+                p[iCnt].cmd.w.wrStatus = (SE05x_I2CM_status_t)rspbuffer[rspPos];
             }
             else if (p[iCnt].type == kSE05x_I2CM_Read) {
                 // Check whether response is in expected order
@@ -336,7 +349,7 @@ smStatus_t Se05x_i2c_master_txn(sss_session_t *sess, SE05x_I2CM_cmd_t *p, uint8_
                     LOG_W("Response out-of-order");
                     break;
                 }
-                p[iCnt].cmd.rd.rdStatus = rspbuffer[rspPos];
+                p[iCnt].cmd.rd.rdStatus = (SE05x_I2CM_status_t)rspbuffer[rspPos];
                 if (p[iCnt].cmd.rd.rdStatus == kSE05x_I2CM_Success) {
                     // Receiving less data than requested is not considered an error
                     uint16_t reportedRead = (rspbuffer[rspPos + 1] << 8) + rspbuffer[rspPos + 2];
@@ -400,16 +413,18 @@ smStatus_t Se05x_i2c_master_attst_txn(sss_session_t *sess,
     uint8_t remainingCnt                        = 0;
     int tlvRet                                  = 0;
     uint32_t attestID;
+    uint8_t *rspTag         = NULL;
+    unsigned int rspPos     = 0;
+    uint16_t reportedRead   = 0;
+    uint8_t *pCmdbuf        = &buffer[0];
+    const uint8_t *pSendbuf = &buffer[0];
+    size_t SendLen          = 0;
 
     sss_se05x_session_t *se05x_session = (sss_se05x_session_t *)sess;
     Se05xSession_t *se050session_id    = NULL;
 
     sss_se05x_object_t *keyObject_attst = (sss_se05x_object_t *)keyObject;
     attestID                            = keyObject_attst->keyId;
-
-    uint8_t *pCmdbuf        = &buffer[0];
-    const uint8_t *pSendbuf = &buffer[0];
-    size_t SendLen          = 0;
 
     if (se05x_session->subsystem == kType_SSS_SE_SE05x) {
         se050session_id = &se05x_session->s_ctx;
@@ -502,15 +517,15 @@ smStatus_t Se05x_i2c_master_attst_txn(sss_session_t *sess,
          * Exception: Structural error in format incoming commands
          */
         ENSURE_OR_GO_CLEANUP(*rspbufferLen > 0);
-        ENSURE_OR_GO_CLEANUP((size_t)(*rspbufferLen) < (size_t)(1 << ((sizeof(size_t) * 4) - 1)))
-        uint8_t *rspTag     = &rspbuffer[0];
-        unsigned int rspPos = 1u;
+        ENSURE_OR_GO_CLEANUP((size_t)(*rspbufferLen) < (size_t)(1UL << ((sizeof(size_t) * 4) - 1)))
+        rspTag = &rspbuffer[0];
+        rspPos = 1u;
         for (iCnt = 0; iCnt < noOftags; iCnt++) {
             if (*rspTag == kSE05x_I2CM_StructuralIssue) {
                 ENSURE_OR_GO_CLEANUP(*rspbufferLen > rspPos);
                 /* Modify TLV type of command to report back error */
                 p[iCnt].type                  = kSE05x_I2CM_StructuralIssue;
-                p[iCnt].cmd.issue.issueStatus = rspbuffer[rspPos];
+                p[iCnt].cmd.issue.issueStatus = (SE05x_I2CM_status_t)rspbuffer[rspPos];
                 break;
             }
             else if (p[iCnt].type == kSE05x_I2CM_Configure) {
@@ -544,7 +559,7 @@ smStatus_t Se05x_i2c_master_attst_txn(sss_session_t *sess,
                 if (p[iCnt].cmd.rd.rdStatus == kSE05x_I2CM_Success) {
                     /* Receiving less data than requested is not considered an error */
                     ENSURE_OR_GO_CLEANUP(*rspbufferLen > (rspPos + 2));
-                    uint16_t reportedRead = (rspbuffer[rspPos + 1] << 8) + rspbuffer[rspPos + 2];
+                    reportedRead = (rspbuffer[rspPos + 1] << 8) + rspbuffer[rspPos + 2];
                     rspPos += 2;
                     if (reportedRead < p[iCnt].cmd.rd.readLength) {
                         LOG_W("kSE05x_I2CM_Read: Requested %d, Received %d byte",
@@ -590,7 +605,7 @@ cleanup:
 /**
  * Returns the applet version compiled by MW
  */
-uint32_t se05x_GetAppletVersion()
+uint32_t se05x_GetAppletVersion(void)
 {
     return APPLET_SE050_VER_MAJOR_MINOR;
 }

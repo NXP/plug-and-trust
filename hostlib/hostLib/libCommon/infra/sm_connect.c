@@ -1,7 +1,7 @@
 /*
  *
- * Copyright 2016-2020 NXP
- * SPDX-License-Identifier: Apache-2.0
+ * Copyright 2016-2020,2024 NXP
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 /*
@@ -68,6 +68,7 @@
 #endif
 #if defined(T1oI2C)
 #include "smComT1oI2C.h"
+#include "phNxpEse_Api.h"
 #endif
 #if defined(SMCOM_PN7150)
 #include "smComPN7150.h"
@@ -318,6 +319,12 @@ U16 SM_RjctConnectPCSC(void **conn_ctx, const char *connectString, SmCommState_t
 
 U16 SM_RjctConnect(void **conn_ctx, const char *connectString, SmCommState_t *commState, U8 *atr, U16 *atrLen)
 {
+    AX_UNUSED_ARG(conn_ctx);
+    AX_UNUSED_ARG(connectString);
+    AX_UNUSED_ARG(commState);
+    AX_UNUSED_ARG(atr);
+    AX_UNUSED_ARG(atrLen);
+
 #if (defined(RJCT_VCOM) && (RJCT_VCOM == 1)) || (defined(SMCOM_JRCP_V1) && (SMCOM_JRCP_V1==1))\
     || (defined(SMCOM_JRCP_V2) && (SMCOM_JRCP_V2 == 1)) || (defined(SMCOM_RC663_VCOM) && (SMCOM_RC663_VCOM==1))
     bool is_socket = FALSE;
@@ -411,11 +418,25 @@ U16 SM_I2CConnect(void **conn_ctx, SmCommState_t *commState, U8 *atr, U16 *atrLe
     if (status != SMCOM_OK) {
         return status;
     }
+
     if (conn_ctx == NULL) {
-        return SM_Connect(NULL, commState, atr, atrLen);
+        status = SM_Connect(NULL, commState, atr, atrLen);
+        if (status != SW_OK) {
+#if defined(T1oI2C)
+            phNxpEse_close(NULL);
+#endif //#if defined(T1oI2C)
+        }
+        return status;
     }
     else {
-        return SM_Connect(*conn_ctx, commState, atr, atrLen);
+        status = SM_Connect(*conn_ctx, commState, atr, atrLen);
+        if (status != SW_OK && *conn_ctx != NULL) {
+#if defined(T1oI2C)
+            phNxpEse_close(*conn_ctx);
+#endif //#if defined(T1oI2C)
+            *conn_ctx = NULL;
+        }
+        return status;
     }
 }
 #endif
@@ -514,11 +535,6 @@ U16 SM_Connect(void *conn_ctx, SmCommState_t *commState, U8 *atr, U16 *atrLen)
         }
         else
         {
-#if SSS_HAVE_APPLET_A71CH || SSS_HAVE_APPLET_A71CH_SIM || SSS_HAVE_APPLET_A71CL
-            /* Select card manager */
-            GP_Select(conn_ctx, (U8 *)&appletName, 0, selectResponseData, &selectResponseDataLen);
-            selectResponseDataLen = sizeof(selectResponseData);
-#endif
             /* Select the applet */
             sw = GP_Select(conn_ctx, (U8 *)&appletName, APPLET_NAME_LEN, selectResponseData, &selectResponseDataLen);
         }
@@ -531,7 +547,11 @@ U16 SM_Connect(void *conn_ctx, SmCommState_t *commState, U8 *atr, U16 *atrLen)
         }
         else if (sw != SW_OK) {
             LOG_E("SM_CONNECT Failed.");
-            sw = ERR_CONNECT_SELECT_FAILED;
+            /* Retain the APDU throughput error to allow applications to reset */
+            /* Any other error -> pass ERR_CONNECT_SELECT_FAILED error code */
+            if (sw != ERR_APDU_THROUGHPUT) {
+                sw = ERR_CONNECT_SELECT_FAILED;
+            }
         }
         else {
 #ifdef FLOW_VERBOSE
@@ -539,25 +559,7 @@ U16 SM_Connect(void *conn_ctx, SmCommState_t *commState, U8 *atr, U16 *atrLen)
                 LOG_MAU8_I("selectResponseData", selectResponseData, selectResponseDataLen);
             }
 #endif // FLOW_VERBOSE
-#if SSS_HAVE_APPLET_A71CH || SSS_HAVE_APPLET_A71CH_SIM
-            if (selectResponseDataLen >= 2) {
-                commState->appletVersion = (selectResponseData[0] << 8) + selectResponseData[1];
-                if (selectResponseDataLen == 4) {
-                    commState->sbVersion = (selectResponseData[2] << 8) + selectResponseData[3];
-                }
-                else if (selectResponseDataLen == 2) {
-                    commState->sbVersion = 0x0000;
-                }
-            }
-            else {
-                sw = ERR_CONNECT_SELECT_FAILED;
-            }
-#elif SSS_HAVE_APPLET_A71CL
-            if (selectResponseDataLen == 0) {
-                commState->appletVersion = 0;
-                commState->sbVersion = 0x0000;
-            }
-#endif // SSS_HAVE_APPLET_A71CH / SSS_HAVE_APPLET_A71CL
+
 #if SSS_HAVE_APPLET_SE05X_IOT
             if (selectResponseDataLen == 5 || selectResponseDataLen == 4 || selectResponseDataLen == 7) {
                 // 2.2.4 returns 4 bytes, 2.2.4.[A,B,C]
@@ -660,6 +662,10 @@ U16 SM_SendAPDU(U8 *cmd, U16 cmdLen, U8 *resp, U16 *respLen)
     respLenLocal = *respLen;
 
     status = smCom_TransceiveRaw(NULL, cmd, cmdLen, resp, &respLenLocal);
+    if (respLenLocal > UINT16_MAX) {
+        LOG_E("respLenLocal should be 2 bytes");
+        return ERR_GENERAL_ERROR;
+    }
     *respLen = (U16)respLenLocal;
 
     return (U16)status;

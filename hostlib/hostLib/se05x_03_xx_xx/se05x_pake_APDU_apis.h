@@ -1,7 +1,7 @@
 /*
- * Copyright 2020 NXP
+ * Copyright 2020,2024 NXP
  *
- * SPDX-License-Identifier: Apache-2.0
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #if (SSS_HAVE_APPLET_SE051_H && SSS_HAVE_SE05X_VER_07_02)

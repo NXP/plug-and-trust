@@ -1,7 +1,7 @@
 /*
  *
- * Copyright 2018-2020 NXP
- * SPDX-License-Identifier: Apache-2.0
+ * Copyright 2018-2020,2024 NXP
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #ifndef SSS_EX_INC_EX_SSS_H_
@@ -19,18 +19,11 @@
 
 #include <fsl_sss_api.h>
 
-#if SSS_HAVE_APPLET_A71CH || SSS_HAVE_APPLET_A71CH_SIM
-#include <fsl_sscp_a71ch.h>
-#endif
 #if SSS_HAVE_HOSTCRYPTO_MBEDTLS
 #include <fsl_sss_mbedtls_apis.h>
 #endif
 #if SSS_HAVE_HOSTCRYPTO_OPENSSL
 #include <fsl_sss_openssl_apis.h>
-#endif
-
-#if SSS_HAVE_SSCP
-#include <fsl_sss_sscp.h>
 #endif
 
 /* ************************************************************************** */
@@ -53,9 +46,6 @@ typedef struct
     sss_key_store_t ks;
 
     sss_sscp_session_t *sscp_session;
-#if (SSS_HAVE_APPLET_A71CH) || (SSS_HAVE_APPLET_A71CH_SIM)
-    sss_a71ch_key_store_t *a71ch_keystore;
-#endif
 
     sscp_context_t sscp;
     sss_asymmetric_t asymVerifyCtx;
@@ -84,8 +74,6 @@ typedef struct
 /* ************************************************************************** */
 /* Global Variables                                                           */
 /* ************************************************************************** */
-// extern const char *gszA71COMPortDefault;
-// extern const char *gszA71SocketPortDefault;
 
 /* ************************************************************************** */
 /* Functions                                                                  */

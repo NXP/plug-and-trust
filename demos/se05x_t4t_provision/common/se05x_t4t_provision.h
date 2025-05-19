@@ -1,7 +1,7 @@
 /*
  *
- * Copyright 2022 NXP
- * SPDX-License-Identifier: Apache-2.0
+ * Copyright 2022,2025 NXP
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 void se05x_t4t_provision(void);

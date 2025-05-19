@@ -1,6 +1,6 @@
 /*
- * Copyright 2021 NXP
- * SPDX-License-Identifier: Apache-2.0
+ * Copyright 2021,2025 NXP
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #include "se05x_dev_attest_key_prov.h"

@@ -1,8 +1,10 @@
 /*
 *
-* Copyright 2018,2020 NXP
-* SPDX-License-Identifier: Apache-2.0
+* Copyright 2018,2020,2024 NXP
+* SPDX-License-Identifier: BSD-3-Clause
 */
+
+#if !defined(USE_THREADX_RTOS)
 
 #if defined(SSS_USE_FTR_FILE)
 #include "fsl_sss_ftr.h"
@@ -15,6 +17,7 @@
 #endif
 
 #include <string.h>
+#include <limits.h>
 #include <assert.h>
 #include <nxLog_scp.h>
 #include "nxScp03_Apis.h"
@@ -31,7 +34,7 @@
 #error "No hostcrypto"
 #endif // SSS_HAVE_HOSTCRYPTO_MBEDTLS
 
-#if SSS_HAVE_SE05X_VER_GTE_06_00
+#if SSS_HAVE_SE05X_VER_GTE_07_02
 #if defined(SE05X_MAX_BUF_SIZE_CMD) && (SE05X_MAX_BUF_SIZE_CMD != 1024)
 #   error "Expect hard coded for SE05X_MAX_BUF_SIZE_CMD = 1024"
 #endif
@@ -101,6 +104,7 @@ sss_status_t nxSCP03_Encrypt_CommandAPDU(NXSCP03_DynCtx_t *pdySCP03SessCtx, uint
         ENSURE_OR_GO_CLEANUP(sss_status == kStatus_SSS_Success);
         dataLen = *pCmdBufLen;
         LOG_D("Encrypt CommandAPDU");
+        pIv = (uint8_t *)iv;
         sss_status = sss_host_cipher_one_go(&symm, pIv, SCP_KEY_SIZE, apduPayloadToEncrypt, cmdBuf, dataLen);
         ENSURE_OR_GO_CLEANUP(sss_status == kStatus_SSS_Success);
         LOG_AU8_D(cmdBuf, dataLen);
@@ -120,7 +124,6 @@ cleanup:
 uint16_t nxpSCP03_Decrypt_ResponseAPDU(
     NXSCP03_DynCtx_t *pdySCP03SessCtx, size_t cmdBufLen, uint8_t *rspBuf, size_t *pRspBufLen, uint8_t hasle)
 {
-    AX_UNUSED_ARG(hasle);
     sss_status_t sss_status = kStatus_SSS_Fail;
     uint16_t status = SCP_FAIL;
     sss_algorithm_t algorithm = kAlgorithm_SSS_CMAC_AES;
@@ -139,6 +142,8 @@ uint16_t nxpSCP03_Decrypt_ResponseAPDU(
     sss_mode_t mode_aes = kMode_SSS_Decrypt;
     sss_symmetric_t symm;
     size_t actualRespLen = 0;
+
+    AX_UNUSED_ARG(hasle);
 
     ENSURE_OR_GO_EXIT(pRspBufLen != NULL);
     ENSURE_OR_GO_EXIT(pdySCP03SessCtx != NULL);
@@ -436,10 +441,11 @@ static void nxSCP03_PadCommandAPDU(uint8_t *cmdBuf, size_t *pCmdBufLen)
     LOG_MAU8_D("Input: cmdBuf", cmdBuf, *pCmdBufLen);
     // pad the payload and adjust the length of the APDU
     cmdBuf[(*pCmdBufLen)] = SCP_DATA_PAD_BYTE;
+    ENSURE_OR_GO_EXIT((SIZE_MAX - 1) >= (*pCmdBufLen));
     *pCmdBufLen += 1;
     zeroBytesToPad = (SCP_KEY_SIZE - ((*pCmdBufLen) % SCP_KEY_SIZE)) % SCP_KEY_SIZE;
 
-    while ((zeroBytesToPad > 0) && ((size_t)(*pCmdBufLen) < (size_t)(1 << ((sizeof(size_t) * 4) - 1)))) {
+    while ((zeroBytesToPad > 0) && ((size_t)(*pCmdBufLen) < (size_t)(1UL << ((sizeof(size_t) * 4) - 1)))) {
         cmdBuf[(*pCmdBufLen)] = 0x00;
         *pCmdBufLen += 1;
         zeroBytesToPad--;
@@ -449,3 +455,5 @@ static void nxSCP03_PadCommandAPDU(uint8_t *cmdBuf, size_t *pCmdBufLen)
 exit:
     return;
 }
+
+#endif /* USE_THREADX_RTOS */

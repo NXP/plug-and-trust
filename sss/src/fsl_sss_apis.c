@@ -1,7 +1,7 @@
 /*
  *
- * Copyright 2018-2020 NXP
- * SPDX-License-Identifier: Apache-2.0
+ * Copyright 2018-2020,2024 NXP
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 #include <fsl_sss_api.h>
 
@@ -10,10 +10,6 @@
 #else
 #include "fsl_sss_ftr_default.h"
 #endif
-
-#if SSS_HAVE_SSCP
-#include <fsl_sss_sscp.h>
-#endif /* SSS_HAVE_SSCP */
 
 #if SSS_HAVE_APPLET_SE05X_IOT
 #include <fsl_sss_se05x_apis.h>
@@ -63,9 +59,6 @@ sss_status_t sss_session_create(sss_session_t *session,
 #if SSS_HAVE_APPLET_SE05X_IOT
         subsystem = kType_SSS_SE_SE05x;
 #endif
-#if SSS_HAVE_APPLET_A71CH || SSS_HAVE_APPLET_A71CH_SIM
-        subsystem = kType_SSS_SE_A71CH;
-#endif
     }
 
 #if SSS_HAVE_SSCP
@@ -111,9 +104,6 @@ sss_status_t sss_session_open(sss_session_t *session,
 #if SSS_HAVE_APPLET
 
         subsystem = kType_SSS_SE_SE05x;
-#endif
-#if SSS_HAVE_APPLET_A71CH || SSS_HAVE_APPLET_A71CH_SIM
-        subsystem = kType_SSS_SE_A71CH;
 #endif
     }
 
@@ -2701,7 +2691,6 @@ const char *sss_cipher_type_sz(sss_cipher_type_t cipher_type)
         CASE_X_RETRUN_STR_kSSS_CipherType(EC_MONTGOMERY);
         CASE_X_RETRUN_STR_kSSS_CipherType(EC_TWISTED_ED);
         CASE_X_RETRUN_STR_kSSS_CipherType(EC_BRAINPOOL);
-        CASE_X_RETRUN_STR_kSSS_CipherType(EC_BARRETO_NAEHRIG);
         CASE_X_RETRUN_STR_kSSS_CipherType(UserID);
         CASE_X_RETRUN_STR_kSSS_CipherType(Certificate);
         CASE_X_RETRUN_STR_kSSS_CipherType(Binary);

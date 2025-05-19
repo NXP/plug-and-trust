@@ -1,10 +1,10 @@
 /*
  *
- * Copyright 2019 NXP
- * SPDX-License-Identifier: Apache-2.0
+ * Copyright 2019,2024 NXP
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
-#if SSS_HAVE_SE05X_VER_GTE_06_00
+#if SSS_HAVE_SE05X_VER_GTE_07_02
 /* OK */
 #else
 #error "Only with SE051 based build"
@@ -116,7 +116,7 @@
  * @param[in]  IV              The iv
  * @param[in]  IVLen           The iv length
  * @param      tagData         The tag data
- * @param      tagDataLen      The tag data length
+ * @param      tagDataLen      The tag data length (When operation equals P2_ENCRYPT_ONE_SHOT, default tag length is 16.)
  * @param      outputData      The output data
  * @param      poutputDataLen  The poutput data length
  * @param[in]  operation       The operation
@@ -212,6 +212,7 @@ smStatus_t Se05x_API_AeadOneShot(pSe05xSession_t session_ctx,
  *
  * @param[in]  session_ctx     The session context
  * @param[in]  objectID        The object id
+ * @param[in]  cipherMode      The cipher mode
  * @param[in]  cryptoObjectID  The crypto object id
  * @param[in]  pIV             { parameter_description }
  * @param[in]  IVLen           The iv length
@@ -293,6 +294,7 @@ smStatus_t Se05x_API_AeadInit(pSe05xSession_t session_ctx,
  *
  * @param[in]  session_ctx     The session context
  * @param[in]  objectID        The object id
+ * @param[in]  cipherMode      The cipher mode
  * @param[in]  cryptoObjectID  The crypto object id
  * @param[in]  pIV             { parameter_description }
  * @param[in]  IVLen           The iv length
@@ -432,8 +434,8 @@ smStatus_t Se05x_API_AeadCCMLastUpdate(
  * @param[in]  cryptoObjectID  The crypto object id
  * @param[out] pOutputData     The output data
  * @param[out] pOutputLen      The output length
- * @param      tag             The tag
- * @param      tagLen          The tag length
+ * @param      pTag            The tag
+ * @param      pTagLen         The tag length
  * @param[in]  operation       The operation
  *
  * @return     The sm status.
@@ -730,7 +732,7 @@ smStatus_t Se05x_API_ReadObjectAttributes(
  *
  *
  * @param[in]  session_ctx      The session context
- * @param[in]  HealthCheckMode  The health check mode
+ * @param[in]  healthCheckMode  The health check mode
  * @param      result           The result of Self Test
  *
  * @return     The sm status.
@@ -828,19 +830,21 @@ smStatus_t Se05x_API_TriggerSelfTest(
  *
  *
  * @param[in]  session_ctx      The session context
- * @param[in]  HealthCheckMode  The health check mode
+ * @param[in]  healthCheckMode  The health check mode
  * @param[in]  attestID         The attest id
  * @param[in]  attestAlgo       The attest algorithm
  * @param[in]  random           The random
  * @param[in]  randomLen        The random length
  * @param      result           The result of Self Test
  * @param      ptimeStamp       The ptime stamp
- * @param      outrandom        The outrandom
- * @param      poutrandomLen    The poutrandom length
  * @param      chipId           The chip identifier
  * @param      pchipIdLen       The pchip identifier length
  * @param      signature        The signature
  * @param      psignatureLen    The psignature length
+ * @param      pObjectSize      The pObjectSize
+ * @param      pObjectSizeLen   The pObjectSizeLen length
+ * @param      pCmd             The pCmd
+ * @param      pCmdLen          The pCmd length
  *
  * @return     The sm status.
  */
@@ -994,7 +998,7 @@ smStatus_t Se05x_API_ECDHGenerateSharedSecret_InObject(pSe05xSession_t session_c
     uint8_t invertEndianness);
 
 /** Se05x_API_TLSCalculateRsaPreMasterSecret
- * 
+ *
  * @param[in] session_ctx Session Context[0:kSE05x_pSession]
  * @param[in] keyPairId keyPairId[1:kSE05x_TAG_1]
  * @param[in] pskId pskId[2:kSE05x_TAG_2]
@@ -1003,7 +1007,7 @@ smStatus_t Se05x_API_ECDHGenerateSharedSecret_InObject(pSe05xSession_t session_c
  * @param[in] inputDataLen Length of inputData
  * @param[in] clientVersion client version[6:kSE05x_TAG_6]
  * @param[in] clientVersionLen Length of client version
- * 
+ *
  */
 
 smStatus_t Se05x_API_TLSCalculateRsaPreMasterSecret(pSe05xSession_t session_ctx,
@@ -1076,7 +1080,11 @@ smStatus_t Se05x_API_UpdateRSAKey_Ver(pSe05xSession_t session_ctx,
     const SE05x_RSAKeyFormat_t rsa_format,
     uint32_t version);
 
+/** Se05x_API_WriteECKey_with_version
+* See @ref Se05x_API_WriteECKey_Ver
+*/
 #define Se05x_API_WriteECKey_with_version Se05x_API_WriteECKey_Ver
+
 /** Se05x_API_WriteECKey_Ver
 *
 * See @ref Se05x_API_WriteECKey. Also allows to set key version (4 bytes).
@@ -1194,6 +1202,7 @@ smStatus_t Se05x_API_UpdateBinary_Ver(pSe05xSession_t session_ctx,
 *
 * @param[in] session_ctx Session Context [0:kSE05x_pSession]
 * @param[out] pstateValues [1:kSE05x_TAG_1]
+* @param[out] pstateValuesLen Length of pstateValues
 */
 smStatus_t Se05x_API_ReadState(pSe05xSession_t session_ctx, uint8_t *pstateValues, size_t *pstateValuesLen);
 
@@ -1338,7 +1347,8 @@ smStatus_t Se05x_API_UpdateCounter(
 
 /** Se05x_API_WriteSymmKey_Ver_extended
 *
-* See @ref Extension of Se05x_API_WriteSymmKey_Ver api. Allows to set minimum tag length for AEAD (2 bytes).
+* See @ref Se05x_API_WriteSymmKey_Ver.
+* Extension of Se05x_API_WriteSymmKey_Ver api .Allows to set minimum tag length for AEAD (2 bytes).
 *
 */
 smStatus_t Se05x_API_WriteSymmKey_Ver_extended(pSe05xSession_t session_ctx,
@@ -1365,6 +1375,7 @@ smStatus_t Se05x_API_WriteSymmKey_Ver_extended(pSe05xSession_t session_ctx,
 * @param[in]  salt                         Salt data
 * @param[in]  saltLen                      Salt length
 * @param[in]  saltID                       Object id with salt data
+* @param[in]  count                        Iteration count
 * @param[in]  macAlgo                      MAC Algorithm
 * @param[in]  requestedLen                 Requested derived session key length
 * @param[in, out]  derivedSessionKeyID     HMAC object id to store output derived session key
@@ -1405,6 +1416,18 @@ smStatus_t Se05x_API_ECDHGenerateSharedSecret_InObject_extended(pSe05xSession_t 
     uint32_t sharedSecretID,
     uint8_t invertEndianness);
 
+/** Se05x_API_ECPointMultiply_InputObj.
+*
+* Performs an EC Point Multipy operation using the specified input objects
+* @param[in]  session_ctx                  The session context
+* @param[in]  objectID                     Private key or key pair identifier
+* @param[in]  pubKeyID                     public key identifier
+* @param[in]  sharedSecretID               Identifier to store derived key
+* @param[in]  sharedSecretOuput            Output Buffer to store the result
+* @param[in]  psharedSecretOuputLen        Length of sharedSecret Output BUffer
+* @param[in]  ECPMAlgo                     Algorithm used for the EC Point Operation
+*
+*/
 smStatus_t Se05x_API_ECPointMultiply_InputObj(pSe05xSession_t session_ctx,
     uint32_t objectID,
     uint32_t pubKeyID,
@@ -1412,6 +1435,38 @@ smStatus_t Se05x_API_ECPointMultiply_InputObj(pSe05xSession_t session_ctx,
     uint8_t *sharedSecretOuput,
     size_t *psharedSecretOuputLen,
     SE05x_ECPMAlgo_t ECPMAlgo);
+
+/** Se05x_API_RSASign_WithSalt
+*
+* See @ref Se05x_API_RSASign.
+* Se05x_API_RSASign API with salt lenght as extra input.
+*
+*/
+smStatus_t Se05x_API_RSASign_WithSalt(pSe05xSession_t session_ctx,
+    uint32_t objectID,
+    SE05x_RSASignatureAlgo_t rsaSigningAlgo,
+    const uint8_t *inputData,
+    size_t inputDataLen,
+    uint16_t saltLen,
+    uint8_t *signature,
+    size_t *psignatureLen);
+
+/** Se05x_API_RSAVerify_WithSalt
+*
+* See @ref Se05x_API_RSAVerify.
+* Se05x_API_RSASign API with salt lenght as extra input.
+*
+*/
+smStatus_t Se05x_API_RSAVerify_WithSalt(pSe05xSession_t session_ctx,
+    uint32_t objectID,
+    SE05x_RSASignatureAlgo_t rsaSigningAlgo,
+    const uint8_t *inputData,
+    size_t inputDataLen,
+    uint16_t saltLen,
+    const uint8_t *signature,
+    size_t signatureLen,
+    SE05x_Result_t *presult);
+
 #endif
 
 /** @} */

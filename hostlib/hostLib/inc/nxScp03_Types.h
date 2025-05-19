@@ -1,7 +1,7 @@
 /*
 *
-* Copyright 2018,2020 NXP
-* SPDX-License-Identifier: Apache-2.0
+* Copyright 2018,2020,2024-2025 NXP
+* SPDX-License-Identifier: BSD-3-Clause
 */
 
 #ifndef NXSCP03_TYPES_H_
@@ -31,16 +31,16 @@
 #endif
 
 #include "sm_api.h"
-#if SSS_HAVE_SSCP
-#include "fsl_sscp_a71ch.h"
-#endif
 
 /** @addtogroup se05x_scp03
  *
  * @{ */
 
+/** Defining authentication types in SE05x
+*/
 typedef enum
 {
+    /** No authentication */
     kSSS_AuthType_None = 0,
     /** Global platform SCP03 */
     kSSS_AuthType_SCP03 = 1,
@@ -116,6 +116,8 @@ typedef struct
     /** Key version no to use for chanel
         authentication in SCP03     */
     uint8_t keyVerNo;
+    /** AES Key size */
+    int key_len;
     /** Encryption key object */
     sss_object_t Enc;
     sss_object_t Mac; //!< static secure channel authentication key obj

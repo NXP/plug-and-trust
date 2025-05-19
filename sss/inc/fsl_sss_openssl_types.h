@@ -1,7 +1,7 @@
 /*
  *
- * Copyright 2018-2020 NXP
- * SPDX-License-Identifier: Apache-2.0
+ * Copyright 2018-2020,2024 NXP
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #ifndef SSS_APIS_INC_FSL_SSS_OPENSSL_TYPES_H_
@@ -150,6 +150,7 @@ typedef struct
     sss_mode_t mode;                 /*!  */
 #if (OPENSSL_VERSION_NUMBER >= 0x30000000)
     EVP_MAC_CTX *mac_ctx;
+    OSSL_LIB_CTX *lib_ctx;
 #else
     CMAC_CTX *cmac_ctx;
     HMAC_CTX *hmac_ctx;

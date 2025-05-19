@@ -1,16 +1,6 @@
 /*
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Copyright 2024 NXP
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 /**
@@ -27,6 +17,10 @@
 #include "smComT1oI2C.h"
 
 #include "phEseStatus.h"
+
+
+// Workaround for SE050 I2C errata I2C.1 and I2C.2 (https://www.nxp.com/docs/en/errata/SE050_Erratasheet.pdf)
+// #define T1OI2C_SEND_SHORT_APDU
 
 /**
  *
@@ -66,5 +60,6 @@ void *phNxpEse_memalloc(uint32_t size);
 void phNxpEse_free(void* ptr);
 ESESTATUS phNxpEse_getAtr(void* conn_ctx, phNxpEse_data *pRsp);
 ESESTATUS phNxpEse_getCip(void* conn_ctx, phNxpEse_data *pRsp);
+ESESTATUS phNxpEse_deepPwrDown(void* conn_ctx);
 /** @} */
 #endif /* _PHNXPESE_API_H_ */

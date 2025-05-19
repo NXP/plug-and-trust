@@ -1,7 +1,7 @@
 /*
- * Copyright 2020 NXP
+ * Copyright 2020,2024 NXP
  *
- * SPDX-License-Identifier: Apache-2.0
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #include <se05x_tlv.h>
@@ -27,7 +27,7 @@ smStatus_t Se05x_API_PAKEConfigDevice(
 {
     smStatus_t retStatus = SM_NOT_OK;
     tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_CRYPTO, kSE05x_P1_PAKE, kSE05x_P2_TYPE}};
-    uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD] = {0,};
+    uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
     size_t cmdbufLen = 0;
     uint8_t *pCmdbuf = &cmdbuf[0];
     int tlvRet       = 0;
@@ -35,6 +35,7 @@ smStatus_t Se05x_API_PAKEConfigDevice(
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "PAKEConfigDevice []");
+    nLog("APDU", NX_LEVEL_WARN, "PAKEConfigDevice [] APDU causes NVM Writes");
 #endif /* VERBOSE_APDU_LOGS */
     tlvRet = TLVSET_CryptoObjectID("cryptoObjectID", &pCmdbuf, &cmdbufLen, kSE05x_TAG_2, cryptoObjectID);
     if (0 != tlvRet) {
@@ -61,7 +62,7 @@ smStatus_t Se05x_API_PAKEInitDevice(pSe05xSession_t session_ctx,
 {
     smStatus_t retStatus = SM_NOT_OK;
     tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_CRYPTO, kSE05x_P1_PAKE, kSE05x_P2_ID}};
-    uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD] = {0,};
+    uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
     size_t cmdbufLen = 0;
     uint8_t *pCmdbuf = &cmdbuf[0];
     int tlvRet       = 0;
@@ -69,6 +70,7 @@ smStatus_t Se05x_API_PAKEInitDevice(pSe05xSession_t session_ctx,
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "PAKEInitDevice[]");
+    nLog("APDU", NX_LEVEL_WARN, "PAKEInitDevice [] APDU causes NVM Writes");
 #endif /* VERBOSE_APDU_LOGS */
 
     tlvRet = TLVSET_CryptoObjectID("cryptoObjectID", &pCmdbuf, &cmdbufLen, kSE05x_TAG_2, cryptoObjectID);
@@ -105,7 +107,7 @@ smStatus_t Se05x_API_PAKEInitCredentials(pSe05xSession_t session_ctx,
 {
     smStatus_t retStatus = SM_NOT_OK;
     tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_CRYPTO, kSE05x_P1_PAKE, kSE05x_P2_PARAM}};
-    uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD] = {0,};
+    uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
     size_t cmdbufLen = 0;
     uint8_t *pCmdbuf = &cmdbuf[0];
     int tlvRet       = 0;
@@ -113,6 +115,7 @@ smStatus_t Se05x_API_PAKEInitCredentials(pSe05xSession_t session_ctx,
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "PAKEInitCredentials[]");
+    nLog("APDU", NX_LEVEL_WARN, "PAKEInitCredentials[] APDU causes NVM Writes");
 #endif /* VERBOSE_APDU_LOGS */
 
     tlvRet = TLVSET_CryptoObjectID("cryptoObjectID", &pCmdbuf, &cmdbufLen, kSE05x_TAG_2, cryptoObjectID);
@@ -155,11 +158,11 @@ smStatus_t Se05x_API_PAKEComputeKeyShare(pSe05xSession_t session_ctx,
 {
     smStatus_t retStatus = SM_NOT_OK;
     tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_CRYPTO, kSE05x_P1_PAKE, kSE05x_P2_UPDATE}};
-    uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD] = {0,};
+    uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
     size_t cmdbufLen = 0;
     uint8_t *pCmdbuf = &cmdbuf[0];
     int tlvRet       = 0;
-    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP] = {0,};
+    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP];
     uint8_t *pRspbuf = &rspbuf[0];
     size_t rspbufLen = ARRAY_SIZE(rspbuf);
 #if VERBOSE_APDU_LOGS
@@ -186,7 +189,7 @@ smStatus_t Se05x_API_PAKEComputeKeyShare(pSe05xSession_t session_ctx,
             goto cleanup;
         }
         if ((rspIndex + 2) == rspbufLen) {
-            retStatus = (smStatus_t)((pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]));
+            retStatus = (pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]);
         }
     }
 cleanup:
@@ -204,11 +207,11 @@ smStatus_t Se05x_API_PAKEComputeSessionKeys(pSe05xSession_t session_ctx,
 {
     smStatus_t retStatus = SM_NOT_OK;
     tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_CRYPTO, kSE05x_P1_PAKE, kSE05x_P2_GENERATE}};
-    uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD] = {0,};
+    uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
     size_t cmdbufLen = 0;
     uint8_t *pCmdbuf = &cmdbuf[0];
     int tlvRet       = 0;
-    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP] = {0,};
+    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP];
     uint8_t *pRspbuf = &rspbuf[0];
     size_t rspbufLen = ARRAY_SIZE(rspbuf);
 #if VERBOSE_APDU_LOGS
@@ -241,7 +244,7 @@ smStatus_t Se05x_API_PAKEComputeSessionKeys(pSe05xSession_t session_ctx,
             goto cleanup;
         }
         if ((rspIndex + 2) == rspbufLen) {
-            retStatus = (smStatus_t)((pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]));
+            retStatus = (pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]);
         }
     }
 
@@ -257,11 +260,11 @@ smStatus_t Se05x_API_PAKEVerifySessionKeys(pSe05xSession_t session_ctx,
 {
     smStatus_t retStatus = SM_NOT_OK;
     tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_CRYPTO, kSE05x_P1_PAKE, kSE05x_P2_VERIFY}};
-    uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD] = {0,};
+    uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
     size_t cmdbufLen = 0;
     uint8_t *pCmdbuf = &cmdbuf[0];
     int tlvRet       = 0;
-    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP] = {0,};
+    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP];
     uint8_t *pRspbuf = &rspbuf[0];
     size_t rspbufLen = ARRAY_SIZE(rspbuf);
 #if VERBOSE_APDU_LOGS
@@ -289,7 +292,7 @@ smStatus_t Se05x_API_PAKEVerifySessionKeys(pSe05xSession_t session_ctx,
             goto cleanup;
         }
         if ((rspIndex + 2) == rspbufLen) {
-            retStatus = (smStatus_t)((pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]));
+            retStatus = (pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]);
         }
     }
 
@@ -302,11 +305,11 @@ smStatus_t Se05x_API_PAKEReadDeviceType(
 {
     smStatus_t retStatus = SM_NOT_OK;
     tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_READ, kSE05x_P1_PAKE, kSE05x_P2_DEFAULT}};
-    uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD] = {0,};
+    uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
     size_t cmdbufLen = 0;
     uint8_t *pCmdbuf = &cmdbuf[0];
     int tlvRet       = 0;
-    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP] = {0,};
+    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP];
     uint8_t *pRspbuf = &rspbuf[0];
     size_t rspbufLen = ARRAY_SIZE(rspbuf);
     uint8_t devType  = 0;
@@ -329,11 +332,11 @@ smStatus_t Se05x_API_PAKEReadDeviceType(
         }
 
         if ((rspIndex + 2) == rspbufLen) {
-            retStatus = (smStatus_t)((pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]));
+            retStatus = (pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]);
         }
     }
     if (deviceType != NULL)
-        *deviceType = (SE05x_SPAKE2PlusDeviceType_t)devType;
+        *deviceType = devType;
     else
         retStatus = SM_NOT_OK;
 cleanup:
@@ -345,11 +348,11 @@ smStatus_t Se05x_API_PAKEReadState(
 {
     smStatus_t retStatus = SM_NOT_OK;
     tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_READ, kSE05x_P1_PAKE, kSE05x_P2_READ_STATE}};
-    uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD] = {0,};
+    uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
     size_t cmdbufLen = 0;
     uint8_t *pCmdbuf = &cmdbuf[0];
     int tlvRet       = 0;
-    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP] = {0,};
+    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP];
     uint8_t *pRspbuf = &rspbuf[0];
     size_t rspbufLen = ARRAY_SIZE(rspbuf);
     uint8_t devState = 0;
@@ -372,11 +375,11 @@ smStatus_t Se05x_API_PAKEReadState(
         }
 
         if ((rspIndex + 2) == rspbufLen) {
-            retStatus = (smStatus_t)((pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]));
+            retStatus = (pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]);
         }
     }
     if (pakeState != NULL)
-        *pakeState = (SE05x_PAKEState_t)devState;
+        *pakeState = devState;
     else
         retStatus = SM_NOT_OK;
 cleanup:
@@ -393,7 +396,7 @@ smStatus_t Se05x_API_ECDSA_Internal_Sign(pSe05xSession_t session_ctx,
 {
     smStatus_t retStatus = SM_NOT_OK;
     tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_CRYPTO, kSE05x_P1_SIGNATURE, kSE05x_P2_SIGN}};
-    uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD] = {0,};
+    uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
     size_t cmdbufLen                       = 0;
     uint8_t *pCmdbuf                       = &cmdbuf[0];
     int tlvRet                             = 0;
@@ -425,7 +428,7 @@ smStatus_t Se05x_API_ECDSA_Internal_Sign(pSe05xSession_t session_ctx,
             goto cleanup;
         }
         if ((rspIndex + 2) == rspbufLen) {
-            retStatus = (smStatus_t)((pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]));
+            retStatus = (pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]);
         }
     }
 
@@ -443,7 +446,7 @@ smStatus_t Se05x_API_RSA_Internal_Sign(pSe05xSession_t session_ctx,
 {
     smStatus_t retStatus = SM_NOT_OK;
     tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_CRYPTO, kSE05x_P1_SIGNATURE, kSE05x_P2_SIGN}};
-    uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD] = {0,};
+    uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
     size_t cmdbufLen                       = 0;
     uint8_t *pCmdbuf                       = &cmdbuf[0];
     int tlvRet                             = 0;
@@ -475,7 +478,7 @@ smStatus_t Se05x_API_RSA_Internal_Sign(pSe05xSession_t session_ctx,
             goto cleanup;
         }
         if ((rspIndex + 2) == rspbufLen) {
-            retStatus = (smStatus_t)((pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]));
+            retStatus = (pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]);
         }
     }
 
@@ -493,7 +496,7 @@ smStatus_t Se05x_API_EdDSA_Internal_Sign(pSe05xSession_t session_ctx,
 {
     smStatus_t retStatus = SM_NOT_OK;
     tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_CRYPTO, kSE05x_P1_SIGNATURE, kSE05x_P2_SIGN}};
-    uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD] = {0,};
+    uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
     size_t cmdbufLen                       = 0;
     uint8_t *pCmdbuf                       = &cmdbuf[0];
     int tlvRet                             = 0;
@@ -525,7 +528,7 @@ smStatus_t Se05x_API_EdDSA_Internal_Sign(pSe05xSession_t session_ctx,
             goto cleanup;
         }
         if ((rspIndex + 2) == rspbufLen) {
-            retStatus = (smStatus_t)((pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]));
+            retStatus = (pRspbuf[rspIndex] << 8) | (pRspbuf[rspIndex + 1]);
         }
     }
 

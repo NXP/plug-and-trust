@@ -1,7 +1,7 @@
 /*
  *
- * Copyright 2019-2020 NXP
- * SPDX-License-Identifier: Apache-2.0
+ * Copyright 2019-2020,2024 NXP
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 /** @file */
@@ -16,11 +16,13 @@
  *
  * @{ */
 
-/* Enable compilation of deprecated API Se05x_API_WritePCR
+/** Enable compilation of deprecated API Se05x_API_WritePCR
  * Deprecated from Q1 2021.
  * Support will be removed by Q1 2022
  */
 #define ENABLE_DEPRECATED_API_WritePCR 1
+
+/** @} */
 
 /** Se05x_API_CreateSession
  *
@@ -463,8 +465,8 @@ smStatus_t Se05x_API_SetPlatformSCPRequest(pSe05xSession_t session_ctx, SE05x_Pl
  *
  * # R-APDU Trailer
  *
- * @param[in] session_ctx Session Context [0:kSE05x_pSession]
- * @param[in] variant variant [1:kSE05x_TAG_1]
+ * @param[in] session_ctx   Session Context [0:kSE05x_pSession]
+ * @param[in] appletVariant Applet variant [1:kSE05x_TAG_1]
  */
 smStatus_t Se05x_API_SetAppletFeatures(pSe05xSession_t session_ctx, pSe05xAppletFeatures_t appletVariant);
 
@@ -1036,6 +1038,11 @@ smStatus_t Se05x_API_WritePCR(pSe05xSession_t session_ctx,
     const uint8_t *inputData,
     size_t inputDataLen);
 #endif // ENABLE_DEPRECATED_API_WritePCR
+
+/** Se05x_API_WritePCR_WithType
+*
+* See @ref Se05x_API_WritePCR
+*/
 smStatus_t Se05x_API_WritePCR_WithType(pSe05xSession_t session_ctx,
     const SE05x_INS_t ins_type,
     pSe05xPolicy_t policy,
@@ -1236,6 +1243,8 @@ smStatus_t Se05x_API_ImportObject(pSe05xSession_t session_ctx,
  * @param[in] session_ctx Session Context [0:kSE05x_pSession]
  * @param[in] ECKeydata ECKeydata [1:kSE05x_TAG_2]
  * @param[in] ECKeydataLen Length of ECKeydata
+ * @param[in] ECAuthKeyID ECAuthKeyID
+ * @param[in] ECAuthKeyIDLen Length of ECAuthKeyID
  * @param[in] serializedObject serializedObject [2:kSE05x_TAG_3]
  * @param[in] serializedObjectLen Length of serializedObject
  */
@@ -1342,6 +1351,178 @@ smStatus_t Se05x_API_ImportExternalObject(pSe05xSession_t session_ctx,
 smStatus_t Se05x_API_ReadObject(
     pSe05xSession_t session_ctx, uint32_t objectID, uint16_t offset, uint16_t length, uint8_t *data, size_t *pdataLen);
 
+#if SSS_HAVE_SE05X_VER_GTE_07_02 || defined(__DOXYGEN__)
+/** Se05x_API_ReadObject_W_Attst_V2
+ *
+ * Read with attestation.
+ *
+ * See @ref Se05x_API_ReadObject
+ *
+ * When INS_ATTEST is set in addition to INS_READ, the secure object is read with
+ * attestation. In addition to the response in TLV[TAG_1], there are additional
+ * tags:
+ *
+ * TLV[TAG_2] will hold the object attributes (see ObjectAttributes).
+ *
+ * TLV[TAG_3] relative timestamp when the object has been retrieved
+ *
+ * TLV[TAG_4] will hold freshness random data
+ *
+ * TLV[TAG_5] will hold the unique ID of the device.
+ *
+ * TLV[TAG_6] will hold the signature over all concatenated Value fields tags of
+ * the response (TAG_1 until and including TAG_5).
+ *
+ * # Command to Applet
+ *
+ * @rst
+ * +-------+------------+----------------------------------------------+
+ * | Field | Value      | Description                                  |
+ * +=======+============+==============================================+
+ * | CLA   | 0x80       |                                              |
+ * +-------+------------+----------------------------------------------+
+ * | INS   | INS_READ   | See :cpp:type:`SE05x_INS_t`, in addition to  |
+ * |       |            | INS_READ, users can set the INS_ATTEST flag. |
+ * |       |            | In that case, attestation applies.           |
+ * +-------+------------+----------------------------------------------+
+ * | P1    | P1_DEFAULT | See :cpp:type:`SE05x_P1_t`                   |
+ * +-------+------------+----------------------------------------------+
+ * | P2    | P2_DEFAULT | See :cpp:type:`SE05x_P2_t`                   |
+ * +-------+------------+----------------------------------------------+
+ * | Lc    | #(Payload) | Payload Length.                              |
+ * +-------+------------+----------------------------------------------+
+ * |       | TLV[TAG_1] | 4-byte object identifier                     |
+ * +-------+------------+----------------------------------------------+
+ * |       | TLV[TAG_2] | 2-byte offset   [Optional: default 0]        |
+ * |       |            | [Conditional: only when the object is a      |
+ * |       |            | BinaryFile object]                           |
+ * +-------+------------+----------------------------------------------+
+ * |       | TLV[TAG_3] | 2-byte length   [Optional: default 0]        |
+ * |       |            | [Conditional: only when the object is a      |
+ * |       |            | BinaryFile object]                           |
+ * +-------+------------+----------------------------------------------+
+ * |       | TLV[TAG_4] | 1-byte :cpp:type:`SE05x_RSAKeyComponent_t`:  |
+ * |       |            | either RSA_COMP_MOD or RSA_COMP_PUB_EXP.     |
+ * |       |            | [Optional]   [Conditional: only for RSA key  |
+ * |       |            | components]                                  |
+ * +-------+------------+----------------------------------------------+
+ * |       | TLV[TAG_5] | 4-byte attestation object identifier.        |
+ * |       |            | [Optional]   [Conditional: only when         |
+ * |       |            | INS_ATTEST is set]                           |
+ * +-------+------------+----------------------------------------------+
+ * |       | TLV[TAG_6] | 1-byte :cpp:type:`SE05x_AttestationAlgo_t`   |
+ * |       |            | [Optional]   [Conditional: only when         |
+ * |       |            | INS_ATTEST is set]                           |
+ * +-------+------------+----------------------------------------------+
+ * |       | TLV[TAG_7] | 16-byte freshness random   [Optional]        |
+ * |       |            | [Conditional: only when INS_ATTEST is set]   |
+ * +-------+------------+----------------------------------------------+
+ * | Le    | 0x00       |                                              |
+ * +-------+------------+----------------------------------------------+
+ * @endrst
+ *
+ *
+ * @rst
+ * +------------+--------------------------------------------+
+ * | Value      | Description                                |
+ * +============+============================================+
+ * | TLV[TAG_1] | Data read from the secure object.          |
+ * +------------+--------------------------------------------+
+ * | TLV[TAG_2] | (only when INS_ATTEST is set) Byte array   |
+ * |            | containing the attributes (see             |
+ * |            | :cpp:type:`ObjectAttributesRef`).          |
+ * +------------+--------------------------------------------+
+ * | TLV[TAG_3] | (only when INS_ATTEST is set) 12-byte      |
+ * |            | timestamp                                  |
+ * +------------+--------------------------------------------+
+ * | TLV[TAG_4] | (only when INS_ATTEST is set) 16-byte      |
+ * |            | freshness random                           |
+ * +------------+--------------------------------------------+
+ * | TLV[TAG_5] | (only when INS_ATTEST is set) 18-byte Chip |
+ * |            | unique ID                                  |
+ * +------------+--------------------------------------------+
+ * | TLV[TAG_6] | (only when INS_ATTEST is set) Signature    |
+ * |            | applied over the value of TLV[TAG_1],      |
+ * |            | TLV[TAG_2], TLV[TAG_3], TLV[TAG_4] and     |
+ * |            | TLV[TAG_5].                                |
+ * +------------+--------------------------------------------+
+ * @endrst
+ *
+ * # R-APDU Body
+ *
+ * @rst
+ * +------------+--------------------------------------------+
+ * | Value      | Description                                |
+ * +============+============================================+
+ * | TLV[TAG_1] | Data read from the secure object.          |
+ * +------------+--------------------------------------------+
+ * | TLV[TAG_2] | (only when INS_ATTEST is set) Byte array   |
+ * |            | containing the attributes (see             |
+ * |            | :cpp:type:`ObjectAttributesRef`).          |
+ * +------------+--------------------------------------------+
+ * | TLV[TAG_3] | (only when INS_ATTEST is set) 12-byte      |
+ * |            | timestamp                                  |
+ * +------------+--------------------------------------------+
+ * | TLV[TAG_4] | (only when INS_ATTEST is set) 16-byte      |
+ * |            | freshness random                           |
+ * +------------+--------------------------------------------+
+ * | TLV[TAG_5] | (only when INS_ATTEST is set) 18-byte Chip |
+ * |            | unique ID                                  |
+ * +------------+--------------------------------------------+
+ * | TLV[TAG_6] | (only when INS_ATTEST is set) Signature    |
+ * |            | applied over the value of TLV[TAG_1],      |
+ * |            | TLV[TAG_2], TLV[TAG_3], TLV[TAG_4] and     |
+ * |            | TLV[TAG_5].                                |
+ * +------------+--------------------------------------------+
+ * @endrst
+ *
+ * @param[in]  session_ctx    The session context
+ * @param[in]  objectID       The object id
+ * @param[in]  offset         The offset
+ * @param[in]  length         The length
+ * @param[in]  attestID       The attest id
+ * @param[in]  attestAlgo     The attest algorithm
+ * @param[in]  random         The random
+ * @param[in]  randomLen      The random length
+ * @param      data           The data
+ * @param      pdataLen       The pdata length
+ * @param      attribute      The attribute
+ * @param      pattributeLen  The pattribute length
+ * @param      ptimeStamp     The ptime stamp
+ * @param      chipId         The chip identifier
+ * @param      pchipIdLen     The pchip identifier length
+ * @param      pCmd           The pointer to command buffer
+ * @param      pCmdLen        The length of cmd buffer
+ * @param      pObj           The secure object
+ * @param      pObjLen        The length of secure object
+ * @param      signature      The signature
+ * @param      psignatureLen  The psignature length
+ *
+ * @return     The sm status.
+ */
+smStatus_t Se05x_API_ReadObject_W_Attst_V2(pSe05xSession_t session_ctx,
+    uint32_t objectID,
+    uint16_t offset,
+    uint16_t length,
+    uint32_t attestID,
+    SE05x_AttestationAlgo_t attestAlgo,
+    const uint8_t *random,
+    size_t randomLen,
+    uint8_t *data,
+    size_t *pdataLen,
+    uint8_t *attribute,
+    size_t *pattributeLen,
+    SE05x_TimeStamp_t *ptimeStamp,
+    uint8_t *chipId,
+    size_t *pchipIdLen,
+    uint8_t *pCmd,
+    size_t *pCmdLen,
+    uint8_t *pObj,
+    size_t *pObjLen,
+    uint8_t *signature,
+    size_t *psignatureLen);
+#endif // SSS_HAVE_SE05X_VER_GTE_07_02
+#if !SSS_HAVE_SE05X_VER_GTE_07_02 || defined(__DOXYGEN__)
 /** Se05x_API_ReadObject_W_Attst
  *
  * Read with attestation.
@@ -1479,8 +1660,8 @@ smStatus_t Se05x_API_ReadObject(
  * @param      attribute      The attribute
  * @param      pattributeLen  The pattribute length
  * @param      ptimeStamp     The ptime stamp
- * @param      outrandom      The outrandom
- * @param      poutrandomLen  The poutrandom length
+ * @param      outrandom      The chip identifier
+ * @param      poutrandomLen  The pchip identifier length
  * @param      chipId         The chip identifier
  * @param      pchipIdLen     The pchip identifier length
  * @param      signature      The signature
@@ -1488,31 +1669,6 @@ smStatus_t Se05x_API_ReadObject(
  *
  * @return     The sm status.
  */
-
-#if SSS_HAVE_SE05X_VER_GTE_07_02 || defined(__DOXYGEN__)
-smStatus_t Se05x_API_ReadObject_W_Attst_V2(pSe05xSession_t session_ctx,
-    uint32_t objectID,
-    uint16_t offset,
-    uint16_t length,
-    uint32_t attestID,
-    SE05x_AttestationAlgo_t attestAlgo,
-    const uint8_t *random,
-    size_t randomLen,
-    uint8_t *data,
-    size_t *pdataLen,
-    uint8_t *attribute,
-    size_t *pattributeLen,
-    SE05x_TimeStamp_t *ptimeStamp,
-    uint8_t *chipId,
-    size_t *pchipIdLen,
-    uint8_t *pCmd,
-    size_t *pCmdLen,
-    uint8_t *pObj,
-    size_t *pObjLen,
-    uint8_t *signature,
-    size_t *psignatureLen);
-#endif // SSS_HAVE_SE05X_VER_GTE_07_02
-#if !SSS_HAVE_SE05X_VER_GTE_07_02 || defined(__DOXYGEN__)
 smStatus_t Se05x_API_ReadObject_W_Attst(pSe05xSession_t session_ctx,
     uint32_t objectID,
     uint16_t offset,
@@ -1553,7 +1709,7 @@ smStatus_t Se05x_API_ReadRSA(pSe05xSession_t session_ctx,
     uint8_t *data,
     size_t *pdataLen);
 
-/**  Se05x_API_ReadRSA_W_Attst
+/**  Se05x_API_ReadRSA_W_Attst_V2
  *
  * See @ref Se05x_API_ReadObject_W_Attst
  *
@@ -1571,10 +1727,12 @@ smStatus_t Se05x_API_ReadRSA(pSe05xSession_t session_ctx,
  * @param      attribute      The attribute
  * @param      pattributeLen  The pattribute length
  * @param      ptimeStamp     The ptime stamp
- * @param      outrandom      The outrandom
- * @param      poutrandomLen  The poutrandom length
  * @param      chipId         The chip identifier
  * @param      pchipIdLen     The pchip identifier length
+ * @param      pCmd           The pointer to command buffer
+ * @param      pCmdLen        The pointer to command buffer length
+ * @param      pObj           The pointer to secure object buffer
+ * @param      pObjLen        The pointer to secure object buffer length
  * @param      signature      The signature
  * @param      psignatureLen  The psignature length
  *
@@ -1605,6 +1763,31 @@ smStatus_t Se05x_API_ReadRSA_W_Attst_V2(pSe05xSession_t session_ctx,
     size_t *psignatureLen);
 
 #else
+/**  Se05x_API_ReadRSA_W_Attst
+ *
+ * @param[in]  session_ctx    The session context
+ * @param[in]  objectID       The object id
+ * @param[in]  offset         The offset
+ * @param[in]  length         The length
+ * @param[in]  rsa_key_comp   The rsa key component
+ * @param[in]  attestID       The attest id
+ * @param[in]  attestAlgo     The attest algorithm
+ * @param[in]  random         The random
+ * @param[in]  randomLen      The random length
+ * @param      data           The data
+ * @param      pdataLen       The pdata length
+ * @param      attribute      The attribute
+ * @param      pattributeLen  The pattribute length
+ * @param      ptimeStamp     The ptime stamp
+ * @param      outrandom      The outrandom
+ * @param      poutrandomLen  The poutrandom length
+ * @param      chipId         The chip identifier
+ * @param      pchipIdLen     The pchip identifier length
+ * @param      signature      The signature
+ * @param      psignatureLen  The psignature length
+ *
+ * @return     The sm status.
+ */
 smStatus_t Se05x_API_ReadRSA_W_Attst(pSe05xSession_t session_ctx,
     uint32_t objectID,
     uint16_t offset,
@@ -1626,6 +1809,199 @@ smStatus_t Se05x_API_ReadRSA_W_Attst(pSe05xSession_t session_ctx,
     uint8_t *signature,
     size_t *psignatureLen);
 #endif
+#if SSS_HAVE_SE05X_VER_GTE_07_02
+/** Se05x_API_ReadObjectAttributes_W_Attst_V2
+ *
+ * Reads the attributes of a Secure Object (without the value of the Secure
+ * Object).
+ *
+ * Each Secure Object has a number of attributes assigned to it. These attributes
+ * are listed in  for Authentication Objects and in  for non-Authentication
+ * Objects.
+ *
+ * # Authentication Object attributes
+ *
+ * @rst
+ * +----------------------------------+--------------+------------------------------------------------+
+ * | Attribute                        | Size (bytes) | Description                                    |
+ * +==================================+==============+================================================+
+ * | Object identifier                | 4            | See :cpp:type:`identifiersRef`                 |
+ * +----------------------------------+--------------+------------------------------------------------+
+ * | Object type                      | 1            | One of SecureObjectType                        |
+ * +----------------------------------+--------------+------------------------------------------------+
+ * | Authentication attribute         | 1            | One of :cpp:type:`SetIndicatorRef`             |
+ * +----------------------------------+--------------+------------------------------------------------+
+ * | Object counter                   | 2            | Number of failed attempts for an               |
+ * |                                  |              | authentication object if the Maximum           |
+ * |                                  |              | Authentication Attempts has been set.          |
+ * +----------------------------------+--------------+------------------------------------------------+
+ * | Authentication object identifier | 4            | "Owner" of the secure object; i.e., the        |
+ * |                                  |              | identifier of the session  authentication      |
+ * |                                  |              | object when the object has been created.       |
+ * +----------------------------------+--------------+------------------------------------------------+
+ * | Maximum authentication attempts  | 2            | Maximum number of authentication attempts. 0   |
+ * |                                  |              | means unlimited.                               |
+ * +----------------------------------+--------------+------------------------------------------------+
+ * | Policy                           | Variable     | Policy attached to the object                  |
+ * +----------------------------------+--------------+------------------------------------------------+
+ * | Origin                           | 1            | One of :cpp:type:`OriginRef`; indicates the    |
+ * |                                  |              | origin  of the Secure Object, either           |
+ * |                                  |              | externally set, internally generated or  trust |
+ * |                                  |              | provisioned by NXP.                            |
+ * +----------------------------------+--------------+------------------------------------------------+
+ * | Version                          | 1            | The Secure Object version. Default = 0. See    |
+ * |                                  |              | FIPS compliance for details about versioning   |
+ * |                                  |              | of Secure  Objects.                            |
+ * +----------------------------------+--------------+------------------------------------------------+
+ * @endrst
+ *
+ * # Non-Authentication Objects
+ *
+ * @rst
+ * +----------------------------------+--------------+------------------------------------------------+
+ * | Attribute                        | Size (bytes) | Description                                    |
+ * +==================================+==============+================================================+
+ * | Object identifier                | 4            | See Object  identifiers                        |
+ * +----------------------------------+--------------+------------------------------------------------+
+ * | Object type                      | 1            | One of SecureObjectType                        |
+ * +----------------------------------+--------------+------------------------------------------------+
+ * | Authentication attribute         | 1            | One of :cpp:type:`SetIndicatorRef`             |
+ * +----------------------------------+--------------+------------------------------------------------+
+ * | Tag length                       | 2            | Set to 0x0000, except for AESKey objects: for  |
+ * |                                  |              | AESKey objects, this  indicates the GMAC       |
+ * |                                  |              | length that applies when doing AEAD            |
+ * |                                  |              | operations.  If the value is set to 0 and AEAD |
+ * |                                  |              | operations are done, the GMAC  length shall be |
+ * |                                  |              | 128 bit.                                       |
+ * +----------------------------------+--------------+------------------------------------------------+
+ * | Authentication object identifier | 4            | "Owner" of the secure object; i.e., the        |
+ * |                                  |              | identifier of the session  authentication      |
+ * |                                  |              | object when the object has been created.       |
+ * +----------------------------------+--------------+------------------------------------------------+
+ * | RFU                              | 2            | Set to 0x0000.                                 |
+ * +----------------------------------+--------------+------------------------------------------------+
+ * | Policy                           | Variable     | Policy attached to the object                  |
+ * +----------------------------------+--------------+------------------------------------------------+
+ * | Origin                           | 1            | One of :cpp:type:`OriginRef`; indicates the    |
+ * |                                  |              | origin  of the Secure Object, either           |
+ * |                                  |              | externally set, internally generated or  trust |
+ * |                                  |              | provisioned by NXP.                            |
+ * +----------------------------------+--------------+------------------------------------------------+
+ * | Version                          | 1            | The Secure Object version. Default = 0. See    |
+ * |                                  |              | FIPS compliance for details about versioning   |
+ * |                                  |              | of Secure  Objects.                            |
+ * +----------------------------------+--------------+------------------------------------------------+
+ * @endrst
+ *
+ *
+ * # Command to Applet
+ *
+ * @rst
+ * +-------+---------------+-----------------------------------------------+
+ * | Field | Value         | Description                                   |
+ * +=======+===============+===============================================+
+ * | CLA   | 0x80          |                                               |
+ * +-------+---------------+-----------------------------------------------+
+ * | INS   | INS_READ      | See :cpp:type:`SE05x_INS_t`, in addition to   |
+ * |       |               | INS_READ, users  can set the INS_ATTEST flag. |
+ * |       |               | In that case, attestation applies.            |
+ * +-------+---------------+-----------------------------------------------+
+ * | P1    | P1_DEFAULT    | See :cpp:type:`SE05x_P1_t`                    |
+ * +-------+---------------+-----------------------------------------------+
+ * | P2    | P2_ATTRIBUTES | See :cpp:type:`SE05x_P2_t`                    |
+ * +-------+---------------+-----------------------------------------------+
+ * | Lc    | #(Payload)    | Payload Length.                               |
+ * +-------+---------------+-----------------------------------------------+
+ * |       | TLV[TAG_1]    | 4-byte object identifier                      |
+ * +-------+---------------+-----------------------------------------------+
+ * |       | TLV[TAG_5]    | 4-byte attestation object identifier.         |
+ * |       |               | [Optional]   [Conditional: only when          |
+ * |       |               | INS_ATTEST is set]                            |
+ * +-------+---------------+-----------------------------------------------+
+ * |       | TLV[TAG_6]    | 1-byte AttestationAlgo   [Optional]           |
+ * |       |               | [Conditional: only when INS_ATTEST is set]    |
+ * +-------+---------------+-----------------------------------------------+
+ * |       | TLV[TAG_7]    | 16-byte freshness random   [Optional]         |
+ * |       |               | [Conditional: only when INS_ATTEST is set]    |
+ * +-------+---------------+-----------------------------------------------+
+ * | Le    | 0x00          |                                               |
+ * +-------+---------------+-----------------------------------------------+
+ * @endrst
+ *
+ *
+ * # R-APDU Body
+ *
+ * @rst
+ * +------------+--------------------------------------------+
+ * | Value      | Description                                |
+ * +============+============================================+
+ * | TLV[TAG_2] | Byte array containing the attributes (see  |
+ * |            | Object  Attributes).                       |
+ * +------------+--------------------------------------------+
+ * | TLV[TAG_3] | (only when INS_ATTEST is set) 12-byte      |
+ * |            | timestamp                                  |
+ * +------------+--------------------------------------------+
+ * | TLV[TAG_4] | (only when INS_ATTEST is set) 16-byte      |
+ * |            | freshness random                           |
+ * +------------+--------------------------------------------+
+ * | TLV[TAG_5] | (only when INS_ATTEST is set) 18-byte Chip |
+ * |            | unique ID                                  |
+ * +------------+--------------------------------------------+
+ * | TLV[TAG_6] | (only when INS_ATTEST is set) Signature    |
+ * |            | applied over the value of TLV[TAG_2],      |
+ * |            | TLV[TAG_2], TLV[TAG_3], TLV[TAG_4] and     |
+ * |            | TLV[TAG_5].                                |
+ * +------------+--------------------------------------------+
+ * @endrst
+ *
+ * # R-APDU Trailer
+ *
+ * @rst
+ * +-------------+--------------------------------+
+ * | SW          | Description                    |
+ * +=============+================================+
+ * | SW_NO_ERROR | The read is done successfully. |
+ * +-------------+--------------------------------+
+ * @endrst
+ *
+ * @param[in]  session_ctx    The session context
+ * @param[in]  objectID       The object id
+ * @param[in]  attestID       The attest id
+ * @param[in]  attestAlgo     The attest algorithm
+ * @param[in]  random         The random
+ * @param[in]  randomLen      The random length
+ * @param      pCmdapdu       The pointer to command APDU
+ * @param      pCmdapduLen    The pointer to command APDU length
+ * @param      data           The data
+ * @param      pdataLen       The pdata length
+ * @param      ptimeStamp     The ptime stamp
+ * @param      chipId         The chip identifier
+ * @param      obj           The pointer to secure object buffer
+ * @param      pobjLen        The pointer to secure object buffer length
+ * @param      pchipIdLen     The pchip identifier length
+ * @param      signature      The signature
+ * @param      psignatureLen  The psignature length
+ *
+ * @return     The sm status.
+ */
+smStatus_t Se05x_API_ReadObjectAttributes_W_Attst_V2(pSe05xSession_t session_ctx,
+    uint32_t objectID,
+    uint32_t attestID,
+    SE05x_AttestationAlgo_t attestAlgo,
+    const uint8_t *random,
+    size_t randomLen,
+    uint8_t *pCmdapdu,
+    size_t *pCmdapduLen,
+    uint8_t *data,
+    size_t *pdataLen,
+    SE05x_TimeStamp_t *ptimeStamp,
+    uint8_t *obj,
+    size_t *pobjLen,
+    uint8_t *chipId,
+    size_t *pchipIdLen,
+    uint8_t *signature,
+    size_t *psignatureLen);
+#else
 /** Se05x_API_ReadObjectAttributes_W_Attst
  *
  * Reads the attributes of a Secure Object (without the value of the Secure
@@ -1798,25 +2174,6 @@ smStatus_t Se05x_API_ReadRSA_W_Attst(pSe05xSession_t session_ctx,
  *
  * @return     The sm status.
  */
-#if SSS_HAVE_SE05X_VER_GTE_07_02
-smStatus_t Se05x_API_ReadObjectAttributes_W_Attst_V2(pSe05xSession_t session_ctx,
-    uint32_t objectID,
-    uint32_t attestID,
-    SE05x_AttestationAlgo_t attestAlgo,
-    const uint8_t *random,
-    size_t randomLen,
-    uint8_t *pCmdapdu,
-    size_t *pCmdapduLen,
-    uint8_t *data,
-    size_t *pdataLen,
-    SE05x_TimeStamp_t *ptimeStamp,
-    uint8_t *obj,
-    size_t *pobjLen,
-    uint8_t *chipId,
-    size_t *pchipIdLen,
-    uint8_t *signature,
-    size_t *psignatureLen);
-#else
 smStatus_t Se05x_API_ReadObjectAttributes_W_Attst(pSe05xSession_t session_ctx,
     uint32_t objectID,
     uint32_t attestID,
@@ -2876,111 +3233,6 @@ smStatus_t Se05x_API_EdDSASign(pSe05xSession_t session_ctx,
     size_t inputDataLen,
     uint8_t *signature,
     size_t *psignatureLen);
-
-/** Se05x_API_ECDAASign
- *
- * WARNING - Se05x_API_ECDAASign is deprecated. This will be removed in next release.
- *
- * The ECDAASign command signs external data using the indicated key pair or
- * private key. This is performed according to ECDAA. The generated signature is:
- *
- *   * r = random mod n
- *
- *   * s = (r + T.ds) mod n where d is the private key
- *
- * The ECDAASignatureAlgo indicates the applied algorithm.
- *
- * This APDU command should be used with a key identifier linked to
- * TPM_ECC_BN_P256 curve.
- *
- * _Note:_ The applet allows the random input to be 32 bytes of zeroes; the user
- * must take care that this is not considered as valid input. Only input in the
- * interval [1, n-1] must be considered as valid.
- *
- * # Command to Applet
- *
- * @rst
- * +-------+--------------+------------------------------------------------+
- * | Field | Value        | Description                                    |
- * +=======+==============+================================================+
- * | CLA   | 0x80         |                                                |
- * +-------+--------------+------------------------------------------------+
- * | INS   | INS_CRYPTO   | :cpp:type:`SE05x_INS_t`                        |
- * +-------+--------------+------------------------------------------------+
- * | P1    | P1_SIGNATURE | See :cpp:type:`SE05x_P1_t`                     |
- * +-------+--------------+------------------------------------------------+
- * | P2    | P2_SIGN      | See :cpp:type:`SE05x_P2_t`                     |
- * +-------+--------------+------------------------------------------------+
- * | Lc    | #(Payload)   |                                                |
- * +-------+--------------+------------------------------------------------+
- * |       | TLV[TAG_1]   | 4-byte identifier of EC key pair or private    |
- * |       |              | key.                                           |
- * +-------+--------------+------------------------------------------------+
- * |       | TLV[TAG_2]   | 1-byte ECDAASignatureAlgo                      |
- * +-------+--------------+------------------------------------------------+
- * |       | TLV[TAG_3]   | T = 32-byte array containing hashed input      |
- * |       |              | data.                                          |
- * +-------+--------------+------------------------------------------------+
- * |       | TLV[TAG_4]   | r = 32-byte array containing random data, must |
- * |       |              | be in the interval [1, n-1] where n is the     |
- * |       |              | order of the curve.                            |
- * +-------+--------------+------------------------------------------------+
- * | Le    | 0x00         | Expecting signature                            |
- * +-------+--------------+------------------------------------------------+
- * @endrst
- *
- * # R-APDU Body
- *
- * @rst
- * +------------+------------------------------------------+
- * | Value      | Description                              |
- * +============+==========================================+
- * | TLV[TAG_1] | ECDSA Signature (r concatenated with s). |
- * +------------+------------------------------------------+
- * @endrst
- *
- * # R-APDU Trailer
- *
- * @rst
- * +-------------+--------------------------------------+
- * | SW          | Description                          |
- * +=============+======================================+
- * | SW_NO_ERROR | The command is handled successfully. |
- * +-------------+--------------------------------------+
- * @endrst
- *
- *
- *
- * @param[in] session_ctx Session Context [0:kSE05x_pSession]
- * @param[in] objectID objectID [1:kSE05x_TAG_1]
- * @param[in] ecdaaSignAlgo ecdaaSignAlgo [2:kSE05x_TAG_2]
- * @param[in] inputData inputData [3:kSE05x_TAG_3]
- * @param[in] inputDataLen Length of inputData
- * @param[in] randomData randomData [4:kSE05x_TAG_4]
- * @param[in] randomDataLen Length of randomData
- * @param[out] signature  [0:kSE05x_TAG_1]
- * @param[in,out] psignatureLen Length for signature
- */
-#if SSS_HAVE_SE05X_VER_GTE_07_02
-smStatus_t Se05x_API_ECDAASign(pSe05xSession_t session_ctx,
-    uint32_t objectID,
-    SE05x_ECDAASignatureAlgo_t ecdaaSignAlgo,
-    const uint8_t *inputData,
-    size_t inputDataLen,
-    uint32_t randomObjectID,
-    uint8_t *signature,
-    size_t *psignatureLen);
-#else
-smStatus_t Se05x_API_ECDAASign(pSe05xSession_t session_ctx,
-    uint32_t objectID,
-    SE05x_ECDAASignatureAlgo_t ecdaaSignAlgo,
-    const uint8_t *inputData,
-    size_t inputDataLen,
-    const uint8_t *randomData,
-    size_t randomDataLen,
-    uint8_t *signature,
-    size_t *psignatureLen);
-#endif
 
 /** Se05x_API_ECDSAVerify
  *
@@ -5350,6 +5602,10 @@ smStatus_t Se05x_API_TLSPerformPRF(pSe05xSession_t session_ctx,
  * @param      psignatureLen    The psignature length
  * @param      randomAttst      The random attst
  * @param[in]  randomAttstLen   The random attst length
+ * @param      pObjectSize      The pObjectSize 
+ * @param      pObjectSizeLen   The pObjectSize length
+ * @param      pCmd             The pCmd
+ * @param      pCmdLen          The pCmd length
  *
  * @return     The sm status.
  */
@@ -5916,7 +6172,7 @@ smStatus_t Se05x_API_GetTimestamp(pSe05xSession_t session_ctx, SE05x_TimeStamp_t
  *
  * @return     The sm status.
  */
-smStatus_t Se05x_API_GetFreeMemory(pSe05xSession_t session_ctx, SE05x_MemoryType_t memoryType, uint16_t *pfreeMem);
+smStatus_t Se05x_API_GetFreeMemory(pSe05xSession_t session_ctx, SE05x_MemoryType_t memoryType, uint32_t *pfreeMem);
 
 /** Se05x_API_GetRandom
  *
@@ -6032,7 +6288,7 @@ smStatus_t Se05x_API_DeleteAll(pSe05xSession_t session_ctx);
 
 /** @} */
 
-#if SSS_HAVE_SE05X_VER_GTE_06_00
+#if SSS_HAVE_SE05X_VER_GTE_07_02
 #include "se05x_04_xx_APDU_apis.h"
 #endif
 

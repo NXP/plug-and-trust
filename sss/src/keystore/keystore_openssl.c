@@ -1,7 +1,7 @@
 /*
  *
- * Copyright 2018-2020 NXP
- * SPDX-License-Identifier: Apache-2.0
+ * Copyright 2018-2020,2024 NXP
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 /* Key store in PC : For testing */
@@ -46,9 +46,10 @@
 
 sss_status_t ks_openssl_load_key(sss_openssl_object_t *sss_key, keyStoreTable_t *keystore_shadow, uint32_t extKeyId)
 {
-    sss_status_t retval = kStatus_SSS_Fail;
-    char file_name[MAX_FILE_NAME_SIZE];
-    FILE *fp = NULL;
+    sss_status_t retval                = kStatus_SSS_Fail;
+    char file_name[MAX_FILE_NAME_SIZE] = {0};
+    FILE *fp                           = NULL;
+    int evp_pkey_bits                  = 0;
     //const char *root_folder = sss_key->keyStore->session->szRootPath;
     size_t size = 0;
     uint32_t i;
@@ -78,19 +79,35 @@ sss_status_t ks_openssl_load_key(sss_openssl_object_t *sss_key, keyStoreTable_t 
             uint8_t keyBuf[3000];
             const uint8_t *buf_ptr = keyBuf;
             long signed_size       = 0;
-            fseek(fp, 0, SEEK_END);
+            if ((fseek(fp, 0, SEEK_END)) != 0) {
+                LOG_E("fseek failed, hence calling fclose");
+                if (fclose(fp) != 0) {
+                    LOG_E("fclose error");
+                }
+                return kStatus_SSS_Fail;
+            }
             signed_size = ftell(fp);
             if (signed_size < 0) {
                 retval = kStatus_SSS_Fail;
-                fclose(fp);
+                if (fclose(fp) != 0) {
+                    LOG_E("fclose error");
+                }
                 return retval;
             }
             size = (size_t)signed_size;
-            fseek(fp, 0, SEEK_SET);
+            if ((fseek(fp, 0, SEEK_SET)) != 0) {
+                LOG_E("fseek failed, hence calling fclose");
+                if (fclose(fp) != 0) {
+                    LOG_E("fclose error");
+                }
+                return kStatus_SSS_Fail;
+            }
             if (!fread(keyBuf, size, 1, fp)) {
                 LOG_E("Error in fread");
             }
-            fclose(fp);
+            if (fclose(fp) != 0) {
+                LOG_E("fclose failed");
+            }
             retval = sss_openssl_key_object_allocate(sss_key,
                 shadowEntry->extKeyId,
                 (sss_key_part_t)(shadowEntry->keyPart & 0x0F),
@@ -118,7 +135,11 @@ sss_status_t ks_openssl_load_key(sss_openssl_object_t *sss_key, keyStoreTable_t 
                         sss_key->contents = (void *)pkey;
                     }
 
-                    sss_key->keyBitLen = EVP_PKEY_bits(pkey);
+                    evp_pkey_bits = EVP_PKEY_bits(pkey);
+                    if (evp_pkey_bits < 0) {
+                        return kStatus_SSS_Fail;
+                    }
+                    sss_key->keyBitLen = evp_pkey_bits;
                 } break;
                 case kSSS_CipherType_EC_NIST_P:
                 case kSSS_CipherType_EC_NIST_K:
@@ -141,7 +162,13 @@ sss_status_t ks_openssl_load_key(sss_openssl_object_t *sss_key, keyStoreTable_t 
                     else {
                         sss_key->contents = (void *)pkey;
                     }
-                    sss_key->keyBitLen = EVP_PKEY_bits(pkey);
+
+                    evp_pkey_bits = EVP_PKEY_bits(pkey);
+                    if (evp_pkey_bits < 0) {
+                        retval = kStatus_SSS_Fail;
+                    }
+                    sss_key->keyBitLen = evp_pkey_bits;
+
                 } break;
                 default: {
                     retval = sss_openssl_key_store_set_key(sss_key->keyStore, sss_key, keyBuf, size, size * 8, NULL, 0);
@@ -155,10 +182,10 @@ sss_status_t ks_openssl_load_key(sss_openssl_object_t *sss_key, keyStoreTable_t 
 
 sss_status_t ks_openssl_store_key(const sss_openssl_object_t *sss_key)
 {
-    sss_status_t retval = kStatus_SSS_Fail;
-    char file_name[MAX_FILE_NAME_SIZE];
-    FILE *fp              = NULL;
-    unsigned char *Buffer = NULL;
+    sss_status_t retval                = kStatus_SSS_Fail;
+    char file_name[MAX_FILE_NAME_SIZE] = {0};
+    FILE *fp                           = NULL;
+    unsigned char *Buffer              = NULL;
     ks_sw_getKeyFileName(
         file_name, sizeof(file_name), (const sss_object_t *)sss_key, sss_key->keyStore->session->szRootPath);
     fp = fopen(file_name, "wb+");
@@ -172,7 +199,13 @@ sss_status_t ks_openssl_store_key(const sss_openssl_object_t *sss_key)
         pk = (EVP_PKEY *)sss_key->contents;
         switch (sss_key->objectType) {
         case kSSS_KeyPart_Default:
-            fwrite(sss_key->contents, sss_key->contents_max_size, 1, fp);
+            if (fwrite(sss_key->contents, sss_key->contents_max_size, 1, fp) != 1) {
+                LOG_E("fwrite error, hence calling fclose");
+                if (fclose(fp) != 0) {
+                    LOG_E("fclose error");
+                }
+                return kStatus_SSS_Fail;
+            }
             retval = kStatus_SSS_Success;
             break;
         case kSSS_KeyPart_Pair:
@@ -203,13 +236,21 @@ sss_status_t ks_openssl_store_key(const sss_openssl_object_t *sss_key)
             LOG_E("Invalid objectType");
         }
         if (len > 0 && retval != kStatus_SSS_Success) {
-            fwrite(Buffer, len, 1, fp);
+            if ((fwrite(Buffer, len, 1, fp)) != 1) {
+                LOG_E("fwrite error, hence calling fclose");
+                if (fclose(fp) != 0) {
+                    LOG_E("fclose error");
+                }
+                return kStatus_SSS_Fail;
+            }
             retval = kStatus_SSS_Success;
         }
     }
 exit:
     if (fp != NULL) {
-        fclose(fp);
+        if (fclose(fp) != 0) {
+            LOG_E("fclose error");
+        }
     }
     if (Buffer != NULL) {
         SSS_FREE(Buffer);
@@ -225,8 +266,8 @@ exit:
 
 sss_status_t ks_openssl_remove_key(const sss_openssl_object_t *sss_key)
 {
-    sss_status_t retval = kStatus_SSS_Fail;
-    char file_name[MAX_FILE_NAME_SIZE];
+    sss_status_t retval                = kStatus_SSS_Fail;
+    char file_name[MAX_FILE_NAME_SIZE] = {0};
     ks_sw_getKeyFileName(
         file_name, sizeof(file_name), (const sss_object_t *)sss_key, sss_key->keyStore->session->szRootPath);
     if (0 == UNLINK(file_name)) {

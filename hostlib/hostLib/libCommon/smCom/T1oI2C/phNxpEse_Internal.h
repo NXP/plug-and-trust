@@ -1,17 +1,8 @@
 /*
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Copyright 2024 NXP
+ * SPDX-License-Identifier: BSD-3-Clause
  */
+
 #ifndef _PHNXPESE_INTERNAL_H_
 #define _PHNXPESE_INTERNAL_H_
 
@@ -50,5 +41,6 @@ typedef struct phNxpEse_Context
 ESESTATUS phNxpEse_WriteFrame(void* conn_ctx, uint32_t data_len, const uint8_t *p_data);
 ESESTATUS phNxpEse_read(void* conn_ctx, uint32_t *data_len, uint8_t **pp_data);
 void phNxpEse_clearReadBuffer(void* conn_ctx);
+void phNxpEse_waitForWTX(void* conn_ctx);
 
 #endif /* _PHNXPESE_INTERNAL_H_ */
