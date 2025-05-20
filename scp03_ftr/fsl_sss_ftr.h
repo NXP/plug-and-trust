@@ -113,7 +113,7 @@
  */
 
 /** Use mbedTLS as host crypto */
-#define SSS_HAVE_HOSTCRYPTO_MBEDTLS 0
+#define SSS_HAVE_HOSTCRYPTO_MBEDTLS 1
 
 /** Use OpenSSL as host crypto */
 #define SSS_HAVE_HOSTCRYPTO_OPENSSL 0
@@ -131,7 +131,7 @@
  * Note, this is unsecure and only provided for experimentation
  * on platforms that do not have an mbedTLS PORT
  * Many :ref:`sssftr-control` have to be disabled to have a valid build. */
-#define SSS_HAVE_HOSTCRYPTO_NONE 1
+#define SSS_HAVE_HOSTCRYPTO_NONE 0
 
 #if (( 0                             \
     + SSS_HAVE_HOSTCRYPTO_MBEDTLS    \
@@ -196,10 +196,10 @@
  */
 
 /**  */
-#define SSS_HAVE_SCP_NONE 1
+#define SSS_HAVE_SCP_NONE 0
 
 /** Use SSS Layer for SCP.  Used for SE050 family. */
-#define SSS_HAVE_SCP_SCP03_SSS 0
+#define SSS_HAVE_SCP_SCP03_SSS 1
 
 #if (( 0                             \
     + SSS_HAVE_SCP_NONE              \
@@ -298,7 +298,7 @@
  */
 
 /** Use the default session (i.e. session less) login */
-#define SSS_HAVE_SE05X_AUTH_NONE 1
+#define SSS_HAVE_SE05X_AUTH_NONE 0
 
 /** Do User Authentication with UserID */
 #define SSS_HAVE_SE05X_AUTH_USERID 0
@@ -315,7 +315,7 @@
 #define SSS_HAVE_SE05X_AUTH_ECKEY 0
 
 /** UserID and PlatfSCP03 */
-#define SSS_HAVE_SE05X_AUTH_USERID_PLATFSCP03 0
+#define SSS_HAVE_SE05X_AUTH_USERID_PLATFSCP03 1
 
 /** AESKey and PlatfSCP03 */
 #define SSS_HAVE_SE05X_AUTH_AESKEY_PLATFSCP03 0
@@ -385,7 +385,7 @@
  */
 
 /** Use 2.X version */
-#define SSS_HAVE_MBEDTLS_2_X 0
+#define SSS_HAVE_MBEDTLS_2_X 1
 
 /** Use 3.X version */
 #define SSS_HAVE_MBEDTLS_3_X 0
@@ -460,7 +460,7 @@
  * If the intended deployment only uses Platform SCP
  * Or it is a pure session less integration, this can
  * save some code size. */
-#define SSSFTR_SE05X_AuthSession 0
+#define SSSFTR_SE05X_AuthSession 1
 
 /** SE05X Secure Element : Allow creation/deletion of Crypto Objects
  *
