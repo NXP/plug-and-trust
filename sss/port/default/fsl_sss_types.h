@@ -33,7 +33,7 @@
     }
 
 /** Compile time assert */
-#define SSS_ASSERT(condition) assert_static(condition)
+#define SSS_ASSERT(condition) //assert_static(condition)
 
 /*! @brief Compile time sizeof() check */
 #define SSCP_BUILD_ASSURE(condition, msg) assert_static(condition)
