@@ -131,7 +131,7 @@ int phPalEse_i2c_read(void *pDevHandle, uint8_t *pBuffer, int nNbBytesToRead)
 #ifdef T1OI2C_RETRY_ON_I2C_FAILED
             if (((ret == I2C_FAILED) || (ret == I2C_NACK_ON_ADDRESS)) && (retryCount < MAX_RETRY_COUNT)) {
 #else
-            if ((ret == I2C_NACK_ON_ADDRESS) && (retryCount < MAX_RETRY_COUNT)) {
+            if (((ret == I2C_FAILED) || (ret == I2C_NACK_ON_ADDRESS) || (ret == I2C_NACK_ON_DATA)) && (retryCount < MAX_RETRY_COUNT)) {
 #endif
                 retryCount++;
                 /* 1ms delay to give ESE polling delay */
