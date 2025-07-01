@@ -215,6 +215,7 @@ sss_status_t ks_openssl_store_key(const sss_openssl_object_t *sss_key)
                 goto exit;
             }
             //Buffer = (unsigned char *)malloc(len + 1);
+            //OpenSSL will do the buffer allocation
             len = i2d_PrivateKey(pk, &Buffer);
             if (len < 0) {
                 goto exit;
@@ -227,6 +228,7 @@ sss_status_t ks_openssl_store_key(const sss_openssl_object_t *sss_key)
             }
 
             //Buffer = (unsigned char *)malloc(len + 1);
+            //OpenSSL will do the buffer allocation
             len = i2d_PublicKey(pk, &Buffer);
             if (len < 0) {
                 goto exit;
@@ -253,7 +255,11 @@ exit:
         }
     }
     if (Buffer != NULL) {
-        SSS_FREE(Buffer);
+        //SSS_FREE(Buffer);
+        //OpenSSL has to deallocate the buffer
+        //TODO: please check for same cases, where OpenSSL allocates, but SSS deallocates.
+        //It causes crash in case when OpenSSL uses other allocator than SSS. 
+        OPENSSL_free(Buffer);
     }
     return retval;
 }
