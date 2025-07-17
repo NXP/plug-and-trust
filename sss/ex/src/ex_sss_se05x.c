@@ -1,6 +1,6 @@
 /*
  *
- * Copyright 2018-2020,2024 NXP
+ * Copyright 2018-2020,2024-2025 NXP
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
@@ -16,9 +16,6 @@
 #include <stdio.h>
 
 #include "ex_sss_boot_int.h"
-#if AX_EMBEDDED
-#include <app_boot.h>
-#endif
 
 #include "ex_sss_auth.h"
 

@@ -6,6 +6,10 @@
 #ifndef FSL_SSS_TYPES_H
 #define FSL_SSS_TYPES_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -84,4 +88,7 @@ void *pvPortCalloc(size_t num, size_t size); /*Calloc for Heap3/Heap4.*/
 
 #endif // USE_RTOS
 
+#if defined(__cplusplus)
+}
+#endif
 #endif /* FSL_SSS_TYPES_H */

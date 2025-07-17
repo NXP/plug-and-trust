@@ -10,7 +10,7 @@
 #include "board.h"
 
 
-#if defined(SDK_OS_FREE_RTOS) || defined(FSL_RTOS_FREE_RTOS)
+#if defined(SDK_OS_FREE_RTOS) || defined(SDK_OS_FREE_RTOS)
 
 #include "FreeRTOS.h"
 #include "task.h"
@@ -39,11 +39,12 @@ uint32_t sm_initSleep() {
 	((((uint32_t)configTICK_RATE_HZ * (uint32_t)(msec))) / 1000L)
 #endif /* MSEC_TO_TICK */
 
-void sm_sleep(uint32_t msec) {
+void sm_sleep(uint32_t msec)
+{
     vTaskDelay(1 >= pdMS_TO_TICKS(msec) ? 1 : pdMS_TO_TICKS(msec));
 }
 
-void vApplicationTickHook() {
+__attribute__ ((weak)) void vApplicationTickHook() {
     gtimer_kinetis_msticks+=1;
 }
 
@@ -51,4 +52,4 @@ void vApplicationTickHook() {
 #pragma GCC pop_options
 #endif
 
-#endif /* SDK_OS_FREE_RTOS || FSL_RTOS_FREE_RTOS */
+#endif /* SDK_OS_FREE_RTOS || SDK_OS_FREE_RTOS */

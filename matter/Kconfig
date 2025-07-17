@@ -1,0 +1,28 @@
+#
+# Copyright 2025 NXP
+# SPDX-License-Identifier: BSD-3-Clause
+#
+
+# Secure Element
+config SE05X_LIB
+	bool "Enable Secure Element library"
+	select MCUX_COMPONENT_driver.flexcomm_i2c if MCUX_HW_DEVICE_RW612 || MCUX_HW_DEVICE_RW610
+	select MCUX_COMPONENT_driver.flexcomm_i2c_freertos if MCUX_HW_DEVICE_RW612 || MCUX_HW_DEVICE_RW610
+	help
+		Use Secure Element library
+
+if SE05X_LIB
+
+config NXP_CRYPTO_IMPL
+	string "NXP SE05X Crypto Implementation"
+	default "se05x"
+	help
+		Defines crypto implementation to be used
+
+config SE05X_SCP03
+	bool "Enable platform SCP03 authenticated session"
+	depends on SE05X_LIB
+	help
+		To enable secure channel protocol session with SE05x
+
+endif # SE05X_LIB
