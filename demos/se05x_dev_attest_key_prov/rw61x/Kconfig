@@ -1,0 +1,127 @@
+#
+# Copyright 2025 NXP
+# SPDX-License-Identifier: BSD-3-Clause
+
+mainmenu "SE05X Device attestation provisioning example"
+
+# Secure Element
+config CHIP_SE05X
+	bool "Enable Secure Element support"
+	select SE05X_LIB
+	help
+		Use Secure Element to perform crypto operations.
+
+# Include defaults for SDK Kconfig
+config MCUX_PRJSEG_module.board.use_board_clock
+    bool
+    default n
+
+config MCUX_HAS_PRJSEG_module.board.pinmux_sel
+    bool
+    default n
+
+choice MCUX_PRJSEG_module.board.pinmux_sel
+    default MCUX_PRJSEG_module.board.pinmux_customize_folder
+endchoice
+
+config MCUX_HAS_PRJSEG_project.use_hw_app
+    bool
+    default n
+
+choice MCUX_PRJSEG_project.hw_app_sel
+    default MCUX_PRJSEG_project.hw_app_customize_folder
+endchoice
+
+config MCUX_COMPONENT_SIMW_LIB_MODULE
+   default y if CHIP_SE05X
+   default n
+
+config MATTER_DEFAULT_LINKER_FILE_PATH
+	string "Default linker file path for Matter applications"
+	default "$(CHIP_ROOT)/third_party/nxp/nxp_matter_support/examples/platform/rt/rw61x/app/ldscripts/RW610_flash.ld"
+	help
+		Defines the path to the linker file to use.
+
+config CHIP_NXP_PLATFORM_RW61X
+    bool "RW61x platform"
+    depends on MCUX_HW_DEVICE_RW612 || MCUX_HW_DEVICE_RW610
+    help
+        NXP RW61x platform.
+
+config CHIP_NXP_PLATFORM_FOLDER_NAME
+	string "NXP platform folder name"
+	default "rt/rw61x"
+	help
+		Defines the platform folder name to be used.
+# FreeRTOS defaults
+config configTICK_RATE_HZ
+	default 1000
+
+config configMAX_PRIORITIES
+	default 10
+
+config configRUN_FREERTOS_SECURE_ONLY
+	default y
+
+config configTIMER_QUEUE_LENGTH
+	default 10
+
+config configAPPLICATION_ALLOCATED_HEAP
+	default y
+
+config configCHECK_FOR_STACK_OVERFLOW
+	default y
+
+config configTIMER_TASK_PRIORITY
+	default "(configMAX_PRIORITIES - 3)"
+
+config configTOTAL_HEAP_SIZE
+	default 129024
+
+config configMINIMAL_STACK_SIZE
+	default 2048
+
+# This Kconfig requires quotes "" due to its definition as a string
+config configTIMER_TASK_STACK_DEPTH
+	default "2048"
+
+config configRECORD_STACK_HIGH_ADDRESS
+	default y
+
+config configINCLUDE_FREERTOS_TASK_C_ADDITIONS_H
+	default y
+
+config configUSE_TICK_HOOK
+	default y if CHIP_WIFI
+
+config configENABLE_FPU
+	default y
+
+config configMAX_TASK_NAME_LEN
+	default 16
+
+config configSUPPORT_STATIC_ALLOCATION
+	default y
+
+config configNUM_THREAD_LOCAL_STORAGE_POINTERS
+	default 0
+
+config configSTACK_DEPTH_TYPE
+	default "StackType_t"
+
+config INCLUDE_uxTaskGetStackHighWaterMark2
+	default n
+
+config INCLUDE_xTaskGetIdleTaskHandle
+	default n
+
+config INCLUDE_eTaskGetState
+	default n
+
+config INCLUDE_xTaskGetHandle
+	default n
+
+config configKERNEL_PROVIDED_STATIC_MEMORY
+	default y
+
+source "Kconfig.mcuxpresso"
