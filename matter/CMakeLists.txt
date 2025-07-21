@@ -6,7 +6,7 @@
 cmake_minimum_required(VERSION 3.20.0)
 
 if(NOT CHIP_ROOT)
-    get_filename_component(CHIP_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/../../.. REALPATH)
+    get_filename_component(CHIP_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/../../../.. REALPATH)
 endif()
 
 if (NOT DEFINED SIMW_LIB_DIR)
