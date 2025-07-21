@@ -50,7 +50,9 @@ if (CONFIG_SE05X_LIB)
         ${SIMW_LIB_DIR}/hostlib/hostLib/libCommon/smCom/T1oI2C/phNxpEseProto7816_3.c
         ${SIMW_LIB_DIR}/hostlib/hostLib/libCommon/smCom/T1oI2C/phNxpEse_Api.c
         ${SIMW_LIB_DIR}/hostlib/hostLib/libCommon/smCom/smComT1oI2C.c
+        ${SIMW_LIB_DIR}/demos/se05x_host_gpio/se05x_host_gpio.c
     )
+
     target_include_directories(simw_lib PUBLIC
         ${SDK_INCLUDES}
         ${SIMW_LIB_DIR}/sss/inc
@@ -65,6 +67,7 @@ if (CONFIG_SE05X_LIB)
         ${SIMW_LIB_DIR}/hostlib/hostLib/se05x_03_xx_xx
         ${SIMW_LIB_DIR}/hostlib/hostLib/libCommon/smCom/T1oI2C
         ${SIMW_LIB_DIR}/hostlib/hostLib/accessManager/inc
+        ${SIMW_LIB_DIR}/demos/se05x_host_gpio
     )
     target_compile_definitions(simw_lib
         PUBLIC
