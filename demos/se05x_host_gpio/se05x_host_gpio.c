@@ -124,7 +124,7 @@ int se05x_host_gpio_set_value(bool value)
     close(fd);
     return 0;
 #else
-    LOG_I("se05x_host_gpio_deinit not implemented for this platform. \n");
+    LOG_I("se05x_host_gpio_set_value not implemented for this platform. \n");
     return 0;
 #endif
 }
