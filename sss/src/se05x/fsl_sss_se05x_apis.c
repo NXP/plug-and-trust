@@ -639,9 +639,9 @@ sss_status_t sss_se05x_session_open(sss_se05x_session_t *session,
             if (session_open_retry_cnt > 0) {
                 session_open_retry_cnt--;
             }
-            SM_LOCK_CHANNEL();
+            SM_LOCK_CHANNEL(se05xSession->conn_ctx);
             retval = sss_session_auth_open(session, subsystem, application_id, connection_type, connectionData);
-            SM_UNLOCK_CHANNEL();
+            SM_UNLOCK_CHANNEL(se05xSession->conn_ctx);
             if (retval == kStatus_SSS_Success) {
                 break;
             }
@@ -650,9 +650,9 @@ sss_status_t sss_se05x_session_open(sss_se05x_session_t *session,
 
         } while (session_open_retry_cnt > 0);
 #else
-        SM_LOCK_CHANNEL();
+        SM_LOCK_CHANNEL(se05xSession->conn_ctx);
         retval = sss_session_auth_open(session, subsystem, application_id, connection_type, connectionData);
-        SM_UNLOCK_CHANNEL();
+        SM_UNLOCK_CHANNEL(se05xSession->conn_ctx);
 #endif
 
         if (retval == kStatus_SSS_Success) {
@@ -5474,7 +5474,7 @@ sss_status_t sss_se05x_asymmetric_encrypt(
     if (context->keyObject == NULL) {
         return kStatus_SSS_Fail;
     }
-    status                                      = Se05x_API_RSAEncrypt(
+    status = Se05x_API_RSAEncrypt(
         &context->session->s_ctx, context->keyObject->keyId, rsaEncryptionAlgo, srcData, srcLen, destData, destLen);
     if (status == SM_ERR_APDU_THROUGHPUT) {
         retval = kStatus_SSS_ApduThroughputError;
@@ -5503,7 +5503,7 @@ sss_status_t sss_se05x_asymmetric_decrypt(
     if (context->keyObject == NULL) {
         return retval;
     }
-    status                                      = Se05x_API_RSADecrypt(
+    status = Se05x_API_RSADecrypt(
         &context->session->s_ctx, context->keyObject->keyId, rsaEncryptionAlgo, srcData, srcLen, destData, destLen);
     if (status == SM_ERR_APDU_THROUGHPUT) {
         retval = kStatus_SSS_ApduThroughputError;
@@ -6174,7 +6174,7 @@ sss_status_t sss_se05x_symmetric_context_init(sss_se05x_symmetric_t *context,
     sss_algorithm_t algorithm,
     sss_mode_t mode)
 {
-    sss_status_t retval     = kStatus_SSS_Success;
+    sss_status_t retval = kStatus_SSS_Success;
     if (context == NULL) {
         return kStatus_SSS_Fail;
     }
@@ -6635,8 +6635,8 @@ sss_status_t sss_se05x_aead_context_init(sss_se05x_aead_t *context,
     if (context == NULL) {
         return kStatus_SSS_Fail;
     }
-    context->session    = session;
-    context->keyObject  = keyObject;
+    context->session   = session;
+    context->keyObject = keyObject;
     if ((algorithm == kAlgorithm_SSS_AES_CCM) || (algorithm == kAlgorithm_SSS_AES_GCM) ||
         (algorithm == kAlgorithm_SSS_AES_GCM_INT_IV) || (algorithm == kAlgorithm_SSS_AES_CCM_INT_IV)) {
         context->algorithm = algorithm;
@@ -7226,10 +7226,10 @@ sss_status_t sss_se05x_mac_context_init(sss_se05x_mac_t *context,
     if (context == NULL) {
         return kStatus_SSS_Fail;
     }
-    context->session    = session;
-    context->keyObject  = keyObject;
-    context->algorithm  = algorithm;
-    context->mode       = mode;
+    context->session   = session;
+    context->keyObject = keyObject;
+    context->algorithm = algorithm;
+    context->mode      = mode;
     return retval;
 }
 
@@ -7509,9 +7509,9 @@ sss_status_t sss_se05x_digest_context_init(
     if (context == NULL) {
         return kStatus_SSS_Fail;
     }
-    context->session    = session;
-    context->algorithm  = algorithm;
-    context->mode       = mode;
+    context->session   = session;
+    context->algorithm = algorithm;
+    context->mode      = mode;
     return retval;
 }
 

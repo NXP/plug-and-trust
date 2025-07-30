@@ -191,6 +191,7 @@ void nLog_DeInit(void)
 /* Used for scenarios other than LPC55S_NS */
 void nLog(const char *comp, int level, const char *format, ...)
 {
+    int vnsprintf_ret = 0;
     if (level > (int)(sizeof(szLevel) / sizeof(char*))) {
         return;
     }
@@ -221,7 +222,8 @@ void nLog(const char *comp, int level, const char *format, ...)
         size_t size_buff = sizeof(buffer) / sizeof(buffer[0]) - 1;
         va_list vArgs;
         va_start(vArgs, format);
-        if ((vsnprintf(buffer, size_buff, format, vArgs)) < 0) {
+        vnsprintf_ret = vsnprintf(buffer, size_buff, format, vArgs);
+        if (vnsprintf_ret < 0) {
             PRINTF("vsnprintf Error");
             reSetColor();
             nLog_ReleaseLock();
@@ -229,6 +231,10 @@ void nLog(const char *comp, int level, const char *format, ...)
         }
         va_end(vArgs);
         PRINTF("%s", buffer);
+        if (size_buff <= (size_t)vnsprintf_ret) {
+            reSetColor();
+            PRINTF("\nWARNING: Previous log was truncated due to insufficient buffer size\n");
+        }
 #ifdef SMCOM_JRCP_V2
         smCom_Echo(NULL, comp, szLevel[level-1], buffer);
 #endif // SMCOM_JRCP_V2

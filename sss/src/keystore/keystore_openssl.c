@@ -119,7 +119,7 @@ sss_status_t ks_openssl_load_key(sss_openssl_object_t *sss_key, keyStoreTable_t 
                 case kSSS_CipherType_RSA:
                 case kSSS_CipherType_RSA_CRT: {
                     if (sss_key->contents != NULL) {
-                        SSS_FREE((void *)sss_key->contents);
+                        EVP_PKEY_free((EVP_PKEY *)sss_key->contents);
                     }
                     if (sss_key->objectType == kSSS_KeyPart_Public) {
                         pkey = d2i_PublicKey(EVP_PKEY_RSA, NULL, &buf_ptr, (long)size);
@@ -214,7 +214,6 @@ sss_status_t ks_openssl_store_key(const sss_openssl_object_t *sss_key)
             if (len < 0) {
                 goto exit;
             }
-            //Buffer = (unsigned char *)malloc(len + 1);
             len = i2d_PrivateKey(pk, &Buffer);
             if (len < 0) {
                 goto exit;
@@ -225,8 +224,6 @@ sss_status_t ks_openssl_store_key(const sss_openssl_object_t *sss_key)
             if (len < 0) {
                 goto exit;
             }
-
-            //Buffer = (unsigned char *)malloc(len + 1);
             len = i2d_PublicKey(pk, &Buffer);
             if (len < 0) {
                 goto exit;
@@ -253,7 +250,7 @@ exit:
         }
     }
     if (Buffer != NULL) {
-        SSS_FREE(Buffer);
+        OPENSSL_free(Buffer);
     }
     return retval;
 }

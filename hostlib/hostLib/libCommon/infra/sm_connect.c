@@ -612,7 +612,7 @@ U16 SM_Close(void *conn_ctx, U8 mode)
 #endif
 #if defined(SMCOM_JRCP_V1)
     AX_UNUSED_ARG(mode);
-    sw = smComSocket_Close();
+    sw = smComSocket_Close(conn_ctx);
 #endif
 #if defined(SMCOM_JRCP_V2)
     AX_UNUSED_ARG(mode);
@@ -673,13 +673,18 @@ U16 SM_SendAPDU(U8 *cmd, U16 cmdLen, U8 *resp, U16 *respLen)
 
 
 #if defined(SMCOM_JRCP_V1_AM)
-U16 SM_LockChannel()
+U16 SM_LockChannel(void *conn_ctx)
 {
-    return smComSocket_LockChannel();
+    return smComSocket_LockChannel(conn_ctx);
 }
 
-U16 SM_UnlockChannel()
+U16 SM_UnlockChannel(void *conn_ctx)
 {
-    return smComSocket_UnlockChannel();
+    return smComSocket_UnlockChannel(conn_ctx);
+}
+
+U16 SM_AmResetI2C(void *conn_ctx)
+{
+    return smComSocket_AmResetI2C(conn_ctx);
 }
 #endif

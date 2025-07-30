@@ -28,13 +28,15 @@
 
 #if defined(USE_THREADX_RTOS)
 static TX_MUTEX  gSmComlock;
-
+static TX_MUTEX  gSmComNoSessions;
 #elif (defined(USE_RTOS) && (USE_RTOS == 1))
 static SemaphoreHandle_t gSmComlock;
+static SemaphoreHandle_t gSmComNoSessions;
 #elif (__GNUC__ && !AX_EMBEDDED)
 #include<pthread.h>
     /* Only for base session with os */
     static pthread_mutex_t gSmComlock;
+    static pthread_mutex_t gSmComNoSessions = PTHREAD_MUTEX_INITIALIZER;
 #endif
 
 #if (__GNUC__ && !AX_EMBEDDED) || (USE_RTOS) || defined(USE_THREADX_RTOS)
@@ -43,6 +45,7 @@ static SemaphoreHandle_t gSmComlock;
 #define USE_LOCK 0
 #endif
 
+uint8_t g_no_of_session = 0;
 
 #if defined(USE_THREADX_RTOS)
 #define LOCK_TXN()                                               \
@@ -95,6 +98,46 @@ static SemaphoreHandle_t gSmComlock;
 #define UNLOCK_TXN() LOG_D("no lock mode");
 #endif
 
+
+#if defined(USE_THREADX_RTOS)
+#define SMCOM_INIT_LOCK_TXN() LOG_D("no lock mode");
+#define SMCOM_INIT_UNLOCK_TXN() LOG_D("no lock mode");
+#elif (defined(USE_RTOS) && (USE_RTOS == 1))
+#define SMCOM_INIT_LOCK_TXN()                                             \
+    LOG_D("Trying to Acquire Lock");                                      \
+    if (xSemaphoreTake(gSmComNoSessions, portMAX_DELAY) == pdTRUE) {      \
+        LOG_D("LOCK Acquired");                                           \
+    }                                                                     \
+    else {                                                                \
+        LOG_D("LOCK Acquisition failed");                                 \
+    }
+#define SMCOM_INIT_UNLOCK_TXN()                                           \
+    LOG_D("Trying to Released Lock");                                     \
+    if (xSemaphoreGive(gSmComNoSessions) == pdTRUE) {                     \
+        LOG_D("LOCK Released");                                           \
+    }                                                                     \
+    else {                                                                \
+        LOG_D("LOCK Releasing failed");                                   \
+    }
+#elif (__GNUC__ && !AX_EMBEDDED)
+#define SMCOM_INIT_LOCK_TXN()                                             \
+    LOG_D("Trying to Acquire Lock thread: %ld", pthread_self());          \
+    if (pthread_mutex_lock(&gSmComNoSessions) != 0) {                     \
+        LOG_D("pthread_mutex_lock failed");                               \
+    }                                                                     \
+    LOG_D("LOCK Acquired by thread: %ld", pthread_self());
+
+#define SMCOM_INIT_UNLOCK_TXN()                                           \
+    LOG_D("Trying to Released Lock by thread: %ld", pthread_self());      \
+    if (pthread_mutex_unlock(&gSmComNoSessions) != 0) {                   \
+        LOG_D("pthread_mutex_unlock failed");                             \
+    }                                                                     \
+    LOG_D("LOCK Released by thread: %ld", pthread_self());
+#else
+#define SMCOM_INIT_LOCK_TXN() LOG_D("no lock mode");
+#define SMCOM_INIT_UNLOCK_TXN() LOG_D("no lock mode");
+#endif
+
 static ApduTransceiveFunction_t pSmCom_Transceive = NULL;
 static ApduTransceiveRawFunction_t pSmCom_TransceiveRaw = NULL;
 
@@ -106,47 +149,72 @@ U16 smCom_Init(ApduTransceiveFunction_t pTransceive, ApduTransceiveRawFunction_t
 {
     U16 ret = SMCOM_COM_INIT_FAILED;
 
-#if defined(USE_THREADX_RTOS)
-    if(tx_mutex_create(&gSmComlock, "gSmComlock_mutex", TX_NO_INHERIT) != TX_SUCCESS) {
-        LOG_E("\n tx_mutex_create failed");
-        return ret;
-    }
-#elif (defined(USE_RTOS) && (USE_RTOS == 1))
-    gSmComlock = xSemaphoreCreateMutex();
-    if (gSmComlock == NULL) {
+#if (defined(USE_RTOS) && (USE_RTOS == 1))
+    gSmComNoSessions = xSemaphoreCreateMutex();
+    if (gSmComNoSessions == NULL) {
         LOG_E("\n xSemaphoreCreateMutex failed");
         return ret;
     }
-#elif (__GNUC__ && !AX_EMBEDDED)
-    if (pthread_mutex_init(&gSmComlock, NULL) != 0)
-    {
-        LOG_E("\n mutex init has failed");
-        return ret;
-    }
 #endif
-    pSmCom_Transceive = pTransceive;
-    pSmCom_TransceiveRaw = pTransceiveRaw;
+
+    SMCOM_INIT_LOCK_TXN();
+
+    if (g_no_of_session == 0) {
+    #if defined(USE_THREADX_RTOS)
+        if(tx_mutex_create(&gSmComlock, "gSmComlock_mutex", TX_NO_INHERIT) != TX_SUCCESS) {
+            LOG_E("\n tx_mutex_create failed");
+            return ret;
+        }
+    #elif (defined(USE_RTOS) && (USE_RTOS == 1))
+        gSmComlock = xSemaphoreCreateMutex();
+        if (gSmComlock == NULL) {
+            LOG_E("\n xSemaphoreCreateMutex failed");
+            return ret;
+        }
+    #elif (__GNUC__ && !AX_EMBEDDED)
+        if (pthread_mutex_init(&gSmComlock, NULL) != 0)
+        {
+            LOG_E("\n mutex init has failed");
+            return ret;
+        }
+    #endif
+        pSmCom_Transceive = pTransceive;
+        pSmCom_TransceiveRaw = pTransceiveRaw;
+    }
+
+    g_no_of_session++;
     ret = SMCOM_OK;
+
+    SMCOM_INIT_UNLOCK_TXN();
+
     return ret;
 }
 
 void smCom_DeInit(void)
 {
+    SMCOM_INIT_LOCK_TXN();
+
+    if (g_no_of_session > 0){
+        g_no_of_session--;
+    }
+
+    if (g_no_of_session == 0){
 #if defined(USE_THREADX_RTOS)
-    tx_mutex_delete(&gSmComlock);
+        tx_mutex_delete(&gSmComlock);
 
 #elif (defined(USE_RTOS) && (USE_RTOS == 1))
-    if (gSmComlock != NULL) {
-    	vSemaphoreDelete(gSmComlock);
-        gSmComlock = NULL;
-    }
+        if (gSmComlock != NULL) {
+            vSemaphoreDelete(gSmComlock);
+            gSmComlock = NULL;
+        }
 #elif (__GNUC__ && !AX_EMBEDDED)
-    if (pthread_mutex_destroy(&gSmComlock) != 0) {
-        return;
-    }
+        if (pthread_mutex_destroy(&gSmComlock) != 0) {
+            return;
+        }
 #endif
-    pSmCom_Transceive = NULL;
-    pSmCom_TransceiveRaw = NULL;
+    }
+
+    SMCOM_INIT_UNLOCK_TXN();
 }
 
 /**

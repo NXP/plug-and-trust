@@ -100,16 +100,17 @@ U16 SM_I2CConnect(void **conn_ctx, SmCommState_t *commState, U8 *atr, U16 *atrLe
 U16 SM_SendAPDU(U8 *cmd, U16 cmdLen, U8 *resp, U16 *respLen);
 
 #if defined(SMCOM_JRCP_V1_AM)
-U16 SM_LockChannel();
-U16 SM_UnlockChannel();
+U16 SM_LockChannel(void *conn_ctx);
+U16 SM_UnlockChannel(void *conn_ctx);
+U16 SM_AmResetI2C(void *conn_ctx);
 #endif
 
 #if defined(SMCOM_JRCP_V1_AM)
-#define SM_LOCK_CHANNEL() SM_LockChannel()
-#define SM_UNLOCK_CHANNEL() SM_UnlockChannel()
+#define SM_LOCK_CHANNEL(x) SM_LockChannel(x)
+#define SM_UNLOCK_CHANNEL(x) SM_UnlockChannel(x)
 #else
-#define SM_LOCK_CHANNEL()
-#define SM_UNLOCK_CHANNEL()
+#define SM_LOCK_CHANNEL(x)
+#define SM_UNLOCK_CHANNEL(x)
 #endif
 
 /** @}*/

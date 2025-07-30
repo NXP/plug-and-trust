@@ -1,5 +1,19 @@
 # Plug-And-Trust Mini Package Change Log
 
+## Release v04.07.01
+
+- New API (:cpp:func:`SM_AmResetI2C`) added in smcom layer (:file:`hostLib/libCommon/infra/sm_api.h`) to send reset request for access manager.
+
+- Bug fix - smCom socket layer (used for access manager) updated to use connection context. This enables smCom layer to handle sessions from multi threaded applications.
+  - NOTE: It is still mandatory to use access manager when there are multiple threads using secure element. For MCUs, multiple threads need to share the session context.
+
+- Mbed-TLS configuration guards are used for Mbed-TLS APIs usage in :file:`fsl_sss_mbedtls_apis.c` file.
+
+- Warning message of 'insufficient buffer size' displayed when the log messages are of length greater than 256.
+
+- Bug fix - `SSS_FREE` call replaced with `OPENSSL_free` call in :cpp:func:`ks_openssl_store_key` function.
+
+
 ## Release v04.07.00
 
 - Platform SCP03 support extended for AES-256 (32 byte) keys.
