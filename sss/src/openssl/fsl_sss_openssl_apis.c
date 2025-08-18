@@ -166,9 +166,13 @@ sss_status_t sss_openssl_session_open(sss_openssl_session_t *session,
 
 #if SSS_HAVE_HOSTCRYPTO_OPENSSL
     memset(session, 0, sizeof(*session));
-
+    
+#if (OPENSSL_VERSION_NUMBER < 0x10100000L)
     OpenSSL_add_all_algorithms();
-
+#else
+    OPENSSL_init_crypto(OPENSSL_INIT_ADD_ALL_CIPHERS | OPENSSL_INIT_ADD_ALL_DIGESTS, NULL);
+#endif
+    
     if (connectionData == NULL) {
         retval             = kStatus_SSS_Success;
         session->subsystem = subsystem;
@@ -224,7 +228,11 @@ void sss_openssl_session_close(sss_openssl_session_t *session)
     ERR_remove_thread_state(NULL);
 #endif
 #ifdef __linux__
+# if (OPENSSL_VERSION_NUMBER < 0x10100000L)
     EVP_cleanup();
+# else
+    // NOP
+# endif
 #endif
     memset(session, 0, sizeof(*session));
 }
@@ -3951,8 +3959,12 @@ sss_status_t sss_openssl_digest_init(sss_openssl_digest_t *context)
 
     ENSURE_OR_GO_EXIT(context != NULL);
 
+#if (OPENSSL_VERSION_NUMBER < 0x10100000L)
     OpenSSL_add_all_algorithms();
-
+#else
+    OPENSSL_init_crypto(OPENSSL_INIT_ADD_ALL_CIPHERS | OPENSSL_INIT_ADD_ALL_DIGESTS, NULL);
+#endif
+    
     context->mdctx = EVP_MD_CTX_create();
     if (context->mdctx == NULL) {
         LOG_E(" EVP_MD_CTX_create failed ");
@@ -5114,4 +5126,5 @@ static sss_status_t sss_openssl_aead_one_go_decrypt(sss_openssl_aead_t *context,
 exit:
     return retval;
 }
+
 #endif /* SSS HAVE_HOSTCRYPTO_OPENSSL */
