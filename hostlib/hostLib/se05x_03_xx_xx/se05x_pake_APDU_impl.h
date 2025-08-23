@@ -162,7 +162,7 @@ smStatus_t Se05x_API_PAKEComputeKeyShare(pSe05xSession_t session_ctx,
     size_t cmdbufLen = 0;
     uint8_t *pCmdbuf = &cmdbuf[0];
     int tlvRet       = 0;
-    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP];
+    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP] = {0};
     uint8_t *pRspbuf = &rspbuf[0];
     size_t rspbufLen = ARRAY_SIZE(rspbuf);
 #if VERBOSE_APDU_LOGS
@@ -211,7 +211,7 @@ smStatus_t Se05x_API_PAKEComputeSessionKeys(pSe05xSession_t session_ctx,
     size_t cmdbufLen = 0;
     uint8_t *pCmdbuf = &cmdbuf[0];
     int tlvRet       = 0;
-    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP];
+    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP] = {0};
     uint8_t *pRspbuf = &rspbuf[0];
     size_t rspbufLen = ARRAY_SIZE(rspbuf);
 #if VERBOSE_APDU_LOGS
@@ -264,7 +264,7 @@ smStatus_t Se05x_API_PAKEVerifySessionKeys(pSe05xSession_t session_ctx,
     size_t cmdbufLen = 0;
     uint8_t *pCmdbuf = &cmdbuf[0];
     int tlvRet       = 0;
-    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP];
+    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP] = {0};
     uint8_t *pRspbuf = &rspbuf[0];
     size_t rspbufLen = ARRAY_SIZE(rspbuf);
 #if VERBOSE_APDU_LOGS
@@ -309,7 +309,7 @@ smStatus_t Se05x_API_PAKEReadDeviceType(
     size_t cmdbufLen = 0;
     uint8_t *pCmdbuf = &cmdbuf[0];
     int tlvRet       = 0;
-    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP];
+    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP] = {0};
     uint8_t *pRspbuf = &rspbuf[0];
     size_t rspbufLen = ARRAY_SIZE(rspbuf);
     uint8_t devType  = 0;
@@ -352,7 +352,7 @@ smStatus_t Se05x_API_PAKEReadState(
     size_t cmdbufLen = 0;
     uint8_t *pCmdbuf = &cmdbuf[0];
     int tlvRet       = 0;
-    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP];
+    uint8_t rspbuf[SE05X_MAX_BUF_SIZE_RSP] = {0};
     uint8_t *pRspbuf = &rspbuf[0];
     size_t rspbufLen = ARRAY_SIZE(rspbuf);
     uint8_t devState = 0;

@@ -3596,7 +3596,7 @@ static sss_status_t sss_mbedtls_generate_ecp_key(
         groupId = get_mont_group_id(keyBitLen);
     }
     else {
-        LOG_E(" sss_openssl_generate_ecp_key: Invalid key type ");
+        LOG_E(" sss_mbedtls_generate_ecp_key: Invalid key type ");
     }
 
     if (groupId != MBEDTLS_ECP_DP_NONE) {

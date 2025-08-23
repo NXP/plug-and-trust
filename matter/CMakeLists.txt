@@ -88,7 +88,7 @@ if (CONFIG_SE05X_LIB)
 
     if (CONFIG_SE05X_SCP03)
         target_include_directories(simw_lib PUBLIC
-            ${SIMW_LIB_DIR}/scp03_ftr
+            ${SIMW_LIB_DIR}/feature_file/scp03_ftr
         )
     else()
         target_include_directories(simw_lib PUBLIC

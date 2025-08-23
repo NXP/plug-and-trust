@@ -2,7 +2,7 @@
 # Copyright 2025 NXP
 # SPDX-License-Identifier: BSD-3-Clause
 
-mainmenu "SE05X Device attestation provisioning example"
+mainmenu "SE05X nfc commissioning example"
 
 # Secure Element
 config CHIP_SE05X

@@ -13,6 +13,11 @@
 #include <stdbool.h>
 #include <nxLog_App.h>
 
+#if defined (SE05X_HOST_GPIO_FRDM_IMX93) && SE05X_HOST_GPIO_FRDM_IMX93 == 1
+#include <gpiod.h>
+struct gpiod_line_request *request = NULL;   // Pin number 29 on P11 connector
+#endif
+
 #if defined(SE05X_HOST_GPIO_RPI) && SE05X_HOST_GPIO_RPI == 1
 // RPI GPIO configuration
 #define GPIO_NUMBER "529"   // Pin number 11 / GPIO17
@@ -65,6 +70,60 @@ int se05x_host_gpio_init()
 
     close(fd);
     return 0;
+#elif defined (SE05X_HOST_GPIO_FRDM_IMX93) && SE05X_HOST_GPIO_FRDM_IMX93 == 1
+    struct gpiod_line_settings *settings = NULL;
+    struct gpiod_line_config *line_cfg = NULL;
+    struct gpiod_chip *chip = NULL;
+    const char *const chip_path = "/dev/gpiochip0";
+    const unsigned int line_offset = 5;
+    int ret = -1;
+
+    chip = gpiod_chip_open(chip_path);
+    if (!chip) {
+        LOG_E("Failed to open GPIO chip at path %s\n", chip_path);
+        return ret;
+    }
+
+    settings = gpiod_line_settings_new();
+    if (!settings) {
+        LOG_E("Failed to allocate line settings\n");
+        goto cleanup_chip;
+    }
+
+    ret = gpiod_line_settings_set_direction(settings, GPIOD_LINE_DIRECTION_OUTPUT);
+    if (ret != 0) {
+        LOG_E("Failed to set line direction to output\n");
+        goto cleanup_settings;
+    }
+
+    line_cfg = gpiod_line_config_new();
+    if (!line_cfg) {
+        LOG_E("Failed to allocate line config\n");
+        goto cleanup_settings;
+    }
+
+    ret = gpiod_line_config_add_line_settings(line_cfg, &line_offset, 1, settings);
+    if (ret != 0) {
+        LOG_E("Failed to add line settings to config\n");
+        goto cleanup_line_cfg;
+    }
+
+    request = gpiod_chip_request_lines(chip, NULL, line_cfg);
+    if (!request) {
+        LOG_E("Failed to request GPIO lines\n");
+        goto cleanup_line_cfg;
+    }
+
+    ret = 0;
+
+cleanup_line_cfg:
+    gpiod_line_config_free(line_cfg);
+cleanup_settings:
+    gpiod_line_settings_free(settings);
+cleanup_chip:
+    gpiod_chip_close(chip);
+
+    return ret;
 #else
     LOG_I("se05x_host_gpio_init not implemented for this platform. \n");
     return 0;
@@ -90,16 +149,18 @@ int se05x_host_gpio_deinit()
     }
 
     close(fd);
-    return 0;
+#elif defined (SE05X_HOST_GPIO_FRDM_IMX93) && SE05X_HOST_GPIO_FRDM_IMX93 == 1
+    gpiod_line_request_release(request);
 #else
     LOG_I("se05x_host_gpio_deinit not implemented for this platform. \n");
-    return 0;
 #endif
+    return 0;
 }
 
 int se05x_host_gpio_set_value(bool value)
 {
 #if defined(SE05X_HOST_GPIO_RPI) && SE05X_HOST_GPIO_RPI == 1
+
     char path[64] = {0};
     const char *val_str = NULL;
     int bytes_written = 0;
@@ -122,9 +183,17 @@ int se05x_host_gpio_set_value(bool value)
     }
 
     close(fd);
-    return 0;
+#elif defined (SE05X_HOST_GPIO_FRDM_IMX93) && SE05X_HOST_GPIO_FRDM_IMX93 == 1
+    int ret = 0;
+    const unsigned int line_offset = 5;
+    ret = gpiod_line_request_set_value(request, line_offset, value);
+    if (ret != 0) {
+        LOG_E("Failed to set value\n");
+        gpiod_line_request_release(request);
+        return -1;
+    }
 #else
     LOG_I("se05x_host_gpio_set_value not implemented for this platform. \n");
-    return 0;
 #endif
+    return 0;
 }

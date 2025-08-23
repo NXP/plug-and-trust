@@ -1,7 +1,7 @@
 /*
  *
  * Copyright 2025 NXP
- * SPDX-License-Identifier: BSD-3-Clause
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 #ifndef INC_FREERTOS_H /* Header guard of FreeRTOS */
@@ -10,7 +10,7 @@
 #endif /* INC_FREERTOS_H */
 #include "task.h"
 #include <assert.h>
-#include "se05x_dev_attest_key_prov.h"
+#include "se051h_nfc_comm_prov.h"
 #if defined(SSS_USE_FTR_FILE)
 #include "fsl_sss_ftr.h"
 #else
@@ -27,7 +27,7 @@ static TaskHandle_t gSSSExRtosTaskHandle = NULL;
 uint8_t __attribute__((section(".heap"))) ucHeap[configTOTAL_HEAP_SIZE];
 #endif
 
-void se05x_dev_attest_task (void *pvParam);
+void se051h_nfc_comm_task (void *pvParam);
 
 extern "C" void BOARD_InitHardware(void);
 
@@ -37,15 +37,15 @@ int main (int argc, char * argv[])
 #if (SSS_HAVE_HOSTCRYPTO_MBEDTLS) && (SSS_HAVE_MBEDTLS_2_X)
     CRYPTO_InitHardware();
 #endif
-    if (xTaskCreate(&se05x_dev_attest_task, "se05x_dev_attest_key_prov_task", 8000, NULL, 2, &gSSSExRtosTaskHandle) != pdPASS) {
+    if (xTaskCreate(&se051h_nfc_comm_task, "se051h_nfc_comm_task", 8000, NULL, 2, &gSSSExRtosTaskHandle) != pdPASS) {
         while (1)
         ;
     }
     vTaskStartScheduler();
 }
 
-void se05x_dev_attest_task (void *pvParam){
-    se05x_dev_attest_key_prov();
+void se051h_nfc_comm_task (void *pvParam){
+    se051h_nfc_comm_prov(NULL);
 }
 
 #if (defined(configCHECK_FOR_STACK_OVERFLOW) && (configCHECK_FOR_STACK_OVERFLOW > 0))

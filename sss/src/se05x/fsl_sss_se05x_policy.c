@@ -1,6 +1,6 @@
 /*
 *
-* Copyright 2018-2020,2024 NXP
+* Copyright 2018-2020,2024,2025 NXP
 * SPDX-License-Identifier: BSD-3-Clause
 */
 
@@ -9,6 +9,7 @@
 #include <fsl_sss_se05x_apis.h>
 #include <nxLog_sss.h>
 #include <string.h>
+#include <limits.h>
 
 #if SSS_HAVE_APPLET_SE05X_IOT
 #include <fsl_sss_se05x_policy.h>
@@ -429,7 +430,9 @@ static void sss_se05x_update_ext_internal_sign_tbsId_value_policy(
 {
     /* copy 4 bytes tbsItemList_KeyId */
     sss_se05x_copy_uint32_to_u8_array(tbs_item.tbsItemList_KeyId, pbuffer + *ext_offset);
-    *ext_offset += sizeof(tbs_item.tbsItemList_KeyId);
+    if ((UINT32_MAX - (*ext_offset)) >=  sizeof(tbs_item.tbsItemList_KeyId)) {
+        *ext_offset += sizeof(tbs_item.tbsItemList_KeyId);
+    }
 }
 #endif
 
