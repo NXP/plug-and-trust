@@ -1,0 +1,258 @@
+{
+  "SPDXID": "SPDXRef-DOCUMENT",
+  "spdxVersion": "SPDX-2.3",
+  "creationInfo": {
+    "created": "2025-08-25T12:27:29Z",
+    "creators": [
+      "Organization: NXP"
+    ],
+    "licenseListVersion": "3.20"
+  },
+  "name": "pntmw_se05x-mini-pkg-04.07.02",
+  "dataLicense": "CC0-1.0",
+  "hasExtractedLicensingInfos": [
+    {
+      "licenseId": "LicenseRef-912a4957-ba62-4942-8616-aec7bc0eedec",
+      "extractedText": "SSLeay License\n==============\n\n\nCopyright (C) 1995-1998 Eric Young (eay@cryptsoft.com) All rights reserved.\n---------------------------------------------------------------------------\n\nThis package is an SSL implementation written by Eric Young (eay@cryptsoft.com).\nThe implementation was written so as to conform with Netscapes SSL. This library\nis free for commercial and non-commercial use as long as the following conditions\nare aheared to. The following conditions apply to all code found in this\ndistribution, be it the RC4, RSA, lhash, DES, etc., code; not just the SSL code.\nThe SSL documentation included with this distribution is covered by the same\ncopyright terms except that the holder is Tim Hudson (tjh@cryptsoft.com).\n\nCopyright remains Eric Young's, and as such any Copyright notices in the code are\nnot to be removed. If this package is used in a product, Eric Young should be\ngiven attribution as the author of the parts of the library used. This can be in\nthe form of a textual message at program startup or in documentation (online or\ntextual) provided with the package. Redistribution and use in source and binary\nforms, with or without modification, are permitted provided that the following\nconditions are met:\n\n  1. Redistributions of source code must retain the copyright notice, this list\n    of conditions and the following disclaimer.\n\n  2. Redistributions in binary form must reproduce the above copyright notice,\n    this list of conditions and the following disclaimer in the documentation\n    and/or other materials provided with the distribution.\n\n  3. All advertising materials mentioning features or use of this software must\n    display the following acknowledgement: \"This product includes cryptographic\n    software written by Eric Young (eay@cryptsoft.com)\". The word 'cryptographic'\n    can be left out if the rouines from the library being used are not\n    cryptographic related :-).\n\n  4. If you include any Windows specific code (or a derivative thereof) from the\n    apps directory (application code) you must include an acknowledgement: \"This\n    product includes software written by Tim Hudson (tjh@cryptsoft.com)\"\n\n\nTHIS SOFTWARE IS PROVIDED BY ERIC YOUNG ``AS IS'' AND ANY EXPRESS OR IMPLIED\nWARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF\nMERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT\nSHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,\nSPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,\nPROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR\nBUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN\nCONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING\nIN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF\nSUCH DAMAGE.The licence and distribution terms for any publically available\nversion or derivative of this code cannot be changed. i.e. this code cannot\nsimply be copied and put under another distribution licence [including the GNU\nPublic Licence.",
+      "name": "SSLeay License - standalone"
+    }
+  ],
+  "documentNamespace": "https://nxp.com/spdx/e251fd58-ca29-4cef-b2b2-9ca8254e1875",
+  "packages": [
+    {
+      "SPDXID": "SPDXRef-package-e251fd58-ca29-4cef-b2b2-9ca8254e1875",
+      "name": "pntmw_se05x-mini-pkg",
+      "versionInfo": "04.07.02",
+      "licenseConcluded": "(BSD-3-Clause)",
+      "licenseDeclared": "(BSD-3-Clause)",
+      "downloadLocation": "NOASSERTION",
+      "originator": "Organization: pntmw_se05x-mini-pkg",
+      "supplier": "NOASSERTION",
+      "externalRefs": [],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-e66b18cd-ed35-42ec-b476-f3584122e0cb",
+      "name": "mbed TLS",
+      "versionInfo": "2.28.5",
+      "licenseConcluded": "Apache-2.0",
+      "licenseDeclared": "Apache-2.0",
+      "homepage": "https://www.trustedfirmware.org/",
+      "downloadLocation": "NOASSERTION",
+      "originator": "Organization: mbed-tls",
+      "supplier": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:debian_package:libmbedcrypto7:2.28.5:1:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:debian_package:libmbedtls-dev:2.28.5:1:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:arm:mbed_tls:2.28.5:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:debian_package:libmbedtls-doc:2.28.5:1:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:arm_ltd:mbedtls_formerly_polarssl:2.28.5:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:github/Mbed-TLS/mbedtls@v2.28.5",
+          "referenceType": "purl"
+        },
+        {
+          "referenceCategory": "OTHER",
+          "referenceLocator": "bc185f01-961f-4ce5-8db2-0ec5b0c1dc00",
+          "referenceType": "BlackDuck-ComponentOrigin"
+        }
+      ],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-93ff9297-b6b8-4bd5-ba66-054528427fa3",
+      "name": "mbed TLS",
+      "versionInfo": "3.6.2",
+      "licenseConcluded": "Apache-2.0",
+      "licenseDeclared": "Apache-2.0",
+      "homepage": "https://www.trustedfirmware.org/",
+      "downloadLocation": "NOASSERTION",
+      "originator": "Organization: mbed-tls",
+      "supplier": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:debian_package:libmbedcrypto16:3.6.2:3:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:debian_package:libmbedtls21:3.6.2:3:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:debian_package:libmbedtls-doc:3.6.2:3:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:debian_package:libmbedtls-dev:3.6.2:3:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "OTHER",
+          "referenceLocator": "c4b5fc8c-da19-47e8-8033-c46f6dd209c0",
+          "referenceType": "BlackDuck-ComponentOrigin"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:arm:mbed_tls:3.6.2:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:github/Mbed-TLS/mbedtls@v3.6.2",
+          "referenceType": "purl"
+        }
+      ],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-96f00a5f-9582-434f-8178-fe2e688e1501",
+      "name": "OpenSSL",
+      "versionInfo": "1.1.1l",
+      "licenseConcluded": "(LicenseRef-912a4957-ba62-4942-8616-aec7bc0eedec AND OpenSSL)",
+      "licenseDeclared": "(LicenseRef-912a4957-ba62-4942-8616-aec7bc0eedec AND OpenSSL)",
+      "homepage": "https://www.openssl.org",
+      "downloadLocation": "NOASSERTION",
+      "originator": "Organization: openssl",
+      "supplier": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:alpine_package:openssl1.1-compat:1.1.1l:r1:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:alpine_package:openssl1.1-compat:1.1.1l:r4:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:alpine_package:openssl:1.1.1l:r5:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:alpine_package:openssl:1.1.1l:r0:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "OTHER",
+          "referenceLocator": "11536746-dd20-4a15-90de-56889d13ce55",
+          "referenceType": "BlackDuck-ComponentOrigin"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:alpine_package:openssl1.1-compat:1.1.1l:r3:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:github/openssl/openssl@OpenSSL_1_1_1l",
+          "referenceType": "purl"
+        }
+      ],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-c8c9917a-3e39-42bf-82b9-b02b576e57e9",
+      "name": "OpenSSL",
+      "versionInfo": "3.0.14",
+      "licenseConcluded": "Apache-2.0",
+      "licenseDeclared": "Apache-2.0",
+      "homepage": "https://www.openssl.org",
+      "downloadLocation": "NOASSERTION",
+      "originator": "Organization: openssl",
+      "supplier": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:debian_package:libssl-doc:3.0.14:1\\~deb12u1:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:debian_package:libssl-dev:3.0.14:1\\~deb12u1:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:debian_package:libssl-doc:3.0.14:1\\~deb12u2:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:github/openssl/openssl@openssl-3.0.14",
+          "referenceType": "purl"
+        },
+        {
+          "referenceCategory": "OTHER",
+          "referenceLocator": "2b48997d-876c-498f-abd2-4a34723543d6",
+          "referenceType": "BlackDuck-ComponentOrigin"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:debian_package:libssl3:3.0.14:1\\~deb12u1:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:debian_package:libssl-dev:3.0.14:1\\~deb12u2:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        }
+      ],
+      "filesAnalyzed": false
+    }
+  ],
+  "relationships": [
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-package-e251fd58-ca29-4cef-b2b2-9ca8254e1875"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-e251fd58-ca29-4cef-b2b2-9ca8254e1875",
+      "relationshipType": "STATIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-e66b18cd-ed35-42ec-b476-f3584122e0cb"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-e251fd58-ca29-4cef-b2b2-9ca8254e1875",
+      "relationshipType": "STATIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-93ff9297-b6b8-4bd5-ba66-054528427fa3"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-e251fd58-ca29-4cef-b2b2-9ca8254e1875",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-96f00a5f-9582-434f-8178-fe2e688e1501"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-e251fd58-ca29-4cef-b2b2-9ca8254e1875",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-c8c9917a-3e39-42bf-82b9-b02b576e57e9"
+    }
+  ]
+}
