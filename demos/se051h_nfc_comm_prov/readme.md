@@ -42,13 +42,18 @@ cmake --build .
 ./se051h_nfc_comm_prov
 ```
 
-## Matter Build system as
+## Matter GN Build system as
 
 ```
 cd simw-top-mini/repo/demos/se051h_nfc_comm_prov/linux
 gn gen out
 ninja -C out se051h_nfc_comm_prov
 ./se051h_nfc_comm_prov
+```
+## Matter CMake Build system as
+
+```
+user@ubuntu:~/Desktop/git/connectedhomeip$ west build -d <out_dir> -b frdmrw612 third_party/simw-top-mini/repo/demos/se051h_nfc_comm_prov/rw61x
 ```
 
 > [!IMPORTANT]

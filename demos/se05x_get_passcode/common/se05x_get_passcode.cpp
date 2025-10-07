@@ -20,6 +20,7 @@
 #include "se05x_APDU.h"
 #include "ex_sss_objid.h"
 #include "se05x_get_passcode.h"
+#include "se05x_host_gpio.h"
 
 #define BCD_TO_DEC(x) (x - 6 * ((x) >> 4))
 #define SE05X_PASSOCDE_BINARY_FILEID        0X7fff2000
@@ -71,6 +72,17 @@ void se05x_get_passcode()
 {
   sss_status_t status = kStatus_SSS_Success;
   const char *portName = nullptr;
+  if (se05x_host_gpio_init() != 0)
+  {
+      LOG_E("SE05x - Error in se05x_host_gpio_init function");
+      LOG_E("SE05x - Crypto operations offloaded to secure element will fail");
+  }
+
+  LOG_I("SE05x - Turn ON secure Element");
+  if (se05x_host_gpio_set_value(1) != 0)
+  {
+      LOG_E("SE05x - Error in se05x_host_gpio_set_value(1) function");
+  }
 
   memset(&gex_sss_chip_ctx,  0,  sizeof(gex_sss_chip_ctx));
 
@@ -86,6 +98,18 @@ void se05x_get_passcode()
   status = read_cer_and_get_passcode(SE05X_PASSOCDE_BINARY_FILEID);
 
 cleanup:
+
+    LOG_I("SE05x - Turn OFF secure Element");
+    if (se05x_host_gpio_set_value(0) != 0)
+    {
+        LOG_E("SE05x - Failed to set the GPIO connected to SE05x to low");
+    }
+
+    LOG_I("SE05x - De-initialize GPIO");
+    if (se05x_host_gpio_deinit() != 0)
+    {
+        LOG_E("SE05x - Failed to de-initialize GPIO connected to SE05x");
+    }
 
     if (kStatus_SSS_Success == status) {
         LOG_I("se05x_get_passcode example successful !!!...");

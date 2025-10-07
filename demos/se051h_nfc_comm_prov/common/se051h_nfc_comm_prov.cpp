@@ -20,6 +20,7 @@
 #include "se05x_APDU.h"
 #include "ex_sss_objid.h"
 #include "se051h_nfc_comm_prov.h"
+#include "se05x_host_gpio.h"
 
 static ex_sss_boot_ctx_t gex_sss_chip_ctx;
 
@@ -693,6 +694,18 @@ void se051h_nfc_comm_prov(ex_sss_boot_ctx_t *pCtx)
     sss_status_t status = kStatus_SSS_Success;
     const char *portName = nullptr;
 
+    if (se05x_host_gpio_init() != 0)
+    {
+        LOG_E("SE05x - Error in se05x_host_gpio_init function");
+        LOG_E("SE05x - Crypto operations offloaded to secure element will fail");
+    }
+
+    LOG_I("SE05x - Turn ON secure Element");
+    if (se05x_host_gpio_set_value(1) != 0)
+    {
+        LOG_E("SE05x - Error in se05x_host_gpio_set_value(1) function");
+    }
+
     if (pCtx == NULL) {
         memset(&gex_sss_chip_ctx,  0,  sizeof(gex_sss_chip_ctx));
 
@@ -793,6 +806,17 @@ void se051h_nfc_comm_prov(ex_sss_boot_ctx_t *pCtx)
     status = se051h_provision_vendor_reserved();
 
 cleanup:
+    LOG_I("SE05x - Turn OFF secure Element");
+    if (se05x_host_gpio_set_value(0) != 0)
+    {
+        LOG_E("SE05x - Failed to set the GPIO connected to SE05x to low");
+    }
+
+    LOG_I("SE05x - De-initialize GPIO");
+    if (se05x_host_gpio_deinit() != 0)
+    {
+        LOG_E("SE05x - Failed to de-initialize GPIO connected to SE05x");
+    }
 
     if (kStatus_SSS_Success == status) {
         LOG_I("se051h_nfc_comm_prov Provision example successful !!!...");

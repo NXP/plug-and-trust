@@ -16,6 +16,7 @@
 #include <nxLog_App.h>
 #include <stdio.h>
 #include <string.h>
+#include "se05x_host_gpio.h"
 
 /* clang-format off */
 const uint8_t keyPairData[] = {
@@ -195,6 +196,18 @@ int fill_tbs_buffer(uint8_t *buffer, uint32_t keyid, uint8_t *offset, size_t buf
 void se05x_dev_attest_key_prov(void) {
   sss_status_t status = kStatus_SSS_Success;
   char *portName = nullptr;
+
+  if (se05x_host_gpio_init() != 0)
+  {
+      LOG_E("SE05x - Error in se05x_host_gpio_init function");
+      LOG_E("SE05x - Crypto operations offloaded to secure element will fail");
+  }
+
+  LOG_I("SE05x - Turn ON secure Element");
+  if (se05x_host_gpio_set_value(1) != 0)
+  {
+      LOG_E("SE05x - Error in se05x_host_gpio_set_value(1) function");
+  }
 
   memset(&gex_sss_chip_ctx, 0, sizeof(gex_sss_chip_ctx));
 
@@ -387,6 +400,18 @@ void se05x_dev_attest_key_prov(void) {
 
   }
 #endif
+
+  LOG_I("SE05x - Turn OFF secure Element");
+  if (se05x_host_gpio_set_value(0) != 0)
+  {
+      LOG_E("SE05x - Failed to set the GPIO connected to SE05x to low");
+  }
+
+  LOG_I("SE05x - De-initialize GPIO");
+  if (se05x_host_gpio_deinit() != 0)
+  {
+      LOG_E("SE05x - Failed to de-initialize GPIO connected to SE05x");
+  }
 
   printf("Attestation key and cert Provision successful \n");
   return;

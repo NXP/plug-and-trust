@@ -7,13 +7,19 @@ The example can be used to read the pass-code value from this binary file.
 
 The example can be built with
 
-## Matter Build system as
+## Matter GN Build system as
 
 ```
 cd simw-top-mini/repo/demos/se05x_get_passcode/linux
 gn gen out
 ninja -C out se05x_get_passcode
 ./se05x_get_passcode
+```
+
+## Matter CMake Build system as
+
+```
+user@ubuntu:~/Desktop/git/connectedhomeip$ west build -d <out_dir> -b frdmrw612 third_party/simw-top-mini/repo/demos/se05x_get_passcode/rw61x
 ```
 
 > [!IMPORTANT]

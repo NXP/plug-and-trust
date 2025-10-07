@@ -16,13 +16,19 @@ The example can be used to provision SE05x secure element with device attestatio
 
 The example can be built with
 
-## Matter Build system as
+## Matter GN Build system as
 
 ```
 cd simw-top-mini/repo/demos/se05x_dev_attest_key_prov/linux
 gn gen out
 ninja -C out
 ./se05x_dev_attest_key_prov
+```
+
+## Matter CMake Build system as
+
+```
+user@ubuntu:~/Desktop/git/connectedhomeip$ west build -d <out_dir> -b frdmrw612 third_party/simw-top-mini/repo/demos/se05x_dev_attest_key_prov/rw61x
 ```
 
 > [!IMPORTANT]
