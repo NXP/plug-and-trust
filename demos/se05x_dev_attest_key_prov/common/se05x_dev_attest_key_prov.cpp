@@ -8,6 +8,7 @@
 /* Includes                                                                   */
 /* ************************************************************************** */
 
+#include "se05x_host_gpio.h"
 #include <errno.h>
 #include <ex_sss.h>
 #include <ex_sss_boot.h>
@@ -16,7 +17,6 @@
 #include <nxLog_App.h>
 #include <stdio.h>
 #include <string.h>
-#include "se05x_host_gpio.h"
 
 /* clang-format off */
 const uint8_t keyPairData[] = {
@@ -114,24 +114,24 @@ const uint8_t cert_declaration[541] = {
 /* clang-format on */
 
 /* Device attestation key ids */
-#define DEV_ATTESTATION_KEY_SE05X_ID      0x7FFF3007
-#define DEV_ATTESTATION_CERT_SE05X_ID     0x7FFF3003
-#define CERT_DECLARATION_DATA_SE05X_ID    0x7D300002
+#define DEV_ATTESTATION_KEY_SE05X_ID 0x7FFF3007
+#define DEV_ATTESTATION_CERT_SE05X_ID 0x7FFF3003
+#define CERT_DECLARATION_DATA_SE05X_ID 0x7D300002
 
 /* Device attestation key ids (Used with internal sign) */
-#define DEV_ATTESTATION_KEY_SE05X_ID_IS       0x7D300003
-#define DEV_ATTESTATION_KEY_SE05X_ID_IS_TBS   0x7D300004
+#define DEV_ATTESTATION_KEY_SE05X_ID_IS 0x7D300003
+#define DEV_ATTESTATION_KEY_SE05X_ID_IS_TBS 0x7D300004
 
 #define DEV_ATTESTATION_KEY_SE05X_ID_IS_TBS_TP 0x7FFF2031
 
-#define TAG1_ID       0x7D300005
-#define TAG1_LEN_ID   0x7D300006
+#define TAG1_ID 0x7D300005
+#define TAG1_LEN_ID 0x7D300006
 #define TAG1_VALUE_ID 0x7D300007
-#define TAG2_ID       0x7D300008
-#define TAG2_LEN_ID   0x7D300009
+#define TAG2_ID 0x7D300008
+#define TAG2_LEN_ID 0x7D300009
 #define TAG2_VALUE_ID 0x7D30000A
-#define TAG3_ID       0x7D30000B
-#define TAG3_LEN_ID   0x7D30000C
+#define TAG3_ID 0x7D30000B
+#define TAG3_LEN_ID 0x7D30000C
 #define TAG3_VALUE_ID 0x7D30000D
 #define ATTEST_CHALLENGE_ID 0x7D30000E
 
@@ -171,13 +171,13 @@ static sss_status_t se05x_set_key(const uint8_t *buffer, size_t bufferLen,
 }
 
 #if SSS_HAVE_APPLET_SE051_H
-int fill_tbs_buffer(uint8_t *buffer, uint32_t keyid, uint8_t *offset, size_t bufferLen) {
+int fill_tbs_buffer(uint8_t *buffer, uint32_t keyid, uint8_t *offset,
+                    size_t bufferLen) {
   if (bufferLen < 4) {
     return 1;
   }
-  if (*offset > (bufferLen - 4))
-  {
-    printf("offset overflows the buffer \n" );
+  if (*offset > (bufferLen - 4)) {
+    printf("offset overflows the buffer \n");
     return 1;
   }
   buffer[*offset + 0] = (uint8_t)(keyid >> 24) & 0xFF;
@@ -197,21 +197,19 @@ void se05x_dev_attest_key_prov(void) {
   sss_status_t status = kStatus_SSS_Success;
   char *portName = nullptr;
 
-  if (se05x_host_gpio_init() != 0)
-  {
-      LOG_E("SE05x - Error in se05x_host_gpio_init function");
-      LOG_E("SE05x - Crypto operations offloaded to secure element will fail");
+  if (se05x_host_gpio_init() != 0) {
+    LOG_E("SE05x - Error in se05x_host_gpio_init function");
+    LOG_E("SE05x - Crypto operations offloaded to secure element will fail");
   }
 
   LOG_I("SE05x - Turn ON secure Element");
-  if (se05x_host_gpio_set_value(1) != 0)
-  {
-      LOG_E("SE05x - Error in se05x_host_gpio_set_value(1) function");
+  if (se05x_host_gpio_set_value(1) != 0) {
+    LOG_E("SE05x - Error in se05x_host_gpio_set_value(1) function");
   }
 
   memset(&gex_sss_chip_ctx, 0, sizeof(gex_sss_chip_ctx));
 
-  status = ex_sss_boot_connectstring(0, NULL, (char**)&portName);
+  status = ex_sss_boot_connectstring(0, NULL, (char **)&portName);
   if (kStatus_SSS_Success != status) {
     printf("se05x error: %s\n", "ex_sss_boot_connectstring failed");
     return;
@@ -257,7 +255,7 @@ void se05x_dev_attest_key_prov(void) {
         0,
     };
     uint8_t offset = 0;
-    int ret        = 0;
+    int ret = 0;
 
     static sss_policy_u commonPol;
     commonPol.type = KPolicy_Common;
@@ -289,63 +287,66 @@ void se05x_dev_attest_key_prov(void) {
            "SE051H) \n");
 
     /* Create tbs binFile data */
-    ret = fill_tbs_buffer(tbsData, START_CONTAINER_SE05X_ID, &offset, sizeof(tbsData));
-    if (ret != 0){
+    ret = fill_tbs_buffer(tbsData, START_CONTAINER_SE05X_ID, &offset,
+                          sizeof(tbsData));
+    if (ret != 0) {
       status = kStatus_SSS_Fail;
       return;
     }
     ret = fill_tbs_buffer(tbsData, TAG1_ID, &offset, sizeof(tbsData));
-    if (ret != 0){
+    if (ret != 0) {
       status = kStatus_SSS_Fail;
       return;
     }
     ret = fill_tbs_buffer(tbsData, TAG1_LEN_ID, &offset, sizeof(tbsData));
-    if (ret != 0){
+    if (ret != 0) {
       status = kStatus_SSS_Fail;
       return;
     }
     ret = fill_tbs_buffer(tbsData, TAG1_VALUE_ID, &offset, sizeof(tbsData));
-    if (ret != 0){
+    if (ret != 0) {
       status = kStatus_SSS_Fail;
       return;
     }
     ret = fill_tbs_buffer(tbsData, TAG2_ID, &offset, sizeof(tbsData));
-    if (ret != 0){
+    if (ret != 0) {
       status = kStatus_SSS_Fail;
       return;
     }
     ret = fill_tbs_buffer(tbsData, TAG2_LEN_ID, &offset, sizeof(tbsData));
-    if (ret != 0){
+    if (ret != 0) {
       status = kStatus_SSS_Fail;
       return;
     }
     ret = fill_tbs_buffer(tbsData, TAG2_VALUE_ID, &offset, sizeof(tbsData));
-    if (ret != 0){
+    if (ret != 0) {
       status = kStatus_SSS_Fail;
       return;
     }
     ret = fill_tbs_buffer(tbsData, TAG3_ID, &offset, sizeof(tbsData));
-    if (ret != 0){
+    if (ret != 0) {
       status = kStatus_SSS_Fail;
       return;
     }
     ret = fill_tbs_buffer(tbsData, TAG3_LEN_ID, &offset, sizeof(tbsData));
-    if (ret != 0){
+    if (ret != 0) {
       status = kStatus_SSS_Fail;
       return;
     }
     ret = fill_tbs_buffer(tbsData, TAG3_VALUE_ID, &offset, sizeof(tbsData));
-    if (ret != 0){
+    if (ret != 0) {
       status = kStatus_SSS_Fail;
       return;
     }
-    ret = fill_tbs_buffer(tbsData, END_CONTAINER_SE05X_ID, &offset, sizeof(tbsData));
-    if (ret != 0){
+    ret = fill_tbs_buffer(tbsData, END_CONTAINER_SE05X_ID, &offset,
+                          sizeof(tbsData));
+    if (ret != 0) {
       status = kStatus_SSS_Fail;
       return;
     }
-    ret = fill_tbs_buffer(tbsData, ATTEST_CHALLENGE_ID, &offset, sizeof(tbsData));
-    if (ret != 0){
+    ret =
+        fill_tbs_buffer(tbsData, ATTEST_CHALLENGE_ID, &offset, sizeof(tbsData));
+    if (ret != 0) {
       status = kStatus_SSS_Fail;
       return;
     }
@@ -379,14 +380,14 @@ void se05x_dev_attest_key_prov(void) {
            DEV_ATTESTATION_KEY_SE05X_ID_IS);
     status = se05x_set_key(keyPairData, sizeof(keyPairData), 256,
                            kSSS_KeyPart_Pair, kSSS_CipherType_EC_NIST_P,
-                           DEV_ATTESTATION_KEY_SE05X_ID_IS,
-                           &policy_for_ec_key, sizeof(policy_for_ec_key));
+                           DEV_ATTESTATION_KEY_SE05X_ID_IS, &policy_for_ec_key,
+                           sizeof(policy_for_ec_key));
     if (status != kStatus_SSS_Success) {
       printf("Error in se05x_set_key \n");
       return;
     }
 
-        /* Set cert declaration data */
+    /* Set cert declaration data */
     printf("Create binary file for cert decl data at location - %02x \n",
            CERT_DECLARATION_DATA_SE05X_ID);
     status = se05x_set_key(cert_declaration, sizeof(cert_declaration),
@@ -397,20 +398,17 @@ void se05x_dev_attest_key_prov(void) {
       printf("Error in se05x_set_key \n");
       return;
     }
-
   }
 #endif
 
   LOG_I("SE05x - Turn OFF secure Element");
-  if (se05x_host_gpio_set_value(0) != 0)
-  {
-      LOG_E("SE05x - Failed to set the GPIO connected to SE05x to low");
+  if (se05x_host_gpio_set_value(0) != 0) {
+    LOG_E("SE05x - Failed to set the GPIO connected to SE05x to low");
   }
 
   LOG_I("SE05x - De-initialize GPIO");
-  if (se05x_host_gpio_deinit() != 0)
-  {
-      LOG_E("SE05x - Failed to de-initialize GPIO connected to SE05x");
+  if (se05x_host_gpio_deinit() != 0) {
+    LOG_E("SE05x - Failed to de-initialize GPIO connected to SE05x");
   }
 
   printf("Attestation key and cert Provision successful \n");

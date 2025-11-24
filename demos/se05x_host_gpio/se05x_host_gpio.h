@@ -6,7 +6,7 @@
 
 #include <stdbool.h>
 
-#if defined (SE05X_HOST_GPIO_IMX) && SE05X_HOST_GPIO_IMX == 1
+#if defined(SE05X_HOST_GPIO_IMX) && SE05X_HOST_GPIO_IMX == 1
 #include <gpiod.h>
 #endif
 

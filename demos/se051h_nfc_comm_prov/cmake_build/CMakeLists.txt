@@ -6,7 +6,7 @@ SET(SIMW_LIB_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../../)
 INCLUDE(${SIMW_LIB_DIR}/simw_lib.cmake)
 
 IF("${PTMW_SE05X_Auth}" STREQUAL "None")
-ADD_EXECUTABLE(${PROJECT_NAME} ${SIMW_SE_SOURCES} main.c ../common/se051h_nfc_comm_prov.cpp)
+ADD_EXECUTABLE(${PROJECT_NAME} ${SIMW_SE_SOURCES} main.c ../common/se051h_nfc_comm_prov.cpp ${SIMW_LIB_DIR}/demos/se05x_host_gpio/se05x_host_gpio.c)
 ELSE()
 ADD_EXECUTABLE(${PROJECT_NAME} ${SIMW_SE_SOURCES} ${SIMW_SE_AUTH_SOURCES} main.c ../common/se051h_nfc_comm_prov.cpp)
 ENDIF()
@@ -21,4 +21,5 @@ TARGET_INCLUDE_DIRECTORIES(
     ../common/
     ${SIMW_INC_DIR}/
     ${SIMW_LIB_DIR}/
+    ${SIMW_LIB_DIR}/demos/se05x_host_gpio
     )

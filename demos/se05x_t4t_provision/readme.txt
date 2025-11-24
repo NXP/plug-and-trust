@@ -1,0 +1,1 @@
+This example is removed and please use se051h_nfc_comm_prov example to provision T4T applet.

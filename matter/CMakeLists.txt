@@ -68,7 +68,9 @@ if (CONFIG_SE05X_LIB)
         ${SIMW_LIB_DIR}/hostlib/hostLib/libCommon/smCom/T1oI2C
         ${SIMW_LIB_DIR}/hostlib/hostLib/accessManager/inc
         ${SIMW_LIB_DIR}/demos/se05x_host_gpio
+        ${SIMW_LIB_DIR}/demos/se051h_nfc_comm_prov/common
     )
+
     target_compile_definitions(simw_lib
         PUBLIC
         ${SDK_DEFINES}
@@ -77,7 +79,8 @@ if (CONFIG_SE05X_LIB)
         T1oI2C_UM11225
         SMCOM_T1oI2C
     )
-    if (CONFIG_SE05X_SCP03)
+
+    if (CONFIG_SE05X_SCP03 OR CONFIG_SE05X_USER_ID OR CONFIG_SE05X_AES_KEY OR CONFIG_SE05X_EC_KEY OR CONFIG_SE05X_SCP03_USER_ID OR CONFIG_SE05X_SCP03_AES_KEY OR CONFIG_SE05X_SCP03_EC_KEY)
         target_sources(simw_lib PUBLIC
             ${SIMW_LIB_DIR}/sss/ex/src/ex_sss_scp03_auth.c
             ${SIMW_LIB_DIR}/hostlib/hostLib/libCommon/nxScp/nxScp03_Com.c
@@ -89,6 +92,30 @@ if (CONFIG_SE05X_LIB)
     if (CONFIG_SE05X_SCP03)
         target_include_directories(simw_lib PUBLIC
             ${SIMW_LIB_DIR}/feature_file/scp03_ftr
+        )
+    elseif (CONFIG_SE05X_USER_ID)
+        target_include_directories(simw_lib PUBLIC
+            ${SIMW_LIB_DIR}/feature_file/user_id_ftr
+        )
+    elseif (CONFIG_SE05X_AES_KEY)
+        target_include_directories(simw_lib PUBLIC
+            ${SIMW_LIB_DIR}/feature_file/aes_key_ftr
+        )
+    elseif (CONFIG_SE05X_EC_KEY)
+        target_include_directories(simw_lib PUBLIC
+            ${SIMW_LIB_DIR}/feature_file/ec_key_ftr
+        )
+    elseif (CONFIG_SE05X_SCP03_USER_ID)
+        target_include_directories(simw_lib PUBLIC
+            ${SIMW_LIB_DIR}/feature_file/scp03_user_id_key_ftr
+        )
+    elseif (CONFIG_SE05X_SCP03_AES_KEY)
+        target_include_directories(simw_lib PUBLIC
+            ${SIMW_LIB_DIR}/feature_file/scp03_aes_key_ftr
+        )
+    elseif (CONFIG_SE05X_SCP03_EC_KEY)
+        target_include_directories(simw_lib PUBLIC
+            ${SIMW_LIB_DIR}/feature_file/scp03_ec_key_ftr
         )
     else()
         target_include_directories(simw_lib PUBLIC
@@ -106,6 +133,19 @@ if (CONFIG_SE05X_LIB)
             AX_EMBEDDED
             SDK_OS_FREE_RTOS=1
             FRDM_RW612
+        )
+    endif()
+
+    if (CONFIG_MCUX_HW_DEVICE_MIMXRT1062)
+        target_sources(simw_lib PUBLIC
+            ${SIMW_LIB_DIR}/hostlib/hostLib/platform/rt/rt1060/i2c_imxrt.c
+            ${SIMW_LIB_DIR}/hostlib/hostLib/platform/ksdk/timer_kinetis_freertos.c
+        )
+        target_compile_definitions(simw_lib
+            PUBLIC
+            AX_EMBEDDED
+            SDK_OS_FREE_RTOS=1
+            IMX_RT
         )
     endif()
 

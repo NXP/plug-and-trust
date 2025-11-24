@@ -308,14 +308,14 @@
 
 /** Do User Authentication with AES Key
  * Earlier this was called AppletSCP03 */
-#define SSS_HAVE_SE05X_AUTH_AESKEY 0
+#define SSS_HAVE_SE05X_AUTH_AESKEY 1
 
 /** Do User Authentication with EC Key
  * Earlier this was called FastSCP */
 #define SSS_HAVE_SE05X_AUTH_ECKEY 0
 
 /** UserID and PlatfSCP03 */
-#define SSS_HAVE_SE05X_AUTH_USERID_PLATFSCP03 1
+#define SSS_HAVE_SE05X_AUTH_USERID_PLATFSCP03 0
 
 /** AESKey and PlatfSCP03 */
 #define SSS_HAVE_SE05X_AUTH_AESKEY_PLATFSCP03 0

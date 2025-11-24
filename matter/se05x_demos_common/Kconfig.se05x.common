@@ -2,13 +2,13 @@
 # Copyright 2025 NXP
 # SPDX-License-Identifier: BSD-3-Clause
 
-mainmenu "SE05X Device attestation provisioning example"
+mainmenu "SE05X examples"
 
 # Secure Element
 config CHIP_SE05X
 	bool "Enable Secure Element support"
 	select SE05X_LIB
-	select MCUX_COMPONENT_middleware.mbedtls if SE05X_SCP03
+	select MCUX_COMPONENT_middleware.mbedtls if SE05X_SCP03 || SE05X_USER_ID || SE05X_AES_KEY || SE05X_EC_KEY || SE05X_SCP03_USER_ID || SE05X_SCP03_AES_KEY || SE05X_SCP03_EC_KEY
 	help
 		Use Secure Element to perform crypto operations.
 
@@ -39,7 +39,8 @@ config MCUX_COMPONENT_SIMW_LIB_MODULE
 
 config MATTER_DEFAULT_LINKER_FILE_PATH
 	string "Default linker file path for Matter applications"
-	default "$(CHIP_ROOT)/third_party/nxp/nxp_matter_support/examples/platform/rt/rw61x/app/ldscripts/RW610_flash.ld"
+	default "$(CHIP_ROOT)/third_party/nxp/nxp_matter_support/examples/platform/rt/rw61x/app/ldscripts/RW610_flash.ld" if MCUX_HW_DEVICE_RW612 || MCUX_HW_DEVICE_RW610
+	default "$(CHIP_ROOT)/third_party/nxp/nxp_matter_support/examples/platform/rt/rt1060/app/ldscripts/MIMXRT1062xxxxx_flexspi_nor.ld" if MCUX_HW_DEVICE_MIMXRT1062
 	help
 		Defines the path to the linker file to use.
 
@@ -49,9 +50,32 @@ config CHIP_NXP_PLATFORM_RW61X
     help
         NXP RW61x platform.
 
+config CHIP_NXP_RT1060_SDK_DEPENDENCIES
+    bool "RT1060 SDK DEPENDENCIES"
+    depends on MCUX_HW_DEVICE_MIMXRT1061 || MCUX_HW_DEVICE_MIMXRT1062
+	default y
+	select MCUX_COMPONENT_component.timer_manager
+	select MCUX_COMPONENT_component.igpio_adapter
+	select MCUX_COMPONENT_driver.edma
+	select MCUX_COMPONENT_middleware.sdmmc.common
+	select MCUX_COMPONENT_middleware.sdmmc.host.usdhc
+	select MCUX_COMPONENT_middleware.sdmmc.sdio
+	select MCUX_COMPONENT_component.wifi_bt_module.config
+    help
+        NXP RT1060 platform sdk dependencies.
+
+config CHIP_NXP_RW612_SDK_DEPENDENCIES
+    bool "RW612 SDK DEPENDENCIES"
+    depends on MCUX_HW_DEVICE_RW612 || MCUX_HW_DEVICE_RW610
+	default y
+	select MCUX_COMPONENT_middleware.freertos-kernel.cm33_non_trustzone
+    help
+        NXP RW612 platform sdk dependencies.
+
 config CHIP_NXP_PLATFORM_FOLDER_NAME
 	string "NXP platform folder name"
-	default "rt/rw61x"
+	default "rt/rw61x" if MCUX_HW_DEVICE_RW612 || MCUX_HW_DEVICE_RW610
+	default "rt/rt1060" if MCUX_HW_DEVICE_MIMXRT1061 || MCUX_HW_DEVICE_MIMXRT1062
 	help
 		Defines the platform folder name to be used.
 # FreeRTOS defaults
@@ -125,9 +149,10 @@ config INCLUDE_xTaskGetHandle
 config configKERNEL_PROVIDED_STATIC_MEMORY
 	default y
 
-if SE05X_SCP03
+if SE05X_SCP03 || SE05X_USER_ID || SE05X_AES_KEY || SE05X_EC_KEY || SE05X_SCP03_USER_ID || SE05X_SCP03_AES_KEY || SE05X_SCP03_EC_KEY
 	choice MCUX_COMPONENT_middleware.mbedtls.port.selection
-		default MCUX_COMPONENT_middleware.mbedtls.port.els_pkc
+		default MCUX_COMPONENT_middleware.mbedtls.port.els_pkc if MCUX_HW_DEVICE_RW612 || MCUX_HW_DEVICE_RW610
+		default MCUX_COMPONENT_middleware.mbedtls.port.ksdk if MCUX_HW_DEVICE_MIMXRT1061 || MCUX_HW_DEVICE_MIMXRT1062
 	endchoice
 endif
 

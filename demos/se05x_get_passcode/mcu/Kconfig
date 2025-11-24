@@ -1,0 +1,7 @@
+#
+# Copyright 2025 NXP
+# SPDX-License-Identifier: BSD-3-Clause
+
+mainmenu "SE05X get passcode example"
+
+rsource "../../../matter/se05x_demos_common/Kconfig.se05x.common"

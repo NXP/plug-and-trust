@@ -21,11 +21,10 @@
 
 ex_sss_boot_ctx_t gex_sss_chip_ctx;
 
-void se05x_read_cert(void)
-{
+void se05x_read_cert(void) {
   sss_status_t status = kStatus_SSS_Success;
   char *portName = nullptr;
-  sss_object_t keyObject = { 0 };
+  sss_object_t keyObject = {0};
   uint8_t buf[CERT_BUFFER_LEN] = {0};
   size_t buflen = sizeof(buf);
   size_t buflen_bits = sizeof(buf) * 8;
@@ -52,7 +51,6 @@ void se05x_read_cert(void)
     goto exit;
   }
 
-
   status = sss_key_object_init(&keyObject, &gex_sss_chip_ctx.ks);
   if (kStatus_SSS_Success != status) {
     printf("se05x error: %s\n", "sss_key_object_init failed");
@@ -65,14 +63,15 @@ void se05x_read_cert(void)
     goto exit;
   }
 
-  status = sss_key_store_get_key(&gex_sss_chip_ctx.ks, &keyObject, buf, &buflen, &buflen_bits);
+  status = sss_key_store_get_key(&gex_sss_chip_ctx.ks, &keyObject, buf, &buflen,
+                                 &buflen_bits);
   if (kStatus_SSS_Success != status) {
     printf("se05x error: %s\n", "sss_key_store_get_key failed");
     goto exit;
   }
 
   printf("Certtificate ==> \n");
-  for(i =0; i < buflen; i++){
+  for (i = 0; i < buflen; i++) {
     printf("%02x ", buf[i]);
   }
   printf("\n");

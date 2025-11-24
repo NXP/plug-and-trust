@@ -27,6 +27,8 @@ The example is be used with SE051H samples updated with NFC commissioning applet
     | Network Commissioning CLuster             | 0x7FFE0031 | Binary file        |
 
 
+NOTE: The example can also be used to provision the QR code into T4T applet.
+
 # Building
 
 The example can be built with
@@ -53,8 +55,30 @@ ninja -C out se051h_nfc_comm_prov
 ## Matter CMake Build system as
 
 ```
-user@ubuntu:~/Desktop/git/connectedhomeip$ west build -d <out_dir> -b frdmrw612 third_party/simw-top-mini/repo/demos/se051h_nfc_comm_prov/rw61x
+user@ubuntu:~/Desktop/git/connectedhomeip$ west build -d <out_dir> -b frdmrw612 third_party/simw-top-mini/repo/demos/se051h_nfc_comm_prov/mcu
 ```
 
 > [!IMPORTANT]
-> Adapt the above commands to the i.MX and RW612 Build commands accordingly.
+> Adapt the above commands to the i.MX, RW612 and RT1060 build commands accordingly.
+
+# Usage
+
+When using on Linux systems, following are the command line options available
+
+```
+--help                      ==> Display this message.
+--doreset                   ==> Delete all provisioned data (QR code is not deleted).
+--only_t4t_provision        ==> Provision only QR code in T4T applet.
+--qrcode <QR_CODE_VALUE>    ==> QR code to provisioned in T4T applet.
+--tp_spake_passcode_set_no  ==> Pass-code set to be used for SPAKE2P connection. (Possible values = 1,2,3).
+--tp_spake_itter_to_be_used ==> Iterations to be used for SPAKE2P connection. (Possible values 1000,5000,10000, 50000, 100000)
+--wifi_net_interface        ==> Enable only Wi-Fi network interface for NFC commissioning.
+--thread_net_interface      ==> Enable only Thread network interface for NFC commissioning.
+--ethernet_net_interface    ==> Enable only Ethernet network interface for NFC commissioning.
+Note: If no network interface options are passed, Wi-Fi network interface will be enabled.
+--ec_key_session_key        ==> Provision the key for EC key Applet session
+--user_id_session_key       ==> Provision the key for User ID Applet session
+--aes_key_session_key       ==> Provision the key for AES key Applet session
+```
+
+When using on supported MCUs, modify the main file defines (examples - simw-top-mini/repo/demos/se051h_nfc_comm_prov/mcu/main.cpp)

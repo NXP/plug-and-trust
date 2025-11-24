@@ -36,13 +36,13 @@
 #define SSS_HAVE_APPLET_SE05X_C 0
 
 /** SE051 with SPAKE Support */
-#define SSS_HAVE_APPLET_SE051_H 0
+#define SSS_HAVE_APPLET_SE051_H 1
 
 /** AUTH */
 #define SSS_HAVE_APPLET_AUTH 0
 
 /** SE050E */
-#define SSS_HAVE_APPLET_SE050_E 1
+#define SSS_HAVE_APPLET_SE050_E 0
 
 /** NXP Internal testing Applet */
 #define SSS_HAVE_APPLET_LOOPBACK 0

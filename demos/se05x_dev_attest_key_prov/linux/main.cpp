@@ -5,8 +5,7 @@
 
 #include "se05x_dev_attest_key_prov.h"
 
-int main (int argc, char * argv[])
-{
-    se05x_dev_attest_key_prov();
-    return 0;
+int main(int argc, char *argv[]) {
+  se05x_dev_attest_key_prov();
+  return 0;
 }

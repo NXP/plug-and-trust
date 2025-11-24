@@ -5,8 +5,7 @@
 
 #include "se05x_read_cert.h"
 
-int main (int argc, char * argv[])
-{
-    se05x_read_cert();
-    return 0;
+int main(int argc, char *argv[]) {
+  se05x_read_cert();
+  return 0;
 }

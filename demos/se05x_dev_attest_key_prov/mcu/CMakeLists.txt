@@ -63,3 +63,11 @@ target_sources(app
     ../common/se05x_dev_attest_key_prov.cpp
     ${CHIP_ROOT}/examples/platform/nxp/common/app/support/Memconfig.cpp
 )
+
+# Use MCUX post-build function to convert the executable to binary format
+mcux_convert_binary(
+    BINARY ${APPLICATION_BINARY_DIR}/app.bin
+    TARGET app
+    TOOLCHAINS ${CONFIG_TOOLCHAIN}
+    EXTRA_ARGS "${CONFIG_REMOVE_SECTIONS_FROM_BIN}"
+)
