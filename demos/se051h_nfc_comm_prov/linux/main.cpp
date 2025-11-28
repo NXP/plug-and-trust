@@ -62,7 +62,6 @@ int main(int argc, char *argv[]) {
     } else if (strcmp(argv[i], "--only_t4t_provision") == 0) {
       only_t4t_provision = 1;
     } else if (strcmp(argv[i], "--qrcode") == 0) {
-      printf("i = %d, argc = %d \n", i, argc);
       if (argc <= i + 1) {
         printf("No QR code passed \n");
         return 0;

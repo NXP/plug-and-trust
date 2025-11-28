@@ -40,11 +40,12 @@ int main(int argc, char *argv[]) {
       char *value;
 
       if (argc <= i + 1) {
-        printf("No passcode set number passed \n");
+        printf("No pass-code set number passed \n");
         return 0;
       }
 
-      passcode_set_no = (uint8_t)strtol(argv[i + 1], &value, 10);
+      i++;
+      passcode_set_no = (uint8_t)strtol(argv[i], &value, 10);
       if (passcode_set_no > 3 || passcode_set_no == 0) {
         printf("passcode_set_no is between 1-3\n");
         return -1;
