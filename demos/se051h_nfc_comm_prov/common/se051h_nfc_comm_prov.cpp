@@ -733,8 +733,8 @@ static sss_status_t se051h_provision_t4t_applet(uint8_t *qrcode,
   ENSURE_OR_RETURN_ON_ERROR(
       qrcodeLen <= (sizeof(ndefData) - sizeof(ndefHeader)), kStatus_SSS_Fail);
 
-  ndefHeader[1] = (uint8_t)qrcodeLen + 5 /* Remaining buffer in NDEF_HEADER */;
-  ndefHeader[4] = (uint8_t)qrcodeLen + 1 /* Remaining buffer in NDEF_HEADER */;
+  ndefHeader[1] = (uint8_t)qrcodeLen + 4 /* Remaining buffer in NDEF_HEADER */;
+  ndefHeader[4] = (uint8_t)qrcodeLen /* Remaining buffer in NDEF_HEADER */;
 
   memcpy(ndefData, ndefHeader, ndefHeaderLen);
   memcpy(ndefData + ndefHeaderLen, qrcode, qrcodeLen);
