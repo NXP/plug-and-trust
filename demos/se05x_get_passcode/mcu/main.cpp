@@ -20,6 +20,7 @@
 #if (SSS_HAVE_HOSTCRYPTO_MBEDTLS) && (SSS_HAVE_MBEDTLS_2_X) && (FRDM_RW612)
 #include "els_pkc_mbedtls.h"
 #elif (SSS_HAVE_HOSTCRYPTO_MBEDTLS) && (SSS_HAVE_MBEDTLS_2_X) && (IMX_RT)
+#include "fsl_common.h"
 #include "ksdk_mbedtls.h"
 #endif
 

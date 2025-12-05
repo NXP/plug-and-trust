@@ -107,7 +107,7 @@ if (CONFIG_SE05X_LIB)
         )
     elseif (CONFIG_SE05X_SCP03_USER_ID)
         target_include_directories(simw_lib PUBLIC
-            ${SIMW_LIB_DIR}/feature_file/scp03_user_id_key_ftr
+            ${SIMW_LIB_DIR}/feature_file/scp03_user_id_ftr
         )
     elseif (CONFIG_SE05X_SCP03_AES_KEY)
         target_include_directories(simw_lib PUBLIC

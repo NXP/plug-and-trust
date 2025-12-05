@@ -75,7 +75,7 @@ void se051h_nfc_comm_task(void *pvParam) {
   uint8_t device_network_type = DEVICE_NETWORK_TYPE;
   uint8_t qrcode[] = QRCODE;
   uint8_t *qrcode_ptr = &qrcode[0];
-  size_t qrcodeLen = sizeof(qrcode);
+  size_t qrcodeLen = sizeof(qrcode) - 1;
   uint8_t tp_spake_passcode_set_no = TP_SPAKE_PASSCODE_SET_NO;
   uint32_t tp_spake_itter_to_be_used = TP_SPAKE_ITTER_TO_BE_USED;
 
