@@ -412,14 +412,14 @@ static sss_status_t se051h_provision_ssid_passcode() {
 
   uint8_t wifi_cred_data[] = {WIFI_CRED_DATA};
 
-  smstatus = se05x_delete_key(SE051H_WIFI_CRED_ID_APP_8_6);
+  smstatus = se05x_delete_key(SE051H_WIFI_CRED_ID_APP_8_4);
   ENSURE_OR_RETURN_ON_ERROR(smstatus == SM_OK, kStatus_SSS_Fail);
 
   LOG_I("Writing WI-FI credentials to SE05x at Key id = %x",
-        SE051H_WIFI_CRED_ID_APP_8_6);
+        SE051H_WIFI_CRED_ID_APP_8_4);
   status = se051h_set_key(wifi_cred_data, sizeof(wifi_cred_data),
                           sizeof(wifi_cred_data) * 8, kSSS_KeyPart_Default,
-                          kSSS_CipherType_Binary, SE051H_WIFI_CRED_ID_APP_8_6,
+                          kSSS_CipherType_Binary, SE051H_WIFI_CRED_ID_APP_8_4,
                           NULL, 0);
   if (status != kStatus_SSS_Success) {
     printf("Error in se051h_provision_ssid_passcode\n");
@@ -889,7 +889,7 @@ static sss_status_t se051h_do_reset() {
   SE05X_DELETE_KEY_TEMPLATE(SE051H_NODE_OP_KEY_ID);
   SE05X_DELETE_KEY_TEMPLATE(SE051H_NOC_ID);
   SE05X_DELETE_KEY_TEMPLATE(SE051H_ROOT_CER_ID);
-  SE05X_DELETE_KEY_TEMPLATE(SE051H_WIFI_CRED_ID_APP_8_6);
+  SE05X_DELETE_KEY_TEMPLATE(SE051H_WIFI_CRED_ID_APP_8_4);
   SE05X_DELETE_KEY_TEMPLATE(SE051H_WIFI_CRED_ID_APP_8_8);
   SE05X_DELETE_KEY_TEMPLATE(SE051H_ACL_ID);
   SE05X_DELETE_KEY_TEMPLATE(SE051H_IPK_ID);
