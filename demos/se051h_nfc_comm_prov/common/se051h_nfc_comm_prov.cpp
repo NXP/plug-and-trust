@@ -1,6 +1,6 @@
 /*
  *
- * Copyright 2021,2025 NXP
+ * Copyright 2021,2025-2026 NXP
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
@@ -24,6 +24,8 @@
 
 static ex_sss_boot_ctx_t gex_sss_chip_ctx;
 
+static uint8_t policy = 0;
+
 static sss_status_t se051h_set_key(const uint8_t *buffer, size_t bufferLen,
                                    size_t bitLen, sss_key_part_t keyPart,
                                    sss_cipher_type_t cipherType, uint32_t keyId,
@@ -31,6 +33,7 @@ static sss_status_t se051h_set_key(const uint8_t *buffer, size_t bufferLen,
   sss_status_t status = kStatus_SSS_Success;
   sss_object_t keyObj;
   smStatus_t smstatus = SM_NOT_OK;
+  Se05xPolicy_t se05x_policy;
 
   status = sss_key_object_init(&keyObj, &gex_sss_chip_ctx.ks);
   ENSURE_OR_RETURN_ON_ERROR(status == kStatus_SSS_Success, status);
@@ -42,8 +45,24 @@ static sss_status_t se051h_set_key(const uint8_t *buffer, size_t bufferLen,
 
   if (cipherType == kSSS_CipherType_Binary ||
       cipherType == kSSS_CipherType_Certificate) {
+    if (policy) {
+        if (keyId == SE051H_WIFI_CRED_ID_APP_8_4 || keyId == SE051H_WIFI_CRED_ID_APP_8_8) {
+            uint8_t policies_buff[MAX_POLICY_BUFFER_SIZE] = WIFI_POLICY_BUFF;
+            se05x_policy.value = policies_buff;
+            se05x_policy.value_len = WIFI_POLICY_BUF_LEN;
+
+        } else {
+            uint8_t policies_buff[MAX_POLICY_BUFFER_SIZE] = BINARY_POLICY_BUFF;
+            se05x_policy.value = policies_buff;
+            se05x_policy.value_len = POLICY_BUF_LEN;
+        }
+    }
+    else {
+        se05x_policy.value = NULL;
+        se05x_policy.value_len = 0;
+    }
     smstatus = Se05x_API_WriteBinary_Ver(
-        &((sss_se05x_session_t *)&gex_sss_chip_ctx.session)->s_ctx, NULL, keyId,
+        &((sss_se05x_session_t *)&gex_sss_chip_ctx.session)->s_ctx, &se05x_policy, keyId,
         0, (uint16_t)bufferLen, buffer, bufferLen, 0);
     if (smstatus != SM_OK) {
       LOG_E("Error in setting hmac key");
@@ -86,6 +105,10 @@ static sss_status_t se051h_set_key(const uint8_t *buffer, size_t bufferLen,
       status = kStatus_SSS_Fail;
     }
   } else {
+    if (!policy) {
+        options = NULL;
+        optionsLen = 0;
+    }
     status = sss_key_store_set_key(&gex_sss_chip_ctx.ks, &keyObj, buffer,
                                    bufferLen, bitLen, options, optionsLen);
     if (status != kStatus_SSS_Success) {
@@ -270,31 +293,41 @@ static sss_status_t se051h_provision_da_key() {
 
   sss_status_t status = kStatus_SSS_Fail;
   smStatus_t smstatus = SM_NOT_OK;
-  SE05x_Result_t exists = kSE05x_Result_NA;
 
   uint8_t privKey[] = {DA_KEY_PAIR_DATA};
+  sss_policy_t policy_for_DA_key;
 
-  smstatus = Se05x_API_CheckObjectExists(
-      &((sss_se05x_session_t *)&gex_sss_chip_ctx.session)->s_ctx,
-      SE051H_DA_KEY_PAIR_ID, &exists);
-  if (smstatus == SM_OK) {
-    if (exists == kSE05x_Result_SUCCESS) {
-      LOG_I("Device Attestation Key already provisioned");
-      status = kStatus_SSS_Success;
-    } else {
-      LOG_I("Writing DA private key to SE05x at Key id = %x",
-            SE051H_DA_KEY_PAIR_ID);
-      status = se051h_set_key(privKey, sizeof(privKey), 256, kSSS_KeyPart_Pair,
-                              kSSS_CipherType_EC_NIST_P, SE051H_DA_KEY_PAIR_ID,
-                              NULL, 0);
-      if (status != kStatus_SSS_Success) {
-        printf("Error is set DA private key\n");
-      }
-    }
-  } else {
-    LOG_E("Se05x_API_CheckObjectExists Failed");
+  if (policy) {
+      static sss_policy_u assym_pol;
+      assym_pol.type = KPolicy_Asym_Key;
+      assym_pol.policy.asymmkey.can_Sign = 1;
+
+      static sss_policy_u commonPol;
+      commonPol.type = KPolicy_Common;
+      commonPol.policy.common.can_Delete = 1;
+      commonPol.policy.common.can_Read = 1;
+
+      static sss_policy_u signPol;
+      signPol.type = KPolicy_Internal_Sign;
+      signPol.policy.tbsItemList.tbsItemList_KeyId=0x7FFF2031;
+
+      policy_for_DA_key.nPolicies = 3;
+      policy_for_DA_key.policies[0] = &assym_pol;
+      policy_for_DA_key.policies[1] = &commonPol;
+      policy_for_DA_key.policies[2] = &signPol;
   }
 
+  smstatus = se05x_delete_key(SE051H_DA_KEY_PAIR_ID);
+  ENSURE_OR_RETURN_ON_ERROR(smstatus == SM_OK, kStatus_SSS_Fail);
+
+
+  LOG_I("Writing DA private key to SE05x at Key id = %x", SE051H_DA_KEY_PAIR_ID);
+  status = se051h_set_key(privKey, sizeof(privKey), 256, kSSS_KeyPart_Pair,
+                          kSSS_CipherType_EC_NIST_P, SE051H_DA_KEY_PAIR_ID,
+                          &policy_for_DA_key, sizeof(policy_for_DA_key));
+  if (status != kStatus_SSS_Success) {
+    printf("Error is set DA private key\n");
+  }
   return status;
 }
 
@@ -346,6 +379,27 @@ static sss_status_t se051h_provision_node_oper_key() {
   sss_status_t status = kStatus_SSS_Fail;
   smStatus_t smstatus = SM_NOT_OK;
 
+  sss_policy_t policy_for_NO_key;
+
+  if (policy) {
+      static sss_policy_u assym_pol;
+      assym_pol.type = KPolicy_Asym_Key;
+      assym_pol.policy.asymmkey.can_Sign = 1;
+      assym_pol.policy.asymmkey.can_Verify = 1;
+      assym_pol.policy.asymmkey.can_Gen = 1;
+
+      static sss_policy_u commonPol;
+      commonPol.type = KPolicy_Common;
+      commonPol.policy.common.req_Sm = 1;
+      commonPol.policy.common.can_Read = 1;
+      commonPol.policy.common.can_Delete = 1;
+
+      policy_for_NO_key.nPolicies = 2;
+      policy_for_NO_key.policies[0] = &assym_pol;
+      policy_for_NO_key.policies[1] = &commonPol;
+  }
+
+
   uint8_t no_key[] = {NODE_OP_KEY_PAIR_DATA};
 
   smstatus = se05x_delete_key(SE051H_NODE_OP_KEY_ID);
@@ -355,7 +409,7 @@ static sss_status_t se051h_provision_node_oper_key() {
         SE051H_NODE_OP_KEY_ID);
   status =
       se051h_set_key(no_key, sizeof(no_key), 256, kSSS_KeyPart_Pair,
-                     kSSS_CipherType_EC_NIST_P, SE051H_NODE_OP_KEY_ID, NULL, 0);
+                     kSSS_CipherType_EC_NIST_P, SE051H_NODE_OP_KEY_ID, &policy_for_NO_key, sizeof(policy_for_NO_key));
   if (status != kStatus_SSS_Success) {
     printf("Error in se051h_provision_node_oper_key\n");
   }
@@ -561,7 +615,7 @@ static sss_status_t se051h_provision_general_comm_cluster() {
       TC_ACKNOWLEDGEMENTS,
       TC_ACKNOWLEDGEMENTS_REQUIRED,
       TC_UPDATE_DEADLINE,
-      RECOVERY_IDENTIFIER,
+      IS_COMM_WITHOUT_POWER,
   };
 
   smstatus = se05x_delete_key(SE051H_GENERAL_COMM_CLUSTER_ID);
@@ -886,6 +940,7 @@ static sss_status_t se051h_do_reset() {
   SE05X_DELETE_KEY_TEMPLATE(SE051H_PAI_ID);
   SE05X_DELETE_KEY_TEMPLATE(SE051H_ATTEST_TBS);
   SE05X_DELETE_KEY_TEMPLATE(SE051H_SELECT_RESPONSE_ID);
+  SE05X_DELETE_KEY_TEMPLATE(SE051H_DA_KEY_PAIR_ID);
   SE05X_DELETE_KEY_TEMPLATE(SE051H_NODE_OP_KEY_ID);
   SE05X_DELETE_KEY_TEMPLATE(SE051H_NOC_ID);
   SE05X_DELETE_KEY_TEMPLATE(SE051H_ROOT_CER_ID);
@@ -909,18 +964,19 @@ void se051h_nfc_comm_prov(ex_sss_boot_ctx_t *pCtx, uint8_t do_reset,
                           uint32_t tp_spake_itter_to_be_used,
                           uint8_t do_ec_key_provision,
                           uint8_t do_aes_key_provision,
-                          uint8_t do_user_id_provision) {
+                          uint8_t do_user_id_provision,
+                          uint8_t provision_with_policy) {
   sss_status_t status = kStatus_SSS_Success;
   const char *portName = nullptr;
 
-  if (se05x_host_gpio_init() != 0) {
-    LOG_E("SE05x - Error in se05x_host_gpio_init function");
+  if (se05x_host_gpio_power_init() != 0) {
+    LOG_E("SE05x - Error in se05x_host_gpio_power_init function");
     LOG_E("SE05x - Crypto operations offloaded to secure element will fail");
   }
 
   LOG_I("SE05x - Turn ON secure Element");
-  if (se05x_host_gpio_set_value(1) != 0) {
-    LOG_E("SE05x - Error in se05x_host_gpio_set_value(1) function");
+  if (se05x_host_gpio_power_set(1) != 0) {
+    LOG_E("SE05x - Error in se05x_host_gpio_power_set(1) function");
   }
 
   if (pCtx == NULL) {
@@ -938,6 +994,10 @@ void se051h_nfc_comm_prov(ex_sss_boot_ctx_t *pCtx, uint8_t do_reset,
     memcpy(&gex_sss_chip_ctx, pCtx, sizeof(ex_sss_boot_ctx_t));
   }
 
+  if (provision_with_policy) {
+    policy = 1;
+  }
+
   if (do_reset) {
     LOG_I("Deleting all keys of NFC Commissioning provison example");
     status = se051h_do_reset();
@@ -949,6 +1009,25 @@ void se051h_nfc_comm_prov(ex_sss_boot_ctx_t *pCtx, uint8_t do_reset,
 
   if (only_t4t_provision == 1) {
     goto t4t_provision;
+  }
+
+  if (do_ec_key_provision == 1) {
+    status = se051h_ec_key_provision();
+    ENSURE_OR_GO_CLEANUP(status == kStatus_SSS_Success);
+  }
+
+  if (do_aes_key_provision == 1) {
+    status = se051h_aes_key_provision();
+    ENSURE_OR_GO_CLEANUP(status == kStatus_SSS_Success);
+  }
+
+  if (do_user_id_provision == 1) {
+    status = se051h_userid_key_provision();
+    ENSURE_OR_GO_CLEANUP(status == kStatus_SSS_Success);
+  }
+
+  if (do_ec_key_provision || do_aes_key_provision || do_user_id_provision) {
+    goto cleanup;
   }
 
 #if 0
@@ -1040,24 +1119,6 @@ void se051h_nfc_comm_prov(ex_sss_boot_ctx_t *pCtx, uint8_t do_reset,
   status = se051h_provision_vendor_reserved();
   ENSURE_OR_GO_CLEANUP(status == kStatus_SSS_Success);
 
-  // EC Key for EC Key applet session
-  if (do_ec_key_provision) {
-    status = se051h_ec_key_provision();
-    ENSURE_OR_GO_CLEANUP(status == kStatus_SSS_Success);
-  }
-
-  // AES key for AES applet session
-  if (do_aes_key_provision) {
-    status = se051h_aes_key_provision();
-    ENSURE_OR_GO_CLEANUP(status == kStatus_SSS_Success);
-  }
-
-  // User id key for User Id applet session
-  if (do_user_id_provision) {
-    status = se051h_userid_key_provision();
-    ENSURE_OR_GO_CLEANUP(status == kStatus_SSS_Success);
-  }
-
 t4t_provision:
 #if SSS_HAVE_APPLET_SE051_H
   if (qrcodeLen != 0) {
@@ -1070,12 +1131,12 @@ t4t_provision:
 
 cleanup:
   LOG_I("SE05x - Turn OFF secure Element");
-  if (se05x_host_gpio_set_value(0) != 0) {
+  if (se05x_host_gpio_power_set(0) != 0) {
     LOG_E("SE05x - Failed to set the GPIO connected to SE05x to low");
   }
 
   LOG_I("SE05x - De-initialize GPIO");
-  if (se05x_host_gpio_deinit() != 0) {
+  if (se05x_host_gpio_power_deinit() != 0) {
     LOG_E("SE05x - Failed to de-initialize GPIO connected to SE05x");
   }
 

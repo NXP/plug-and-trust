@@ -42,6 +42,7 @@
 // By default WiFi network interface will be enabled.
 // Change to enable particular interface for NFC commissioning.
 #define DEVICE_NETWORK_TYPE  (WIFI_NET_INTERFACE)
+#define PROVISION_WITH_POLICY 0
 
 static TaskHandle_t gSSSExRtosTaskHandle = NULL;
 
@@ -78,11 +79,12 @@ void se051h_nfc_comm_task(void *pvParam) {
   size_t qrcodeLen = sizeof(qrcode) - 1;
   uint8_t tp_spake_passcode_set_no = TP_SPAKE_PASSCODE_SET_NO;
   uint32_t tp_spake_itter_to_be_used = TP_SPAKE_ITTER_TO_BE_USED;
+  uint8_t provision_with_policy = PROVISION_WITH_POLICY;
 
   se051h_nfc_comm_prov(NULL, do_reset, only_t4t_provision, qrcode_ptr,
                        qrcodeLen, device_network_type, tp_spake_passcode_set_no,
                        tp_spake_itter_to_be_used, do_ec_key_provision,
-                       do_aes_key_provision, do_user_id_provision);
+                       do_aes_key_provision, do_user_id_provision, provision_with_policy);
 }
 
 #if (defined(configCHECK_FOR_STACK_OVERFLOW) &&                                \

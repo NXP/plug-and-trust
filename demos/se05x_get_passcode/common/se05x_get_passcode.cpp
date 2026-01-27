@@ -79,14 +79,14 @@ static sss_status_t read_cer_and_get_passcode(uint32_t keyId,
 void se05x_get_passcode(uint8_t passcode_set_no) {
   sss_status_t status = kStatus_SSS_Success;
   const char *portName = nullptr;
-  if (se05x_host_gpio_init() != 0) {
-    LOG_E("SE05x - Error in se05x_host_gpio_init function");
+  if (se05x_host_gpio_power_init() != 0) {
+    LOG_E("SE05x - Error in se05x_host_gpio_power_init function");
     LOG_E("SE05x - Crypto operations offloaded to secure element will fail");
   }
 
   LOG_I("SE05x - Turn ON secure Element");
-  if (se05x_host_gpio_set_value(1) != 0) {
-    LOG_E("SE05x - Error in se05x_host_gpio_set_value(1) function");
+  if (se05x_host_gpio_power_set(1) != 0) {
+    LOG_E("SE05x - Error in se05x_host_gpio_power_set(1) function");
   }
 
   memset(&gex_sss_chip_ctx, 0, sizeof(gex_sss_chip_ctx));
@@ -106,12 +106,12 @@ void se05x_get_passcode(uint8_t passcode_set_no) {
 cleanup:
 
   LOG_I("SE05x - Turn OFF secure Element");
-  if (se05x_host_gpio_set_value(0) != 0) {
+  if (se05x_host_gpio_power_set(0) != 0) {
     LOG_E("SE05x - Failed to set the GPIO connected to SE05x to low");
   }
 
   LOG_I("SE05x - De-initialize GPIO");
-  if (se05x_host_gpio_deinit() != 0) {
+  if (se05x_host_gpio_power_deinit() != 0) {
     LOG_E("SE05x - Failed to de-initialize GPIO connected to SE05x");
   }
 

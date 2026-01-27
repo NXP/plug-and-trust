@@ -1,5 +1,5 @@
 #
-# Copyright 2025 NXP
+# Copyright 2025-2026 NXP
 # SPDX-License-Identifier: BSD-3-Clause
 #
 
@@ -63,10 +63,10 @@ config SE05X_SCP03_EC_KEY
 	help
 		To enable SCP03 + EC Key authenticated session with SE05x
 
-config SE05X_HOST_GPIO_RW61X
-	bool "RW61x SE05x GPIO enablement"
-	depends on MCUX_HW_DEVICE_RW612 || MCUX_HW_DEVICE_RW610
+config SE05X_HOST_GPIO
+	bool "Host controller SE05x GPIO enablement"
+	depends on MCUX_HW_DEVICE_RW612 || MCUX_HW_DEVICE_RW610 || MCUX_HW_DEVICE_MIMXRT1062
 	help
-		NXP RW61x SE05x GPIO enablement
+		NXP Host controller SE05x GPIO enablement
 
 endif # SE05X_LIB

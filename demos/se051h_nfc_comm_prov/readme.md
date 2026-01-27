@@ -75,7 +75,7 @@ When using on Linux systems, following are the command line options available
 --wifi_net_interface        ==> Enable only Wi-Fi network interface for NFC commissioning.
 --thread_net_interface      ==> Enable only Thread network interface for NFC commissioning.
 --ethernet_net_interface    ==> Enable only Ethernet network interface for NFC commissioning.
-Note: If no network interface options are passed, Wi-Fi network interface will be enabled.
+Note: It is mandatory to pass at-least one network interface.
 --ec_key_session_key        ==> Provision the key for EC key Applet session
 --user_id_session_key       ==> Provision the key for User ID Applet session
 --aes_key_session_key       ==> Provision the key for AES key Applet session

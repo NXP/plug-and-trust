@@ -53,9 +53,9 @@ static void print_help() {
          "applet. \n");
   printf(" --qrcode <QR_CODE_VALUE>     ==> QR code to provisioned in T4T "
          "applet. \n");
-  printf(" --tp_spake_passcode_set_no   ==> Trust Provisioned passcode set to "
+  printf(" --tp_spake_passcode_set_no   ==> Trust Provisioned pass-code set to "
          "be used (Possible values 1,2,3). \n");
-  printf(" --tp_spake_itter_to_be_used  ==> Trust Provisioned itteration count "
+  printf(" --tp_spake_itter_to_be_used  ==> Trust Provisioned iteration count "
          "to be used (Possible values 1000,5000,10000, 50000, 100000) \n");
   printf(" --wifi_net_interface         ==> Enable only Wi-Fi network "
          "interface for NFC commissioning. \n");
@@ -63,14 +63,14 @@ static void print_help() {
          "interface for NFC commissioning. \n");
   printf(" --ethernet_net_interface     ==> Enable only Ethernet network "
          "interface for NFC commissioning. \n");
-  printf(" Note: If no network interface options are passed, all 3 network "
-         "interface will be enabled. \n\n");
+  printf(" Note: It is mandatory to pass at-least one network interface.");
   printf(" --ec_key_session_key         ==> Provision Key for EC Key applet "
          "session. \n");
   printf(" --user_id_session_key        ==> Provision Key for User Id applet "
          "session. \n");
   printf(" --aes_key_session_key        ==> Provision key for AES key applet "
          "session. \n");
+  printf(" --provision_with_policy      ==> Provision with policy. \n");
 
   return;
 }
@@ -82,7 +82,8 @@ void se051h_nfc_comm_prov(ex_sss_boot_ctx_t *pCtx, uint8_t do_reset,
                           uint32_t tp_spake_itter_to_be_used,
                           uint8_t do_ec_key_provision,
                           uint8_t do_aes_key_provision,
-                          uint8_t do_user_id_provision);
+                          uint8_t do_user_id_provision,
+                          uint8_t provision_with_policy);
 
 sss_status_t ex_sss_entry(ex_sss_boot_ctx_t *pCtx) {
 
@@ -100,6 +101,7 @@ sss_status_t ex_sss_entry(ex_sss_boot_ctx_t *pCtx) {
   size_t qrcodeLen = 0;
   uint8_t tp_spake_passcode_set_no = 1;
   uint32_t tp_spake_itter_to_be_used = 1000;
+  uint8_t provision_with_policy = 0;
 
   for (int i = 1; i < argc; i++) {
     if (strcmp(argv[i], "--help") == 0) {
@@ -110,7 +112,6 @@ sss_status_t ex_sss_entry(ex_sss_boot_ctx_t *pCtx) {
     } else if (strcmp(argv[i], "--only_t4t_provision") == 0) {
       only_t4t_provision = 1;
     } else if (strcmp(argv[i], "--qrcode") == 0) {
-      printf("i = %d, argc = %d \n", i, argc);
       if (argc <= i + 1) {
         printf("No QR code passed \n");
         return 0;
@@ -168,6 +169,8 @@ sss_status_t ex_sss_entry(ex_sss_boot_ctx_t *pCtx) {
       do_user_id_provision = 1;
     } else if (strcmp(argv[i], "--aes_key_session_key") == 0) {
       do_aes_key_provision = 1;
+    } else if (strcmp(argv[i], "--provision_with_policy") == 0) {
+      provision_with_policy = 1;
     } else {
       print_help();
       return 0;
@@ -175,15 +178,14 @@ sss_status_t ex_sss_entry(ex_sss_boot_ctx_t *pCtx) {
   }
 
   if (device_network_type == 0) {
-    /* Enable all interface */
-    device_network_type = wiFiNetworkInterface | threadNetworkInterface |
-                          ethernetNetworkInterface;
+    /* Enable WiFi network interface */
+    device_network_type = wiFiNetworkInterface;
   }
 
   se051h_nfc_comm_prov(NULL, do_reset, only_t4t_provision, qrcode_ptr,
                        qrcodeLen, device_network_type, tp_spake_passcode_set_no,
                        tp_spake_itter_to_be_used, do_ec_key_provision,
-                       do_aes_key_provision, do_user_id_provision);
+                       do_aes_key_provision, do_user_id_provision, provision_with_policy);
 
   return kStatus_SSS_Success;
 }

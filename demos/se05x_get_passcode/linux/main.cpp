@@ -1,5 +1,5 @@
 /*
- * Copyright 2021,2025 NXP
+ * Copyright 2021,2025-2026 NXP
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
@@ -38,6 +38,7 @@ int main(int argc, char *argv[]) {
       return 0;
     } else if (strcmp(argv[i], "--tp_passcode_set_no") == 0) {
       char *value;
+      long tmp = 0;
 
       if (argc <= i + 1) {
         printf("No pass-code set number passed \n");
@@ -45,11 +46,12 @@ int main(int argc, char *argv[]) {
       }
 
       i++;
-      passcode_set_no = (uint8_t)strtol(argv[i], &value, 10);
-      if (passcode_set_no > 3 || passcode_set_no == 0) {
-        printf("passcode_set_no is between 1-3\n");
+      tmp = strtol(argv[i], &value, 10);
+      if (tmp <= 0 || tmp > 3) {
+        printf("Invalid passcode set number. Valid values are 1, 2, or 3.\n");
         return -1;
       }
+      passcode_set_no = (uint8_t)tmp;
     } else {
       print_help();
       return 0;

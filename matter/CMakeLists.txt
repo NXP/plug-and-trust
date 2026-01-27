@@ -1,5 +1,5 @@
 #
-# Copyright 2025 NXP
+# Copyright 2025-2026 NXP
 # SPDX-License-Identifier: BSD-3-Clause
 #
 
@@ -50,7 +50,6 @@ if (CONFIG_SE05X_LIB)
         ${SIMW_LIB_DIR}/hostlib/hostLib/libCommon/smCom/T1oI2C/phNxpEseProto7816_3.c
         ${SIMW_LIB_DIR}/hostlib/hostLib/libCommon/smCom/T1oI2C/phNxpEse_Api.c
         ${SIMW_LIB_DIR}/hostlib/hostLib/libCommon/smCom/smComT1oI2C.c
-        ${SIMW_LIB_DIR}/demos/se05x_host_gpio/se05x_host_gpio.c
     )
 
     target_include_directories(simw_lib PUBLIC
@@ -127,6 +126,7 @@ if (CONFIG_SE05X_LIB)
         target_sources(simw_lib PUBLIC
             ${SIMW_LIB_DIR}/hostlib/hostLib/platform/rt/rw61x/i2c_rw612.c
             ${SIMW_LIB_DIR}/hostlib/hostLib/platform/ksdk/timer_kinetis_freertos.c
+            ${SIMW_LIB_DIR}/demos/se05x_host_gpio/se05x_host_gpio_rw61x.c
         )
         target_compile_definitions(simw_lib
             PUBLIC
@@ -140,6 +140,7 @@ if (CONFIG_SE05X_LIB)
         target_sources(simw_lib PUBLIC
             ${SIMW_LIB_DIR}/hostlib/hostLib/platform/rt/rt1060/i2c_imxrt.c
             ${SIMW_LIB_DIR}/hostlib/hostLib/platform/ksdk/timer_kinetis_freertos.c
+            ${SIMW_LIB_DIR}/demos/se05x_host_gpio/se05x_host_gpio_rt1060.c
         )
         target_compile_definitions(simw_lib
             PUBLIC

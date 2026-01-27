@@ -3,6 +3,7 @@
  * Copyright 2025 NXP
  * SPDX-License-Identifier: BSD-3-Clause
  */
+#pragma once
 
 #if 0
 /*PASSCODE Parameters */
@@ -23,7 +24,7 @@
 
 #define SE051H_PBKDF_PARAMS_ID 0x7FFF3002
 #define PBKDF_PARAMS                                                           \
-  0x24, 0x00, 0x03, 0x25, 0x01, 0x01, 0x01, 0x25, 0x02, 0x00, 0x00, 0x35,      \
+  0x24, 0x00, 0x02, 0x25, 0x01, 0x01, 0x01, 0x25, 0x02, 0x00, 0x00, 0x35,      \
       0x03, 0x26, 0x01, 0xF4, 0x01, 0x00, 0x00, 0x26, 0x02, 0x2C, 0x01, 0x00,  \
       0x00, 0x25, 0x03, 0xA0, 0x0F, 0x25, 0x04, 0x13, 0x00, 0x25, 0x05, 0x0C,  \
       0x00, 0x26, 0x06, 0x00, 0x00, 0x05, 0x01, 0x25, 0x07, 0x01, 0x00, 0x25,  \
@@ -213,9 +214,11 @@
   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,      \
       0x00, 0x00, 0x00, 0x00
 
-/*Select Response data*/
+/* Select Response data */
 #define SE051H_SELECT_RESPONSE_ID 0x7FFF3001
 #define SE051H_SELECT_RESPONSE 0x01, 0x00, 0x0F, 0x00, 0xF1, 0xFF, 0x00, 0x80
+/* Select Response data (with NFC comm disabled) */
+#define SE051H_DESELECT_RESPONSE 0x00, 0x00, 0x0F, 0x00, 0xF1, 0xFF, 0x00, 0x80
 
 /* Node Operational key pair */
 #define SE051H_NODE_OP_KEY_ID 0x7FFF3101
@@ -514,7 +517,7 @@
 #define TC_ACKNOWLEDGEMENTS 0x25, 0x07, 0x00, 0x00
 #define TC_ACKNOWLEDGEMENTS_REQUIRED 0x29, 0x08
 #define TC_UPDATE_DEADLINE 0x26, 0x09, 0x00, 0x00, 0x00, 0x00
-#define RECOVERY_IDENTIFIER 0x29, 0x0c
+#define IS_COMM_WITHOUT_POWER 0x29, 0x0c
 
 /* Operational credential cluster */
 #define SE051H_OP_CRED_CLUSTER_ID 0x7FFE003E
@@ -724,7 +727,12 @@
 #define BINARY_POLICY_BUFF                                                     \
   {                                                                            \
     0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x20, 0x00, 0x00, 0x08, 0x00, 0x00,    \
-        0x00, 0x00, 0x00, 0x16, 0x00, 0x00                                     \
+        0x00, 0x00, 0x00, 0x36, 0x00, 0x00                                     \
+  }
+
+#define WIFI_POLICY_BUFF                                                     \
+  {                                                                            \
+   0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x36, 0x00, 0x00                        \
   }
 
 #define HMAC_POLICY_BUFF                                                       \
@@ -733,6 +741,7 @@
         0x00, 0x00, 0x00, 0x06, 0x00, 0x00                                     \
   }
 
+#define WIFI_POLICY_BUF_LEN 9
 #define POLICY_BUF_LEN 18
 #define POLICY_BUF 9
 #define POLICY_BUF_POLICY_LEN 8
@@ -807,7 +816,8 @@ void se051h_nfc_comm_prov(ex_sss_boot_ctx_t *pCtx, uint8_t do_reset,
                           uint32_t tp_spake_itter_to_be_used,
                           uint8_t do_ec_key_provision,
                           uint8_t do_aes_key_provision,
-                          uint8_t do_user_id_provision);
+                          uint8_t do_user_id_provision,
+                          uint8_t provision_with_policy);
 
 #ifdef __cplusplus
 }
