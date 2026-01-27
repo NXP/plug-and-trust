@@ -383,11 +383,11 @@ void * se05x_host_gpio_notification_monitor_init(void * arg)
             }
 
             // Restart application
-            execvp(argv[0], argv);
-
-            // If execvp returns, it failed
-            LOG_E("Failed to restart application: %s", strerror(errno));
-            return (void *) (intptr_t) -1;
+            if (execvp(argv[0], argv) == -1)
+            {
+                LOG_E("Failed to restart application: %s", strerror(errno));
+                return (void *) (intptr_t) -1;
+            }
         }
     }
 
