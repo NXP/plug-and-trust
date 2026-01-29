@@ -1,5 +1,12 @@
 # Plug-And-Trust Mini Package Change Log
 
+## Release v04.07.04
+
+- MATTER Integration
+  - Provision examples updated with applet session support.
+  - Network interface option is made mandatory for provision examples.
+  - NFC commissioning complete GPIO notification implementation added for frdm i.mx9, RT1060 EVKB and RW612.
+
 ## Release v04.07.00
 
 - Platform SCP03 support extended for AES-256 (32 byte) keys.

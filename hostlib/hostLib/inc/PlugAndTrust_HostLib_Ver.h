@@ -11,11 +11,11 @@
 
 /* clang-format off */
 #define PLUGANDTRUST_HOSTLIB_PROD_NAME          "PlugAndTrust_HostLib"
-#define PLUGANDTRUST_HOSTLIB_VER_STRING_NUM     "v04.07.00_20250210"
-#define PLUGANDTRUST_HOSTLIB_PROD_NAME_VER_FULL "PlugAndTrust_HostLib_v04.07.00_20250210"
+#define PLUGANDTRUST_HOSTLIB_VER_STRING_NUM     "v04.07.04_20250210"
+#define PLUGANDTRUST_HOSTLIB_PROD_NAME_VER_FULL "PlugAndTrust_HostLib_v04.07.04_20250210"
 #define PLUGANDTRUST_HOSTLIB_VER_MAJOR          (4u)
 #define PLUGANDTRUST_HOSTLIB_VER_MINOR          (7u)
-#define PLUGANDTRUST_HOSTLIB_VER_DEV            (0u)
+#define PLUGANDTRUST_HOSTLIB_VER_DEV            (4u)
 
 /* v04.07 = 40007u */
 #define PLUGANDTRUST_HOSTLIB_VER_MAJOR_MINOR ( 0 \
@@ -51,7 +51,7 @@
  *
  * v_minor  = "07"
  *
- * v_dev    = "00"
+ * v_dev    = "04"
  *
  * v_meta   = ""
  *

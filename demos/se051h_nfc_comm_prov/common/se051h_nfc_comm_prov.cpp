@@ -21,6 +21,7 @@
 #include <se05x_ecc_curves_values.h>
 #include <stdio.h>
 #include <string.h>
+#include <limits.h>
 
 static ex_sss_boot_ctx_t gex_sss_chip_ctx;
 
@@ -60,6 +61,11 @@ static sss_status_t se051h_set_key(const uint8_t *buffer, size_t bufferLen,
     else {
         se05x_policy.value = NULL;
         se05x_policy.value_len = 0;
+    }
+
+    if (bufferLen > UINT16_MAX) {
+        LOG_E("Buffer length exceeds maximum allowed size");
+        return kStatus_SSS_Fail;
     }
     smstatus = Se05x_API_WriteBinary_Ver(
         &((sss_se05x_session_t *)&gex_sss_chip_ctx.session)->s_ctx, &se05x_policy, keyId,
