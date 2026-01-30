@@ -135,7 +135,7 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  if (do_reset == 0 && do_ec_key_provision == 0 && do_user_id_provision == 0 && do_aes_key_provision == 0) {
+  if (do_reset == 0 && do_ec_key_provision == 0 && do_user_id_provision == 0 && do_aes_key_provision == 0 && only_t4t_provision == 0) {
     if (device_network_type == invalidNetworkInterface) {
       printf("Specify at-least one network interface type (--wifi_net_interface or --thread_net_interface or --ethernet_net_interface) ");
       print_help();
