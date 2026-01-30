@@ -35,6 +35,8 @@ static sss_status_t se051h_set_key(const uint8_t *buffer, size_t bufferLen,
   sss_object_t keyObj;
   smStatus_t smstatus = SM_NOT_OK;
   Se05xPolicy_t se05x_policy;
+  uint8_t wifi_policies_buff[MAX_POLICY_BUFFER_SIZE] = WIFI_POLICY_BUFF;
+  uint8_t policies_buff[MAX_POLICY_BUFFER_SIZE] = BINARY_POLICY_BUFF;
 
   status = sss_key_object_init(&keyObj, &gex_sss_chip_ctx.ks);
   ENSURE_OR_RETURN_ON_ERROR(status == kStatus_SSS_Success, status);
@@ -48,12 +50,10 @@ static sss_status_t se051h_set_key(const uint8_t *buffer, size_t bufferLen,
       cipherType == kSSS_CipherType_Certificate) {
     if (policy) {
         if (keyId == SE051H_WIFI_CRED_ID_APP_8_4 || keyId == SE051H_WIFI_CRED_ID_APP_8_8) {
-            uint8_t policies_buff[MAX_POLICY_BUFFER_SIZE] = WIFI_POLICY_BUFF;
-            se05x_policy.value = policies_buff;
+            se05x_policy.value = wifi_policies_buff;
             se05x_policy.value_len = WIFI_POLICY_BUF_LEN;
 
         } else {
-            uint8_t policies_buff[MAX_POLICY_BUFFER_SIZE] = BINARY_POLICY_BUFF;
             se05x_policy.value = policies_buff;
             se05x_policy.value_len = POLICY_BUF_LEN;
         }
