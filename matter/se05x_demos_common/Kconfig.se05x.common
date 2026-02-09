@@ -66,6 +66,19 @@ config CHIP_NXP_RW612_SDK_DEPENDENCIES
     help
         NXP RW612 platform sdk dependencies.
 
+config MCUX_PRJSEG_module.board.matter.board
+	bool "Enable board files"
+	default y
+	help
+		Enables the inclusion of board files in the application build.
+
+config CONFIG_CHIP_NXP_PLATFORM_RT1060
+	bool "RT1060 platform"
+	depends on MCUX_HW_DEVICE_MIMXRT1061 || MCUX_HW_DEVICE_MIMXRT1062
+	default y
+	help
+		NXP RT1060 platform.
+
 config CHIP_NXP_PLATFORM_RW61X
 	bool "RW61x platform"
 	depends on MCUX_HW_DEVICE_RW612 || MCUX_HW_DEVICE_RW610
@@ -85,6 +98,24 @@ config CONFIG_CHIP_NXP_PLATFORM_RT1060
 	default y
 	help
 		NXP RT1060 platform.
+
+config CHIP_WIFI
+	bool "Enable Wi-Fi support"
+	default y if MCUX_HW_BOARD_evkcmimxrt1060
+	help
+		Enable Wi-Fi support.
+
+# Enable IW61X transceiver by default
+choice MCUX_DEPENDENCY_COMPONENT_component.wifi_bt_module.selection
+	default MCUX_COMPONENT_component.wifi_bt_module.IW61X if MCUX_HW_BOARD_evkcmimxrt1060
+endchoice
+
+#IW612 transceiver module type
+if MCUX_COMPONENT_component.wifi_bt_module.IW61X
+choice IW61X_MDOULE
+	default MCUX_COMPONENT_component.wifi_bt_module.board_murata_2el_m2
+endchoice
+endif
 
 config CHIP_NXP_PLATFORM_FOLDER_NAME
 	string "NXP platform folder name"
@@ -129,9 +160,6 @@ config configRECORD_STACK_HIGH_ADDRESS
 
 config configINCLUDE_FREERTOS_TASK_C_ADDITIONS_H
 	default y
-
-config configUSE_TICK_HOOK
-	default y if CHIP_WIFI
 
 config configENABLE_FPU
 	default y
