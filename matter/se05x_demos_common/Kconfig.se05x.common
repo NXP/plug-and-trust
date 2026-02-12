@@ -86,19 +86,6 @@ config CHIP_NXP_PLATFORM_RW61X
 	help
 		NXP RW61x platform.
 
-config MCUX_PRJSEG_module.board.matter.board
-	bool "Enable board files"
-	default y
-	help
-		Enables the inclusion of board files in the application build.
-
-config CONFIG_CHIP_NXP_PLATFORM_RT1060
-	bool "RT1060 platform"
-	depends on MCUX_HW_DEVICE_MIMXRT1061 || MCUX_HW_DEVICE_MIMXRT1062
-	default y
-	help
-		NXP RT1060 platform.
-
 config CHIP_WIFI
 	bool "Enable Wi-Fi support"
 	default y if MCUX_HW_BOARD_evkcmimxrt1060
