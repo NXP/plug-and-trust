@@ -27,7 +27,8 @@ extern "C" {
 #endif
 
 #include "ex_sss.h"
-#include "fsl_sss_api.h"
+#include "sss/inc/fsl_sss_api.h"
+
 
 #if SSS_HAVE_APPLET_SE05X_IOT
 #include "fsl_sss_se05x_types.h"

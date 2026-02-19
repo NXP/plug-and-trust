@@ -8,8 +8,8 @@ config SE05X_LIB
 	bool "Enable Secure Element library"
 	select MCUX_COMPONENT_driver.flexcomm_i2c if MCUX_HW_DEVICE_RW612 || MCUX_HW_DEVICE_RW610
 	select MCUX_COMPONENT_driver.flexcomm_i2c_freertos if MCUX_HW_DEVICE_RW612 || MCUX_HW_DEVICE_RW610
-	select MCUX_COMPONENT_driver.lpi2c if MCUX_HW_DEVICE_MIMXRT1062
-	select MCUX_COMPONENT_driver.lpi2c_freertos if MCUX_HW_DEVICE_MIMXRT1062
+	select MCUX_COMPONENT_driver.lpi2c if MCUX_HW_DEVICE_MIMXRT1062 || MCUX_HW_DEVICE_MCXW727C
+	select MCUX_COMPONENT_driver.lpi2c_freertos if MCUX_HW_DEVICE_MIMXRT1062 || MCUX_HW_DEVICE_MCXW727C
 	help
 		Use Secure Element library
 

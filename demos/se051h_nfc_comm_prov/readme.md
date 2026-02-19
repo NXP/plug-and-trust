@@ -52,10 +52,22 @@ gn gen out
 ninja -C out se051h_nfc_comm_prov
 ./se051h_nfc_comm_prov
 ```
-## Matter CMake Build system as
+## Matter (for RW612) CMake Build system as
 
 ```
 user@ubuntu:~/Desktop/git/connectedhomeip$ west build -d <out_dir> -b frdmrw612 third_party/simw-top-mini/repo/demos/se051h_nfc_comm_prov/mcu
+```
+
+## Matter (for FRDMW72) CMake Build system as
+
+```
+user@ubuntu:~/Desktop/git/connectedhomeip$ west build -d <out_dir> -b frdmmcxw72 third_party/simw-top-mini/repo/demos/se051h_nfc_comm_prov/mcu/ -Dcore_id=cm33_core0 -DCONFIG_CHIP_SE05X=y
+```
+
+## Matter (for RT1060) CMake Build system as
+
+```
+user@ubuntu:~/Desktop/git/connectedhomeip$ west build -d <out_dir> -b evkcmimxrt1060 third_party/simw-top-mini/repo/demos/se051h_nfc_comm_prov/mcu/
 ```
 
 > [!IMPORTANT]

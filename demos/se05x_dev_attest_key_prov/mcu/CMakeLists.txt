@@ -43,7 +43,11 @@ find_package(McuxSDK 3.0.0)
 list(APPEND CONFIG_CHIP_EXTERNAL_TARGETS McuxSDK)
 
 if (NOT DEFINED NXP_SDK_RECONFIG_CMAKE_DIR)
-    get_filename_component(NXP_SDK_RECONFIG_CMAKE_DIR ${NXP_MATTER_SUPPORT_DIR}/examples/platform/rt REALPATH)
+    if (CONFIG_MCUX_HW_DEVICE_MCXW727C)
+        get_filename_component(NXP_SDK_RECONFIG_CMAKE_DIR ${NXP_MATTER_SUPPORT_DIR}/examples/platform/mcxw72 REALPATH)
+    else()
+        get_filename_component(NXP_SDK_RECONFIG_CMAKE_DIR ${NXP_MATTER_SUPPORT_DIR}/examples/platform/rt REALPATH)
+    endif()
 endif()
 
 # Include the nxp_sdk_reconfig.cmake to customize the SDK for Matter application

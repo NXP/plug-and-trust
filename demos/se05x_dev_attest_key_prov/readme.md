@@ -25,11 +25,24 @@ ninja -C out
 ./se05x_dev_attest_key_prov
 ```
 
-## Matter CMake Build system as
+## Matter (for RW612) CMake Build system as
 
 ```
 user@ubuntu:~/Desktop/git/connectedhomeip$ west build -d <out_dir> -b frdmrw612 third_party/simw-top-mini/repo/demos/se05x_dev_attest_key_prov/mcu
 ```
+
+## Matter (for FRDMW72) CMake Build system as
+
+```
+user@ubuntu:~/Desktop/git/connectedhomeip$ west build -d <out_dir> -b frdmmcxw72 third_party/simw-top-mini/repo/demos/se05x_dev_attest_key_prov/mcu/ -Dcore_id=cm33_core0 -DCONFIG_CHIP_SE05X=y
+```
+
+## Matter (for RT1060) CMake Build system as
+
+```
+user@ubuntu:~/Desktop/git/connectedhomeip$ west build -d <out_dir> -b evkcmimxrt1060 third_party/simw-top-mini/repo/demos/se05x_dev_attest_key_prov/mcu/
+```
+
 
 > [!IMPORTANT]
 > Adapt the above commands to the i.MX, RW612 and RT1060 build commands accordingly.

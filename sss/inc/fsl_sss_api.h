@@ -7,10 +7,10 @@
 #ifndef _FSL_SSS_H_
 #define _FSL_SSS_H_
 
-#if !defined(SSS_CONFIG_FILE)
+#if !defined(SSS_SE05X_CONFIG_FILE)
 #include "fsl_sss_config.h"
 #else
-#include SSS_CONFIG_FILE
+#include SSS_SE05X_CONFIG_FILE
 #endif
 
 #include <fsl_sss_policy.h>

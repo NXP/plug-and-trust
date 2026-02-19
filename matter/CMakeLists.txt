@@ -21,7 +21,16 @@ if (CONFIG_SE05X_LIB)
     get_property(SDK_INCLUDES TARGET ${CONFIG_SDK_EXTERNAL_TARGET} PROPERTY INTERFACE_INCLUDE_DIRECTORIES)
     get_property(SDK_DEFINES TARGET ${CONFIG_SDK_EXTERNAL_TARGET} PROPERTY INTERFACE_COMPILE_DEFINITIONS)
 
-    target_sources(simw_lib PUBLIC
+    # Filter out includes containing "secure-subsystem"
+    set(FILTERED_SDK_INCLUDES "")
+    foreach(include_dir ${SDK_INCLUDES})
+        string(FIND "${include_dir}" "secure-subsystem" found_pos)
+        if(${found_pos} EQUAL -1)
+            list(APPEND FILTERED_SDK_INCLUDES ${include_dir})
+        endif()
+    endforeach()
+
+    target_sources(simw_lib PRIVATE
         ${SIMW_LIB_DIR}/hostlib/hostLib/libCommon/infra/global_platf.c
         ${SIMW_LIB_DIR}/hostlib/hostLib/libCommon/infra/sm_apdu.c
         ${SIMW_LIB_DIR}/hostlib/hostLib/libCommon/infra/sm_connect.c
@@ -53,7 +62,7 @@ if (CONFIG_SE05X_LIB)
     )
 
     target_include_directories(simw_lib PUBLIC
-        ${SDK_INCLUDES}
+        ${FILTERED_SDK_INCLUDES}
         ${SIMW_LIB_DIR}/sss/inc
         ${SIMW_LIB_DIR}/sss/port/default
         ${SIMW_LIB_DIR}/sss/ex/src
@@ -148,6 +157,21 @@ if (CONFIG_SE05X_LIB)
             SDK_OS_FREE_RTOS=1
             IMX_RT
         )
+    endif()
+
+    if (CONFIG_MCUX_HW_DEVICE_MCXW727C)
+        target_sources(simw_lib PUBLIC
+                ${SIMW_LIB_DIR}/hostlib/hostLib/platform/mcxw72/i2c_mcxw72.c
+                ${SIMW_LIB_DIR}/hostlib/hostLib/platform/ksdk/timer_kinetis_freertos.c
+                ${SIMW_LIB_DIR}/demos/se05x_host_gpio/se05x_host_gpio.c
+            )
+            target_compile_definitions(simw_lib
+                PUBLIC
+                AX_EMBEDDED
+                SDK_OS_FREE_RTOS=1
+                FRDM_MCXW72
+            )
+
     endif()
 
 endif()

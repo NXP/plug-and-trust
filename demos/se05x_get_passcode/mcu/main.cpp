@@ -29,7 +29,7 @@
 
 static TaskHandle_t gSSSExRtosTaskHandle = NULL;
 
-#if (configAPPLICATION_ALLOCATED_HEAP && (!IMX_RT))
+#if (configAPPLICATION_ALLOCATED_HEAP && (!IMX_RT)) && (!FRDM_MCXW72)
 uint8_t __attribute__((section(".heap"))) ucHeap[configTOTAL_HEAP_SIZE];
 #endif
 

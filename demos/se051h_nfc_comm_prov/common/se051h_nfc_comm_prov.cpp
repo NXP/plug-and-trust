@@ -342,7 +342,7 @@ static sss_status_t se051h_provision_attest_tbs() {
   smStatus_t smstatus = SM_NOT_OK;
 
   uint8_t attest_tbs[] = {STRUCTURE_START,   CERTIFICATE_DECLARATION,
-                          ATTESTATION_NONCE, TIMESTAMP,
+                          ATTESTATION_NONCE, SE_TIMESTAMP,
                           STRUCTURE_END,     ATTESTATION_CHALLENGE};
 
   smstatus = se05x_delete_key(SE051H_ATTEST_TBS);

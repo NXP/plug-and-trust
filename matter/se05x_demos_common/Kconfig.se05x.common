@@ -41,6 +41,7 @@ config MATTER_DEFAULT_LINKER_FILE_PATH
 	string "Default linker file path for Matter applications"
 	default "$(CHIP_ROOT)/third_party/nxp/nxp_matter_support/examples/platform/rt/rw61x/app/ldscripts/RW610_flash.ld" if MCUX_HW_DEVICE_RW612 || MCUX_HW_DEVICE_RW610
 	default "$(CHIP_ROOT)/third_party/nxp/nxp_matter_support/examples/platform/rt/rt1060/app/ldscripts/MIMXRT1062xxxxx_flexspi_nor.ld" if MCUX_HW_DEVICE_MIMXRT1062
+	default "${SdkRootDirPath}/examples/_boards/frdmmcxw72/wireless_examples/linker/gcc/connectivity.ld" if MCUX_HW_DEVICE_MCXW727C
 	help
 		Defines the path to the linker file to use.
 
@@ -66,6 +67,52 @@ config CHIP_NXP_RW612_SDK_DEPENDENCIES
     help
         NXP RW612 platform sdk dependencies.
 
+config CHIP_NXP_PLATFORM_RW61X
+	bool "RW61x platform"
+	depends on MCUX_HW_DEVICE_RW612 || MCUX_HW_DEVICE_RW610
+	default y
+	help
+		NXP RW61x platform.
+
+config CHIP_NXP_PLATFORM_MCXW72
+	bool "mcxw72 platform"
+	depends on MCUX_HW_DEVICE_MCXW727C
+	default y
+	help
+		NXP mcxw72 platform.
+
+config CHIP_NXP_MCXW72_SDK_DEPENDENCIES
+    bool "MCXW72 SDK DEPENDENCIES"
+    depends on MCUX_HW_DEVICE_MCXW727C
+	default y
+	select MCUX_COMPONENT_middleware.freertos-kernel.cm33_non_trustzone
+	select MCUX_COMPONENT_component.led
+	select MCUX_COMPONENT_component.button
+	select MCUX_COMPONENT_component.timer_manager
+	select MCUX_COMPONENT_component.gpio_adapter
+	select MCUX_COMPONENT_component.lptmr_time_stamp_adapter
+	select MCUX_COMPONENT_driver.lpspi
+	select MCUX_COMPONENT_middleware.wireless.ble_host
+	select MCUX_COMPONENT_middleware.wireless.framework
+	select MCUX_COMPONENT_component.messaging
+	select MCUX_COMPONENT_middleware.wireless.framework.seclib_rng
+	select MCUX_COMPONENT_middleware.wireless.framework.module_info
+	select MCUX_COMPONENT_middleware.wireless.framework.function_lib
+	select MCUX_COMPONENT_middleware.wireless.framework.module_info
+	select MCUX_COMPONENT_middleware.wireless.framework.hw_parameter
+	select MCUX_COMPONENT_middleware.wireless.framework.lowpower
+	select MCUX_COMPONENT_middleware.wireless.framework.workq
+	select MCUX_COMPONENT_middleware.mbedtls
+	select MCUX_COMPONENT_component.flash_nor_lpspi
+    help
+        NXP MCXW72 platform sdk dependencies.
+
+config CHIP_SDK_DEPENDENCIES_BLE_HOST
+	bool "SDK dependencies for BLE host implementation"
+	default y if CHIP_NXP_PLATFORM_MCXW72
+	help
+	    SDK dependencies for BLE host implementation.
+
 config MCUX_PRJSEG_module.board.matter.board
 	bool "Enable board files"
 	default y
@@ -78,13 +125,6 @@ config CONFIG_CHIP_NXP_PLATFORM_RT1060
 	default y
 	help
 		NXP RT1060 platform.
-
-config CHIP_NXP_PLATFORM_RW61X
-	bool "RW61x platform"
-	depends on MCUX_HW_DEVICE_RW612 || MCUX_HW_DEVICE_RW610
-	default y
-	help
-		NXP RW61x platform.
 
 config CHIP_WIFI
 	bool "Enable Wi-Fi support"
@@ -108,6 +148,7 @@ config CHIP_NXP_PLATFORM_FOLDER_NAME
 	string "NXP platform folder name"
 	default "rt/rw61x" if MCUX_HW_DEVICE_RW612 || MCUX_HW_DEVICE_RW610
 	default "rt/rt1060" if MCUX_HW_DEVICE_MIMXRT1061 || MCUX_HW_DEVICE_MIMXRT1062
+	default "mcxw72" if MCUX_HW_DEVICE_MCXW727C
 	help
 		Defines the platform folder name to be used.
 # FreeRTOS defaults
@@ -178,10 +219,11 @@ config INCLUDE_xTaskGetHandle
 config configKERNEL_PROVIDED_STATIC_MEMORY
 	default y
 
-if SE05X_SCP03 || SE05X_USER_ID || SE05X_AES_KEY || SE05X_EC_KEY || SE05X_SCP03_USER_ID || SE05X_SCP03_AES_KEY || SE05X_SCP03_EC_KEY
+if SE05X_SCP03 || SE05X_USER_ID || SE05X_AES_KEY || SE05X_EC_KEY || SE05X_SCP03_USER_ID || SE05X_SCP03_AES_KEY || SE05X_SCP03_EC_KEY || MCUX_HW_DEVICE_MCXW727C
 	choice MCUX_COMPONENT_middleware.mbedtls.port.selection
 		default MCUX_COMPONENT_middleware.mbedtls.port.els_pkc if MCUX_HW_DEVICE_RW612 || MCUX_HW_DEVICE_RW610
 		default MCUX_COMPONENT_middleware.mbedtls.port.ksdk if MCUX_HW_DEVICE_MIMXRT1061 || MCUX_HW_DEVICE_MIMXRT1062
+		default MCUX_COMPONENT_middleware.mbedtls.port.sssapi if MCUX_HW_DEVICE_MCXW716C || MCUX_HW_DEVICE_MCXW727C
 	endchoice
 endif
 
