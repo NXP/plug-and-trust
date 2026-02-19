@@ -119,7 +119,7 @@ config MCUX_PRJSEG_module.board.matter.board
 	help
 		Enables the inclusion of board files in the application build.
 
-config CONFIG_CHIP_NXP_PLATFORM_RT1060
+config CHIP_NXP_PLATFORM_RT1060
 	bool "RT1060 platform"
 	depends on MCUX_HW_DEVICE_MIMXRT1061 || MCUX_HW_DEVICE_MIMXRT1062
 	default y
