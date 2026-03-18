@@ -2,20 +2,20 @@
   "SPDXID": "SPDXRef-DOCUMENT",
   "spdxVersion": "SPDX-2.3",
   "creationInfo": {
-    "created": "2026-01-29T07:17:45Z",
+    "created": "2026-02-19T11:49:22Z",
     "creators": [
       "Organization: NXP"
     ],
     "licenseListVersion": "3.26"
   },
-  "name": "plug-and-trust-04.07.04",
+  "name": "plug-and-trust-04.07.04_v2",
   "dataLicense": "CC0-1.0",
-  "documentNamespace": "https://nxp.com/spdx/6dd075a4-c545-4838-a190-ff2ca56e153d",
+  "documentNamespace": "https://nxp.com/spdx/0b1baff0-fb86-4013-89b2-182c188b5874",
   "packages": [
     {
-      "SPDXID": "SPDXRef-package-6dd075a4-c545-4838-a190-ff2ca56e153d",
+      "SPDXID": "SPDXRef-package-0b1baff0-fb86-4013-89b2-182c188b5874",
       "name": "plug-and-trust",
-      "versionInfo": "04.07.04",
+      "versionInfo": "04.07.04_v2",
       "licenseConcluded": "(BSD-3-Clause)",
       "licenseDeclared": "(BSD-3-Clause)",
       "downloadLocation": "https://github.com/NXP/plug-and-trust",
@@ -86,7 +86,7 @@
         },
         {
           "referenceCategory": "PACKAGE-MANAGER",
-          "referenceLocator": "pkg:github/Mbed-TLS/mbedtls@v2.28.5",
+          "referenceLocator": "pkg:github/mbed-tls/mbedtls@v2.28.5",
           "referenceType": "purl"
         }
       ],
@@ -135,7 +135,7 @@
         },
         {
           "referenceCategory": "PACKAGE-MANAGER",
-          "referenceLocator": "pkg:github/Mbed-TLS/mbedtls@v3.6.2",
+          "referenceLocator": "pkg:github/mbed-tls/mbedtls@v3.6.2",
           "referenceType": "purl"
         }
       ],
@@ -244,30 +244,30 @@
     {
       "spdxElementId": "SPDXRef-DOCUMENT",
       "relationshipType": "DESCRIBES",
-      "relatedSpdxElement": "SPDXRef-package-6dd075a4-c545-4838-a190-ff2ca56e153d"
+      "relatedSpdxElement": "SPDXRef-package-0b1baff0-fb86-4013-89b2-182c188b5874"
     },
     {
-      "spdxElementId": "SPDXRef-package-6dd075a4-c545-4838-a190-ff2ca56e153d",
+      "spdxElementId": "SPDXRef-package-0b1baff0-fb86-4013-89b2-182c188b5874",
       "relationshipType": "DYNAMIC_LINK",
       "relatedSpdxElement": "SPDXRef-package-93ff9297-b6b8-4bd5-ba66-054528427fa3"
     },
     {
-      "spdxElementId": "SPDXRef-package-6dd075a4-c545-4838-a190-ff2ca56e153d",
+      "spdxElementId": "SPDXRef-package-0b1baff0-fb86-4013-89b2-182c188b5874",
       "relationshipType": "DYNAMIC_LINK",
       "relatedSpdxElement": "SPDXRef-package-96f00a5f-9582-434f-8178-fe2e688e1501"
     },
     {
-      "spdxElementId": "SPDXRef-package-6dd075a4-c545-4838-a190-ff2ca56e153d",
+      "spdxElementId": "SPDXRef-package-0b1baff0-fb86-4013-89b2-182c188b5874",
       "relationshipType": "DYNAMIC_LINK",
       "relatedSpdxElement": "SPDXRef-package-bbb85b99-6163-4bc9-a22d-48d98de906aa"
     },
     {
-      "spdxElementId": "SPDXRef-package-6dd075a4-c545-4838-a190-ff2ca56e153d",
+      "spdxElementId": "SPDXRef-package-0b1baff0-fb86-4013-89b2-182c188b5874",
       "relationshipType": "DYNAMIC_LINK",
       "relatedSpdxElement": "SPDXRef-package-c8c9917a-3e39-42bf-82b9-b02b576e57e9"
     },
     {
-      "spdxElementId": "SPDXRef-package-6dd075a4-c545-4838-a190-ff2ca56e153d",
+      "spdxElementId": "SPDXRef-package-0b1baff0-fb86-4013-89b2-182c188b5874",
       "relationshipType": "DYNAMIC_LINK",
       "relatedSpdxElement": "SPDXRef-package-e66b18cd-ed35-42ec-b476-f3584122e0cb"
     }
