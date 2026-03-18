@@ -2,7 +2,7 @@
 
 NXP Software Content Register
 Release:  plug-and-trust.git
-Version: 04.07.00
+Version: v04.07.04_EAR4
 Outgoing License: BSD-3-Clause
 License File: LICENSE.txt
 Description and comments: Plug&Trust Mini Package

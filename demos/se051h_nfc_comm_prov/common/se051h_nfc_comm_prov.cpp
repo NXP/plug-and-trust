@@ -151,6 +151,21 @@ static smStatus_t se05x_delete_key(uint32_t keyid) {
   return smstatus;
 }
 
+/* Delete Spake2+ crypto object in se05x */
+void se05x_delete_spake2p_crypto_object(void)
+{
+    smStatus_t smstatus = SM_NOT_OK;
+    SE05x_CryptoObjectID_t spakeObjectId = kSE05x_CryptoObject_PAKE_NFC_COMM;
+    smstatus = Se05x_API_DeleteCryptoObject(&((sss_se05x_session_t *) &gex_sss_chip_ctx.session)->s_ctx, spakeObjectId);
+    if (smstatus == SM_ERR_CONDITIONS_NOT_SATISFIED) {
+      LOG_W("Spake2+ crypto Object may not exist (Ignoring the error)");
+    }
+    else if (smstatus != SM_OK) {
+      LOG_E("Failed to delete Spake2+ crypto object");
+    }
+    return;
+}
+
 #if 0
 static sss_status_t se051h_provision_passcode_parameters()
 {
@@ -198,19 +213,17 @@ se051h_provision_pbkdf_parameters(uint8_t tp_spake_passcode_set_no,
         "Invalid pass-code set number. Using the default set number of 0x01 \n");
   }
 
-  if (tp_spake_itter_to_be_used == 1000) {
-    pbkdf_Buffer[PASSCODE_SET_TO_BE_USED_OFFSET + 1] = 0x01;
-  } else if (tp_spake_itter_to_be_used == 5000) {
-    pbkdf_Buffer[PASSCODE_SET_TO_BE_USED_OFFSET + 1] = 0x02;
-  } else if (tp_spake_itter_to_be_used == 10000) {
-    pbkdf_Buffer[PASSCODE_SET_TO_BE_USED_OFFSET + 1] = 0x03;
-  } else if (tp_spake_itter_to_be_used == 50000) {
-    pbkdf_Buffer[PASSCODE_SET_TO_BE_USED_OFFSET + 1] = 0x04;
-  } else if (tp_spake_itter_to_be_used == 100000) {
-    pbkdf_Buffer[PASSCODE_SET_TO_BE_USED_OFFSET + 1] = 0x05;
+  if (tp_spake_itter_to_be_used == 1000 ||
+      tp_spake_itter_to_be_used == 5000 ||
+      tp_spake_itter_to_be_used == 10000 ||
+      tp_spake_itter_to_be_used == 50000 ||
+      tp_spake_itter_to_be_used == 100000) {
+    pbkdf_Buffer[ITTERATION_TO_BE_USED_OFFSET] = (uint8_t)(tp_spake_itter_to_be_used & 0xFF);
+    pbkdf_Buffer[ITTERATION_TO_BE_USED_OFFSET + 1] = (uint8_t)((tp_spake_itter_to_be_used >> 8) & 0xFF);
+    pbkdf_Buffer[ITTERATION_TO_BE_USED_OFFSET + 2] = (uint8_t)((tp_spake_itter_to_be_used >> 16) & 0xFF);
+    pbkdf_Buffer[ITTERATION_TO_BE_USED_OFFSET + 3] = (uint8_t)((tp_spake_itter_to_be_used >> 24) & 0xFF);
   } else {
-    printf("Invalid iteration count. Using the default value of 0x01 in "
-           "buffer - which corresponds to 1000 iterations \n");
+    printf("Invalid iteration count. Using the default value in buffer.\n");
   }
 
   LOG_I("Writing PBKDF Parameters to SE05x at Key id = %x",
@@ -582,7 +595,8 @@ static sss_status_t se051h_provision_basic_info_cluster() {
                                        CAPABILITY_MINIMA,
                                        SPECIFICATION_VERSION,
                                        MAX_PATH_PER_INVOKE,
-                                       CONFIGURATION_VERSION};
+                                       CONFIGURATION_VERSION
+  };
 
   smstatus = se05x_delete_key(SE051H_BASIC_INFO_CLUSTER_ID);
   ENSURE_OR_RETURN_ON_ERROR(smstatus == SM_OK, kStatus_SSS_Fail);
@@ -779,6 +793,44 @@ static sss_status_t se051h_provision_vendor_reserved() {
   return status;
 }
 
+static sss_status_t se051h_provision_spake_object() {
+  smStatus_t smstatus = SM_NOT_OK;
+
+  uint8_t list[1024] = {
+      0,
+  };
+  size_t listlen            = sizeof(list);
+  size_t i                  = 0;
+  uint8_t create_crypto_obj = 1;
+  SE05x_CryptoModeSubType_t subtype;
+  SE05x_CryptoObjectID_t spakeObjectId = kSE05x_CryptoObject_PAKE_NFC_COMM;
+  subtype.pakeMode = kSE05x_SPAKE2PLUS_P256_SHA256_HKDF_HMAC;
+
+  smstatus = Se05x_API_ReadCryptoObjectList(&((sss_se05x_session_t *) &gex_sss_chip_ctx.session)->s_ctx, list, &listlen);
+  for (i = 0; i < listlen; i += 4)
+  {
+      uint32_t cryptoObjectId = static_cast<uint32_t>(list[i + 1] | (list[i + 0] << 8));
+      if (cryptoObjectId == spakeObjectId)
+      {
+          create_crypto_obj = 0;
+          LOG_I("Spake2+ crypto Object already exists");
+      }
+  }
+
+  if (create_crypto_obj)
+  {
+      LOG_I("Writing Spake2+ crypto Object");
+      smstatus = Se05x_API_CreateCryptoObject(&((sss_se05x_session_t *) &gex_sss_chip_ctx.session)->s_ctx, spakeObjectId,
+                                              kSE05x_CryptoContext_PAKE, subtype);
+      if (smstatus != SM_OK) {
+        LOG_E("Failed to create Spake2+ crypto Object");
+        return kStatus_SSS_Fail;
+      }
+  }
+
+  return kStatus_SSS_Success;
+}
+
 #if SSS_HAVE_APPLET_SE051_H
 static sss_status_t se051h_provision_t4t_applet(uint8_t *qrcode,
                                                 size_t qrcodeLen) {
@@ -942,6 +994,7 @@ static sss_status_t se051h_userid_key_provision() {
 static sss_status_t se051h_do_reset() {
   smStatus_t smstatus = SM_NOT_OK;
 
+  SE05X_DELETE_KEY_TEMPLATE(SE051H_PBKDF_PARAMS_ID);
   SE05X_DELETE_KEY_TEMPLATE(SE051H_DAC_ID);
   SE05X_DELETE_KEY_TEMPLATE(SE051H_PAI_ID);
   SE05X_DELETE_KEY_TEMPLATE(SE051H_ATTEST_TBS);
@@ -960,6 +1013,7 @@ static sss_status_t se051h_do_reset() {
   SE05X_DELETE_KEY_TEMPLATE(SE051H_ACC_ID);
   SE05X_DELETE_KEY_TEMPLATE(SE051H_NCC_ID);
   SE05X_DELETE_KEY_TEMPLATE(SE051H_VR_ID);
+  se05x_delete_spake2p_crypto_object();
   return kStatus_SSS_Success;
 }
 

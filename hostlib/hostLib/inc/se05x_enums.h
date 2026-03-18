@@ -797,6 +797,7 @@ typedef enum
     kSE05x_CryptoObject_AES_CCM_INT_IV,
 	kSE05x_CryptoObject_PAKE_TYPE_A,
     kSE05x_CryptoObject_PAKE_TYPE_B,
+    kSE05x_CryptoObject_PAKE_NFC_COMM = 42135,
 	kSE05x_CryptoObject_End,
 } SE05x_CryptoObject_t;
 

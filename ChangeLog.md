@@ -1,5 +1,13 @@
 # Plug-And-Trust Mini Package Change Log
 
+## Release v04.07.04_EAR4
+
+- Provision example updated for 8.20 applet
+  - w0 and L values are referenced using key id in PBKDF parameter binary file
+  - Iteration count value is updated in PBKDF parameter binary file
+  - Cluster values are updated for 8.20 applet
+  - New PAKE crypto object is created for NFC commissioning
+
 ## Release v04.07.04
 
 - MATTER Integration
