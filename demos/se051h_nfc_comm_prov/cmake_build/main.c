@@ -132,6 +132,7 @@ sss_status_t ex_sss_entry(ex_sss_boot_ctx_t *pCtx) {
       device_network_type |= ethernetNetworkInterface;
     } else if (strcmp(argv[i], "--tp_spake_passcode_set_no") == 0) {
       char *value;
+      long tmp = 0;
 
       if (argc <= i + 1) {
         printf("No passcode set number passed \n");
@@ -139,13 +140,15 @@ sss_status_t ex_sss_entry(ex_sss_boot_ctx_t *pCtx) {
       }
       i++;
 
-      tp_spake_passcode_set_no = (uint8_t)strtol(argv[i], &value, 10);
-      if (tp_spake_passcode_set_no == 0 || tp_spake_passcode_set_no > 3) {
-        printf("passcode_set_no possible values  = 1,2,3 \n");
-        return 0;
+      tmp = strtol(argv[i], &value, 10);
+      if (tmp <= 0 || tmp > 3) {
+        printf("Invalid passcode set number. Valid values are 1, 2, or 3.\n");
+        return -1;
       }
+      tp_spake_passcode_set_no = (uint8_t)tmp;
     } else if (strcmp(argv[i], "--tp_spake_itter_to_be_used") == 0) {
       char *value;
+      long tmp = 0;
 
       if (argc <= i + 1) {
         printf("No itteration count passed \n");
@@ -153,7 +156,12 @@ sss_status_t ex_sss_entry(ex_sss_boot_ctx_t *pCtx) {
       }
       i++;
 
-      tp_spake_itter_to_be_used = (uint32_t)strtol(argv[i], &value, 10);
+      tmp = strtol(argv[i], &value, 10);
+      if (tmp < 0 || tmp > UINT32_MAX) {
+        printf("Invalid iteration count value.\n");
+        return -1;
+      }
+      tp_spake_itter_to_be_used = (uint32_t)tmp;
       if (!(tp_spake_itter_to_be_used == 1000 ||
             tp_spake_itter_to_be_used == 5000 ||
             tp_spake_itter_to_be_used == 10000 ||

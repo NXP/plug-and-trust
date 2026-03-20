@@ -831,6 +831,27 @@ static sss_status_t se051h_provision_spake_object() {
   return kStatus_SSS_Success;
 }
 
+static sss_status_t se051h_provision_descriptor_cluster() {
+  sss_status_t status = kStatus_SSS_Fail;
+  smStatus_t smstatus = SM_NOT_OK;
+
+  uint8_t descriptor_cluster[] = {DESCRIPTOR_CLUSTER};
+
+  smstatus = se05x_delete_key(SE051H_DESCRIPTOR_CLUSTER_ID);
+  ENSURE_OR_RETURN_ON_ERROR(smstatus == SM_OK, kStatus_SSS_Fail);
+
+  LOG_I("Writing descripotr cluster data to SE05x at Key id = %x", SE051H_DESCRIPTOR_CLUSTER_ID);
+  status = se051h_set_key(descriptor_cluster, sizeof(descriptor_cluster),
+                          sizeof(descriptor_cluster) * 8, kSSS_KeyPart_Default,
+                          kSSS_CipherType_Binary, SE051H_DESCRIPTOR_CLUSTER_ID, NULL, 0);
+  if (status != kStatus_SSS_Success) {
+    printf("Error in se051h_provision_descriptor_cluster\n");
+  }
+
+  return status;
+}
+
+
 #if SSS_HAVE_APPLET_SE051_H
 static sss_status_t se051h_provision_t4t_applet(uint8_t *qrcode,
                                                 size_t qrcodeLen) {
@@ -1013,6 +1034,7 @@ static sss_status_t se051h_do_reset() {
   SE05X_DELETE_KEY_TEMPLATE(SE051H_ACC_ID);
   SE05X_DELETE_KEY_TEMPLATE(SE051H_NCC_ID);
   SE05X_DELETE_KEY_TEMPLATE(SE051H_VR_ID);
+  SE05X_DELETE_KEY_TEMPLATE(SE051H_DESCRIPTOR_CLUSTER_ID);
   se05x_delete_spake2p_crypto_object();
   return kStatus_SSS_Success;
 }
@@ -1177,6 +1199,13 @@ void se051h_nfc_comm_prov(ex_sss_boot_ctx_t *pCtx, uint8_t do_reset,
 
   // Vendor Reserved
   status = se051h_provision_vendor_reserved();
+  ENSURE_OR_GO_CLEANUP(status == kStatus_SSS_Success);
+
+  status = se051h_provision_spake_object();
+  ENSURE_OR_GO_CLEANUP(status == kStatus_SSS_Success);
+
+  // Descriptor Cluster
+  status = se051h_provision_descriptor_cluster();
   ENSURE_OR_GO_CLEANUP(status == kStatus_SSS_Success);
 
 t4t_provision:
