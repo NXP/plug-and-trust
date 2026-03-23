@@ -158,6 +158,12 @@ typedef U16 SM_Error_t;
 #define SCP_RSP_MAC_FAIL (0x7050) //!< MAC on APDU response is not correct
 #define SCP_DECODE_FAIL (0x7051)  //!< Encrypted Response did not decode to correctly padded plaintext
 
+#define MYT_DEFAULT_NAD         0x00
+#define MTY_CLOSE               0x03
+#define MTY_WAIT_FOR_CARD       0x00
+#define MTY_LOCK                0x30
+#define MTY_UNLOCK              0x31
+
 #ifdef __cplusplus
 }
 #endif

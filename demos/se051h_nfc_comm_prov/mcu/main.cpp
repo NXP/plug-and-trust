@@ -84,7 +84,9 @@ void se051h_nfc_comm_task(void *pvParam) {
   se051h_nfc_comm_prov(NULL, do_reset, only_t4t_provision, qrcode_ptr,
                        qrcodeLen, device_network_type, tp_spake_passcode_set_no,
                        tp_spake_itter_to_be_used, do_ec_key_provision,
-                       do_aes_key_provision, do_user_id_provision, provision_with_policy);
+                       do_aes_key_provision, do_user_id_provision, provision_with_policy, 
+                       NULL, 0,
+                       NULL, 0);
 }
 
 #if (defined(configCHECK_FOR_STACK_OVERFLOW) &&                                \

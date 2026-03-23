@@ -17,6 +17,7 @@
 
 #if SSS_HAVE_SCP_SCP03_SSS
 #if (defined(USE_RTOS) && (USE_RTOS == 1))
+#include "FreeRTOS.h"
 #include "semphr.h"
 #elif (__GNUC__ && !AX_EMBEDDED)
 #include <errno.h>

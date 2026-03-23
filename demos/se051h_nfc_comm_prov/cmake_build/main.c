@@ -70,7 +70,7 @@ static void print_help() {
          "session. \n");
   printf(" --aes_key_session_key        ==> Provision key for AES key applet "
          "session. \n");
-  printf(" --provision_with_policy      ==> Provision with policy. \n");
+  printf(" --provision_with_policy      ==> Provision objects with policy. \n");
 
   return;
 }
@@ -83,7 +83,9 @@ void se051h_nfc_comm_prov(ex_sss_boot_ctx_t *pCtx, uint8_t do_reset,
                           uint8_t do_ec_key_provision,
                           uint8_t do_aes_key_provision,
                           uint8_t do_user_id_provision,
-                          uint8_t provision_with_policy);
+                          uint8_t provision_with_policy,
+                          uint8_t *dac_key, size_t dac_key_len,
+                          uint8_t *dac_cert, size_t dac_cert_len);
 
 sss_status_t ex_sss_entry(ex_sss_boot_ctx_t *pCtx) {
 
@@ -96,7 +98,7 @@ sss_status_t ex_sss_entry(ex_sss_boot_ctx_t *pCtx) {
   uint8_t do_aes_key_provision = 0;
   uint8_t only_t4t_provision = 0;
   uint8_t device_network_type = invalidNetworkInterface;
-  uint8_t qrcode[64] = {0};
+  uint8_t qrcode[1024] = {0};
   uint8_t *qrcode_ptr = NULL;
   size_t qrcodeLen = 0;
   uint8_t tp_spake_passcode_set_no = 1;
@@ -193,7 +195,8 @@ sss_status_t ex_sss_entry(ex_sss_boot_ctx_t *pCtx) {
   se051h_nfc_comm_prov(NULL, do_reset, only_t4t_provision, qrcode_ptr,
                        qrcodeLen, device_network_type, tp_spake_passcode_set_no,
                        tp_spake_itter_to_be_used, do_ec_key_provision,
-                       do_aes_key_provision, do_user_id_provision, provision_with_policy);
+                       do_aes_key_provision, do_user_id_provision, provision_with_policy,
+                       NULL, 0, NULL, 0);
 
   return kStatus_SSS_Success;
 }

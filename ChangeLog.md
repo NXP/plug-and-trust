@@ -1,5 +1,11 @@
 # Plug-And-Trust Mini Package Change Log
 
+## Integration with 1.6.1 RC1.2
+
+- Provision examples updated for 1.6.1 RC1.2
+- Provision example on Linux can take device attestation key and certificate files as input argument
+- SMCOM layer updated with VCOM support (for provisioning from Linux machines),
+
 ## Release v04.07.04_EAR4
 
 - Provision example updated for 8.20 applet

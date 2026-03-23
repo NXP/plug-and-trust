@@ -13,7 +13,7 @@
 /* ************************************************************************** */
 /* Includes                                                                   */
 /* ************************************************************************** */
-#include "sss/inc/fsl_sss_api.h"
+#include "inc/fsl_sss_api.h"
 
 #if defined(SSS_USE_FTR_FILE)
 #include "fsl_sss_ftr.h"

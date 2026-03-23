@@ -385,10 +385,10 @@
  */
 
 /** Use 2.X version */
-#define SSS_HAVE_MBEDTLS_2_X 0
+#define SSS_HAVE_MBEDTLS_2_X 1
 
 /** Use 3.X version */
-#define SSS_HAVE_MBEDTLS_3_X 1
+#define SSS_HAVE_MBEDTLS_3_X 0
 
 #if (( 0                             \
     + SSS_HAVE_MBEDTLS_2_X           \

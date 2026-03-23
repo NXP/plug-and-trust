@@ -7,6 +7,11 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <openssl/pem.h>
+#include <openssl/ec.h>
+#include <openssl/evp.h>
+#include <openssl/x509.h>
+
 static void print_help() {
   printf("\n The tool is used to provision SE051H for NFC commissioning \n");
   printf(" Usage - ./se051h_nfc_comm_prov [OPTIONS] \n");
@@ -34,9 +39,103 @@ static void print_help() {
          "session. \n");
   printf(" --aes_key_session_key        ==> Provision key for AES key applet "
          "session. \n");
-  printf(" --provision_with_policy      ==> Provision with policy. \n");
+  printf(" --provision_with_policy      ==> Provision objects with policy. \n");
+  printf(" --dac_key                    ==> DA key pair file to provision. \n");
+  printf(" --dac_cert                   ==> DA certificate file to provision. \n");
 
   return;
+}
+
+static int get_dac_key_from_file(char* filename, uint8_t* dac_key, size_t* dac_key_len)
+{
+  FILE *fp = NULL;
+  EVP_PKEY *pkey = NULL;
+  EC_KEY *ec_key = NULL;
+  int ret = -1;
+
+  fp = fopen(filename, "rb");
+  if (fp == NULL) {
+    printf("Failed to open file: %s\n", filename);
+    return -1;
+  }
+
+  // Try PEM format first
+  pkey = PEM_read_PrivateKey(fp, NULL, NULL, NULL);
+  if (pkey == NULL) {
+    // Try DER format
+    fseek(fp, 0, SEEK_SET);
+    pkey = d2i_PrivateKey_fp(fp, NULL);
+  }
+
+  fclose(fp);
+
+  if (pkey == NULL) {
+    printf("Failed to read key from file\n");
+    return -1;
+  }
+
+  // Extract EC key and convert to DER format
+  ec_key = EVP_PKEY_get1_EC_KEY(pkey);
+  if (ec_key != NULL) {
+    int der_len = i2d_ECPrivateKey(ec_key, NULL);
+    if (der_len > 0 && (size_t)der_len <= *dac_key_len) {
+      uint8_t *p = dac_key;
+      i2d_ECPrivateKey(ec_key, &p);
+      *dac_key_len = der_len;
+      ret = 0;
+      printf("Successfully read NIST P-256 key (length: %d bytes)\n", der_len);
+    } else {
+      printf("Buffer too small or invalid key\n");
+    }
+    EC_KEY_free(ec_key);
+  }
+
+  EVP_PKEY_free(pkey);
+  return ret;
+}
+
+static int get_dac_cert_from_file(char* filename, uint8_t* dac_cert, size_t* dac_cert_len)
+{
+  FILE *fp = NULL;
+  X509 *cert = NULL;
+  int ret = -1;
+
+  fp = fopen(filename, "rb");
+  if (fp == NULL) {
+    printf("Failed to open file: %s\n", filename);
+    return -1;
+  }
+
+  // Try PEM format first
+  cert = PEM_read_X509(fp, NULL, NULL, NULL);
+  if (cert == NULL) {
+    // Try DER format
+    fseek(fp, 0, SEEK_SET);
+    cert = d2i_X509_fp(fp, NULL);
+  }
+
+  fclose(fp);
+
+  if (cert == NULL) {
+    printf("Failed to read certificate from file\n");
+    return -1;
+  }
+
+  // Convert certificate to DER format
+  int der_len = i2d_X509(cert, NULL);
+  if (der_len > 0 && (size_t)der_len <= *dac_cert_len) {
+    uint8_t *p = dac_cert;
+    i2d_X509(cert, &p);
+    *dac_cert_len = der_len;
+    ret = 0;
+    printf("Successfully read certificate (length: %d bytes)\n", der_len);
+  } else {
+    printf("Buffer too small or invalid certificate (required: %d, available: %zu)\n",
+           der_len, *dac_cert_len);
+  }
+
+  X509_free(cert);
+  return ret;
 }
 
 int main(int argc, char *argv[]) {
@@ -46,12 +145,20 @@ int main(int argc, char *argv[]) {
   uint8_t do_aes_key_provision = 0;
   uint8_t only_t4t_provision = 0;
   uint8_t device_network_type = invalidNetworkInterface;
-  uint8_t qrcode[64] = {0};
+  uint8_t qrcode[1024] = {0};
   uint8_t *qrcode_ptr = NULL;
   size_t qrcodeLen = 0;
   uint8_t tp_spake_passcode_set_no = 1;
   uint32_t tp_spake_itter_to_be_used = 1000;
   uint8_t provision_with_policy = 0;
+
+  uint8_t dac_key[256] = {0};
+  uint8_t *dac_key_ptr = NULL;
+  size_t dac_key_len = 0;
+
+  uint8_t dac_cert[1024] = {0};
+  uint8_t *dac_cert_ptr = NULL;
+  size_t dac_cert_len = 0;
 
   for (int i = 1; i < argc; i++) {
     if (strcmp(argv[i], "--help") == 0) {
@@ -129,7 +236,50 @@ int main(int argc, char *argv[]) {
       do_aes_key_provision = 1;
     } else if (strcmp(argv[i], "--provision_with_policy") == 0) {
       provision_with_policy = 1;
-    } else {
+    } else if (strcmp(argv[i], "--dac_key") == 0)
+    {
+      if (argc <= i + 1) {
+        printf("No DAC key file passed \n");
+        return 0;
+      }
+      i++;
+      char* filename = argv[i];
+      dac_key_len = sizeof(dac_key);
+      if (get_dac_key_from_file(filename, dac_key, &dac_key_len) == -1)
+      {
+        printf("Error in reading DAC key file. The example will provision default keys to SE051H ");
+        dac_key_len = 0;
+      }
+      else{
+        dac_key_ptr = dac_key;
+      }
+    }
+    else if (strcmp(argv[i], "--dac_cert") == 0) {
+      if (argc <= i + 1) {
+        printf("No DAC certificate file passed \n");
+        return 0;
+      }
+      i++;
+      char* filename = argv[i];
+      dac_cert_len = sizeof(dac_cert);
+
+      dac_cert_len = dac_cert_len - 4;
+
+      if (get_dac_cert_from_file(filename, &dac_cert[4], &dac_cert_len) == -1)
+      {
+        printf("Error in reading DAC certificate file. The example will provision default certificate to SE051H\n");
+        dac_cert_len = 0;
+      }
+      else{
+        dac_cert[0] = 0x31;
+        dac_cert[1] = 0x00;
+        dac_cert[2] = static_cast<uint8_t>(dac_cert_len & 0xFF);
+        dac_cert[3] = static_cast<uint8_t>(dac_cert_len >> 8);
+        dac_cert_len = dac_cert_len + 4;
+        dac_cert_ptr = dac_cert;
+      }
+    }
+    else {
       print_help();
       return 0;
     }
@@ -146,7 +296,9 @@ int main(int argc, char *argv[]) {
   se051h_nfc_comm_prov(NULL, do_reset, only_t4t_provision, qrcode_ptr,
                        qrcodeLen, device_network_type, tp_spake_passcode_set_no,
                        tp_spake_itter_to_be_used, do_ec_key_provision,
-                       do_aes_key_provision, do_user_id_provision, provision_with_policy);
+                       do_aes_key_provision, do_user_id_provision, provision_with_policy,
+                       dac_key_ptr, dac_key_len,
+                       dac_cert_ptr, dac_cert_len);
 
   return 0;
 }

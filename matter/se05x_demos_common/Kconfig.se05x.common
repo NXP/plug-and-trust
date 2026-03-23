@@ -8,7 +8,7 @@ mainmenu "SE05X examples"
 config CHIP_SE05X
 	bool "Enable Secure Element support"
 	select SE05X_LIB
-	select MCUX_COMPONENT_middleware.mbedtls if SE05X_SCP03 || SE05X_USER_ID || SE05X_AES_KEY || SE05X_EC_KEY || SE05X_SCP03_USER_ID || SE05X_SCP03_AES_KEY || SE05X_SCP03_EC_KEY
+	select MCUX_COMPONENT_middleware.mbedtls3x if SE05X_SCP03 || SE05X_USER_ID || SE05X_AES_KEY || SE05X_EC_KEY || SE05X_SCP03_USER_ID || SE05X_SCP03_AES_KEY || SE05X_SCP03_EC_KEY
 	help
 		Use Secure Element to perform crypto operations.
 
@@ -56,6 +56,7 @@ config CHIP_NXP_RT1060_SDK_DEPENDENCIES
 	select MCUX_COMPONENT_middleware.sdmmc.host.usdhc
 	select MCUX_COMPONENT_middleware.sdmmc.sdio
 	select MCUX_COMPONENT_component.wifi_bt_module.config
+	select MCUX_COMPONENT_middleware.mbedtls3x.port.tfm # Required for entropy
     help
         NXP RT1060 platform sdk dependencies.
 
@@ -64,6 +65,7 @@ config CHIP_NXP_RW612_SDK_DEPENDENCIES
     depends on MCUX_HW_DEVICE_RW612 || MCUX_HW_DEVICE_RW610
 	default y
 	select MCUX_COMPONENT_middleware.freertos-kernel.cm33_non_trustzone
+	select MCUX_COMPONENT_middleware.mbedtls3x.port.tfm # Required for entropy
     help
         NXP RW612 platform sdk dependencies.
 
@@ -102,8 +104,9 @@ config CHIP_NXP_MCXW72_SDK_DEPENDENCIES
 	select MCUX_COMPONENT_middleware.wireless.framework.hw_parameter
 	select MCUX_COMPONENT_middleware.wireless.framework.lowpower
 	select MCUX_COMPONENT_middleware.wireless.framework.workq
-	select MCUX_COMPONENT_middleware.mbedtls
+	select MCUX_COMPONENT_middleware.mbedtls3x
 	select MCUX_COMPONENT_component.flash_nor_lpspi
+	select MCUX_COMPONENT_middleware.mbedtls3x.port.tfm # Required for entropy
     help
         NXP MCXW72 platform sdk dependencies.
 

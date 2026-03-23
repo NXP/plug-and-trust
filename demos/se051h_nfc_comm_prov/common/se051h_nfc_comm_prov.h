@@ -833,6 +833,11 @@ extern "C" {
  * session.
  * @param[in] do_user_id_provision - Provision SE with key for User Id applet
  * session.
+ * @param[in] provision_with_policy - Add the secure messaging policy to the objects created
+ * @param[in] dac_key - Device attestation key buffer
+ * @param[in] dac_key_len - Device attestation key length
+ * @param[in] dac_cert - Device attestation certificate buffer
+ * @param[in] dac_cert_len - Device attestation certificate length
  * @return None
  */
 void se051h_nfc_comm_prov(ex_sss_boot_ctx_t *pCtx, uint8_t do_reset,
@@ -843,7 +848,9 @@ void se051h_nfc_comm_prov(ex_sss_boot_ctx_t *pCtx, uint8_t do_reset,
                           uint8_t do_ec_key_provision,
                           uint8_t do_aes_key_provision,
                           uint8_t do_user_id_provision,
-                          uint8_t provision_with_policy);
+                          uint8_t provision_with_policy,
+                          uint8_t *dac_key, size_t dac_key_len,
+                          uint8_t *dac_cert, size_t dac_cert_len);
 
 #ifdef __cplusplus
 }

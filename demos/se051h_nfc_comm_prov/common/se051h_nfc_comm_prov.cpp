@@ -265,7 +265,7 @@ cleanup:
 }
 #endif
 
-static sss_status_t se051h_provision_dac_cert() {
+static sss_status_t se051h_provision_dac_cert(uint8_t *dac_cert_in, size_t dac_cert_in_len) {
   sss_status_t status = kStatus_SSS_Fail;
   smStatus_t smstatus = SM_NOT_OK;
 
@@ -275,11 +275,22 @@ static sss_status_t se051h_provision_dac_cert() {
   ENSURE_OR_RETURN_ON_ERROR(smstatus == SM_OK, kStatus_SSS_Fail);
 
   /*set Device Attestation certificate*/
-  LOG_I("Writing Device Attestation Certificate to SE05x at Key id = %x",
+
+  if (dac_cert_in != NULL && dac_cert_in_len != 0)
+  {
+    LOG_I("Writing Device Attestation Certificate to SE05x at Key id = %x",
         SE051H_DAC_ID);
-  status = se051h_set_key(dac_cer, sizeof(dac_cer), sizeof(dac_cer) * 8,
-                          kSSS_KeyPart_Default, kSSS_CipherType_Certificate,
-                          SE051H_DAC_ID, NULL, 0);
+    status = se051h_set_key(dac_cert_in, dac_cert_in_len, dac_cert_in_len * 8,
+                            kSSS_KeyPart_Default, kSSS_CipherType_Certificate,
+                            SE051H_DAC_ID, NULL, 0);
+  }
+  else {
+    LOG_I("Writing Device Attestation Certificate (from se051h_nfc_comm_prov.h) to SE05x at Key id = %x",
+        SE051H_DAC_ID);
+    status = se051h_set_key(dac_cer, sizeof(dac_cer), sizeof(dac_cer) * 8,
+                            kSSS_KeyPart_Default, kSSS_CipherType_Certificate,
+                            SE051H_DAC_ID, NULL, 0);
+  }
   if (status != kStatus_SSS_Success) {
     printf("Error in se051h_set_dev_attest_cert\n");
   }
@@ -308,7 +319,7 @@ static sss_status_t se051h_provision_pai_cert() {
   return status;
 }
 
-static sss_status_t se051h_provision_da_key() {
+static sss_status_t se051h_provision_da_key(uint8_t *dac_key, size_t dac_key_len) {
 
   sss_status_t status = kStatus_SSS_Fail;
   smStatus_t smstatus = SM_NOT_OK;
@@ -339,11 +350,21 @@ static sss_status_t se051h_provision_da_key() {
   smstatus = se05x_delete_key(SE051H_DA_KEY_PAIR_ID);
   ENSURE_OR_RETURN_ON_ERROR(smstatus == SM_OK, kStatus_SSS_Fail);
 
+  if (dac_key != NULL && dac_key_len != 0)
+  {
+    LOG_I("Writing DA private key to SE05x at Key id = %x", SE051H_DA_KEY_PAIR_ID);
+    status = se051h_set_key(dac_key, dac_key_len, 256, kSSS_KeyPart_Pair,
+                            kSSS_CipherType_EC_NIST_P, SE051H_DA_KEY_PAIR_ID,
+                            &policy_for_DA_key, sizeof(policy_for_DA_key));
+  }
+  else {
 
-  LOG_I("Writing DA private key to SE05x at Key id = %x", SE051H_DA_KEY_PAIR_ID);
-  status = se051h_set_key(privKey, sizeof(privKey), 256, kSSS_KeyPart_Pair,
-                          kSSS_CipherType_EC_NIST_P, SE051H_DA_KEY_PAIR_ID,
-                          &policy_for_DA_key, sizeof(policy_for_DA_key));
+    LOG_I("Writing DA private key (from se051h_nfc_comm_prov.h) to SE05x at Key id = %x", SE051H_DA_KEY_PAIR_ID);
+    status = se051h_set_key(privKey, sizeof(privKey), 256, kSSS_KeyPart_Pair,
+                            kSSS_CipherType_EC_NIST_P, SE051H_DA_KEY_PAIR_ID,
+                            &policy_for_DA_key, sizeof(policy_for_DA_key));
+  }
+
   if (status != kStatus_SSS_Success) {
     printf("Error is set DA private key\n");
   }
@@ -858,19 +879,59 @@ static sss_status_t se051h_provision_t4t_applet(uint8_t *qrcode,
   smStatus_t smStatus = SM_NOT_OK;
   uint8_t ndeffileId[2] = NDEF_FILE_ID;
   size_t ndeffileIdLen = sizeof(ndeffileId);
-  uint8_t ndefHeader[] = NDEF_HEADER;
-  size_t ndefHeaderLen = sizeof(ndefHeader);
-  uint8_t ndefData[128] = {0};
+  uint8_t ndefHeader[32] = {0};
+  size_t ndefHeaderLen = 0;
+  uint8_t ndefData[1024] = {0};
   size_t ndefDataLen = sizeof(ndefData);
 
   ENSURE_OR_RETURN_ON_ERROR(
       qrcodeLen <= (sizeof(ndefData) - sizeof(ndefHeader)), kStatus_SSS_Fail);
 
-  ndefHeader[1] = (uint8_t)qrcodeLen + 5 /* Remaining buffer in NDEF_HEADER */;
-  ndefHeader[4] = (uint8_t)qrcodeLen + 1 /* Remaining buffer in NDEF_HEADER */;
+  if (qrcodeLen < 254){
+    size_t ndefMsgLen = qrcodeLen + 1 + 4;
+    if (ndefMsgLen > UINT8_MAX) {
+      return kStatus_SSS_Fail;
+    }
+    ndefHeader[ndefHeaderLen++] = 0x00;
+    ndefHeader[ndefHeaderLen++] = (uint8_t)ndefMsgLen;
+
+    ndefHeader[ndefHeaderLen++] = 0xD1; //  The SR flag (Bit 4) is now 1, indicating a short Record.
+
+    ndefHeader[ndefHeaderLen++] = 0x01; //  type length.
+
+    ndefHeader[ndefHeaderLen++] = (uint8_t)qrcodeLen + 1; //  payload length.
+
+    ndefHeader[ndefHeaderLen++] = 0x55; // URI
+
+    ndefHeader[ndefHeaderLen++] = 0x00;
+
+  }
+  else {
+    ndefHeader[ndefHeaderLen++] = 0x00;
+    ndefHeader[ndefHeaderLen++] = 0x80;
+    ndefHeader[ndefHeaderLen++] = ((qrcodeLen + 1 + 7) >> 8) & 0xFF;
+    ndefHeader[ndefHeaderLen++] = (qrcodeLen + 1 + 7) & 0xFF; // Least Significant Byte
+
+    ndefHeader[ndefHeaderLen++] = 0xC1; //  The SR flag (Bit 4) is now 0, indicating a long Record.
+
+    ndefHeader[ndefHeaderLen++] = 0x01; //  type length.
+
+    ndefHeader[ndefHeaderLen++] = ((qrcodeLen + 1) >> 24) & 0xFF;
+    ndefHeader[ndefHeaderLen++] = ((qrcodeLen + 1) >> 16) & 0xFF;
+    ndefHeader[ndefHeaderLen++] = ((qrcodeLen + 1) >> 8) & 0xFF;
+    ndefHeader[ndefHeaderLen++] = (qrcodeLen + 1) & 0xFF; // Least Significant Byte
+
+    ndefHeader[ndefHeaderLen++] = 0x55; // URI
+
+    ndefHeader[ndefHeaderLen++] = 0x00;
+  }
 
   memcpy(ndefData, ndefHeader, ndefHeaderLen);
   memcpy(ndefData + ndefHeaderLen, qrcode, qrcodeLen);
+
+  if (memcmp(qrcode, "ff", 2) == 0){
+    memset(ndefData, 0xff, sizeof(ndefData));
+  }
 
   ndefDataLen = ndefHeaderLen + qrcodeLen;
 
@@ -1047,7 +1108,9 @@ void se051h_nfc_comm_prov(ex_sss_boot_ctx_t *pCtx, uint8_t do_reset,
                           uint8_t do_ec_key_provision,
                           uint8_t do_aes_key_provision,
                           uint8_t do_user_id_provision,
-                          uint8_t provision_with_policy) {
+                          uint8_t provision_with_policy,
+                          uint8_t *dac_key, size_t dac_key_len,
+                          uint8_t *dac_cert, size_t dac_cert_len) {
   sss_status_t status = kStatus_SSS_Success;
   const char *portName = nullptr;
 
@@ -1130,7 +1193,7 @@ void se051h_nfc_comm_prov(ex_sss_boot_ctx_t *pCtx, uint8_t do_reset,
 #endif
 
   // DAC certificate
-  status = se051h_provision_dac_cert();
+  status = se051h_provision_dac_cert(dac_cert, dac_cert_len);
   ENSURE_OR_GO_CLEANUP(status == kStatus_SSS_Success);
 
   // PAI certificate
@@ -1138,7 +1201,7 @@ void se051h_nfc_comm_prov(ex_sss_boot_ctx_t *pCtx, uint8_t do_reset,
   ENSURE_OR_GO_CLEANUP(status == kStatus_SSS_Success);
 
   // Device attestation key
-  status = se051h_provision_da_key();
+  status = se051h_provision_da_key(dac_key, dac_key_len);
   ENSURE_OR_GO_CLEANUP(status == kStatus_SSS_Success);
 
   // Attestation TBS

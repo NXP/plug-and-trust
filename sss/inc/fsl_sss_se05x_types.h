@@ -11,7 +11,7 @@
 /* Includes                                                                   */
 /* ************************************************************************** */
 
-#include "sss/inc/fsl_sss_api.h"
+#include "inc/fsl_sss_api.h"
 
 #include <fsl_sss_policy.h>
 

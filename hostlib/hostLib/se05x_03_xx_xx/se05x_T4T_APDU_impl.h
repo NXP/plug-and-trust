@@ -77,8 +77,28 @@ cleanup:
 
 smStatus_t Se05x_T4T_API_UpdateBinary(pSe05xSession_t session_ctx, uint8_t *data, size_t dataLen)
 {
-    tlvHeader_t hdr = {{0x00, kSE05x_T4T_INS_UPDATE_BINARY, 0x00, kSE05x_P2_DEFAULT}};
-    return DoAPDUTx_s_Case3(session_ctx, &hdr, data, dataLen);
+    size_t remLen = dataLen;
+    size_t buf_len_sent = 0;
+    uint16_t offset = 0;
+    smStatus_t ret = SM_NOT_OK;
+    tlvHeader_t hdr = {{0x00, kSE05x_T4T_INS_UPDATE_BINARY, 0x00, 0x00}};
+
+    while (remLen > 0)
+    {
+        hdr.hdr[2] = (offset >> 8) & 0xFF;
+        hdr.hdr[3] = (offset) & 0xFF;
+
+        buf_len_sent = (remLen > 128) ? (128) : (remLen);
+
+        ret = DoAPDUTx_s_Case3(session_ctx, &hdr, data + offset, buf_len_sent);
+        if (ret != SM_OK){
+            return ret;
+        }
+
+        offset += buf_len_sent;
+        remLen =  remLen - buf_len_sent;
+    }
+    return SM_OK;
 }
 
 smStatus_t Se05x_T4T_API_GetVersion(pSe05xSession_t session_ctx, uint8_t *version, size_t *versionLen)

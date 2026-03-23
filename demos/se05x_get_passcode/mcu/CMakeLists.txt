@@ -68,6 +68,10 @@ target_sources(app
     ${CHIP_ROOT}/examples/platform/nxp/common/app/support/Memconfig.cpp
 )
 
+mcux_add_macro(
+    MBEDTLS_USER_CONFIG_FILE=\\\"${CHIP_ROOT}/third_party/simw-top-mini/repo/matter/se05x_demos_common/se05x_provision_mbedtls_user_config.h\\\"
+)
+
 # Use MCUX post-build function to convert the executable to binary format
 mcux_convert_binary(
     BINARY ${APPLICATION_BINARY_DIR}/app.bin

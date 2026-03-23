@@ -302,16 +302,6 @@ U16 smApduAppendCmdData(apdu_t *pApdu, const U8 *data, U16 dataLen)
         ReserveLc(pApdu);
     }
 
-#if SSS_HAVE_APPLET_A71CH_SIM
-    if (gEnableEnc)
-    {
-        pApdu->lc += (dataLen + sizeof(session_Tlv));
-        //add SessionId_Tlv
-        memcpy(&pApdu->pBuf[pApdu->offset], session_Tlv, sizeof(session_Tlv));
-        pApdu->offset += sizeof(session_Tlv);
-    }
-    else
-#endif // SSS_HAVE_APPLET_A71CH_SIM
     {
         if ((SHRT_MAX - pApdu->lc) < dataLen) {
             goto exit;

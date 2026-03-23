@@ -385,10 +385,10 @@
  */
 
 /** Use 2.X version */
-#define SSS_HAVE_MBEDTLS_2_X 1
+#define SSS_HAVE_MBEDTLS_2_X 0
 
 /** Use 3.X version */
-#define SSS_HAVE_MBEDTLS_3_X 0
+#define SSS_HAVE_MBEDTLS_3_X 1
 
 #if (( 0                             \
     + SSS_HAVE_MBEDTLS_2_X           \
@@ -478,7 +478,7 @@
 #define SSSFTR_SW_ECC 1
 
 /** Software : RSA */
-#define SSSFTR_SW_RSA 1
+#define SSSFTR_SW_RSA 0
 
 /** Software : KEY operations : SET Key */
 #define SSSFTR_SW_KEY_SET 1

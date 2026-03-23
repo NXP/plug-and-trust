@@ -301,7 +301,7 @@
 #define SSS_HAVE_SE05X_AUTH_NONE 0
 
 /** Do User Authentication with UserID */
-#define SSS_HAVE_SE05X_AUTH_USERID 0
+#define SSS_HAVE_SE05X_AUTH_USERID 1
 
 /** Use Platform SCP for connection to SE */
 #define SSS_HAVE_SE05X_AUTH_PLATFSCP03 0
@@ -312,7 +312,7 @@
 
 /** Do User Authentication with EC Key
  * Earlier this was called FastSCP */
-#define SSS_HAVE_SE05X_AUTH_ECKEY 1
+#define SSS_HAVE_SE05X_AUTH_ECKEY 0
 
 /** UserID and PlatfSCP03 */
 #define SSS_HAVE_SE05X_AUTH_USERID_PLATFSCP03 0
@@ -385,10 +385,10 @@
  */
 
 /** Use 2.X version */
-#define SSS_HAVE_MBEDTLS_2_X 0
+#define SSS_HAVE_MBEDTLS_2_X 1
 
 /** Use 3.X version */
-#define SSS_HAVE_MBEDTLS_3_X 1
+#define SSS_HAVE_MBEDTLS_3_X 0
 
 #if (( 0                             \
     + SSS_HAVE_MBEDTLS_2_X           \

@@ -36,5 +36,8 @@ executable("se051h_nfc_comm_prov") {
   public_deps = [ "${chip_root}/third_party/simw-top-mini:se05x" ]
   public_configs = [ "${chip_root}/third_party/simw-top-mini:se05x_config" ]
 
+  libs = [ "ssl" ]
+  libs += [ "crypto" ]
+
   output_dir = root_out_dir
 }

@@ -63,6 +63,7 @@ if (CONFIG_SE05X_LIB)
 
     target_include_directories(simw_lib PUBLIC
         ${FILTERED_SDK_INCLUDES}
+        ${SIMW_LIB_DIR}/sss
         ${SIMW_LIB_DIR}/sss/inc
         ${SIMW_LIB_DIR}/sss/port/default
         ${SIMW_LIB_DIR}/sss/ex/src
@@ -163,7 +164,7 @@ if (CONFIG_SE05X_LIB)
         target_sources(simw_lib PUBLIC
                 ${SIMW_LIB_DIR}/hostlib/hostLib/platform/mcxw72/i2c_mcxw72.c
                 ${SIMW_LIB_DIR}/hostlib/hostLib/platform/ksdk/timer_kinetis_freertos.c
-                ${SIMW_LIB_DIR}/demos/se05x_host_gpio/se05x_host_gpio.c
+                ${SIMW_LIB_DIR}/demos/se05x_host_gpio/se05x_host_gpio_mcxw72.c
             )
             target_compile_definitions(simw_lib
                 PUBLIC

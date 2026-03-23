@@ -17,7 +17,7 @@
 #include "fsl_sss_ftr_default.h"
 #endif
 
-#include "sss/inc/fsl_sss_api.h"
+#include "inc/fsl_sss_api.h"
 
 
 #if SSS_HAVE_HOSTCRYPTO_MBEDTLS
