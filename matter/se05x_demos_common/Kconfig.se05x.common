@@ -106,7 +106,6 @@ config CHIP_NXP_MCXW72_SDK_DEPENDENCIES
 	select MCUX_COMPONENT_middleware.wireless.framework.workq
 	select MCUX_COMPONENT_middleware.mbedtls3x
 	select MCUX_COMPONENT_component.flash_nor_lpspi
-	select MCUX_COMPONENT_middleware.mbedtls3x.port.tfm # Required for entropy
 	select MCUX_COMPONENT_component.psa_crypto_driver.ele_s200
     help
         NXP MCXW72 platform sdk dependencies.
