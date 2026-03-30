@@ -2,6 +2,12 @@
 
 ## Integration with 1.6.1 RC1.2
 
+- Provision example updated for W72
+- New APDUs to create object with 6 byte ID
+- Provision example updated with descriptor cluster for end point 1
+
+## Integration with 1.6.1 RC1.2
+
 - Provision examples updated for 1.6.1 RC1.2
 - Provision example on Linux can take device attestation key and certificate files as input argument
 - SMCOM layer updated with VCOM support (for provisioning from Linux machines),

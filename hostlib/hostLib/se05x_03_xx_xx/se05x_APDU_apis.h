@@ -1,6 +1,6 @@
 /*
  *
- * Copyright 2019-2020,2024 NXP
+ * Copyright 2019-2020,2024,2026 NXP
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
@@ -6295,6 +6295,7 @@ smStatus_t Se05x_API_DeleteAll(pSe05xSession_t session_ctx);
 #if (SSS_HAVE_APPLET_SE051_H && SSS_HAVE_SE05X_VER_GTE_07_02)
 #include "se05x_pake_APDU_apis.h"
 #include "se05x_T4T_APDU_apis.h"
+#include "se05x_matter_APDU_apis.h"
 #endif
 
 #endif /* SE050X_APDU_APIS_H_INC */

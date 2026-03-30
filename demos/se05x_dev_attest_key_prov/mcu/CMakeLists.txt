@@ -68,9 +68,23 @@ target_sources(app
     ${CHIP_ROOT}/examples/platform/nxp/common/app/support/Memconfig.cpp
 )
 
-mcux_add_macro(
-    MBEDTLS_USER_CONFIG_FILE=\\\"${CHIP_ROOT}/third_party/simw-top-mini/repo/matter/se05x_demos_common/se05x_provision_mbedtls_user_config.h\\\"
-)
+if (CONFIG_MCUX_HW_DEVICE_MCXW727C)
+    target_compile_definitions(simw_lib
+        PUBLIC
+        MBEDTLS_NXP_SSSAPI=1
+        RL_ALLOW_CUSTOM_SHMEM_CONFIG=1
+    )
+endif()
+
+if (CONFIG_MCUX_HW_DEVICE_MCXW727C)
+        mcux_add_macro(
+        MBEDTLS_USER_CONFIG_FILE=\\\"${CHIP_ROOT}/third_party/simw-top-mini/repo/matter/se05x_demos_common/w72_se05x_provision_mbedtls_user_config.h\\\"
+    )
+else()
+    mcux_add_macro(
+        MBEDTLS_USER_CONFIG_FILE=\\\"${CHIP_ROOT}/third_party/simw-top-mini/repo/matter/se05x_demos_common/se05x_provision_mbedtls_user_config.h\\\"
+    )
+endif()
 
 # Use MCUX post-build function to convert the executable to binary format
 mcux_convert_binary(

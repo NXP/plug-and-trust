@@ -42,3 +42,7 @@
 #ifdef MBEDTLS_USE_PSA_CRYPTO
 #undef MBEDTLS_USE_PSA_CRYPTO
 #endif
+
+#ifdef MBEDTLS_PSA_CRYPTO_C
+#undef MBEDTLS_PSA_CRYPTO_C
+#endif

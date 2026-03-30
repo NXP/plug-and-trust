@@ -175,4 +175,10 @@ if (CONFIG_SE05X_LIB)
 
     endif()
 
+    if (CONFIG_SE05X_SCP03 OR CONFIG_SE05X_USER_ID OR CONFIG_SE05X_AES_KEY OR CONFIG_SE05X_EC_KEY OR CONFIG_SE05X_SCP03_USER_ID OR CONFIG_SE05X_SCP03_AES_KEY OR CONFIG_SE05X_SCP03_EC_KEY)
+        mcux_add_macro(
+            MBEDTLS_USER_CONFIG_FILE=\\\"${CHIP_ROOT}/third_party/simw-top-mini/repo/matter/se05x_demos_common/se05x_mbedtls_user_config.h\\\"
+        )
+    endif()
+
 endif()

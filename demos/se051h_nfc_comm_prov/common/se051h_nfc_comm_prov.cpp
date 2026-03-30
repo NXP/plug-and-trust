@@ -151,6 +151,70 @@ static smStatus_t se05x_delete_key(uint32_t keyid) {
   return smstatus;
 }
 
+static sss_status_t se051h_set_key_with_ep(const uint8_t *buffer, size_t bufferLen,
+                                   sss_cipher_type_t cipherType, uint32_t keyId,
+                                   uint16_t endpointID) {
+  sss_status_t status = kStatus_SSS_Success;
+  smStatus_t smstatus = SM_NOT_OK;
+  Se05xPolicy_t se05x_policy;
+  uint8_t policies_buff[MAX_POLICY_BUFFER_SIZE] = BINARY_POLICY_BUFF;
+
+  if (cipherType == kSSS_CipherType_Binary ||
+      cipherType == kSSS_CipherType_Certificate) {
+        if (policy) {
+          se05x_policy.value = policies_buff;
+          se05x_policy.value_len = POLICY_BUF_LEN;
+        }
+        else {
+            se05x_policy.value = NULL;
+            se05x_policy.value_len = 0;
+        }
+
+    if (bufferLen > UINT16_MAX) {
+        LOG_E("Buffer length exceeds maximum allowed size");
+        return kStatus_SSS_Fail;
+    }
+    smstatus = Se05x_API_WriteBinary_V2(
+        &((sss_se05x_session_t *)&gex_sss_chip_ctx.session)->s_ctx, &se05x_policy, keyId,
+        0, (uint16_t)bufferLen, buffer, bufferLen, endpointID, 0);
+    if (smstatus != SM_OK) {
+      LOG_E("Error in setting key with endpoint");
+      status = kStatus_SSS_Fail;
+    }
+  } else {
+    LOG_W("Unsupported cipher type");
+    status = kStatus_SSS_Fail;
+  }
+
+  return status;
+}
+
+static smStatus_t se05x_delete_key_with_ep(uint32_t keyid, uint16_t endpointID) {
+
+  smStatus_t smstatus = SM_NOT_OK;
+  SE05x_Result_t exists = kSE05x_Result_NA;
+
+  if (gex_sss_chip_ctx.ks.session != NULL) {
+    smstatus = Se05x_API_CheckObjectExists_V2(
+        &((sss_se05x_session_t *)&gex_sss_chip_ctx.session)->s_ctx, keyid,
+        &exists, endpointID);
+    if (smstatus == SM_OK) {
+      if (exists == kSE05x_Result_SUCCESS) {
+        smstatus = Se05x_API_DeleteSecureObject_V2(
+            &((sss_se05x_session_t *)&gex_sss_chip_ctx.session)->s_ctx, keyid, endpointID);
+        if (smstatus != SM_OK) {
+          LOG_E("Error in deleting key");
+        }
+      } else {
+        LOG_W("Key does not exists");
+      }
+    } else {
+      LOG_E("Error in Se05x_API_CheckObjectExists_V2");
+    }
+  }
+  return smstatus;
+}
+
 /* Delete Spake2+ crypto object in se05x */
 void se05x_delete_spake2p_crypto_object(void)
 {
@@ -855,6 +919,7 @@ static sss_status_t se051h_provision_spake_object() {
 static sss_status_t se051h_provision_descriptor_cluster() {
   sss_status_t status = kStatus_SSS_Fail;
   smStatus_t smstatus = SM_NOT_OK;
+  uint16_t endpoint_id = 0x0001;
 
   uint8_t descriptor_cluster[] = {DESCRIPTOR_CLUSTER};
 
@@ -866,7 +931,19 @@ static sss_status_t se051h_provision_descriptor_cluster() {
                           sizeof(descriptor_cluster) * 8, kSSS_KeyPart_Default,
                           kSSS_CipherType_Binary, SE051H_DESCRIPTOR_CLUSTER_ID, NULL, 0);
   if (status != kStatus_SSS_Success) {
-    printf("Error in se051h_provision_descriptor_cluster\n");
+    LOG_E("Error in se051h_provision_descriptor_cluster\n");
+  }
+
+  /* Provision descriptor cluster data for endpoint 0x0001 */
+
+  smstatus = se05x_delete_key_with_ep(SE051H_DESCRIPTOR_CLUSTER_ID, endpoint_id);
+  ENSURE_OR_RETURN_ON_ERROR(smstatus == SM_OK, kStatus_SSS_Fail);
+
+  LOG_I("Writing descriptor cluster data with endpoint to SE05x at Key id = 0x%04X%08X", endpoint_id, SE051H_DESCRIPTOR_CLUSTER_ID);
+  status = se051h_set_key_with_ep(descriptor_cluster, sizeof(descriptor_cluster),
+                          kSSS_CipherType_Binary, SE051H_DESCRIPTOR_CLUSTER_ID, endpoint_id);
+  if (status != kStatus_SSS_Success) {
+    LOG_E("Error in se051h_provision_descriptor_cluster with end_point\n");
   }
 
   return status;

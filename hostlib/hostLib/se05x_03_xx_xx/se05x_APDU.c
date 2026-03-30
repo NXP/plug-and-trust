@@ -1,6 +1,6 @@
 /*
  *
- * Copyright 2019-2020,2024 NXP
+ * Copyright 2019-2020,2024,2026 NXP
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
@@ -50,6 +50,7 @@ extern "C" {
 #if (SSS_HAVE_APPLET_SE051_H && SSS_HAVE_SE05X_VER_GTE_07_02)
 #include "se05x_pake_APDU_impl.h"
 #include "se05x_T4T_APDU_impl.h"
+#include "se05x_matter_APDU_impl.h"
 #endif
 
 smStatus_t Se05x_API_I2CM_Send(

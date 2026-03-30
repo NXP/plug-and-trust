@@ -55,7 +55,7 @@ ninja -C out se051h_nfc_comm_prov
 ## Matter (for RW612) CMake Build system as
 
 ```
-user@ubuntu:~/Desktop/git/connectedhomeip$ west build -d <out_dir> -b frdmrw612 third_party/simw-top-mini/repo/demos/se051h_nfc_comm_prov/mcu
+user@ubuntu:~/Desktop/git/connectedhomeip$ west build -d <out_dir> -b frdmrw612 third_party/simw-top-mini/repo/demos/se051h_nfc_comm_prov/mcu -DCONFIG_CHIP_SE05X=y
 ```
 
 ## Matter (for FRDMW72) CMake Build system as
@@ -67,11 +67,25 @@ user@ubuntu:~/Desktop/git/connectedhomeip$ west build -d <out_dir> -b frdmmcxw72
 ## Matter (for RT1060) CMake Build system as
 
 ```
-user@ubuntu:~/Desktop/git/connectedhomeip$ west build -d <out_dir> -b evkcmimxrt1060 third_party/simw-top-mini/repo/demos/se051h_nfc_comm_prov/mcu/
+user@ubuntu:~/Desktop/git/connectedhomeip$ west build -d <out_dir> -b evkcmimxrt1060 third_party/simw-top-mini/repo/demos/se051h_nfc_comm_prov/mcu/ -DCONFIG_CHIP_SE05X=y
 ```
 
 > [!IMPORTANT]
 > Adapt the above commands to the i.MX, RW612 and RT1060 build commands accordingly.
+
+## Applet session
+
+To run the provision example with applet session (say AES key), use the below command for build
+
+```
+user@ubuntu:~/Desktop/git/connectedhomeip$ west build -d <out_dir> -b frdmrw612 third_party/simw-top-mini/repo/demos/se051h_nfc_comm_prov/mcu -DCONFIG_CHIP_SE05X=y -DCONFIG_CHIP_SE05X_AES_KEY=y
+```
+```
+user@ubuntu:~/Desktop/git/connectedhomeip$ west build -d <out_dir> -b frdmmcxw72 third_party/simw-top-mini/repo/demos/se051h_nfc_comm_prov/mcu/ -Dcore_id=cm33_core0 -DCONFIG_CHIP_SE05X_AES_KEY=y
+```
+```
+user@ubuntu:~/Desktop/git/connectedhomeip$ west build -d <out_dir> -b evkcmimxrt1060 third_party/simw-top-mini/repo/demos/se051h_nfc_comm_prov/mcu/ -DCONFIG_CHIP_SE05X_AES_KEY=y
+```
 
 # Usage
 
@@ -93,4 +107,33 @@ Note: It is mandatory to pass at-least one network interface.
 --aes_key_session_key       ==> Provision the key for AES key Applet session
 ```
 
+# Running provision example on MCUs
+
 When using on supported MCUs, modify the main file defines (examples - simw-top-mini/repo/demos/se051h_nfc_comm_prov/mcu/main.cpp)
+
+To provision the SE05x with AES key for secure session, enable the below macro
+```c
+#define DO_AES_KEY_PROVISION 1
+```
+
+To delete all provisioned contents, enable the below macro
+```c
+#define DO_RESET 1
+```
+
+The example has the default DAC keys and certificates from MATTER SDK. To use custom DAC keys and certificates, modify the header file contents (file - connectedhomeip/third_party/simw-top-mini/repo/demos/se051h_nfc_comm_prov/common/se051h_nfc_comm_prov.h),
+
+```c
+#define DAC_CERTIFICATE                                                        \
+  0x31, 0x00, 0xED, 0x01, 0x30, 0x82, 0x01, 0xE9, 0x30, 0x82, 0x01, 0x8E,      \
+...
+...
+```
+
+```c
+#define DA_KEY_PAIR_DATA                                                       \
+  0x30, 0x77, 0x02, 0x01, 0x01, 0x04, 0x20, 0xCC, 0xCF, 0x9D, 0xC7, 0x05,      \
+      0x0E, 0xF5, 0xD9, 0x0B, 0xE4, 0x57, 0x07, 0x
+...
+...
+```

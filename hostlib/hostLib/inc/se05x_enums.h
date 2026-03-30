@@ -1,6 +1,6 @@
 /*
 *
-* Copyright 2019,2020,2024 NXP
+* Copyright 2019,2020,2024,2026 NXP
 * SPDX-License-Identifier: BSD-3-Clause
 */
 
@@ -870,6 +870,8 @@ typedef enum
     kSE05x_SecObjTyp_CURVE = 0x10,
     /**  */
     kSE05x_SecObjTyp_HMAC_KEY = 0x11,
+    /**  */
+    kSE05x_SecObjTyp_NFC_BINARY_FILE = 0x12,
 #if SSS_HAVE_SE05X_VER_GTE_07_02
     kSE05x_SecObjTyp_EC_KEY_PAIR_NIST_P192 = 0x21,
     kSE05x_SecObjTyp_EC_PRIV_KEY_NIST_P192 = 0x22,
