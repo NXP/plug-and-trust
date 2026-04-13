@@ -23,6 +23,8 @@ static void print_help() {
          "applet. \n");
   printf(" --qrcode <QR_CODE_VALUE>     ==> QR code to provisioned in T4T "
          "applet. \n");
+  printf(" --rawdata <raw_text_file>    ==> Raw data (hex bytes) to be provisioned in T4T applet."
+         " Ensure to pass a valid ndef header also\n");
   printf(" --tp_spake_passcode_set_no   ==> Trust Provisioned pass-code set to "
          "be used (Possible values 1,2,3). \n");
   printf(" --tp_spake_itter_to_be_used  ==> Trust Provisioned iteration count "
@@ -33,6 +35,7 @@ static void print_help() {
          "interface for NFC commissioning. \n");
   printf(" --ethernet_net_interface     ==> Enable only Ethernet network "
          "interface for NFC commissioning. \n");
+  printf(" Note: It is mandatory to pass at-least one network interface.\n");
   printf(" --ec_key_session_key         ==> Provision Key for EC Key applet "
          "session. \n");
   printf(" --user_id_session_key        ==> Provision Key for User Id applet "
@@ -148,6 +151,7 @@ int main(int argc, char *argv[]) {
   uint8_t qrcode[1024] = {0};
   uint8_t *qrcode_ptr = NULL;
   size_t qrcodeLen = 0;
+  size_t is_qr_code = 0;
   uint8_t tp_spake_passcode_set_no = 1;
   uint32_t tp_spake_itter_to_be_used = 1000;
   uint8_t provision_with_policy = 0;
@@ -175,11 +179,32 @@ int main(int argc, char *argv[]) {
       }
       i++;
       qrcodeLen = strlen(argv[i]);
-      if (qrcodeLen > sizeof(qrcode)) {
-        printf("Invalid QR code length \n");
+      memcpy(qrcode, argv[i], strlen(argv[i]));
+      qrcode_ptr = &qrcode[0];
+      is_qr_code = 1;
+    } else if(strcmp(argv[i], "--rawdata") == 0) {
+      if(argc <= i + 1) {
+        printf("No raw file name passed\n");
         return 0;
       }
-      memcpy(qrcode, argv[i], strlen(argv[i]));
+      i++;
+      FILE *fp = fopen(argv[i], "r");
+      if(fp == NULL) {
+        printf("Failed to open file\n");
+        return 0;
+      }
+      char hexstr[1024] = {0};
+      fgets(hexstr, sizeof(hexstr), fp);
+      fclose(fp);
+      char *p = hexstr;
+      qrcodeLen = 0;
+      while (*p && *(p+1) && qrcodeLen < sizeof(qrcode)) {
+          unsigned int byte;
+          if (sscanf(p, "%02x", &byte) == 1) {
+              qrcode[qrcodeLen++] = (uint8_t)byte;
+          }
+          p += 2;
+      }
       qrcode_ptr = &qrcode[0];
     } else if (strcmp(argv[i], "--wifi_net_interface") == 0) {
       device_network_type |= wiFiNetworkInterface;
@@ -294,7 +319,7 @@ int main(int argc, char *argv[]) {
   }
 
   se051h_nfc_comm_prov(NULL, do_reset, only_t4t_provision, qrcode_ptr,
-                       qrcodeLen, device_network_type, tp_spake_passcode_set_no,
+                       qrcodeLen, is_qr_code, device_network_type, tp_spake_passcode_set_no,
                        tp_spake_itter_to_be_used, do_ec_key_provision,
                        do_aes_key_provision, do_user_id_provision, provision_with_policy,
                        dac_key_ptr, dac_key_len,

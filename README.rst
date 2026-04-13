@@ -81,6 +81,14 @@ Prerequisite
   the release was tested with Raspbian Buster (``4.19.75-v7l+``)
 - SE050/SE051/SE052/A5000 connected to i2c-1 port of Raspberry Pi.
 
+- Windows - OpenSSL Installation
+  - Download OpenSSL installer from: https://slproweb.com/products/Win32OpenSSL.html
+  - Select Win64 OpenSSL, full installer
+  - Install OpenSSL to the default location: `C:\Program Files\OpenSSL-Win64\`
+  - While installing when asked where to copy OpenSSL DLLs: 'The OpenSSL binaries (/bin) directory'
+  - Ensure the installation includes the header files include directory
+  - Add OpenSSL to your system PATH or configure CMake to find it at `C:\Program Files\OpenSSL-Win64\include`
+
 
 ECC example
 -------------------------------------------------------------

@@ -1,6 +1,13 @@
 # Plug-And-Trust Mini Package Change Log
 
-## Integration with 1.6.1 RC1.2
+## Integration with 1.6.1 RC2.0
+
+- Provision example updated to provision raw data to T4T applet. Refer `se051h_nfc_comm_prov\readme.md`
+- Additional kconfig compile time options are added for matter examples for ease of use
+- Support for Windows (VCOM interface) is extended for matter examples.
+- :func:`Se05x_T4T_API_ReadBinary` and :func:`Se05x_T4T_API_UpdateBinary` are extended to support data greater than 256 bytes.
+
+## Integration with 1.6.1 RC1.3
 
 - Provision example updated for W72
 - New APDUs to create object with 6 byte ID

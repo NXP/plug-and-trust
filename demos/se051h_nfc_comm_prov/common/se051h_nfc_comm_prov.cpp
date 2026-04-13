@@ -949,22 +949,27 @@ static sss_status_t se051h_provision_descriptor_cluster() {
   return status;
 }
 
-
 #if SSS_HAVE_APPLET_SE051_H
 static sss_status_t se051h_provision_t4t_applet(uint8_t *qrcode,
-                                                size_t qrcodeLen) {
+                                                size_t qrcodeLen, size_t is_qr_code) {
   smStatus_t smStatus = SM_NOT_OK;
-  uint8_t ndeffileId[2] = NDEF_FILE_ID;
+  uint8_t ndeffileId[2] = {0};
   size_t ndeffileIdLen = sizeof(ndeffileId);
   uint8_t ndefHeader[32] = {0};
   size_t ndefHeaderLen = 0;
   uint8_t ndefData[1024] = {0};
   size_t ndefDataLen = sizeof(ndefData);
+  uint8_t ccfileID[2] = CC_FILE_ID;
+  size_t ccfileIDLen = sizeof(ccfileID);
+  uint8_t outData[1024] = {0};
+  size_t outDataLen = sizeof(outData);
 
-  ENSURE_OR_RETURN_ON_ERROR(
-      qrcodeLen <= (sizeof(ndefData) - sizeof(ndefHeader)), kStatus_SSS_Fail);
-
-  if (qrcodeLen < 254){
+  if(is_qr_code)
+  {
+    if(qrcodeLen > 256) {
+      printf("Error: qrcode length should be a maximum of 255 bytes \n");
+      return kStatus_SSS_Fail;
+    }
     size_t ndefMsgLen = qrcodeLen + 1 + 4;
     if (ndefMsgLen > UINT8_MAX) {
       return kStatus_SSS_Fail;
@@ -982,35 +987,15 @@ static sss_status_t se051h_provision_t4t_applet(uint8_t *qrcode,
 
     ndefHeader[ndefHeaderLen++] = 0x00;
 
+    memcpy(ndefData, ndefHeader, ndefHeaderLen);
+    memcpy(ndefData + ndefHeaderLen, qrcode, qrcodeLen);
+
+    ndefDataLen = ndefHeaderLen + qrcodeLen;
   }
   else {
-    ndefHeader[ndefHeaderLen++] = 0x00;
-    ndefHeader[ndefHeaderLen++] = 0x80;
-    ndefHeader[ndefHeaderLen++] = ((qrcodeLen + 1 + 7) >> 8) & 0xFF;
-    ndefHeader[ndefHeaderLen++] = (qrcodeLen + 1 + 7) & 0xFF; // Least Significant Byte
-
-    ndefHeader[ndefHeaderLen++] = 0xC1; //  The SR flag (Bit 4) is now 0, indicating a long Record.
-
-    ndefHeader[ndefHeaderLen++] = 0x01; //  type length.
-
-    ndefHeader[ndefHeaderLen++] = ((qrcodeLen + 1) >> 24) & 0xFF;
-    ndefHeader[ndefHeaderLen++] = ((qrcodeLen + 1) >> 16) & 0xFF;
-    ndefHeader[ndefHeaderLen++] = ((qrcodeLen + 1) >> 8) & 0xFF;
-    ndefHeader[ndefHeaderLen++] = (qrcodeLen + 1) & 0xFF; // Least Significant Byte
-
-    ndefHeader[ndefHeaderLen++] = 0x55; // URI
-
-    ndefHeader[ndefHeaderLen++] = 0x00;
+    memcpy(ndefData, qrcode, qrcodeLen);
+    ndefDataLen = qrcodeLen;
   }
-
-  memcpy(ndefData, ndefHeader, ndefHeaderLen);
-  memcpy(ndefData + ndefHeaderLen, qrcode, qrcodeLen);
-
-  if (memcmp(qrcode, "ff", 2) == 0){
-    memset(ndefData, 0xff, sizeof(ndefData));
-  }
-
-  ndefDataLen = ndefHeaderLen + qrcodeLen;
 
   smStatus = Se05x_T4T_API_SelectT4TApplet(
       &((sss_se05x_session_t *)&gex_sss_chip_ctx.session)->s_ctx);
@@ -1020,7 +1005,34 @@ static sss_status_t se051h_provision_t4t_applet(uint8_t *qrcode,
       &((sss_se05x_session_t *)&gex_sss_chip_ctx.session)->s_ctx,
       kSE05x_T4T_Interface_Contactless, kSE05x_T4T_Operation_Write,
       kSE05x_T4T_AccessCtrl_Granted);
+  if(smStatus != SM_OK)
+  {
+    // Ignore the error
+    LOG_E("ConfigureAccessCtrl (for grant for reading over contact interface) failed ");
+  }
+
+  smStatus = Se05x_T4T_API_SelectFile(
+    &((sss_se05x_session_t *)&gex_sss_chip_ctx.session)->s_ctx, ccfileID,
+      ccfileIDLen);
   ENSURE_OR_RETURN_ON_ERROR(smStatus == SM_OK, kStatus_SSS_Fail);
+
+  smStatus = Se05x_T4T_API_ReadBinary(
+    &((sss_se05x_session_t *)&gex_sss_chip_ctx.session)->s_ctx, outData,
+      &outDataLen);
+  ENSURE_OR_RETURN_ON_ERROR(smStatus == SM_OK, kStatus_SSS_Fail);
+
+  size_t offset = 7; // cc header(CLEN + Version + MLe + MLc)
+
+  while (offset < outDataLen) {
+    uint8_t tag = outData[offset++];
+    uint8_t len = outData[offset++];
+    if (tag == 0x04 && len >= 2) {
+        ndeffileId[0] = outData[offset];
+        ndeffileId[1] = outData[offset + 1];
+        break;
+    }
+    offset += len;
+  }
 
   smStatus = Se05x_T4T_API_SelectFile(
       &((sss_se05x_session_t *)&gex_sss_chip_ctx.session)->s_ctx, ndeffileId,
@@ -1032,13 +1044,62 @@ static sss_status_t se051h_provision_t4t_applet(uint8_t *qrcode,
       ndefDataLen);
   ENSURE_OR_RETURN_ON_ERROR(smStatus == SM_OK, kStatus_SSS_Fail);
 
+// Only the verification part to read the data written via contact interface
+#if 0
   smStatus = Se05x_T4T_API_ConfigureAccessCtrl(
       &((sss_se05x_session_t *)&gex_sss_chip_ctx.session)->s_ctx,
-      kSE05x_T4T_Interface_Contactless, kSE05x_T4T_Operation_Write,
+      kSE05x_T4T_Interface_Contact, kSE05x_T4T_Operation_Read,
       kSE05x_T4T_AccessCtrl_Granted);
   ENSURE_OR_RETURN_ON_ERROR(smStatus == SM_OK, kStatus_SSS_Fail);
 
-  LOG_I("T4T Provision successful \n");
+  memset(outData, 0, sizeof(outData));
+  outDataLen = sizeof(outData);
+
+  smStatus = Se05x_T4T_API_SelectFile(
+    &((sss_se05x_session_t *)&gex_sss_chip_ctx.session)->s_ctx, ccfileID,
+      ccfileIDLen);
+  ENSURE_OR_RETURN_ON_ERROR(smStatus == SM_OK, kStatus_SSS_Fail);
+
+  smStatus = Se05x_T4T_API_ReadBinary(
+    &((sss_se05x_session_t *)&gex_sss_chip_ctx.session)->s_ctx, outData,
+      &outDataLen);
+  ENSURE_OR_RETURN_ON_ERROR(smStatus == SM_OK, kStatus_SSS_Fail);
+
+  offset = 7; // cc header(CLEN + Version + MLe + MLc)
+
+  while (offset < outDataLen) {
+    uint8_t tag = outData[offset++];
+    uint8_t len = outData[offset++];
+    if (tag == 0x04 && len >= 2) {
+        ndeffileId[0] = outData[offset];
+        ndeffileId[1] = outData[offset + 1];
+        break;
+    }
+    offset += len;
+  }
+
+  smStatus = Se05x_T4T_API_SelectFile(
+      &((sss_se05x_session_t *)&gex_sss_chip_ctx.session)->s_ctx, ndeffileId,
+      ndeffileIdLen);
+  ENSURE_OR_RETURN_ON_ERROR(smStatus == SM_OK, kStatus_SSS_Fail);
+
+  uint8_t readData[1024];
+  size_t readDataLen = sizeof(readData);
+
+  smStatus = Se05x_T4T_API_ReadBinary(
+      &((sss_se05x_session_t *)&gex_sss_chip_ctx.session)->s_ctx, readData,
+      &readDataLen);
+  ENSURE_OR_RETURN_ON_ERROR(smStatus == SM_OK, kStatus_SSS_Fail);
+
+   if (memcmp(readData, ndefData, ndefDataLen) != 0) {
+      LOG_E("T4T Verification Failed: Data mismatch");
+      LOG_MAU8_I("Written Data", ndefData, ndefDataLen);
+      LOG_MAU8_I("Read Data", readData, readDataLen);
+      return kStatus_SSS_Fail;
+  }
+#endif
+
+  LOG_I("T4T Provision successful and verified");
   return kStatus_SSS_Success;
 }
 #endif
@@ -1179,7 +1240,7 @@ static sss_status_t se051h_do_reset() {
 
 void se051h_nfc_comm_prov(ex_sss_boot_ctx_t *pCtx, uint8_t do_reset,
                           uint8_t only_t4t_provision, uint8_t *qrcode,
-                          size_t qrcodeLen, uint8_t device_network_type,
+                          size_t qrcodeLen, size_t is_qr_code, uint8_t device_network_type,
                           uint8_t tp_spake_passcode_set_no,
                           uint32_t tp_spake_itter_to_be_used,
                           uint8_t do_ec_key_provision,
@@ -1351,7 +1412,7 @@ void se051h_nfc_comm_prov(ex_sss_boot_ctx_t *pCtx, uint8_t do_reset,
 t4t_provision:
 #if SSS_HAVE_APPLET_SE051_H
   if (qrcodeLen != 0) {
-    status = se051h_provision_t4t_applet(qrcode, qrcodeLen);
+    status = se051h_provision_t4t_applet(qrcode, qrcodeLen, is_qr_code);
     ENSURE_OR_GO_CLEANUP(status == kStatus_SSS_Success);
   } else {
     LOG_I("No QR code passed");

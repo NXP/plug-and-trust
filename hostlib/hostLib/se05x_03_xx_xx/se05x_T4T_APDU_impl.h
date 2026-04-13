@@ -49,30 +49,71 @@ smStatus_t Se05x_T4T_API_SelectFile(pSe05xSession_t session_ctx, uint8_t *fileId
 
 smStatus_t Se05x_T4T_API_ReadBinary(pSe05xSession_t session_ctx, uint8_t *output, size_t *outlen)
 {
-    smStatus_t retStatus                       = SM_NOT_OK;
-    tlvHeader_t hdr                            = {{0x00, kSE05x_T4T_INS_READ_BINARY, 0x00, kSE05x_P2_DEFAULT}};
-    uint8_t rspbuf[SE05X_T4T_MAX_BUF_SIZE_RSP] = {0};
-    uint8_t *pRspbuf                           = &rspbuf[0];
-    size_t rspbufLen                           = ARRAY_SIZE(rspbuf);
+    smStatus_t retStatus                        = SM_NOT_OK;
+    uint8_t rspbuf[SE05X_T4T_MAX_BUF_SIZE_RSP]  = {0};
+    size_t rspbufLen                            = 0;
+    size_t ndefTotalLen                         = 0;
+    uint16_t outOffset                          = 0;
+    size_t expectedLen                          = *outlen;
+    size_t dataLen                              = 0;
 
-    retStatus = DoAPDUTxRx_s_Case2(session_ctx, &hdr, NULL, 0, rspbuf, &rspbufLen);
-    if (retStatus == SM_OK) {
-        retStatus = SM_NOT_OK;
+    tlvHeader_t hdr = {{0x00, kSE05x_T4T_INS_READ_BINARY, 0x00, 0x00}};
 
-        if (rspbufLen < 2) {
-            goto cleanup;
+    do
+    {
+        hdr.hdr[2] = (outOffset >> 8) & 0xFF;
+        hdr.hdr[3] = (outOffset) & 0xFF;
+
+        rspbufLen = sizeof(rspbuf);
+
+        retStatus = DoAPDUTxRx_s_Case2(session_ctx, &hdr, NULL, 0, rspbuf, &rspbufLen);
+        if (retStatus != SM_OK){
+            return retStatus;
         }
-        retStatus = (smStatus_t)((pRspbuf[rspbufLen - 2] << 8) | pRspbuf[rspbufLen - 1]);
-        if (retStatus == SM_OK && rspbufLen > 2) {
-            memcpy(output, rspbuf, rspbufLen - 2);
-            *outlen = rspbufLen - 2;
+
+        if (rspbufLen < 2){
+            return SM_NOT_OK;
         }
-        else {
-            *outlen = 0;
+
+        retStatus = (smStatus_t)((rspbuf[rspbufLen - 2] << 8) | rspbuf[rspbufLen - 1]);
+        if (retStatus != SM_OK){
+            return SM_NOT_OK;
         }
-    }
-cleanup:
-    return retStatus;
+
+        dataLen = rspbufLen - 2;
+
+        if(outOffset >=expectedLen){
+            return SM_NOT_OK;
+        }
+
+        if (dataLen > (expectedLen - outOffset)){
+            dataLen = expectedLen - outOffset;
+        }
+
+        memcpy(output + outOffset, rspbuf, dataLen);
+        outOffset += (uint16_t)dataLen;
+
+        /* Parse NDEF length after first 2 bytes */
+        if ((ndefTotalLen == 0) && (outOffset >= 2))
+        {
+            ndefTotalLen = ((output[0] << 8) | output[1]) + 2;
+            expectedLen = ndefTotalLen;
+        }
+
+        /* Stop when full NDEF read */
+        if ((ndefTotalLen != 0) && (outOffset >= ndefTotalLen)){
+            break;
+        }
+
+        /* Chunk end safety */
+        if (dataLen < 256){
+            break;
+        }
+
+    } while (outOffset < expectedLen);
+
+    *outlen = outOffset;
+    return SM_OK;
 }
 
 smStatus_t Se05x_T4T_API_UpdateBinary(pSe05xSession_t session_ctx, uint8_t *data, size_t dataLen)

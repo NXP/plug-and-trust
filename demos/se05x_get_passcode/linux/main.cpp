@@ -58,6 +58,6 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  se05x_get_passcode(passcode_set_no);
+  se05x_get_passcode(NULL, passcode_set_no);
   return 0;
 }

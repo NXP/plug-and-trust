@@ -1,6 +1,6 @@
 /*
  *
- * Copyright 2021,2025 NXP
+ * Copyright 2021,2025-2026 NXP
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
@@ -76,7 +76,7 @@ static sss_status_t read_cer_and_get_passcode(uint32_t keyId,
   return status;
 }
 
-void se05x_get_passcode(uint8_t passcode_set_no) {
+void se05x_get_passcode(ex_sss_boot_ctx_t *pCtx, uint8_t passcode_set_no) {
   sss_status_t status = kStatus_SSS_Success;
   const char *portName = nullptr;
   if (se05x_host_gpio_power_init() != 0) {
@@ -89,16 +89,20 @@ void se05x_get_passcode(uint8_t passcode_set_no) {
     LOG_E("SE05x - Error in se05x_host_gpio_power_set(1) function");
   }
 
-  memset(&gex_sss_chip_ctx, 0, sizeof(gex_sss_chip_ctx));
+  if (pCtx == NULL) {
+    memset(&gex_sss_chip_ctx, 0, sizeof(gex_sss_chip_ctx));
 
-  status = ex_sss_boot_connectstring(0, NULL, (char **)&portName);
-  ENSURE_OR_GO_CLEANUP(status == kStatus_SSS_Success);
+    status = ex_sss_boot_connectstring(0, NULL, (char **)&portName);
+    ENSURE_OR_GO_CLEANUP(status == kStatus_SSS_Success);
 
-  status = ex_sss_boot_open(&gex_sss_chip_ctx, portName);
-  ENSURE_OR_GO_CLEANUP(status == kStatus_SSS_Success);
+    status = ex_sss_boot_open(&gex_sss_chip_ctx, portName);
+    ENSURE_OR_GO_CLEANUP(status == kStatus_SSS_Success);
 
-  status = ex_sss_key_store_and_object_init(&gex_sss_chip_ctx);
-  ENSURE_OR_GO_CLEANUP(status == kStatus_SSS_Success);
+    status = ex_sss_key_store_and_object_init(&gex_sss_chip_ctx);
+    ENSURE_OR_GO_CLEANUP(status == kStatus_SSS_Success);
+  } else {
+    memcpy(&gex_sss_chip_ctx, pCtx, sizeof(ex_sss_boot_ctx_t));
+  }
 
   status =
       read_cer_and_get_passcode(SE05X_PASSOCDE_BINARY_FILEID, passcode_set_no);

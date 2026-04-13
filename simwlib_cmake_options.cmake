@@ -14,6 +14,13 @@ SET(PTMW_SE05X_Auth "None" CACHE STRING "SE050 Authentication")
 SET_PROPERTY(CACHE PTMW_SE05X_Auth PROPERTY STRINGS "None;UserID;PlatfSCP03;AESKey;ECKey;UserID_PlatfSCP03;AESKey_PlatfSCP03;ECKey_PlatfSCP03;"
 )
 
+SET(PTMW_Host "PCLinux" CACHE STRING "Host where the software stack is running")
+SET_PROPERTY(CACHE PTMW_Host PROPERTY STRINGS
+"PCWindows;PCLinux;")
+
+SET(PTMW_SMCOM "T1oI2C" CACHE STRING "Communication Interface")
+SET_PROPERTY( CACHE PTMW_SMCOM PROPERTY STRINGS "None;VCOM;T1oI2C;")
+
 OPTION(WithCodeCoverage "Compile with Code Coverage" OFF)
 
 #########################################################
@@ -142,6 +149,40 @@ IF("${PTMW_SE05X_Auth}" STREQUAL "ECKey_PlatfSCP03")
     SET(SSS_HAVE_SE05X_AUTH_ECKEY_PLATFSCP03 "1")
 ELSE()
     SET(SSS_HAVE_SE05X_AUTH_ECKEY_PLATFSCP03 "0")
+ENDIF()
+
+#########################################################
+
+IF("${PTMW_Host}" STREQUAL "PCLinux")
+    SET(SSS_HAVE_HOST_PCLINUX "1")
+ELSE()
+    SET(SSS_HAVE_HOST_PCLINUX "0")
+ENDIF()
+
+IF("${PTMW_Host}" STREQUAL "PCWindows")
+    SET(SSS_HAVE_HOST_PCWINDOWS "1")
+ELSE()
+    SET(SSS_HAVE_HOST_PCWINDOWS "0")
+ENDIF()
+
+#########################################################
+
+IF("${PTMW_SMCOM}" STREQUAL "None")
+    SET(SSS_HAVE_SMCOM_NONE "1")
+ELSE()
+    SET(SSS_HAVE_SMCOM_NONE "0")
+ENDIF()
+
+IF("${PTMW_SMCOM}" STREQUAL "VCOM")
+    SET(SSS_HAVE_SMCOM_VCOM "1")
+ELSE()
+    SET(SSS_HAVE_SMCOM_VCOM "0")
+ENDIF()
+
+IF("${PTMW_SMCOM}" STREQUAL "T1oI2C")
+    SET(SSS_HAVE_SMCOM_T1OI2C "1")
+ELSE()
+    SET(SSS_HAVE_SMCOM_T1OI2C "0")
 ENDIF()
 
 #########################################################

@@ -56,7 +56,8 @@ config CHIP_NXP_RT1060_SDK_DEPENDENCIES
 	select MCUX_COMPONENT_middleware.sdmmc.host.usdhc
 	select MCUX_COMPONENT_middleware.sdmmc.sdio
 	select MCUX_COMPONENT_component.wifi_bt_module.config
-	select MCUX_COMPONENT_middleware.mbedtls3x.port.tfm # Required for entropy
+	select MCUX_COMPONENT_middleware.mbedtls3x
+	select MCUX_COMPONENT_component.psa_crypto_driver.dcp
     help
         NXP RT1060 platform sdk dependencies.
 
@@ -65,7 +66,8 @@ config CHIP_NXP_RW612_SDK_DEPENDENCIES
     depends on MCUX_HW_DEVICE_RW612 || MCUX_HW_DEVICE_RW610
 	default y
 	select MCUX_COMPONENT_middleware.freertos-kernel.cm33_non_trustzone
-	select MCUX_COMPONENT_middleware.mbedtls3x.port.tfm # Required for entropy
+	select MCUX_COMPONENT_middleware.mbedtls3x
+	select MCUX_COMPONENT_component.psa_crypto_driver.els_pkc
     help
         NXP RW612 platform sdk dependencies.
 

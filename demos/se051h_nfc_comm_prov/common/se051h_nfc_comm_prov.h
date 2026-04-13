@@ -800,8 +800,8 @@ typedef enum {
   ethernetNetworkInterface = 0x04,
 } se05x_nfc_comm_nwk_intf;
 
-#define NDEF_FILE_ID                                                           \
-  { 0xE1, 0x01 }
+#define CC_FILE_ID                                                           \
+  { 0xE1, 0x03 }
 
 #define NDEF_HEADER                                                            \
   { 0x00, 0x1B, 0xD1, 0x01, 0x17, 0x55, 0x00 }
@@ -842,7 +842,7 @@ extern "C" {
  */
 void se051h_nfc_comm_prov(ex_sss_boot_ctx_t *pCtx, uint8_t do_reset,
                           uint8_t only_t4t_provision, uint8_t *qrcode,
-                          size_t qrcodeLen, uint8_t device_network_type,
+                          size_t qrcodeLen, size_t is_qr_code, uint8_t device_network_type,
                           uint8_t tp_spake_passcode_set_no,
                           uint32_t tp_spake_itter_to_be_used,
                           uint8_t do_ec_key_provision,

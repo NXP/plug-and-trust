@@ -1,6 +1,6 @@
 /*
  *
- * Copyright 2021,2025 NXP
+ * Copyright 2021,2025-2026 NXP
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
@@ -17,6 +17,7 @@
 #include <nxLog_App.h>
 #include <stdio.h>
 #include <string.h>
+#include <se05x_dev_attest_key_prov.h>
 
 /* clang-format off */
 const uint8_t keyPairData[] = {
@@ -193,7 +194,7 @@ int fill_tbs_buffer(uint8_t *buffer, uint32_t keyid, uint8_t *offset,
 }
 #endif
 
-void se05x_dev_attest_key_prov(void) {
+void se05x_dev_attest_key_prov(ex_sss_boot_ctx_t *pCtx) {
   sss_status_t status = kStatus_SSS_Success;
   char *portName = nullptr;
 
@@ -209,22 +210,26 @@ void se05x_dev_attest_key_prov(void) {
 
   memset(&gex_sss_chip_ctx, 0, sizeof(gex_sss_chip_ctx));
 
-  status = ex_sss_boot_connectstring(0, NULL, (char **)&portName);
-  if (kStatus_SSS_Success != status) {
-    printf("se05x error: %s\n", "ex_sss_boot_connectstring failed");
-    return;
-  }
-
-  status = ex_sss_boot_open(&gex_sss_chip_ctx, portName);
-  if (kStatus_SSS_Success != status) {
-    printf("se05x error: %s\n", "ex_sss_boot_open failed");
-    return;
-  }
-
-  status = ex_sss_key_store_and_object_init(&gex_sss_chip_ctx);
-  if (kStatus_SSS_Success != status) {
-    printf("se05x error: %s\n", "ex_sss_key_store_and_object_init failed");
-    return;
+  if (pCtx == NULL) {
+    status = ex_sss_boot_connectstring(0, NULL, (char **)&portName);
+    if (kStatus_SSS_Success != status) {
+      printf("se05x error: %s\n", "ex_sss_boot_connectstring failed");
+      return;
+    }
+  
+    status = ex_sss_boot_open(&gex_sss_chip_ctx, portName);
+    if (kStatus_SSS_Success != status) {
+      printf("se05x error: %s\n", "ex_sss_boot_open failed");
+      return;
+    }
+  
+    status = ex_sss_key_store_and_object_init(&gex_sss_chip_ctx);
+    if (kStatus_SSS_Success != status) {
+      printf("se05x error: %s\n", "ex_sss_key_store_and_object_init failed");
+      return;
+    }
+  } else {
+    memcpy(&gex_sss_chip_ctx, pCtx, sizeof(ex_sss_boot_ctx_t));
   }
 
   /* Set device attestation keyPair */

@@ -1,6 +1,6 @@
 /*
  *
- * Copyright 2025 NXP
+ * Copyright 2025-2026 NXP
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -24,8 +24,9 @@
 #include "ksdk_mbedtls.h"
 #endif
 
-#define TP_PASSCODE_SET_NO                                                     \
-  1 // Get the passcode of the set number specified. (Possible values = 1,2,3)
+#ifndef CONFIG_SE05X_TP_SPAKE_PASSCODE_SET_NO
+#define CONFIG_SE05X_TP_SPAKE_PASSCODE_SET_NO 1
+#endif
 
 static TaskHandle_t gSSSExRtosTaskHandle = NULL;
 
@@ -51,8 +52,8 @@ int main(int argc, char *argv[]) {
 }
 
 void se051_get_passcode_task(void *pvParam) {
-  uint8_t passcode_set_no = TP_PASSCODE_SET_NO;
-  se05x_get_passcode(passcode_set_no);
+  uint8_t passcode_set_no = CONFIG_SE05X_TP_SPAKE_PASSCODE_SET_NO;
+  se05x_get_passcode(NULL, passcode_set_no);
 }
 
 #if (defined(configCHECK_FOR_STACK_OVERFLOW) &&                                \

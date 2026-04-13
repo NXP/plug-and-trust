@@ -11,7 +11,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#if defined(CONFIG_SE05X_HOST_GPIO_FRDM_IMX93) && CONFIG_SE05X_HOST_GPIO_FRDM_IMX93 == 1
 #include <unistd.h>
+#endif
 
 #if defined(CONFIG_SE05X_HOST_GPIO_FRDM_IMX93) && CONFIG_SE05X_HOST_GPIO_FRDM_IMX93 == 1
 #include <gpiod.h>

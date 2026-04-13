@@ -47,4 +47,13 @@ When using on Linux systems, following are the command line options available
  Note: If no pass-code set number is passed, default pass-code set number is 1.
 ```
 
-When using on supported MCUs, modify the main file defines (examples - simw-top-mini/repo/demos/se05x_get_passcode/mcu/main.cpp)
+When using on supported MCUs, you can configure the passcode set number using Kconfig build options:
+`TP_SPAKE_PASSCODE_SET_NO` (Possible values = 1,2,3).
+
+Pass the configuration during build:
+
+```
+# For FRDMW72
+west build -d <out_dir> -b frdmmcxw72 third_party/simw-top-mini/repo/demos/se05x_get_passcode/mcu/ -Dcore_id=cm33_core0 -DCONFIG_SE05X_TP_SPAKE_PASSCODE_SET_NO=2
+```
+Note: If no pass-code set number is passed, default pass-code set number is 1.
