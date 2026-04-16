@@ -52,7 +52,7 @@ endif()
 
 # Include the nxp_sdk_reconfig.cmake to customize the SDK for Matter application
 include(${NXP_SDK_RECONFIG_CMAKE_DIR}/nxp_sdk_reconfig.cmake)
-
+include(${CHIP_ROOT}/third_party/nxp/nxp_matter_support/cmake/sdk_hook.cmake)
 # Define application project name
 project(se051h_nfc_comm_prov)
 

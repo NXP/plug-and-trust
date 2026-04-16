@@ -47,7 +47,7 @@ int main(int argc, char *argv[]) {
   vTaskStartScheduler();
 }
 
-void se05x_dev_attest_task(void *pvParam) { se05x_dev_attest_key_prov(); }
+void se05x_dev_attest_task(void *pvParam) { se05x_dev_attest_key_prov(NULL); }
 
 #if (defined(configCHECK_FOR_STACK_OVERFLOW) &&                                \
      (configCHECK_FOR_STACK_OVERFLOW > 0))
