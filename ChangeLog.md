@@ -1,5 +1,10 @@
 # Plug-And-Trust Mini Package Change Log
 
+
+## 24-04-2026
+
+- Back off delay issue in T=1oI2C is fixed for RT1060 platform
+
 ## Integration with 1.6.1 RC2.0
 
 - Provision example updated to provision raw data to T4T applet. Refer `se051h_nfc_comm_prov\readme.md`

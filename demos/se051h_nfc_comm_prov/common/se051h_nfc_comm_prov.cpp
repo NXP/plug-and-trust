@@ -1099,7 +1099,7 @@ static sss_status_t se051h_provision_t4t_applet(uint8_t *qrcode,
   }
 #endif
 
-  LOG_I("T4T Provision successful and verified");
+  LOG_I("T4T Provision successful");
   return kStatus_SSS_Success;
 }
 #endif

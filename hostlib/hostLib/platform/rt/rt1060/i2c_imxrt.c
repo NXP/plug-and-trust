@@ -130,16 +130,11 @@ static i2c_error_t kinetisI2cStatusToAxStatus(
         retStatus = I2C_BUSY;
         break;
     case kStatus_LPI2C_Nak:
-        if(address_nack)
-        {
-            /* Workaround to send Master stop if NAK received */
-            LPI2C_MasterStop(AX_I2CM);
-            BackOffDelay_Wait();
-            retStatus = I2C_NACK_ON_ADDRESS;
-            address_nack = 0;
-        }
-        else
-            retStatus = I2C_NACK_ON_DATA;
+        /* Workaround to send Master stop if NAK received */
+        LPI2C_MasterStop(AX_I2CM);
+        BackOffDelay_Wait();
+        retStatus = I2C_NACK_ON_ADDRESS;
+        address_nack = 0;
         break;
     case kStatus_LPI2C_ArbitrationLost:
         retStatus = I2C_ARBITRATION_LOST;
