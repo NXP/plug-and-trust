@@ -1,13 +1,19 @@
 /*
  *
- * Copyright 2016-2018 NXP
+ * Copyright 2016-2018,2026 NXP
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #include <sm_timer.h>
 #include <stdint.h>
 
+#ifdef __ZEPHYR__
+#include <zephyr/arch/cpu.h>
+#include <zephyr/irq.h>
+#include <zephyr/kernel.h>
+#else
 #include "board.h"
+#endif
 
 #if defined(SSS_USE_FTR_FILE)
 #include "fsl_sss_ftr.h"
@@ -25,6 +31,7 @@
 
 extern volatile uint32_t gtimer_kinetis_msticks; // counter for 1ms SysTicks
 
+#if !defined(__ZEPHYR__)
 //__INLINE
 static void systick_delay(const uint32_t delayTicks) {
     volatile uint32_t currentTicks;
@@ -56,6 +63,7 @@ static void systick_delay(const uint32_t delayTicks) {
 #endif
     }
 }
+#endif
 
 #ifndef WEAK
 #define WEAK __attribute__ ((weak))
@@ -86,12 +94,16 @@ uint32_t sm_initSleep() {
  * Implement a blocking (for the calling thread) wait for a number of milliseconds.
  */
 void sm_sleep(uint32_t msec) {
+#ifdef __ZEPHYR__
+    k_msleep(msec);
+#else
 #if SSS_HAVE_NXPNFCRDLIB
     //NXPNFCRDLIB also uses systick for a different purpose hence this is done
     sm_initSleep();
 #endif
     /* if struck here check whether sm_initSleep() is called */
     systick_delay(MS_TO_TICKS(msec));
+#endif
 }
 
 #if defined(__GNUC__)

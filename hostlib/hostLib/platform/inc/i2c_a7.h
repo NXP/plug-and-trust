@@ -94,7 +94,6 @@ extern "C"{
 #define MAX_DATA_LEN      260
 #endif
 
-
 i2c_error_t axI2CInit(void **conn_ctx, const char *pDevName);
 
 /** Terminate / de-initialize the I2C platform HW/Driver

@@ -1,6 +1,6 @@
 /*
  *
- * Copyright 2017,2024 NXP
+ * Copyright 2017,2024,2026 NXP
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
@@ -20,9 +20,11 @@
 #include <time.h>
 #include "sm_timer.h"
 
-#if defined(USE_RTOS) && USE_RTOS == 1
+#if defined(SDK_OS_FREE_RTOS) && SDK_OS_FREE_RTOS == 1
 #include "FreeRTOS.h"
 #include "task.h"
+#elif defined(__ZEPHYR__)
+#include <zephyr/kernel.h>
 #endif
 
 // LCOV_EXCL_START
@@ -34,25 +36,27 @@ uint32_t sm_initSleep()
 }
 // LCOV_EXCL_STOP
 
-#if defined(USE_RTOS) && USE_RTOS == 1
+#if defined(SDK_OS_FREE_RTOS) && SDK_OS_FREE_RTOS == 1
 #ifndef MSEC_TO_TICK
 #define MSEC_TO_TICK(msec) \
 	((((uint32_t)configTICK_RATE_HZ * (uint32_t)(msec))) / 1000L)
 #endif /* MSEC_TO_TICK */
-#endif /* USE_RTOS */
+#endif /* SDK_OS_FREE_RTOS */
 
 /**
  * Implement a blocking (for the calling thread) wait for a number of milliseconds.
  */
 void sm_sleep(uint32_t msec)
 {
-#ifdef __OSX_AVAILABLE
+#ifdef __ZEPHYR__
+    k_msleep(msec);
+#elif defined(__OSX_AVAILABLE)
     clock_t goal = msec + clock();
     while (goal > clock());
 #elif defined(__gnu_linux__) || defined __clang__
     useconds_t microsec = msec*1000;
     usleep(microsec);
-#elif defined(USE_RTOS) && USE_RTOS == 1
+#elif defined(SDK_OS_FREE_RTOS) && SDK_OS_FREE_RTOS == 1
     vTaskDelay(1 >= pdMS_TO_TICKS(msec) ? 1 : pdMS_TO_TICKS(msec));
 #else
     clock_t goal = msec + clock();

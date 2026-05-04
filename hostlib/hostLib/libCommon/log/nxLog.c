@@ -15,16 +15,21 @@ extern "C" {
 
 #include "sm_printf.h"
 
-#if defined(USE_RTOS) && (USE_RTOS == 1)
+#ifdef __ZEPHYR__
+#include <zephyr/kernel.h>
+#endif
+
+#if defined(SDK_OS_FREE_RTOS) && SDK_OS_FREE_RTOS == 1
 #include "FreeRTOS.h"
 #include "semphr.h"
 #endif
 
-#if (__GNUC__ && !AX_EMBEDDED) || (USE_RTOS)
+#if (__GNUC__ && !AX_EMBEDDED) || (SDK_OS_FREE_RTOS) || defined(__ZEPHYR__)
 #define USE_LOCK 1
 #else
 #define USE_LOCK 0
 #endif
+
 #if defined(_MSC_VER)
 #include <windows.h>
 #endif
@@ -105,13 +110,16 @@ static const char *szLevel[] = {"ERROR", "WARN ", "INFO ", "DEBUG"};
 #include "smCom.h"
 #endif
 
-#if defined(USE_RTOS) && (USE_RTOS == 1)
+#if defined(SDK_OS_FREE_RTOS) && SDK_OS_FREE_RTOS == 1
 static SemaphoreHandle_t gLogginglock;
+#elif defined(__ZEPHYR__)
+K_MUTEX_DEFINE(gLogginglock);
 #elif (__GNUC__ && !AX_EMBEDDED)
 #include<pthread.h>
 /* Only for base session with os */
 static pthread_mutex_t gLogginglock;
 #endif
+
 static void nLog_AcquireLock();
 static void nLog_ReleaseLock();
 #if USE_LOCK
@@ -121,10 +129,14 @@ static void nLog_AcquireLock()
 {
 #if USE_LOCK
     if (lockInitialised) {
-#if defined(USE_RTOS) && (USE_RTOS == 1)
+#if defined(SDK_OS_FREE_RTOS) && SDK_OS_FREE_RTOS == 1
         if (xSemaphoreTake(gLogginglock, portMAX_DELAY) != pdTRUE) {
             PRINTF("Acquiring logging semaphore failed");
         }
+#elif defined(__ZEPHYR__)
+        if (k_mutex_lock(&gLogginglock, K_FOREVER) != 0) {             \
+            PRINTF("Logging mutex lock failed");                  \
+        }  
 #elif (__GNUC__ && !AX_EMBEDDED)
         if (pthread_mutex_lock(&gLogginglock) != 0) {
             PRINTF("Acquiring logging mutext failed");
@@ -138,10 +150,12 @@ static void nLog_ReleaseLock()
 {
 #if USE_LOCK
     if (lockInitialised) {
-#if defined(USE_RTOS) && (USE_RTOS == 1)
+#if defined(SDK_OS_FREE_RTOS) && SDK_OS_FREE_RTOS == 1
         if (xSemaphoreGive(gLogginglock) != pdTRUE) {
             PRINTF("Releasing logging semaphore failed");
         }
+#elif defined(__ZEPHYR__)
+        k_mutex_unlock(&gLogginglock);
 #elif (__GNUC__ && !AX_EMBEDDED)
         if (pthread_mutex_unlock(&gLogginglock) != 0) {
             PRINTF("Releasing logging semaphore failed");
@@ -154,12 +168,14 @@ static void nLog_ReleaseLock()
 uint8_t nLog_Init(void)
 {
 #if USE_LOCK
-#if defined(USE_RTOS) && (USE_RTOS == 1)
+#if defined(SDK_OS_FREE_RTOS) && SDK_OS_FREE_RTOS == 1
     gLogginglock = xSemaphoreCreateMutex();
     if (gLogginglock == NULL) {
         PRINTF("xSemaphoreCreateMutex failed");
         return 1;
     }
+#elif defined(__ZEPHYR__)
+    // Zephyr mutex static initialized at declaration
 #elif (__GNUC__ && !AX_EMBEDDED)
     if (pthread_mutex_init(&gLogginglock, NULL) != 0) {
         PRINTF("pthread_mutex_init failed");
@@ -174,11 +190,13 @@ uint8_t nLog_Init(void)
 void nLog_DeInit(void)
 {
 #if USE_LOCK
-#if defined(USE_RTOS) && (USE_RTOS == 1)
+#if defined(SDK_OS_FREE_RTOS) && SDK_OS_FREE_RTOS == 1
     if (gLogginglock != NULL) {
     	vSemaphoreDelete(gLogginglock);
         gLogginglock = NULL;
     }
+#elif defined(__ZEPHYR__)
+    // Zephyr mutex no deinit required
 #elif (__GNUC__ && !AX_EMBEDDED)
     if (pthread_mutex_destroy(&gLogginglock) != 0) {
         return;
@@ -352,7 +370,9 @@ static void msvc_reSetColor()
 static void ansi_setColor(int level)
 {
 #if USE_COLORED_LOGS
-#if !AX_EMBEDDED
+#ifdef __ZEPHYR__
+    // Zephyr assumes console output emabled
+#elif !AX_EMBEDDED
     if (!isatty(fileno(stdout))) {
         return;
     }
@@ -383,7 +403,9 @@ static void ansi_setColor(int level)
 static void ansi_reSetColor()
 {
 #if USE_COLORED_LOGS
-#if !AX_EMBEDDED
+#ifdef __ZEPHYR__
+    // Zephyr assumes console output emabled
+#elif !AX_EMBEDDED
     if (!isatty(fileno(stdout))) {
         return;
     }

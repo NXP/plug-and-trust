@@ -1,0 +1,19 @@
+#
+# Copyright 2026 NXP
+# SPDX-License-Identifier: BSD-3-Clause
+
+rsource "../../../../../../config/nxp/cmake/Kconfig.matter.nxp"
+rsource "../../../../../../third_party/simw-top-mini/repo/matter/zephyr/Kconfig"
+
+# Secure Element
+config CHIP_SE05X
+	bool "Enable Secure Element support"
+	select SE05X_LIB
+	help
+		Use Secure Element to perform crypto operations.
+
+config CHIP_TASK_STACK_SIZE
+	int "Matter task stack size"
+	default 13312
+	help
+	  Set the stack size (in bytes) for the Matter main task (CHIP event loop).

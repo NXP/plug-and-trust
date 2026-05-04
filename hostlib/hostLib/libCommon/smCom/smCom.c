@@ -17,9 +17,13 @@
 #if defined(USE_THREADX_RTOS)
 #include "tx_api.h"
 
-#elif (defined(USE_RTOS) && (USE_RTOS == 1))
+#elif defined(SDK_OS_FREE_RTOS) && SDK_OS_FREE_RTOS == 1
 #include "FreeRTOS.h"
 #include "semphr.h"
+
+#elif defined(__ZEPHYR__)
+#include <zephyr/kernel.h>
+
 #endif
 
 #if defined(SMCOM_JRCP_V2)
@@ -29,15 +33,19 @@
 #if defined(USE_THREADX_RTOS)
 static TX_MUTEX  gSmComlock;
 
-#elif (defined(USE_RTOS) && (USE_RTOS == 1))
+#elif defined(__ZEPHYR__)
+K_MUTEX_DEFINE(gSmComlock);
+
+#elif defined(SDK_OS_FREE_RTOS) && SDK_OS_FREE_RTOS == 1
 static SemaphoreHandle_t gSmComlock;
+
 #elif (__GNUC__ && !AX_EMBEDDED)
 #include<pthread.h>
     /* Only for base session with os */
     static pthread_mutex_t gSmComlock;
 #endif
 
-#if (__GNUC__ && !AX_EMBEDDED) || (USE_RTOS) || defined(USE_THREADX_RTOS)
+#if (__GNUC__ && !AX_EMBEDDED) || defined(SDK_OS_FREE_RTOS) || defined(USE_THREADX_RTOS) || defined(__ZEPHYR__)
 #define USE_LOCK 1
 #else
 #define USE_LOCK 0
@@ -59,7 +67,20 @@ static SemaphoreHandle_t gSmComlock;
     else                                                         \
         LOG_D("LOCK Releasing failed");
 
-#elif (defined(USE_RTOS) && (USE_RTOS == 1))
+#elif defined(__ZEPHYR__)
+#define LOCK_TXN()                                             \
+    LOG_D("Trying to Acquire Lock (Zephyr RTOS)");             \
+    if (k_mutex_lock(&gSmComlock, K_FOREVER) == 0) {             \
+        LOG_D("LOCK Acquired (Zephyr RTOS)");                  \
+    }                                                          \
+    else {                                                     \
+        LOG_D("LOCK Acquisition failed (Zephyr RTOS)");                      \
+    }
+#define UNLOCK_TXN()                                          \
+    LOG_D("Trying to Release Lock (Zephyr RTOS)");            \
+    k_mutex_unlock(&gSmComlock);
+
+#elif defined(SDK_OS_FREE_RTOS) && SDK_OS_FREE_RTOS == 1
 #define LOCK_TXN()                                             \
     LOG_D("Trying to Acquire Lock");                           \
     if (xSemaphoreTake(gSmComlock, portMAX_DELAY) == pdTRUE) { \
@@ -111,12 +132,14 @@ U16 smCom_Init(ApduTransceiveFunction_t pTransceive, ApduTransceiveRawFunction_t
         LOG_E("\n tx_mutex_create failed");
         return ret;
     }
-#elif (defined(USE_RTOS) && (USE_RTOS == 1))
+#elif defined(SDK_OS_FREE_RTOS) && SDK_OS_FREE_RTOS == 1
     gSmComlock = xSemaphoreCreateMutex();
     if (gSmComlock == NULL) {
         LOG_E("\n xSemaphoreCreateMutex failed");
         return ret;
     }
+#elif defined(__ZEPHYR__)
+    // Zephyr mutex static initialized at declaration
 #elif (__GNUC__ && !AX_EMBEDDED)
     if (pthread_mutex_init(&gSmComlock, NULL) != 0)
     {
@@ -135,11 +158,13 @@ void smCom_DeInit(void)
 #if defined(USE_THREADX_RTOS)
     tx_mutex_delete(&gSmComlock);
 
-#elif (defined(USE_RTOS) && (USE_RTOS == 1))
+#elif defined(SDK_OS_FREE_RTOS) && SDK_OS_FREE_RTOS == 1
     if (gSmComlock != NULL) {
     	vSemaphoreDelete(gSmComlock);
         gSmComlock = NULL;
     }
+#elif defined(__ZEPHYR__)
+    // Zephyr mutex no deinit required
 #elif (__GNUC__ && !AX_EMBEDDED)
     if (pthread_mutex_destroy(&gSmComlock) != 0) {
         return;

@@ -1,6 +1,6 @@
 /*
  *
- * Copyright 2016-2020,2024 NXP
+ * Copyright 2016-2020,2024,2026 NXP
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
@@ -14,8 +14,9 @@ extern "C" {
 #endif
 
 
-#if AX_EMBEDDED \
-    && (!defined (__MBED__))
+#ifdef __ZEPHYR__
+#define PRINTF(...) printf(__VA_ARGS__)
+#elif AX_EMBEDDED && (!defined (__MBED__))
 #   include "fsl_debug_console.h"
 #else
 #   define PRINTF printf

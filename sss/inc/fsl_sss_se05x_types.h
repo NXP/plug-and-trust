@@ -1,6 +1,6 @@
 /*
  *
- * Copyright 2018-2020,2024 NXP
+ * Copyright 2018-2020,2024,2026 NXP
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
@@ -26,12 +26,15 @@
 #include "se05x_const.h"
 #include "se05x_tlv.h"
 #include "sm_api.h"
-#if (__GNUC__ && !AX_EMBEDDED)
+#if defined(__ZEPHYR__)
+#include <zephyr/kernel.h>
+#endif
+#if (__GNUC__ && !AX_EMBEDDED) && !defined(__ZEPHYR__)
 #include <pthread.h>
 /* Only for base session with os */
 #endif
 /* FreeRTOS includes. */
-#if defined(USE_RTOS) && (USE_RTOS == 1)
+#if defined(SDK_OS_FREE_RTOS) && SDK_OS_FREE_RTOS == 1
 #include "FreeRTOS.h"
 #include "semphr.h"
 #include "task.h"
@@ -102,9 +105,11 @@ typedef struct _sss_se05x_tunnel_context
     /** Where exactly this tunnel terminates to */
     sss_tunnel_dest_t tunnelDest;
 /** For systems where we potentially have multi-threaded operations, have a lock */
-#if defined(USE_THREADX_RTOS)
+#if defined(__ZEPHYR__)
+   struct k_mutex channelLock;
+#elif defined(USE_THREADX_RTOS)
     TX_MUTEX channelLock;
-#elif (defined(USE_RTOS) && (USE_RTOS == 1))
+#elif defined(SDK_OS_FREE_RTOS) && SDK_OS_FREE_RTOS == 1
     SemaphoreHandle_t channelLock;
 #elif (__GNUC__ && !AX_EMBEDDED)
     pthread_mutex_t channelLock;

@@ -1,5 +1,5 @@
 #
-# Copyright 2025-2026 NXP
+# Copyright 2026 NXP
 # SPDX-License-Identifier: BSD-3-Clause
 #
 
@@ -16,21 +16,14 @@ endif()
 set(CONFIG_SDK_EXTERNAL_TARGET ${MCUX_SDK_PROJECT_NAME})
 
 if (CONFIG_SE05X_LIB)
-    add_library(simw_lib)
+    zephyr_library_named(simw_lib)
+    get_property(SDK_INCLUDES TARGET app PROPERTY INTERFACE_INCLUDE_DIRECTORIES)
+    get_property(SDK_DEFINES TARGET app PROPERTY INTERFACE_COMPILE_DEFINITIONS)
 
-    get_property(SDK_INCLUDES TARGET ${CONFIG_SDK_EXTERNAL_TARGET} PROPERTY INTERFACE_INCLUDE_DIRECTORIES)
-    get_property(SDK_DEFINES TARGET ${CONFIG_SDK_EXTERNAL_TARGET} PROPERTY INTERFACE_COMPILE_DEFINITIONS)
+    zephyr_include_directories($<TARGET_PROPERTY:simw_lib,INTERFACE_INCLUDE_DIRECTORIES>)
+    zephyr_compile_definitions($<TARGET_PROPERTY:simw_lib,INTERFACE_COMPILE_DEFINITIONS>)
 
-    # Filter out includes containing "secure-subsystem"
-    set(FILTERED_SDK_INCLUDES "")
-    foreach(include_dir ${SDK_INCLUDES})
-        string(FIND "${include_dir}" "secure-subsystem" found_pos)
-        if(${found_pos} EQUAL -1)
-            list(APPEND FILTERED_SDK_INCLUDES ${include_dir})
-        endif()
-    endforeach()
-
-    target_sources(simw_lib PRIVATE
+    zephyr_library_sources(
         ${SIMW_LIB_DIR}/hostlib/hostLib/libCommon/infra/global_platf.c
         ${SIMW_LIB_DIR}/hostlib/hostLib/libCommon/infra/sm_apdu.c
         ${SIMW_LIB_DIR}/hostlib/hostLib/libCommon/infra/sm_connect.c
@@ -59,11 +52,11 @@ if (CONFIG_SE05X_LIB)
         ${SIMW_LIB_DIR}/hostlib/hostLib/libCommon/smCom/T1oI2C/phNxpEseProto7816_3.c
         ${SIMW_LIB_DIR}/hostlib/hostLib/libCommon/smCom/T1oI2C/phNxpEse_Api.c
         ${SIMW_LIB_DIR}/hostlib/hostLib/libCommon/smCom/smComT1oI2C.c
+        ${SIMW_LIB_DIR}/demos/se05x_host_gpio/se05x_host_gpio.c
     )
 
-    target_include_directories(simw_lib PUBLIC
-        ${FILTERED_SDK_INCLUDES}
-        ${SIMW_LIB_DIR}/sss
+    zephyr_include_directories(
+        ${SIMW_LIB_DIR}/sss/
         ${SIMW_LIB_DIR}/sss/inc
         ${SIMW_LIB_DIR}/sss/port/default
         ${SIMW_LIB_DIR}/sss/ex/src
@@ -76,22 +69,20 @@ if (CONFIG_SE05X_LIB)
         ${SIMW_LIB_DIR}/hostlib/hostLib/se05x_03_xx_xx
         ${SIMW_LIB_DIR}/hostlib/hostLib/libCommon/smCom/T1oI2C
         ${SIMW_LIB_DIR}/hostlib/hostLib/accessManager/inc
+        ${SIMW_LIB_DIR}/hostlib/hostLib/platform/zephyr
         ${SIMW_LIB_DIR}/demos/se05x_host_gpio
         ${SIMW_LIB_DIR}/demos/se051h_nfc_comm_prov/common
     )
 
-    target_compile_definitions(simw_lib
-        PUBLIC
-        ${SDK_DEFINES}
+    zephyr_compile_definitions(
         SSS_USE_FTR_FILE
         T1oI2C
         T1oI2C_UM11225
         SMCOM_T1oI2C
-        AX_EMBEDDED
     )
 
     if (CONFIG_SE05X_SCP03 OR CONFIG_SE05X_USER_ID OR CONFIG_SE05X_AES_KEY OR CONFIG_SE05X_EC_KEY OR CONFIG_SE05X_SCP03_USER_ID OR CONFIG_SE05X_SCP03_AES_KEY OR CONFIG_SE05X_SCP03_EC_KEY)
-        target_sources(simw_lib PUBLIC
+        zephyr_library_sources(
             ${SIMW_LIB_DIR}/sss/ex/src/ex_sss_scp03_auth.c
             ${SIMW_LIB_DIR}/hostlib/hostLib/libCommon/nxScp/nxScp03_Com.c
             ${SIMW_LIB_DIR}/sss/src/se05x/fsl_sss_se05x_eckey.c
@@ -100,86 +91,49 @@ if (CONFIG_SE05X_LIB)
     endif()
 
     if (CONFIG_SE05X_SCP03)
-        target_include_directories(simw_lib PUBLIC
+        zephyr_include_directories(
             ${SIMW_LIB_DIR}/feature_file/scp03_ftr
         )
     elseif (CONFIG_SE05X_USER_ID)
-        target_include_directories(simw_lib PUBLIC
+        zephyr_include_directories(
             ${SIMW_LIB_DIR}/feature_file/user_id_ftr
         )
     elseif (CONFIG_SE05X_AES_KEY)
-        target_include_directories(simw_lib PUBLIC
+        zephyr_include_directories(
             ${SIMW_LIB_DIR}/feature_file/aes_key_ftr
         )
     elseif (CONFIG_SE05X_EC_KEY)
-        target_include_directories(simw_lib PUBLIC
+        zephyr_include_directories(
             ${SIMW_LIB_DIR}/feature_file/ec_key_ftr
         )
     elseif (CONFIG_SE05X_SCP03_USER_ID)
-        target_include_directories(simw_lib PUBLIC
+        zephyr_include_directories(
             ${SIMW_LIB_DIR}/feature_file/scp03_user_id_ftr
         )
     elseif (CONFIG_SE05X_SCP03_AES_KEY)
-        target_include_directories(simw_lib PUBLIC
+        zephyr_include_directories(
             ${SIMW_LIB_DIR}/feature_file/scp03_aes_key_ftr
         )
     elseif (CONFIG_SE05X_SCP03_EC_KEY)
-        target_include_directories(simw_lib PUBLIC
+        zephyr_include_directories(
             ${SIMW_LIB_DIR}/feature_file/scp03_ec_key_ftr
         )
     else()
-        target_include_directories(simw_lib PUBLIC
+        zephyr_include_directories(
             ${SIMW_LIB_DIR}
         )
     endif()
 
-    if (CONFIG_MCUX_HW_DEVICE_RW612 OR CONFIG_MCUX_HW_DEVICE_RW610)
-        target_sources(simw_lib PUBLIC
-            ${SIMW_LIB_DIR}/hostlib/hostLib/platform/rt/rw61x/i2c_rw612.c
-            ${SIMW_LIB_DIR}/hostlib/hostLib/platform/ksdk/timer_kinetis_freertos.c
-            ${SIMW_LIB_DIR}/demos/se05x_host_gpio/se05x_host_gpio_rw61x.c
+    if (CONFIG_BOARD_FRDM_RW612)
+        zephyr_library_sources(
+            ${SIMW_LIB_DIR}/hostlib/hostLib/platform/zephyr/i2c_zephyr.c
+            ${SIMW_LIB_DIR}/hostlib/hostLib/platform/ksdk/timer_kinetis_bm.c
         )
-        target_compile_definitions(simw_lib
-            PUBLIC
+        zephyr_compile_definitions(
             AX_EMBEDDED
-            SDK_OS_FREE_RTOS=1
             FRDM_RW612
         )
     endif()
 
-    if (CONFIG_MCUX_HW_DEVICE_MIMXRT1062)
-        target_sources(simw_lib PUBLIC
-            ${SIMW_LIB_DIR}/hostlib/hostLib/platform/rt/rt1060/i2c_imxrt.c
-            ${SIMW_LIB_DIR}/hostlib/hostLib/platform/ksdk/timer_kinetis_freertos.c
-            ${SIMW_LIB_DIR}/demos/se05x_host_gpio/se05x_host_gpio_rt1060.c
-        )
-        target_compile_definitions(simw_lib
-            PUBLIC
-            AX_EMBEDDED
-            SDK_OS_FREE_RTOS=1
-            IMX_RT
-        )
-    endif()
-
-    if (CONFIG_MCUX_HW_DEVICE_MCXW727C)
-        target_sources(simw_lib PUBLIC
-                ${SIMW_LIB_DIR}/hostlib/hostLib/platform/mcxw72/i2c_mcxw72.c
-                ${SIMW_LIB_DIR}/hostlib/hostLib/platform/ksdk/timer_kinetis_freertos.c
-                ${SIMW_LIB_DIR}/demos/se05x_host_gpio/se05x_host_gpio_mcxw72.c
-            )
-            target_compile_definitions(simw_lib
-                PUBLIC
-                AX_EMBEDDED
-                SDK_OS_FREE_RTOS=1
-                FRDM_MCXW72
-            )
-
-    endif()
-
-    if (CONFIG_SE05X_SCP03 OR CONFIG_SE05X_USER_ID OR CONFIG_SE05X_AES_KEY OR CONFIG_SE05X_EC_KEY OR CONFIG_SE05X_SCP03_USER_ID OR CONFIG_SE05X_SCP03_AES_KEY OR CONFIG_SE05X_SCP03_EC_KEY)
-        mcux_add_macro(
-            MBEDTLS_USER_CONFIG_FILE=\\\"${CHIP_ROOT}/third_party/simw-top-mini/repo/matter/se05x_demos_common/se05x_mbedtls_user_config.h\\\"
-        )
-    endif()
-
+    set_property(GLOBAL APPEND PROPERTY ZEPHYR_INTERFACE_LIBS simw_lib)
 endif()

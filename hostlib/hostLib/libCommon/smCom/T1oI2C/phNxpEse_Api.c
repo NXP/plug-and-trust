@@ -17,7 +17,11 @@
 #include "nxLog_smCom.h"
 #include "nxEnsure.h"
 
-#if defined(USE_RTOS) && USE_RTOS == 1
+#if defined(__ZEPHYR__)
+#include <zephyr/kernel.h>
+#endif
+
+#if defined(SDK_OS_FREE_RTOS) && SDK_OS_FREE_RTOS == 1
 #include "FreeRTOSConfig.h"
 #include "FreeRTOS.h"
 #endif

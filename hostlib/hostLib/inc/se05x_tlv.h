@@ -16,9 +16,11 @@
 //#include <smCom.h>
 
 #if SSS_HAVE_SCP_SCP03_SSS
-#if (defined(USE_RTOS) && (USE_RTOS == 1))
+#if defined(SDK_OS_FREE_RTOS) && SDK_OS_FREE_RTOS == 1
 #include "FreeRTOS.h"
 #include "semphr.h"
+#elif defined(__ZEPHYR__)
+#include <zephyr/kernel.h>
 #elif (__GNUC__ && !AX_EMBEDDED)
 #include <errno.h>
 #include <pthread.h>
@@ -215,13 +217,14 @@ typedef struct Se05xSession
 
 /*
 #if SSS_HAVE_SCP_SCP03_SSS
-#if (defined(USE_RTOS) && (USE_RTOS == 1))
+#if defined(SDK_OS_FREE_RTOS) && SDK_OS_FREE_RTOS == 1
     SemaphoreHandle_t scp03_lock;
-    uint8_t scp03_lock_init;
 #elif (__GNUC__ && !AX_EMBEDDED)
     pthread_mutex_t scp03_lock;
-    uint8_t scp03_lock_init;
+#elif (__ZEPHYR__)
+    struct k_mutex scp03_lock;
 #endif
+    uint8_t scp03_lock_init;
 #endif // SSS_HAVE_SCP_SCP03_SSS
 */
 } Se05xSession_t;

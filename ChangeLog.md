@@ -1,6 +1,10 @@
 # Plug-And-Trust Mini Package Change Log
 
 
+## v04.07.04.01
+
+- SE05x integration in Matter with Zephyr OS
+
 ## 24-04-2026
 
 - Back off delay issue in T=1oI2C is fixed for RT1060 platform

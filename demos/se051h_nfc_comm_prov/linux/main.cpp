@@ -66,11 +66,16 @@ static int get_dac_key_from_file(char* filename, uint8_t* dac_key, size_t* dac_k
   pkey = PEM_read_PrivateKey(fp, NULL, NULL, NULL);
   if (pkey == NULL) {
     // Try DER format
-    fseek(fp, 0, SEEK_SET);
+    if(fseek(fp, 0, SEEK_SET) != 0) {
+      fclose(fp);
+      return -1;
+    }
     pkey = d2i_PrivateKey_fp(fp, NULL);
   }
 
-  fclose(fp);
+  if(fclose(fp) != 0) {
+    return -1;
+  }
 
   if (pkey == NULL) {
     printf("Failed to read key from file\n");
@@ -113,11 +118,16 @@ static int get_dac_cert_from_file(char* filename, uint8_t* dac_cert, size_t* dac
   cert = PEM_read_X509(fp, NULL, NULL, NULL);
   if (cert == NULL) {
     // Try DER format
-    fseek(fp, 0, SEEK_SET);
+    if(fseek(fp, 0, SEEK_SET) != 0) {
+      fclose(fp);
+      return -1;
+    }
     cert = d2i_X509_fp(fp, NULL);
   }
 
-  fclose(fp);
+  if(fclose(fp) != 0) {
+    return -1;
+  }
 
   if (cert == NULL) {
     printf("Failed to read certificate from file\n");
@@ -179,6 +189,10 @@ int main(int argc, char *argv[]) {
       }
       i++;
       qrcodeLen = strlen(argv[i]);
+
+      if(qrcodeLen >= sizeof(qrcode)) {
+        return 0;
+      }
       memcpy(qrcode, argv[i], strlen(argv[i]));
       qrcode_ptr = &qrcode[0];
       is_qr_code = 1;
@@ -194,8 +208,15 @@ int main(int argc, char *argv[]) {
         return 0;
       }
       char hexstr[1024] = {0};
-      fgets(hexstr, sizeof(hexstr), fp);
-      fclose(fp);
+      if(fgets(hexstr, sizeof(hexstr), fp) == NULL) {
+        if(fclose(fp) != 0) {
+          return -1;
+        }
+        return 0;
+      }
+      if(fclose(fp) != 0) {
+        return -1;
+      }
       char *p = hexstr;
       qrcodeLen = 0;
       while (*p && *(p+1) && qrcodeLen < sizeof(qrcode)) {
@@ -296,6 +317,9 @@ int main(int argc, char *argv[]) {
         dac_cert_len = 0;
       }
       else{
+        if(dac_cert_len > sizeof(dac_cert) - 4) {
+          return 0;
+        }
         dac_cert[0] = 0x31;
         dac_cert[1] = 0x00;
         dac_cert[2] = static_cast<uint8_t>(dac_cert_len & 0xFF);

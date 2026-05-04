@@ -1,5 +1,5 @@
 /*
- * Copyright 2018,2019,2024 NXP
+ * Copyright 2018,2019,2024,2026 NXP
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
@@ -14,8 +14,12 @@ extern "C" {
 #include <stddef.h>
 #include <stdint.h>
 
-#ifdef __STDC__
+#if defined(__STDC__) && !defined(__ZEPHYR__)
 #include <unistd.h>
+#endif
+
+#if defined(__ZEPHYR__)
+#include <zephyr/kernel.h>
 #endif
 
 #ifndef FALSE
@@ -26,8 +30,10 @@ extern "C" {
 #define TRUE true
 #endif
 
+#if !defined(__ZEPHYR__)
 #ifndef ARRAY_SIZE
 #define ARRAY_SIZE(array) (sizeof(array) / (sizeof(array[0])))
+#endif
 #endif
 
 #define assert_static(e)                    \
@@ -51,7 +57,21 @@ extern "C" {
 #define STRNICMP strncasecmp
 #endif /*_MSC_VER*/
 
-#if defined(USE_RTOS) && USE_RTOS == 1
+#if defined(__ZEPHYR__)
+
+#ifndef SSS_MALLOC
+#define SSS_MALLOC k_malloc
+#endif // SSS_MALLOC
+
+#ifndef SSS_FREE
+#define SSS_FREE k_free
+#endif // SSS_FREE
+
+#ifndef SSS_CALLOC
+#define SSS_CALLOC k_calloc
+#endif // SSS_CALLOC
+
+#elif defined(SDK_OS_FREE_RTOS) && SDK_OS_FREE_RTOS == 1
 // #include "FreeRTOS.h"
 extern void vPortFree(void *pv);
 extern void *pvPortMalloc(size_t xWantedSize);
@@ -67,10 +87,10 @@ void *pvPortCalloc(size_t num, size_t size); /*Calloc for Heap3/Heap4.*/
 #endif // SSS_FREE
 
 #ifndef SSS_CALLOC
-#define SSS_CALLOC pvPortCalloc
+#define SSS_CALLOC  pvPortCalloc
 #endif // SSS_CALLOC
 
-#else // !USE_RTOS
+#else // !SDK_OS_FREE_RTOS
 
 #include <stdlib.h>
 
@@ -86,9 +106,10 @@ void *pvPortCalloc(size_t num, size_t size); /*Calloc for Heap3/Heap4.*/
 #define SSS_CALLOC calloc
 #endif // SSS_CALLOC
 
-#endif // USE_RTOS
+#endif // __ZEPHYR__
 
 #if defined(__cplusplus)
 }
 #endif
+
 #endif /* FSL_SSS_TYPES_H */

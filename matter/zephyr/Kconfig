@@ -1,0 +1,35 @@
+#
+# Copyright 2026 NXP
+# SPDX-License-Identifier: BSD-3-Clause
+
+mainmenu "SE05x Demo Configuration"
+
+source "Kconfig.zephyr"
+
+#config CONSOLE
+#    bool "Enable console handler"
+#    default y
+#
+#config CONSOLE_HANDLER
+#    bool "Enable console handler"
+#    default y
+#    select UART_CONSOLE
+#    select SERIAL
+#    select UART_INTERRUPT_DRIVEN
+#
+#config GPIO_INIT
+#    bool "Enable GPIO"
+#    default y
+#    select GPIO
+#
+#config ENABLE_PROTECTION
+#    bool "Enable memory and stack protection"
+#    default y
+#    select ARM_MPU
+#    select HW_STACK_PROTECTION
+#
+#config ENABLE_TRUSTZONE
+#    bool "Enable TrustZone secure execution"
+#    default y
+#    select TRUSTED_EXECUTION_SECURE
+#
