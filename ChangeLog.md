@@ -4,6 +4,7 @@
 ## v04.07.04.01
 
 - SE05x integration in Matter with Zephyr OS
+- EC Key session enabled for RW612 and RT1060 EVKC
 
 ## 24-04-2026
 

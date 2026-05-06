@@ -77,15 +77,10 @@ if (CONFIG_MCUX_HW_DEVICE_MCXW727C)
     )
 endif()
 
-if (CONFIG_MCUX_HW_DEVICE_MCXW727C)
-        mcux_add_macro(
-        MBEDTLS_USER_CONFIG_FILE=\\\"${CHIP_ROOT}/third_party/simw-top-mini/repo/matter/se05x_demos_common/w72_se05x_provision_mbedtls_user_config.h\\\"
-    )
-else()
-    mcux_add_macro(
-        MBEDTLS_USER_CONFIG_FILE=\\\"${CHIP_ROOT}/third_party/simw-top-mini/repo/matter/se05x_demos_common/se05x_provision_mbedtls_user_config.h\\\"
-    )
-endif()
+
+mcux_add_macro(
+    MBEDTLS_USER_CONFIG_FILE=\\\"${CHIP_ROOT}/third_party/simw-top-mini/repo/matter/se05x_demos_common/se05x_provision_mbedtls_user_config.h\\\"
+)
 
 # Use MCUX post-build function to convert the executable to binary format
 mcux_convert_binary(

@@ -221,7 +221,7 @@ typedef struct Se05xSession
     SemaphoreHandle_t scp03_lock;
 #elif (__GNUC__ && !AX_EMBEDDED)
     pthread_mutex_t scp03_lock;
-#elif (__ZEPHYR__)
+#elif defined(__ZEPHYR__)
     struct k_mutex scp03_lock;
 #endif
     uint8_t scp03_lock_init;
