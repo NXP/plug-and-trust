@@ -25,6 +25,23 @@ const struct device * i2c_dev = NULL;
 
 /* ********************** Functions ********************** */
 
+/* Backoff Delay */
+static int gBackoffDelay;
+
+void resetBackoffDelay()
+{
+    gBackoffDelay = 0;
+}
+
+static void BackOffDelay_Wait()
+{
+    if (gBackoffDelay < 200)
+    {
+        gBackoffDelay += 1;
+    }
+    k_msleep(gBackoffDelay);
+}
+
 /**
  * Opens the communication channel to I2C device
  */
@@ -57,20 +74,29 @@ void axI2CTerm(void * conn_ctx, int mode)
 unsigned int axI2CWrite(void * conn_ctx, unsigned char bus_unused_param, unsigned char addr, unsigned char * pTx,
                         unsigned short txLen)
 {
+    unsigned int rv;
     if (i2c_write(i2c_dev, pTx, txLen, SE05X_I2C_DEV_ADDR))
     {
-        SMLOG_E("i2c write failed\n");
-        return I2C_FAILED;
+        // SMLOG_E("i2c write failed\n");
+        rv = I2C_FAILED;
+    } else {
+        resetBackoffDelay();
+        rv = I2C_OK;
     }
-    return I2C_OK;
+    return rv;
 }
 
 unsigned int axI2CRead(void * conn_ctx, unsigned char bus, unsigned char addr, unsigned char * pRx, unsigned short rxLen)
 {
+    unsigned int rv;
     if (i2c_read(i2c_dev, pRx, rxLen, SE05X_I2C_DEV_ADDR))
     {
-        SMLOG_E("i2c read failed\n");
-        return I2C_FAILED;
+        // SMLOG_E("i2c read failed\n");
+        BackOffDelay_Wait();
+        rv = I2C_FAILED;
+    } else {
+        resetBackoffDelay();
+        rv = I2C_OK;
     }
-    return I2C_OK;
+    return rv;
 }

@@ -70,6 +70,12 @@ FILE(
     ${SIMW_LIB_DIR}/hostlib/hostLib/libCommon/smCom/smComSocket_fd.c
 )
 
+FILE(
+    GLOB
+    SIMW_PCSC_SOURCES
+    ${SIMW_LIB_DIR}/hostlib/hostLib/libCommon/smCom/smComPCSC.c
+)
+
 SET(SIMW_COMMON_INC_DIR
     ${SIMW_LIB_DIR}
     ${SIMW_LIB_DIR}/sss
@@ -131,12 +137,14 @@ SET(SIMW_INC_DIR
 )
 
 IF(SSS_HAVE_HOST_PCWINDOWS)
-    ADD_DEFINITIONS(-DRJCT_VCOM)
-    LIST(
-        APPEND
-        SIMW_SE_SOURCES
-        ${SIMW_VCOM_WIN_SOURCES}
-    )
+    IF(SSS_HAVE_SMCOM_VCOM)
+        ADD_DEFINITIONS(-DRJCT_VCOM)
+        LIST(
+            APPEND
+            SIMW_SE_SOURCES
+            ${SIMW_VCOM_WIN_SOURCES}
+        )
+    ENDIF()
 ELSE()
     IF(SSS_HAVE_HOST_PCLINUX)
         IF(SSS_HAVE_SMCOM_VCOM)
@@ -156,6 +164,20 @@ ELSE()
                 ${SIMW_T1OI2C_SOURCES}
             )
         ENDIF()
+    ENDIF()
+ENDIF()
+
+IF(SSS_HAVE_SMCOM_PCSC)
+    LIST(
+        APPEND
+        SIMW_SE_SOURCES
+        ${SIMW_PCSC_SOURCES}
+    )
+    ADD_DEFINITIONS(-DPCSC)
+    ADD_DEFINITIONS(-DSMCOM_PCSC)
+
+    IF(SSS_HAVE_HOST_PCLINUX)
+        INCLUDE_DIRECTORIES(/usr/include/PCSC)
     ENDIF()
 ENDIF()
 
@@ -201,6 +223,14 @@ FUNCTION(SIMW_LINK_HOSTCRYPTO target_name)
             crypto
         )
     ENDIF()
+
+    IF(SSS_HAVE_HOST_PCWINDOWS)
+        TARGET_LINK_LIBRARIES(${target_name} PRIVATE Winscard)
+    ENDIF()
+    IF(SSS_HAVE_HOST_PCLINUX)
+        TARGET_LINK_LIBRARIES(${target_name} PRIVATE pcsclite)
+    ENDIF()
+
 ENDFUNCTION()
 
 IF(DEFINED SE_RESET_LOGIC)

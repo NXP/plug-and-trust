@@ -22,6 +22,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <limits.h>
+#include <cinttypes>
 
 static ex_sss_boot_ctx_t gex_sss_chip_ctx;
 
@@ -37,6 +38,7 @@ static sss_status_t se051h_set_key(const uint8_t *buffer, size_t bufferLen,
   Se05xPolicy_t se05x_policy;
   uint8_t wifi_policies_buff[MAX_POLICY_BUFFER_SIZE] = WIFI_POLICY_BUFF;
   uint8_t policies_buff[MAX_POLICY_BUFFER_SIZE] = BINARY_POLICY_BUFF;
+  uint8_t hmac_policies_buff[MAX_POLICY_BUFFER_SIZE] = HMAC_POLICY_BUFF;
 
   status = sss_key_object_init(&keyObj, &gex_sss_chip_ctx.ks);
   ENSURE_OR_RETURN_ON_ERROR(status == kStatus_SSS_Success, status);
@@ -71,39 +73,27 @@ static sss_status_t se051h_set_key(const uint8_t *buffer, size_t bufferLen,
         &((sss_se05x_session_t *)&gex_sss_chip_ctx.session)->s_ctx, &se05x_policy, keyId,
         0, (uint16_t)bufferLen, buffer, bufferLen, 0);
     if (smstatus != SM_OK) {
-      LOG_E("Error in setting hmac key");
+      LOG_E("Error in setting Binary/Certificate");
       status = kStatus_SSS_Fail;
     }
   } else if (cipherType == kSSS_CipherType_HMAC) {
     SE05x_KeyID_t kekID = SE05x_KeyID_KEK_NONE;
     sss_se05x_key_store_t *se05x_keyStore =
         (sss_se05x_key_store_t *)&gex_sss_chip_ctx.ks;
-    SE05x_Result_t exists = kSE05x_Result_NA;
 
     if (se05x_keyStore->kekKey != NULL) {
       kekID = se05x_keyStore->kekKey->keyId;
     }
 
     if (bitLen % 8 == 0) {
-      smstatus = Se05x_API_CheckObjectExists(
-          &((sss_se05x_session_t *)&gex_sss_chip_ctx.session)->s_ctx, keyId,
-          &exists);
-      if (smstatus == SM_OK) {
-        if (exists == kSE05x_Result_SUCCESS) {
-          LOG_I("spake2p_verifiers credentials already provisioned");
-          return status;
-        } else {
-          smstatus = Se05x_API_WriteSymmKey_Ver(
-              &((sss_se05x_session_t *)&gex_sss_chip_ctx.session)->s_ctx, NULL,
-              SE05x_MaxAttemps_NA, keyId, kekID, buffer, bufferLen,
-              kSE05x_INS_NA, kSE05x_SymmKeyType_HMAC, 0);
-          if (smstatus != SM_OK) {
-            LOG_E("Error in setting hmac key");
-            status = kStatus_SSS_Fail;
-          }
-        }
-      } else {
-        LOG_E("Se05x_API_CheckObjectExists Failed");
+      se05x_policy.value = hmac_policies_buff;
+      se05x_policy.value_len = WIFI_POLICY_BUF_LEN;
+      smstatus = Se05x_API_WriteSymmKey_Ver(
+          &((sss_se05x_session_t *)&gex_sss_chip_ctx.session)->s_ctx, &se05x_policy,
+          SE05x_MaxAttemps_NA, keyId, kekID, buffer, bufferLen,
+          kSE05x_INS_NA, kSE05x_SymmKeyType_HMAC, 0);
+      if (smstatus != SM_OK) {
+        LOG_E("Error in setting hmac key");
         status = kStatus_SSS_Fail;
       }
     } else {
@@ -215,6 +205,7 @@ static smStatus_t se05x_delete_key_with_ep(uint32_t keyid, uint16_t endpointID) 
   return smstatus;
 }
 
+#if 0
 /* Delete Spake2+ crypto object in se05x */
 void se05x_delete_spake2p_crypto_object(void)
 {
@@ -228,35 +219,6 @@ void se05x_delete_spake2p_crypto_object(void)
       LOG_E("Failed to delete Spake2+ crypto object");
     }
     return;
-}
-
-#if 0
-static sss_status_t se051h_provision_passcode_parameters()
-{
-    sss_status_t status = kStatus_SSS_Fail;
-    smStatus_t smstatus = SM_NOT_OK;
-    uint8_t passcode_buffer[] = {
-        PASSCODE_PARAMS
-    };
-    SE05x_Result_t exists = kSE05x_Result_NA;
-
-    smstatus = Se05x_API_CheckObjectExists(&((sss_se05x_session_t *) &gex_sss_chip_ctx.session)->s_ctx, SE051H_PASSCODE_ID, &exists);
-    if (smstatus == SM_OK){
-        if (exists == kSE05x_Result_SUCCESS) {
-            LOG_I("Passcode credentials already provisioned");
-            status = kStatus_SSS_Success;
-            return status;
-        }
-        else {
-            LOG_I("Writing Pass code Parameters to SE05x at Key id = %x",  SE051H_PASSCODE_ID);
-            status = se051h_set_key(passcode_buffer, sizeof(passcode_buffer), sizeof(passcode_buffer)*8 , kSSS_KeyPart_Default, kSSS_CipherType_Binary, SE051H_PASSCODE_ID, NULL, 0);
-            if(status != kStatus_SSS_Success){
-                printf("Error in se051h_provision_passcode_parameters\n");
-            }
-        }
-    }
-
-    return status;
 }
 #endif
 
@@ -303,10 +265,10 @@ se051h_provision_pbkdf_parameters(uint8_t tp_spake_passcode_set_no,
   return status;
 }
 
-#if 0
-static sss_status_t se051h_provision_spake2p_verifiers()
+static sss_status_t se051h_provision_spake2p_verifiers_passcode_salt()
 {
     sss_status_t status = kStatus_SSS_Fail;
+    smStatus_t smstatus = SM_NOT_OK;
     uint8_t hmac_key_w0[] = {
         HMAC_KEY_W0
     };
@@ -314,20 +276,36 @@ static sss_status_t se051h_provision_spake2p_verifiers()
         HMAC_KEY_L
     };
 
+    uint8_t passcode_buffer[] = {
+      PASSCODE_PARAMS
+    };
+
+    smstatus = se05x_delete_key(SE051H_PASSCODE_ID);
+    ENSURE_OR_RETURN_ON_ERROR(smstatus == SM_OK, kStatus_SSS_Fail);
+
+    LOG_I("Writing Pass code Parameters (from se051h_nfc_comm_prov.h) to SE05x at Key id = %x",  SE051H_PASSCODE_ID);
+    status = se051h_set_key(passcode_buffer, sizeof(passcode_buffer), sizeof(passcode_buffer)*8 , kSSS_KeyPart_Default, kSSS_CipherType_Binary, SE051H_PASSCODE_ID, NULL, 0);
+    ENSURE_OR_GO_CLEANUP(status == kStatus_SSS_Success);
+
+    smstatus = se05x_delete_key(SE051H_HMAC_KEY_W0_ID);
+    ENSURE_OR_RETURN_ON_ERROR(smstatus == SM_OK, kStatus_SSS_Fail);
+
     /*Spake2+ verifier(w0)*/
-    LOG_I("Writing HMAC Key(w0) to SE05x at Key id = %x",  SE051H_HMAC_KEY_W0_ID);
+    LOG_I("Writing HMAC Key(w0) (from se051h_nfc_comm_prov.h) to SE05x at Key id = %x",  SE051H_HMAC_KEY_W0_ID);
     status = se051h_set_key(hmac_key_w0, sizeof(hmac_key_w0), sizeof(hmac_key_w0)*8, kSSS_KeyPart_Default, kSSS_CipherType_HMAC, SE051H_HMAC_KEY_W0_ID, NULL, 0);
     ENSURE_OR_GO_CLEANUP(status == kStatus_SSS_Success);
 
+    smstatus = se05x_delete_key(SE051H_HMAC_KEY_L_ID);
+    ENSURE_OR_RETURN_ON_ERROR(smstatus == SM_OK, kStatus_SSS_Fail);
+
     /*Spake2+ verifier(L)*/
-    LOG_I("Writing HMAC Key(L) to SE05x at Key id = %x",  SE051H_HMAC_KEY_L_ID);
+    LOG_I("Writing HMAC Key(L) (from se051h_nfc_comm_prov.h) to SE05x at Key id = %x",  SE051H_HMAC_KEY_L_ID);
     status = se051h_set_key(hmac_key_L, sizeof(hmac_key_L), sizeof(hmac_key_L)*8, kSSS_KeyPart_Default, kSSS_CipherType_HMAC, SE051H_HMAC_KEY_L_ID, NULL, 0);
     ENSURE_OR_GO_CLEANUP(status == kStatus_SSS_Success);
 
 cleanup:
     return status;
 }
-#endif
 
 static sss_status_t se051h_provision_dac_cert(uint8_t *dac_cert_in, size_t dac_cert_in_len) {
   sss_status_t status = kStatus_SSS_Fail;
@@ -1234,8 +1212,128 @@ static sss_status_t se051h_do_reset() {
   SE05X_DELETE_KEY_TEMPLATE(SE051H_NCC_ID);
   SE05X_DELETE_KEY_TEMPLATE(SE051H_VR_ID);
   SE05X_DELETE_KEY_TEMPLATE(SE051H_DESCRIPTOR_CLUSTER_ID);
-  se05x_delete_spake2p_crypto_object();
+  //se05x_delete_spake2p_crypto_object();
   return kStatus_SSS_Success;
+}
+
+static sss_status_t se051h_delete_keyid(uint32_t keyid) {
+  smStatus_t smstatus = SM_NOT_OK;
+  SE05X_DELETE_KEY_TEMPLATE(keyid);
+  return kStatus_SSS_Success;
+}
+
+static sss_status_t se051h_readid_list(void)
+{
+	uint8_t pmore = kSE05x_MoreIndicator_NA;
+	uint8_t list[1024];
+	size_t listlen = sizeof(list);
+	size_t i;
+	smStatus_t retStatus = SM_NOT_OK;
+	uint16_t outputOffset = 0;
+	sss_object_t key_object = { 0 };
+	sss_status_t sss_status = kStatus_SSS_Fail;
+
+	do {
+		retStatus = Se05x_API_ReadIDList(&((sss_se05x_session_t *)&gex_sss_chip_ctx.session)->s_ctx,
+			outputOffset, 0xFF, &pmore, list, &listlen);
+		if (retStatus != SM_OK) {
+			return kStatus_SSS_Fail;
+		}
+		outputOffset = (uint16_t)listlen;
+		for (i = 0; i < listlen; i += 4) {
+			uint32_t id = 0 | (list[i + 0] << (3 * 8)) | (list[i + 1] << (2 * 8)) | (list[i + 2] << (1 * 8)) |
+				(list[i + 3] << (0 * 8));
+			{
+				printf("Key id - %02" PRIx32 "   , ", id);
+
+        sss_status = sss_key_object_init(&key_object, &gex_sss_chip_ctx.ks);
+				if (sss_status != kStatus_SSS_Success) {
+					printf("sss_key_object_init failed\n");
+					continue;
+				}
+				sss_status = sss_key_object_get_handle(&key_object, id);
+				if (sss_status != kStatus_SSS_Success) {
+					printf("Object Type - Not available");
+				}
+				else {
+					switch (key_object.cipherType)
+					{
+					case kSSS_KeyPart_NONE:
+						printf("Object Type - None");
+					break;
+					case kSSS_CipherType_AES:
+						printf("Object Type - AES Key");
+						break;
+					case kSSS_CipherType_DES:
+						printf("Object Type - DES Key");
+						break;
+					case kSSS_CipherType_CMAC:
+						printf("Object Type - CMAC Key");
+						break;
+					case kSSS_CipherType_HMAC:
+						printf("Object Type - HMAC Key");
+						break;
+					case kSSS_CipherType_MAC:
+						printf("Object Type - MAC Key");
+						break;
+					case kSSS_CipherType_RSA:
+						printf("Object Type - RSA Key");
+						break;
+					case kSSS_CipherType_RSA_CRT:
+						printf("Object Type - RSA CRT Key");
+						break;
+					case kSSS_CipherType_EC_NIST_P:
+						printf("Object Type - EC NIST-P Key");
+					case kSSS_CipherType_EC_NIST_K:
+						printf("Object Type - EC NIST-K Key");
+						break;
+					case kSSS_CipherType_EC_MONTGOMERY:
+						printf("Object Type - EC MONTGOMERY Key");
+						break;
+					case kSSS_CipherType_EC_TWISTED_ED:
+						printf("Object Type - EC Twisted Key");
+						break;
+					case kSSS_CipherType_EC_BRAINPOOL:
+						printf("Object Type - EC Brainpool Key");
+						break;
+					case kSSS_CipherType_UserID:
+						printf("Object Type - User ID");
+						break;
+					case kSSS_CipherType_Certificate:
+						printf("Object Type - Certificate");
+						break;
+					case kSSS_CipherType_Binary:
+						printf("Object Type - Binary");
+						break;
+					case kSSS_CipherType_Count:
+						printf("Object Type - Count");
+						break;
+					case kSSS_CipherType_PCR:
+						printf("Object Type - PCR");
+						break;
+					case kSSS_CipherType_ReservedPin:
+						printf("Object Type - Reserved Pin");
+						break;
+					default:
+						printf("Object Type - Unknown");
+						break;
+					}
+					printf("\n");
+				}
+			}
+		}
+	} while (pmore == kSE05x_MoreIndicator_MORE);
+
+	retStatus = Se05x_API_ReadCryptoObjectList(&((sss_se05x_session_t *)&gex_sss_chip_ctx.session)->s_ctx, list, &listlen);
+	if (retStatus != SM_OK) {
+		return kStatus_SSS_Fail;
+	}
+	for (i = 0; i < listlen; i += 4) {
+		uint16_t cryptoObjectId = list[i + 1] | (list[i + 0] << 8);
+		printf("Crypto Object id - %02" PRIx16 "   ,\n", cryptoObjectId);
+	}
+
+	return kStatus_SSS_Success;
 }
 
 void se051h_nfc_comm_prov(ex_sss_boot_ctx_t *pCtx, uint8_t do_reset,
@@ -1248,7 +1346,9 @@ void se051h_nfc_comm_prov(ex_sss_boot_ctx_t *pCtx, uint8_t do_reset,
                           uint8_t do_user_id_provision,
                           uint8_t provision_with_policy,
                           uint8_t *dac_key, size_t dac_key_len,
-                          uint8_t *dac_cert, size_t dac_cert_len) {
+                          uint8_t *dac_cert, size_t dac_cert_len,
+                          uint8_t provision_verifiers,
+                          uint8_t do_delete_key, uint32_t delete_keyid, uint8_t do_readidlist) {
   sss_status_t status = kStatus_SSS_Success;
   const char *portName = nullptr;
 
@@ -1290,6 +1390,20 @@ void se051h_nfc_comm_prov(ex_sss_boot_ctx_t *pCtx, uint8_t do_reset,
     goto cleanup;
   }
 
+  if (do_delete_key) {
+    LOG_I("Deleting key at 0x%08X", delete_keyid);
+    status = se051h_delete_keyid(delete_keyid);
+    if (status != kStatus_SSS_Success) {
+      LOG_E("Error in se051h_delete_keyid function");
+    }
+    goto cleanup;
+  }
+
+  if (do_readidlist) {
+	  status = se051h_readid_list();
+	  goto cleanup;
+  }
+
   if (only_t4t_provision == 1) {
     goto t4t_provision;
   }
@@ -1313,22 +1427,16 @@ void se051h_nfc_comm_prov(ex_sss_boot_ctx_t *pCtx, uint8_t do_reset,
     goto cleanup;
   }
 
-#if 0
-    // Pass code credentials (Binary file containing pass code and salt)
-    status = se051h_provision_passcode_parameters();
-    ENSURE_OR_GO_CLEANUP(status == kStatus_SSS_Success);
-#endif
-
   // PAKE credentials (iteration count, fail safe timer, session parameters)
   status = se051h_provision_pbkdf_parameters(tp_spake_passcode_set_no,
                                              tp_spake_itter_to_be_used);
   ENSURE_OR_GO_CLEANUP(status == kStatus_SSS_Success);
 
-#if 0
+  if (provision_verifiers) {
     // spake2+ verifier (w0 and L)
-    status = se051h_provision_spake2p_verifiers();
+    status = se051h_provision_spake2p_verifiers_passcode_salt();
     ENSURE_OR_GO_CLEANUP(status == kStatus_SSS_Success);
-#endif
+  }
 
   // DAC certificate
   status = se051h_provision_dac_cert(dac_cert, dac_cert_len);

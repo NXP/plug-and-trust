@@ -56,6 +56,14 @@
 #define CONFIG_SE05X_PROVISION_WITH_POLICY 0
 #endif
 
+#ifndef CONFIG_SE05X_PROVISION_VERIFIERS
+#define CONFIG_SE05X_PROVISION_VERIFIERS 0
+#endif
+
+#ifndef CONFIG_SE05X_DO_READIDLIST
+#define CONFIG_SE05X_DO_READIDLIST 0
+#endif
+
 /* Network interface type configuration */
 #define WIFI_NET_INTERFACE 0x1
 #define THREAD_NET_INTERFACE 0x2
@@ -107,17 +115,23 @@ void se051h_nfc_comm_task(void *pvParam) {
   uint8_t qrcode[] = QRCODE;
   uint8_t *qrcode_ptr = &qrcode[0];
   size_t qrcodeLen = sizeof(qrcode) - 1;
-  size_t is_qr_code = 0;
+  size_t is_qr_code = 1;
   uint8_t tp_spake_passcode_set_no = CONFIG_SE05X_TP_SPAKE_PASSCODE_SET_NO;
   uint32_t tp_spake_itter_to_be_used = CONFIG_SE05X_TP_SPAKE_ITER_TO_BE_USED;
   uint8_t provision_with_policy = CONFIG_SE05X_PROVISION_WITH_POLICY;
+  uint8_t provision_verifiers = CONFIG_SE05X_PROVISION_VERIFIERS;
+  uint8_t do_delete_key = 0;
+  uint32_t delete_keyid = 0;
+  uint8_t do_readidlist = CONFIG_SE05X_DO_READIDLIST;
 
   se051h_nfc_comm_prov(NULL, do_reset, only_t4t_provision, qrcode_ptr,
                        qrcodeLen, is_qr_code, device_network_type, tp_spake_passcode_set_no,
                        tp_spake_itter_to_be_used, do_ec_key_provision,
-                       do_aes_key_provision, do_user_id_provision, provision_with_policy, 
+                       do_aes_key_provision, do_user_id_provision, provision_with_policy,
                        NULL, 0,
-                       NULL, 0);
+                       NULL, 0,
+                       provision_verifiers,
+                       do_delete_key, delete_keyid, do_readidlist);
 }
 
 #if (defined(configCHECK_FOR_STACK_OVERFLOW) &&                                \

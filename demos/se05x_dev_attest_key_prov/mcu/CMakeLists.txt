@@ -87,7 +87,7 @@ if (CONFIG_MCUX_HW_DEVICE_MCXW727C)
     )
         target_sources(app
             PRIVATE
-            ${CHIP_ROOT}/examples/platform/nxp/mcxw71/app/support/Memconfig.cpp
+            ${CHIP_ROOT}/examples/platform/nxp/mcxw72/app/support/Memconfig.cpp
             ${CHIP_ROOT}/src/lib/support/logging/TextOnlyLogging.cpp
             ${CHIP_ROOT}/src/platform/nxp/common/Logging.cpp
         )

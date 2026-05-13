@@ -1,6 +1,12 @@
 # Plug-And-Trust Mini Package Change Log
 
 
+## v04.07.04.02
+
+- PCSC support added for cmake build of examples
+- NFC commissioning Provision example - New options added (--provision_verifiers, --delete_key, --do_readidlist)
+- NFC commissioning Provision example - Crypto object is not deleted in provision example. A new crypto object is created only if not present.
+
 ## v04.07.04.01
 
 - SE05x integration in Matter with Zephyr OS

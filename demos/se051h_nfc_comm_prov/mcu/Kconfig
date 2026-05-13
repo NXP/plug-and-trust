@@ -77,4 +77,16 @@ config SE05X_PROVISION_WITH_POLICY
 	help
 		Enable provisioning with policy.
 
+config SE05X_PROVISION_VERIFIERS
+	bool "Provision Verifiers"
+	default n
+	help
+		Enable provisioning Verifiers.
+
+config SE05X_DO_READIDLIST
+	bool "Read ID list from SE05x"
+	default n
+	help
+		Read ID list from SE05x.
+
 rsource "../../../matter/se05x_demos_common/Kconfig.se05x.common"

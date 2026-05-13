@@ -110,6 +110,9 @@ Note: It is mandatory to pass at-least one network interface.
 --ec_key_session_key        ==> Provision the key for EC key Applet session
 --user_id_session_key       ==> Provision the key for User ID Applet session
 --aes_key_session_key       ==> Provision the key for AES key Applet session
+--provision_verifiers       ==> Provision dynamic verifiers and passcode
+--delete_key <HEX_KEYID>    ==> Delete key with specified hex key ID (e.g., 0x7FFF3002)
+--do_readidlist             ==> Read ID list from SE05x.
 ```
 
 # Running provision example on MCUs
@@ -133,6 +136,8 @@ The following Kconfig options are available:
 | `-DCONFIG_SE05X_DEVICE_NETWORK_TYPE_THREAD` | bool | n | Enable Thread network interface for NFC commissioning |
 | `-DCONFIG_SE05X_DEVICE_NETWORK_TYPE_ETHERNET` | bool | n | Enable Ethernet network interface for NFC commissioning |
 | `-DCONFIG_SE05X_PROVISION_WITH_POLICY` | bool | n | Enable provisioning with policy |
+| `-DCONFIG_SE05X_PROVISION_VERIFIERS` | bool | n | Enable provisioning Verifiers |
+| `-DCONFIG_SE05X_DO_READIDLIST` | bool | n | Read ID list from SE05x |
 
 
 The example has the default DAC keys and certificates from MATTER SDK. To use custom DAC keys and certificates, modify the header file contents (file - connectedhomeip/third_party/simw-top-mini/repo/demos/se051h_nfc_comm_prov/common/se051h_nfc_comm_prov.h),

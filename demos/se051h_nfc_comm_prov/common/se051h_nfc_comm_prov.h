@@ -5,7 +5,6 @@
  */
 #pragma once
 
-#if 0
 /*PASSCODE Parameters */
 #define SE051H_PASSCODE_ID 0x7FFF2000
 #define PASSCODE_PARAMS                                                        \
@@ -18,7 +17,6 @@
       0x22, 0x20, 0x20, 0x21, 0x82, 0x89, 0xC8, 0x52, 0xEB, 0xD8, 0x16, 0x47,  \
       0x3C, 0x5A, 0x21, 0x7B, 0x8D, 0x79, 0xFC, 0x03, 0x16, 0x0D, 0x7F, 0x19,  \
       0x4A, 0x3D, 0xD5, 0x57, 0xA0, 0xD7, 0x44, 0x8B, 0x60, 0x70, 0xA3, 0x6C,
-#endif
 
 #define PASSCODE_SET_TO_BE_USED_OFFSET 25
 #define ITTERATION_TO_BE_USED_OFFSET 19
@@ -33,7 +31,6 @@
       0x00, 0x05, 0x01, 0x25, 0x07, 0x01, 0x00, 0x25, 0x08, 0x00, 0x00, 0x26,  \
       0x09, 0x00, 0xFA, 0x00, 0x00, 0x18, 0x25, 0x04, 0x97, 0xA4,
 
-#if 0
 /* SPAKE2+ Verifier (w0) Parameters */
 #define SE051H_HMAC_KEY_W0_ID 0x7FFF2011
 #define HMAC_KEY_W0                                                            \
@@ -51,7 +48,6 @@
       0xBE, 0xD6, 0xAA, 0x6D, 0xA4, 0x5B, 0x02, 0x6E, 0x8A, 0x23, 0xB0, 0xBB,  \
       0x29, 0x34, 0x2E, 0x39, 0x2A, 0xE8, 0x76, 0x37, 0xC7, 0x3E, 0x4A, 0x02,  \
       0x1E, 0xBB, 0x78, 0x9B, 0x0E
-#endif
 
 /* DAC Certificate */
 #define SE051H_DAC_ID 0x7FFF3003
@@ -756,16 +752,16 @@
         0x00, 0x00, 0x00, 0x36, 0x00, 0x00                                     \
   }
 
-#define WIFI_POLICY_BUFF                                                     \
+#define WIFI_POLICY_BUFF                                                       \
   {                                                                            \
    0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x36, 0x00, 0x00                        \
   }
 
 #define HMAC_POLICY_BUFF                                                       \
   {                                                                            \
-    0x08, 0x00, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00,    \
-        0x00, 0x00, 0x00, 0x06, 0x00, 0x00                                     \
+    0x08, 0x00, 0x00, 0x00, 0x00, 0x04, 0x04, 0x00, 0x00                       \
   }
+
 
 #define WIFI_POLICY_BUF_LEN 9
 #define POLICY_BUF_LEN 18
@@ -850,7 +846,9 @@ void se051h_nfc_comm_prov(ex_sss_boot_ctx_t *pCtx, uint8_t do_reset,
                           uint8_t do_user_id_provision,
                           uint8_t provision_with_policy,
                           uint8_t *dac_key, size_t dac_key_len,
-                          uint8_t *dac_cert, size_t dac_cert_len);
+                          uint8_t *dac_cert, size_t dac_cert_len,
+                          uint8_t provision_verifiers,
+                          uint8_t do_delete_key, uint32_t delete_keyid, uint8_t do_readidlist);
 
 #ifdef __cplusplus
 }

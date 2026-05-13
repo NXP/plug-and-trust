@@ -272,7 +272,7 @@ void * se05x_host_gpio_notification_monitor_init(void * arg)
     struct gpiod_edge_event * event              = NULL;
     int ret;
     const unsigned int line_offset = GPIO_NOTIF_PIN;
-    char * const * argv            = (char * const *) arg;
+    (void) arg;
 
     /* Open GPIO chip */
     chip = gpiod_chip_open(GPIO_NAME);
@@ -378,14 +378,9 @@ void * se05x_host_gpio_notification_monitor_init(void * arg)
             gpiod_line_settings_free(settings);
             gpiod_chip_close(chip);
 
-            if (argv == NULL)
-            {
-                LOG_E("Invalid argument: argv is NULL");
-                return (void *) (intptr_t) -1;
-            }
-
-            // Restart application
-            if (execvp(argv[0], argv) == -1)
+            char * new_argv[] = { "/proc/self/exe", "--wifi", "--thread", NULL };
+            // Restart the current application
+            if (execvp("/proc/self/exe", new_argv) == -1)
             {
                 LOG_E("Failed to restart application: %s", strerror(errno));
                 return (void *) (intptr_t) -1;

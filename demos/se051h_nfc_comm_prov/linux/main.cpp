@@ -45,6 +45,9 @@ static void print_help() {
   printf(" --provision_with_policy      ==> Provision objects with policy. \n");
   printf(" --dac_key                    ==> DA key pair file to provision. \n");
   printf(" --dac_cert                   ==> DA certificate file to provision. \n");
+  printf(" --provision_verifiers        ==> Provision dynamic verifiers and passcode. \n");
+  printf(" --delete_key <HEX_KEYID>     ==> Delete key with specified hex key ID (e.g., 0x7FFF3002). \n");
+  printf(" --do_readidlist              ==> Read ID list from SE05x. \n");
 
   return;
 }
@@ -165,6 +168,7 @@ int main(int argc, char *argv[]) {
   uint8_t tp_spake_passcode_set_no = 1;
   uint32_t tp_spake_itter_to_be_used = 1000;
   uint8_t provision_with_policy = 0;
+  uint8_t provision_verifiers = 0;
 
   uint8_t dac_key[256] = {0};
   uint8_t *dac_key_ptr = NULL;
@@ -173,6 +177,11 @@ int main(int argc, char *argv[]) {
   uint8_t dac_cert[1024] = {0};
   uint8_t *dac_cert_ptr = NULL;
   size_t dac_cert_len = 0;
+
+  uint8_t do_delete_key = 0;
+  uint32_t delete_keyid = 0;
+
+  uint8_t do_readidlist = 0;
 
   for (int i = 1; i < argc; i++) {
     if (strcmp(argv[i], "--help") == 0) {
@@ -327,6 +336,24 @@ int main(int argc, char *argv[]) {
         dac_cert_len = dac_cert_len + 4;
         dac_cert_ptr = dac_cert;
       }
+    } else if (strcmp(argv[i], "--provision_verifiers") == 0) {
+      provision_verifiers = 1;
+    } else if (strcmp(argv[i], "--delete_key") == 0) {
+      if (argc <= i + 1) {
+        printf("No key ID passed \n");
+        return 0;
+      }
+      i++;
+      char *endptr;
+      unsigned long tmp = strtoul(argv[i], &endptr, 0);
+      if (*endptr != '\0' || tmp > UINT32_MAX) {
+        printf("Invalid key ID format. Use hex format (e.g., 0x7FFF3002)\n");
+        return -1;
+      }
+      delete_keyid = (uint32_t)tmp;
+      do_delete_key = 1;
+    } else if (strcmp(argv[i], "--do_readidlist") == 0) {
+      do_readidlist = 1;
     }
     else {
       print_help();
@@ -334,7 +361,7 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  if (do_reset == 0 && do_ec_key_provision == 0 && do_user_id_provision == 0 && do_aes_key_provision == 0 && only_t4t_provision == 0) {
+  if (do_reset == 0 && do_ec_key_provision == 0 && do_user_id_provision == 0 && do_aes_key_provision == 0 && only_t4t_provision == 0 && do_delete_key == 0 && do_readidlist == 0) {
     if (device_network_type == invalidNetworkInterface) {
       printf("Specify at-least one network interface type (--wifi_net_interface or --thread_net_interface or --ethernet_net_interface) ");
       print_help();
@@ -347,7 +374,9 @@ int main(int argc, char *argv[]) {
                        tp_spake_itter_to_be_used, do_ec_key_provision,
                        do_aes_key_provision, do_user_id_provision, provision_with_policy,
                        dac_key_ptr, dac_key_len,
-                       dac_cert_ptr, dac_cert_len);
+                       dac_cert_ptr, dac_cert_len,
+                       provision_verifiers,
+                       do_delete_key, delete_keyid, do_readidlist);
 
   return 0;
 }
