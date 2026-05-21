@@ -79,7 +79,6 @@
 #define DEVICE_NETWORK_TYPE WIFI_NET_INTERFACE
 #endif
 
-
 #define QRCODE "MT:-24J0SGJ10KA0648G00" // QR code to provisioned in T4T applet
 
 static TaskHandle_t gSSSExRtosTaskHandle = NULL;
@@ -123,15 +122,14 @@ void se051h_nfc_comm_task(void *pvParam) {
   uint8_t do_delete_key = 0;
   uint32_t delete_keyid = 0;
   uint8_t do_readidlist = CONFIG_SE05X_DO_READIDLIST;
+  uint8_t se05x_t4t_access_ctrl_option = 0;
 
-  se051h_nfc_comm_prov(NULL, do_reset, only_t4t_provision, qrcode_ptr,
-                       qrcodeLen, is_qr_code, device_network_type, tp_spake_passcode_set_no,
-                       tp_spake_itter_to_be_used, do_ec_key_provision,
-                       do_aes_key_provision, do_user_id_provision, provision_with_policy,
-                       NULL, 0,
-                       NULL, 0,
-                       provision_verifiers,
-                       do_delete_key, delete_keyid, do_readidlist);
+  se051h_nfc_comm_prov(
+      NULL, do_reset, only_t4t_provision, qrcode_ptr, qrcodeLen, is_qr_code,
+      device_network_type, tp_spake_passcode_set_no, tp_spake_itter_to_be_used,
+      do_ec_key_provision, do_aes_key_provision, do_user_id_provision,
+      provision_with_policy, NULL, 0, NULL, 0, provision_verifiers,
+      do_delete_key, delete_keyid, do_readidlist, se05x_t4t_access_ctrl_option);
 }
 
 #if (defined(configCHECK_FOR_STACK_OVERFLOW) &&                                \

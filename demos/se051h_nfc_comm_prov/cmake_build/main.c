@@ -17,8 +17,8 @@
 #include <string.h>
 
 #if SSS_HAVE_HOSTCRYPTO_OPENSSL
-#include <openssl/pem.h>
 #include <openssl/evp.h>
+#include <openssl/pem.h>
 #include <openssl/x509.h>
 #if SSS_HAVE_HOST_PCWINDOWS
 #include <openssl/applink.c>
@@ -62,7 +62,8 @@ static void print_help() {
          "applet. \n");
   printf(" --qrcode <QR_CODE_VALUE>     ==> QR code to provisioned in T4T "
          "applet. \n");
-  printf(" --rawdata <raw_text_file>    ==> Raw data (hex bytes) to be provisioned in T4T applet."
+  printf(" --rawdata <raw_text_file>    ==> Raw data (hex bytes) to be "
+         "provisioned in T4T applet."
          " Ensure to pass a valid ndef header also\n");
   printf(" --tp_spake_passcode_set_no   ==> Trust Provisioned pass-code set to "
          "be used (Possible values 1,2,3). \n");
@@ -83,17 +84,23 @@ static void print_help() {
          "session. \n");
   printf(" --provision_with_policy      ==> Provision objects with policy. \n");
   printf(" --dac_key                    ==> DA key pair file to provision. \n");
-  printf(" --dac_cert                   ==> DA certificate file to provision. \n");
-  printf(" Example: --ec_key_session_key   \"COM5 \"\n");
-  printf(" --provision_verifiers        ==> Provision dynamic verifiers and passcode. \n");
-  printf(" --delete_key <HEX_KEYID>     ==> Delete key with specified hex key ID (e.g., 0x7FFF3002). \n");
+  printf(
+      " --dac_cert                   ==> DA certificate file to provision. \n");
+  printf(" --provision_verifiers        ==> Provision dynamic verifiers and "
+         "passcode. \n");
+  printf(" --delete_key <HEX_KEYID>     ==> Delete key with specified hex key "
+         "ID (e.g., 0x7FFF3002). \n");
   printf(" --do_readidlist              ==> Read ID list from SE05x. \n");
+  printf(" --t4t_enable_read            ==> Enable Contact less Read. (Not to be used with PCSC interface) \n");
+  printf(" --t4t_disable_read           ==> Disable Contact less Read. (Not to be used with PCSC interface) \n");
+  printf(" --t4t_enable_write           ==> Enable Contact less Write. (Not to be used with PCSC interface) \n");
+  printf(" --t4t_disable_write          ==> Disable Contact less Write. (Not to be used with PCSC interface) \n");
 
   return;
 }
 
-static int get_dac_key_from_file(const char* filename, uint8_t* dac_key, size_t* dac_key_len)
-{
+static int get_dac_key_from_file(const char *filename, uint8_t *dac_key,
+                                 size_t *dac_key_len) {
 #if SSS_HAVE_HOSTCRYPTO_OPENSSL
   FILE *fp = NULL;
   EVP_PKEY *pkey = NULL;
@@ -110,8 +117,8 @@ static int get_dac_key_from_file(const char* filename, uint8_t* dac_key, size_t*
   pkey = PEM_read_PrivateKey(fp, NULL, NULL, NULL);
   if (pkey == NULL) {
     // Try DER format
-    if(fseek(fp, 0, SEEK_SET) != 0){
-      if(fclose(fp) != 0){
+    if (fseek(fp, 0, SEEK_SET) != 0) {
+      if (fclose(fp) != 0) {
         return 0;
       }
       return 0;
@@ -119,7 +126,7 @@ static int get_dac_key_from_file(const char* filename, uint8_t* dac_key, size_t*
     pkey = d2i_PrivateKey_fp(fp, NULL);
   }
 
-  if(fclose(fp) != 0){
+  if (fclose(fp) != 0) {
     return 0;
   }
 
@@ -153,8 +160,8 @@ static int get_dac_key_from_file(const char* filename, uint8_t* dac_key, size_t*
 #endif //#if SSS_HAVE_HOSTCRYPTO_OPENSSL
 }
 
-static int get_dac_cert_from_file(const char* filename, uint8_t* dac_cert, size_t* dac_cert_len)
-{
+static int get_dac_cert_from_file(const char *filename, uint8_t *dac_cert,
+                                  size_t *dac_cert_len) {
 #if SSS_HAVE_HOSTCRYPTO_OPENSSL
   FILE *fp = NULL;
   X509 *cert = NULL;
@@ -170,8 +177,8 @@ static int get_dac_cert_from_file(const char* filename, uint8_t* dac_cert, size_
   cert = PEM_read_X509(fp, NULL, NULL, NULL);
   if (cert == NULL) {
     // Try DER format
-    if(fseek(fp, 0, SEEK_SET) != 0){
-      if(fclose(fp) != 0) {
+    if (fseek(fp, 0, SEEK_SET) != 0) {
+      if (fclose(fp) != 0) {
         return 0;
       }
       return 0;
@@ -179,7 +186,7 @@ static int get_dac_cert_from_file(const char* filename, uint8_t* dac_cert, size_
     cert = d2i_X509_fp(fp, NULL);
   }
 
-  if(fclose(fp) != 0) {
+  if (fclose(fp) != 0) {
     return 0;
   }
 
@@ -197,7 +204,8 @@ static int get_dac_cert_from_file(const char* filename, uint8_t* dac_cert, size_
     ret = 0;
     printf("Successfully read certificate (length: %d bytes)\n", der_len);
   } else {
-    printf("Buffer too small or invalid certificate (required: %d, available: %zu)\n",
+    printf("Buffer too small or invalid certificate (required: %d, available: "
+           "%zu)\n",
            der_len, *dac_cert_len);
   }
 
@@ -207,7 +215,6 @@ static int get_dac_cert_from_file(const char* filename, uint8_t* dac_cert, size_
   return -1;
 #endif //#if SSS_HAVE_HOSTCRYPTO_OPENSSL
 }
-
 
 sss_status_t ex_sss_entry(ex_sss_boot_ctx_t *pCtx) {
 
@@ -228,7 +235,8 @@ sss_status_t ex_sss_entry(ex_sss_boot_ctx_t *pCtx) {
   uint32_t tp_spake_itter_to_be_used = 1000;
   uint8_t provision_with_policy = 0;
   uint8_t provision_verifiers = 0;
-  int parameter_error    = 1;
+  int parameter_error = 1;
+  uint8_t se05x_t4t_access_ctrl_option = se05x_t4t_ac_invalid;
 
   uint8_t dac_key[256] = {0};
   uint8_t *dac_key_ptr = NULL;
@@ -249,10 +257,10 @@ sss_status_t ex_sss_entry(ex_sss_boot_ctx_t *pCtx) {
         return 0;
       } else if (strcmp(argv[i], "--doreset") == 0) {
         do_reset = 1;
-        parameter_error    = 0;
+        parameter_error = 0;
       } else if (strcmp(argv[i], "--only_t4t_provision") == 0) {
         only_t4t_provision = 1;
-        parameter_error    = 0;
+        parameter_error = 0;
       } else if (strcmp(argv[i], "--qrcode") == 0) {
         if (argc <= i + 1) {
           printf("No QR code passed \n");
@@ -263,44 +271,44 @@ sss_status_t ex_sss_entry(ex_sss_boot_ctx_t *pCtx) {
         memcpy(qrcode, argv[i], strlen(argv[i]));
         qrcode_ptr = &qrcode[0];
         is_qr_code = 1;
-        parameter_error    = 0;
-      } else if(strcmp(argv[i], "--rawdata") == 0) {
-        if(argc <= i + 1) {
+        parameter_error = 0;
+      } else if (strcmp(argv[i], "--rawdata") == 0) {
+        if (argc <= i + 1) {
           printf("No raw file name passed\n");
           return 0;
         }
         i++;
         FILE *fp = fopen(argv[i], "r");
-        if(fp == NULL) {
+        if (fp == NULL) {
           printf("Failed to open file\n");
           return 0;
         }
         char hexstr[1024] = {0};
-        if(fgets(hexstr, sizeof(hexstr), fp) == NULL){
+        if (fgets(hexstr, sizeof(hexstr), fp) == NULL) {
           fclose(fp);
           return 0;
         }
         fclose(fp);
         char *p = hexstr;
         qrcodeLen = 0;
-        while (*p && *(p+1) && qrcodeLen < sizeof(qrcode)) {
-            unsigned int byte;
-            if (sscanf(p, "%02x", &byte) == 1) {
-                qrcode[qrcodeLen++] = (uint8_t)byte;
-            }
-            p += 2;
+        while (*p && *(p + 1) && qrcodeLen < sizeof(qrcode)) {
+          unsigned int byte;
+          if (sscanf(p, "%02x", &byte) == 1) {
+            qrcode[qrcodeLen++] = (uint8_t)byte;
+          }
+          p += 2;
         }
         qrcode_ptr = &qrcode[0];
-        parameter_error    = 0;
+        parameter_error = 0;
       } else if (strcmp(argv[i], "--wifi_net_interface") == 0) {
         device_network_type |= wiFiNetworkInterface;
-        parameter_error    = 0;
+        parameter_error = 0;
       } else if (strcmp(argv[i], "--thread_net_interface") == 0) {
         device_network_type |= threadNetworkInterface;
-        parameter_error    = 0;
+        parameter_error = 0;
       } else if (strcmp(argv[i], "--ethernet_net_interface") == 0) {
         device_network_type |= ethernetNetworkInterface;
-        parameter_error    = 0;
+        parameter_error = 0;
       } else if (strcmp(argv[i], "--tp_spake_passcode_set_no") == 0) {
         char *value;
         long tmp = 0;
@@ -317,7 +325,7 @@ sss_status_t ex_sss_entry(ex_sss_boot_ctx_t *pCtx) {
           return -1;
         }
         tp_spake_passcode_set_no = (uint8_t)tmp;
-        parameter_error    = 0;
+        parameter_error = 0;
       } else if (strcmp(argv[i], "--tp_spake_itter_to_be_used") == 0) {
         char *value;
         long tmp = 0;
@@ -339,59 +347,57 @@ sss_status_t ex_sss_entry(ex_sss_boot_ctx_t *pCtx) {
               tp_spake_itter_to_be_used == 10000 ||
               tp_spake_itter_to_be_used == 50000 ||
               tp_spake_itter_to_be_used == 100000)) {
-          printf("tp_spake_itter_to_be_used value can be only 1000, 5000, 10000, "
-                 "50000 or 100000 \n");
+          printf(
+              "tp_spake_itter_to_be_used value can be only 1000, 5000, 10000, "
+              "50000 or 100000 \n");
           return 0;
         }
-        parameter_error    = 0;
+        parameter_error = 0;
       } else if (strcmp(argv[i], "--ec_key_session_key") == 0) {
         do_ec_key_provision = 1;
-        parameter_error    = 0;
+        parameter_error = 0;
       } else if (strcmp(argv[i], "--user_id_session_key") == 0) {
         do_user_id_provision = 1;
-        parameter_error    = 0;
+        parameter_error = 0;
       } else if (strcmp(argv[i], "--aes_key_session_key") == 0) {
         do_aes_key_provision = 1;
-        parameter_error    = 0;
+        parameter_error = 0;
       } else if (strcmp(argv[i], "--provision_with_policy") == 0) {
         provision_with_policy = 1;
-        parameter_error    = 0;
-      } else if (strcmp(argv[i], "--dac_key") == 0)
-      {
+        parameter_error = 0;
+      } else if (strcmp(argv[i], "--dac_key") == 0) {
         if (argc <= i + 1) {
           printf("No DAC key file passed \n");
           return 0;
         }
         i++;
-        const char* filename = argv[i];
+        const char *filename = argv[i];
         dac_key_len = sizeof(dac_key);
-        if (get_dac_key_from_file(filename, dac_key, &dac_key_len) == -1)
-        {
-          printf("Error in reading DAC key file. The example will provision default keys to SE051H ");
+        if (get_dac_key_from_file(filename, dac_key, &dac_key_len) == -1) {
+          printf("Error in reading DAC key file. The example will provision "
+                 "default keys to SE051H ");
           dac_key_len = 0;
-        }
-        else{
+        } else {
           dac_key_ptr = dac_key;
         }
-        parameter_error    = 0;
-      }
-      else if (strcmp(argv[i], "--dac_cert") == 0) {
+        parameter_error = 0;
+      } else if (strcmp(argv[i], "--dac_cert") == 0) {
         if (argc <= i + 1) {
           printf("No DAC certificate file passed \n");
           return 0;
         }
         i++;
-        const char* filename = argv[i];
+        const char *filename = argv[i];
         dac_cert_len = sizeof(dac_cert);
 
         dac_cert_len = dac_cert_len - 4;
 
-        if (get_dac_cert_from_file(filename, &dac_cert[4], &dac_cert_len) == -1)
-        {
-          printf("Error in reading DAC certificate file. The example will provision default certificate to SE051H\n");
+        if (get_dac_cert_from_file(filename, &dac_cert[4], &dac_cert_len) ==
+            -1) {
+          printf("Error in reading DAC certificate file. The example will "
+                 "provision default certificate to SE051H\n");
           dac_cert_len = 0;
-        }
-        else{
+        } else {
           dac_cert[0] = 0x31;
           dac_cert[1] = 0x00;
           dac_cert[2] = (uint8_t)(dac_cert_len & 0xFF);
@@ -399,10 +405,10 @@ sss_status_t ex_sss_entry(ex_sss_boot_ctx_t *pCtx) {
           dac_cert_len = dac_cert_len + 4;
           dac_cert_ptr = dac_cert;
         }
-        parameter_error    = 0;
+        parameter_error = 0;
       } else if (strcmp(argv[i], "--provision_verifiers") == 0) {
         provision_verifiers = 1;
-        parameter_error    = 0;
+        parameter_error = 0;
       } else if (strcmp(argv[i], "--delete_key") == 0) {
         if (argc <= i + 1) {
           printf("No key ID passed \n");
@@ -417,41 +423,56 @@ sss_status_t ex_sss_entry(ex_sss_boot_ctx_t *pCtx) {
         }
         delete_keyid = (uint32_t)tmp;
         do_delete_key = 1;
-        parameter_error    = 0;
+        parameter_error = 0;
       } else if (strcmp(argv[i], "--do_readidlist") == 0) {
         do_readidlist = 1;
-        parameter_error    = 0;
-      }
-      else {
-          parameter_error = 1;
-          break;
+        parameter_error = 0;
+      } else if (strcmp(argv[i], "--t4t_enable_read") == 0) {
+        se05x_t4t_access_ctrl_option = se05x_t4t_ac_enable_read;
+        parameter_error = 0;
+      } else if (strcmp(argv[i], "--t4t_disable_read") == 0) {
+        se05x_t4t_access_ctrl_option = se05x_t4t_ac_disable_read;
+        parameter_error = 0;
+      } else if (strcmp(argv[i], "--t4t_enable_write") == 0) {
+        se05x_t4t_access_ctrl_option = se05x_t4t_ac_enable_write;
+        parameter_error = 0;
+      } else if (strcmp(argv[i], "--t4t_disable_write") == 0) {
+        se05x_t4t_access_ctrl_option = se05x_t4t_ac_disable_write;
+        parameter_error = 0;
+      } else {
+        parameter_error = 1;
+        break;
       }
     }
   } else {
-      parameter_error = 1;
+    parameter_error = 1;
   }
 
-  if(parameter_error) {
+  if (parameter_error) {
     print_help();
     return 0;
   }
 
-  if (do_reset == 0 && do_ec_key_provision == 0 && do_user_id_provision == 0 && do_aes_key_provision == 0 && only_t4t_provision == 0 && do_delete_key == 0 && do_readidlist == 0) {
+  if (do_reset == 0 && do_ec_key_provision == 0 && do_user_id_provision == 0 &&
+      do_aes_key_provision == 0 && only_t4t_provision == 0 &&
+      do_delete_key == 0 && do_readidlist == 0 &&
+      se05x_t4t_access_ctrl_option == 0) {
     if (device_network_type == invalidNetworkInterface) {
-      printf("Specify at-least one network interface type (--wifi_net_interface or --thread_net_interface or --ethernet_net_interface) ");
+      printf(
+          "Specify at-least one network interface type (--wifi_net_interface "
+          "or --thread_net_interface or --ethernet_net_interface) ");
       print_help();
       return 0;
     }
   }
 
-  se051h_nfc_comm_prov(pCtx, do_reset, only_t4t_provision, qrcode_ptr,
-                       qrcodeLen, is_qr_code, device_network_type, tp_spake_passcode_set_no,
-                       tp_spake_itter_to_be_used, do_ec_key_provision,
-                       do_aes_key_provision, do_user_id_provision, provision_with_policy,
-                       dac_key_ptr, dac_key_len,
-                       dac_cert_ptr, dac_cert_len,
-					             provision_verifiers,
-                       do_delete_key, delete_keyid, do_readidlist);
+  se051h_nfc_comm_prov(
+      pCtx, do_reset, only_t4t_provision, qrcode_ptr, qrcodeLen, is_qr_code,
+      device_network_type, tp_spake_passcode_set_no, tp_spake_itter_to_be_used,
+      do_ec_key_provision, do_aes_key_provision, do_user_id_provision,
+      provision_with_policy, dac_key_ptr, dac_key_len, dac_cert_ptr,
+      dac_cert_len, provision_verifiers, do_delete_key, delete_keyid,
+      do_readidlist, se05x_t4t_access_ctrl_option);
 
   return kStatus_SSS_Success;
 }

@@ -10,9 +10,9 @@
 
 #include <ex_sss.h>
 #include <ex_sss_boot.h>
-#include <se05x_get_passcode.h>
 #include <nxEnsure.h>
 #include <nxLog_App.h>
+#include <se05x_get_passcode.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -67,24 +67,24 @@ sss_status_t ex_sss_entry(ex_sss_boot_ctx_t *pCtx) {
 
   int argc = gex_sss_argc;
   const char **argv = gex_sss_argv;
-  int parameter_error    = 1;
+  int parameter_error = 1;
 
   uint8_t passcode_set_no = 1;
-  
+
   if ((argc >= 4)) {
-    for (int i = 1; i < argc - 1 ; i++) {
+    for (int i = 1; i < argc - 1; i++) {
       if (strcmp(argv[i], "--help") == 0) {
         print_help();
         return 0;
       } else if (strcmp(argv[i], "--tp_passcode_set_no") == 0) {
         char *value;
         long tmp = 0;
-  
+
         if (argc <= i + 1) {
           printf("No pass-code set number passed \n");
           return 0;
         }
-  
+
         i++;
         tmp = strtol(argv[i], &value, 10);
         if (tmp <= 0 || tmp > 3) {
@@ -99,10 +99,10 @@ sss_status_t ex_sss_entry(ex_sss_boot_ctx_t *pCtx) {
       }
     }
   } else {
-      parameter_error = 1;
+    parameter_error = 1;
   }
-  
-  if(parameter_error) {
+
+  if (parameter_error) {
     print_help();
     return 0;
   }

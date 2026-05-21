@@ -1,6 +1,12 @@
 # Plug-And-Trust Mini Package Change Log
 
 
+## v04.07.04.03
+
+- Command line options for T4T applet access control commands added
+- SE051Hv2 board support (Enable pin and NFC comm complete GPIO notification)
+- T4T functions disabled for secure session
+
 ## v04.07.04.02
 
 - PCSC support added for cmake build of examples

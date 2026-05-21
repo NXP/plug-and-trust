@@ -26,11 +26,11 @@ extern void PWR_AllowDeviceToSleep();
  **********************************************************************************************************************/
 
 #if defined(CONFIG_SE05X_HOST_GPIO)
-/*Use PTA19 for SE notification control with OM-SE051ARD-H on MCXW72 FRDM*/
-/*Connect SEI_O2 on  OM-SE051ARD-H to PTA19 on MCXW72 FRDM*/
-#define SE05X_NOTIFY_PORT          PORTA
-#define SE05X_NOTIFY_GPIO          GPIOA
-#define SE05X_NOTIFY_PIN           19U
+/*Use PTC4 for SE notification control with OM-SE051ARD-H on MCXW72 FRDM*/
+/*Connect SEI_O2 on  OM-SE051ARD-H to PTC4 on MCXW72 FRDM*/
+#define SE05X_NOTIFY_PORT          PORTC
+#define SE05X_NOTIFY_GPIO          GPIOC
+#define SE05X_NOTIFY_PIN           4U
 /***********************************************************************************************************************
  * Variables
  **********************************************************************************************************************/
@@ -38,7 +38,7 @@ GPIO_HANDLE_DEFINE(gpioHandleNotify);
 hal_gpio_pin_config_t gpioNotifyPinConfig = {
     .direction = kHAL_GpioDirectionIn,
     .level = 0,
-    .port = 0, /*PORTA*/
+    .port = 2, /*PORTC*/
     .pin = SE05X_NOTIFY_PIN,
 };
 /***********************************************************************************************************************
@@ -55,6 +55,8 @@ static void SE05X_HandleFallingEdge(void *param);
  */
 static void SE05X_HandleFallingEdge(void *param)
 {
+    /* Add delay before reset to allow any pending operations to complete can be configurable to platforms*/
+    SDK_DelayAtLeastUs(90000, CLOCK_GetFreq(kCLOCK_CoreSysClk));
     /* Perform system reset - this is a safe operation in task context */
     NVIC_SystemReset();
 
@@ -89,7 +91,7 @@ void * se05x_host_gpio_notification_monitor_init(void * arg)
                                    (uint16_t)kPORT_LowDriveStrength,
                                    /* Normal drive strength is configured */
                                    (uint16_t)kPORT_NormalDriveStrength,
-                                   /* Pin is configured as PTA19 */
+                                   /* Pin is configured as PTC4 */
                                    (uint16_t)kPORT_MuxAsGpio,
                                    /* Pin Control Register fields [15:0] are not locked */
                                    (uint16_t)kPORT_UnlockRegister};
@@ -136,8 +138,15 @@ int se05x_host_gpio_power_set(bool is_high)
     if(is_high)
         PWR_DisallowDeviceToSleep();
 #endif  
-    /*Use PTC1 for SE ENA control with OM-SE051ARD-H on MCXW72 FRDM*/
-    GPIO_PinWrite(GPIOC, 1U, (uint8_t) is_high);
+    bool value = false;
+#if CONFIG_SE05X_BOARD_H2
+    value = (is_high == true) ? false : true;
+#else
+    value = is_high;
+#endif
+
+    /*Use PTC0 for SE ENA control with OM-SE051ARD-H on MCXW72 FRDM*/
+    GPIO_PinWrite(GPIOC, 0U, (uint8_t) value);
     /* Add delay to allow SE05x to power up and initialize before I2C communication */
     if (is_high)
     {

@@ -13,7 +13,8 @@ extern "C" {
 #include <ex_sss_boot.h>
 
 /**
- * @brief provision SE05x secure element with device attestation key pair and certificate.
+ * @brief provision SE05x secure element with device attestation key pair and
+ * certificate.
  * @param[in] pCtx - Boot context. (Passing NULL will ensure the application
  * opens the session to SE).
  * @return None

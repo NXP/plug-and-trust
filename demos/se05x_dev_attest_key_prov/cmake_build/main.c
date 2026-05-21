@@ -8,13 +8,13 @@
 /* Includes                                                                   */
 /* ************************************************************************** */
 
-#include <stdio.h>
-#include <string.h>
 #include <ex_sss.h>
 #include <ex_sss_boot.h>
-#include <se05x_dev_attest_key_prov.h>
 #include <nxEnsure.h>
 #include <nxLog_App.h>
+#include <se05x_dev_attest_key_prov.h>
+#include <stdio.h>
+#include <string.h>
 
 static ex_sss_boot_ctx_t gex_nfc_comm_prov_boot_ctx;
 

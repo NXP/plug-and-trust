@@ -68,8 +68,8 @@ static void SE05X_HandleFallingEdge(void)
     /* Restart Matter application to handle the SE05x notification */
     LOG_I("RT1060: SE05X notification received, restarting application...");
 
-    /* Small delay to ensure log messages are flushed to output */
-    vTaskDelay(pdMS_TO_TICKS(100));
+    /* Add delay before reset to allow any pending operations to complete can be configurable to platforms*/
+    SDK_DelayAtLeastUs(90000, CLOCK_GetFreq(kCLOCK_CoreSysClk));
 
     /* Perform system reset - this is a safe operation in task context */
     NVIC_SystemReset();
@@ -263,7 +263,13 @@ int se05x_host_gpio_power_deinit()
 int se05x_host_gpio_power_set(bool is_high)
 {
 #if defined(CONFIG_SE05X_HOST_GPIO)
-    GPIO_PinWrite(GPIO1, 3U, (uint8_t) is_high);
+    bool value = false;
+#if CONFIG_SE05X_BOARD_H2
+    value = (is_high == true) ? false : true;
+#else
+    value = is_high;
+#endif
+    GPIO_PinWrite(GPIO1, 3U, (uint8_t) value);
 #else
     LOG_I("RT1060: CONFIG_SE05X_HOST_GPIO not defined");
 #endif

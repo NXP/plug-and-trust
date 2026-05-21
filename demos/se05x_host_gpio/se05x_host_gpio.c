@@ -7,13 +7,13 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <nxLog_App.h>
-#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #if defined(CONFIG_SE05X_HOST_GPIO_FRDM_IMX93) && CONFIG_SE05X_HOST_GPIO_FRDM_IMX93 == 1
 #include <unistd.h>
 #endif
+#include "se05x_host_gpio.h"
 
 #if defined(CONFIG_SE05X_HOST_GPIO_FRDM_IMX93) && CONFIG_SE05X_HOST_GPIO_FRDM_IMX93 == 1
 #include <gpiod.h>
@@ -247,8 +247,11 @@ int se05x_host_gpio_power_set(bool is_high)
         LOG_E("GPIO request is NULL");
         return -1;
     }
-
+#if defined(CONFIG_SE05X_BOARD_H2) && CONFIG_SE05X_BOARD_H2 == 1
+    ret = gpiod_line_request_set_value(request, line_offset, is_high ? GPIOD_LINE_VALUE_INACTIVE : GPIOD_LINE_VALUE_ACTIVE);
+#else
     ret = gpiod_line_request_set_value(request, line_offset, is_high ? GPIOD_LINE_VALUE_ACTIVE : GPIOD_LINE_VALUE_INACTIVE);
+#endif
     if (ret != 0)
     {
         LOG_E("Failed to set value");

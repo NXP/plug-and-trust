@@ -6,6 +6,9 @@
 #pragma once
 #include <stdbool.h>
 
+/* Make this to 1 in case SE05x ARD H2 board is used */
+#define CONFIG_SE05X_BOARD_H2 0
+
 #ifdef __cplusplus
 extern "C" {
 #endif

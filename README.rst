@@ -88,6 +88,7 @@ Prerequisite
   - While installing when asked where to copy OpenSSL DLLs: 'The OpenSSL binaries (/bin) directory'
   - Ensure the installation includes the header files include directory
   - Add OpenSSL to your system PATH or configure CMake to find it at `C:\Program Files\OpenSSL-Win64\include`
+  - Add OpenSSL bin directory to your system PATH: `C:\Program Files\OpenSSL-Win64\bin`
 
 
 ECC example

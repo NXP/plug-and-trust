@@ -15,9 +15,9 @@
 #include <fsl_sss_se05x_apis.h>
 #include <nxEnsure.h>
 #include <nxLog_App.h>
+#include <se05x_dev_attest_key_prov.h>
 #include <stdio.h>
 #include <string.h>
-#include <se05x_dev_attest_key_prov.h>
 
 /* clang-format off */
 const uint8_t keyPairData[] = {
@@ -216,13 +216,13 @@ void se05x_dev_attest_key_prov(ex_sss_boot_ctx_t *pCtx) {
       printf("se05x error: %s\n", "ex_sss_boot_connectstring failed");
       return;
     }
-  
+
     status = ex_sss_boot_open(&gex_sss_chip_ctx, portName);
     if (kStatus_SSS_Success != status) {
       printf("se05x error: %s\n", "ex_sss_boot_open failed");
       return;
     }
-  
+
     status = ex_sss_key_store_and_object_init(&gex_sss_chip_ctx);
     if (kStatus_SSS_Success != status) {
       printf("se05x error: %s\n", "ex_sss_key_store_and_object_init failed");
