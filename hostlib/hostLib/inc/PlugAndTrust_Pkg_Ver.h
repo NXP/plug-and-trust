@@ -12,11 +12,11 @@
 /* clang-format off */
 #define PLUGANDTRUST_PROD_NAME          "PlugAndTrust"
 #define PLUGANDTRUST_VER_STRING_NUM     "v04.07.04_03"
-#define PLUGANDTRUST_PROD_NAME_VER_FULL "PlugAndTrust_v04.07.04_03"
+#define PLUGANDTRUST_PROD_NAME_VER_FULL "PlugAndTrust_v04.07.04_04"
 #define PLUGANDTRUST_VER_MAJOR          (4u)
 #define PLUGANDTRUST_VER_MINOR          (7u)
 #define PLUGANDTRUST_VER_DEV            (4u)
-#define PLUGANDTRUST_MATTER_INT_VER     (3u)
+#define PLUGANDTRUST_MATTER_INT_VER     (4u)
 
 /* v04.07 = 40007u */
 #define PLUGANDTRUST_VER_MAJOR_MINOR ( 0 \

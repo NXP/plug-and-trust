@@ -1,5 +1,9 @@
 # Plug-And-Trust Mini Package Change Log
 
+## v04.07.04.04
+
+- NFC commissioning Provision example - Do reset option (Deleting all objects) updated to delete descriptor cluster with end point.
+- NFC commissioning Provision example - New options added (--doreset-cryptoobjects to delete all crypto objects in SE05x)
 
 ## v04.07.04.03
 

@@ -841,6 +841,7 @@ extern "C" {
  * @param[in] delete_keyid - Key id of crypto object to be deleted
  * @param[in] do_readidlist - Display all crypto object Ids
  * @param[in] se05x_t4t_ac_opt - Set T4T applet access control
+ * @param[in] doresetcryproobjects - Delete all crypto objects
  *
  * @return None
  */
@@ -853,7 +854,7 @@ void se051h_nfc_comm_prov(
     uint8_t provision_with_policy, uint8_t *dac_key, size_t dac_key_len,
     uint8_t *dac_cert, size_t dac_cert_len, uint8_t provision_verifiers,
     uint8_t do_delete_key, uint32_t delete_keyid, uint8_t do_readidlist,
-    uint8_t se05x_t4t_ac_opt);
+    uint8_t se05x_t4t_ac_opt, uint8_t doresetcryproobjects);
 
 #ifdef __cplusplus
 }

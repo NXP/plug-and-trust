@@ -52,10 +52,16 @@ static void print_help() {
   printf(" --delete_key <HEX_KEYID>     ==> Delete key with specified hex key "
          "ID (e.g., 0x7FFF3002). \n");
   printf(" --do_readidlist              ==> Read ID list from SE05x. \n");
-  printf(" --t4t_enable_read            ==> Enable Contact less Read. (Not to be used with PCSC interface) \n");
-  printf(" --t4t_disable_read           ==> Disable Contact less Read. (Not to be used with PCSC interface) \n");
-  printf(" --t4t_enable_write           ==> Enable Contact less Write. (Not to be used with PCSC interface) \n");
-  printf(" --t4t_disable_write          ==> Disable Contact less Write. (Not to be used with PCSC interface) \n");
+  printf(" --t4t_enable_read            ==> Enable Contact less Read. (Not to "
+         "be used with PCSC interface) \n");
+  printf(" --t4t_disable_read           ==> Disable Contact less Read. (Not to "
+         "be used with PCSC interface) \n");
+  printf(" --t4t_enable_write           ==> Enable Contact less Write. (Not to "
+         "be used with PCSC interface) \n");
+  printf(" --t4t_disable_write          ==> Disable Contact less Write. (Not "
+         "to be used with PCSC interface) \n");
+  printf(" --doreset-cryptoobjects      ==> Delete all crypto objects. (Any "
+         "other inputs to example will be ignored.) \n");
 
   return;
 }
@@ -179,6 +185,7 @@ int main(int argc, char *argv[]) {
   uint8_t provision_with_policy = 0;
   uint8_t provision_verifiers = 0;
   uint8_t se05x_t4t_access_ctrl_option = se05x_t4t_ac_invalid;
+  uint8_t doresetcryproobjects = 0;
 
   uint8_t dac_key[256] = {0};
   uint8_t *dac_key_ptr = NULL;
@@ -368,6 +375,8 @@ int main(int argc, char *argv[]) {
       se05x_t4t_access_ctrl_option = se05x_t4t_ac_enable_write;
     } else if (strcmp(argv[i], "--t4t_disable_write") == 0) {
       se05x_t4t_access_ctrl_option = se05x_t4t_ac_disable_write;
+    } else if (strcmp(argv[i], "--doreset-cryptoobjects") == 0) {
+      doresetcryproobjects = 1;
     } else {
       print_help();
       return 0;
@@ -377,7 +386,8 @@ int main(int argc, char *argv[]) {
   if (do_reset == 0 && do_ec_key_provision == 0 && do_user_id_provision == 0 &&
       do_aes_key_provision == 0 && only_t4t_provision == 0 &&
       do_delete_key == 0 && do_readidlist == 0 &&
-      se05x_t4t_access_ctrl_option == 0) {
+      se05x_t4t_access_ctrl_option == 0 &&
+      doresetcryproobjects == 0) {
     if (device_network_type == invalidNetworkInterface) {
       printf(
           "Specify at-least one network interface type (--wifi_net_interface "
@@ -393,7 +403,7 @@ int main(int argc, char *argv[]) {
       do_ec_key_provision, do_aes_key_provision, do_user_id_provision,
       provision_with_policy, dac_key_ptr, dac_key_len, dac_cert_ptr,
       dac_cert_len, provision_verifiers, do_delete_key, delete_keyid,
-      do_readidlist, se05x_t4t_access_ctrl_option);
+      do_readidlist, se05x_t4t_access_ctrl_option, doresetcryproobjects);
 
   return 0;
 }

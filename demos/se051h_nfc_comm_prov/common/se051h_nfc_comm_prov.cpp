@@ -24,6 +24,10 @@
 #include <stdio.h>
 #include <string.h>
 
+#define VERSION_8_26 ((8) << (8 * 3) | (26) << (8 * 2) | (32) << (8 * 1))
+#define VERSION_8_28 ((8) << (8 * 3) | (28) << (8 * 2) | (32) << (8 * 1))
+#define VERSION_8_30 ((8) << (8 * 3) | (30) << (8 * 2) | (32) << (8 * 1))
+
 static ex_sss_boot_ctx_t gex_sss_chip_ctx;
 
 static uint8_t policy = 0;
@@ -115,10 +119,31 @@ static sss_status_t se051h_set_key(const uint8_t *buffer, size_t bufferLen,
   return status;
 }
 
+static smStatus_t se05x_delete_crypto_object(ex_sss_boot_ctx_t *pCtx,
+                                             SE05x_CryptoObjectID_t keyid) {
+
+  smStatus_t smstatus = SM_NOT_OK;
+
+  LOG_I("Deleting crypto object id : 0x%08X", keyid);
+
+  if (pCtx->ks.session != NULL) {
+    smstatus = Se05x_API_DeleteCryptoObject(
+        &((sss_se05x_session_t *)&pCtx->session)->s_ctx, keyid);
+    if (smstatus != SM_OK) {
+      LOG_E("Error in deleting crypto object");
+      // Ignore the error
+      smstatus = SM_OK;
+    }
+  }
+  return smstatus;
+}
+
 static smStatus_t se05x_delete_key(uint32_t keyid) {
 
   smStatus_t smstatus = SM_NOT_OK;
   SE05x_Result_t exists = kSE05x_Result_NA;
+
+  LOG_I("Deleting object id : 0x%08X", keyid);
 
   if (gex_sss_chip_ctx.ks.session != NULL) {
     smstatus = Se05x_API_CheckObjectExists(
@@ -138,7 +163,9 @@ static smStatus_t se05x_delete_key(uint32_t keyid) {
       LOG_E("Error in Se05x_API_CheckObjectExists");
     }
   }
-  return smstatus;
+  // return SM_OK always, to make sure we delete other keys even if there is a
+  // error in deleting some key.
+  return SM_OK;
 }
 
 #if SSS_HAVE_APPLET_SE051_H
@@ -196,6 +223,7 @@ static smStatus_t se05x_delete_key_with_ep(uint32_t keyid,
         &exists, endpointID);
     if (smstatus == SM_OK) {
       if (exists == kSE05x_Result_SUCCESS) {
+        LOG_I("Deleting object id : " "0x%04X%08X", endpointID, keyid);
         smstatus = Se05x_API_DeleteSecureObject_V2(
             &((sss_se05x_session_t *)&gex_sss_chip_ctx.session)->s_ctx, keyid,
             endpointID);
@@ -1214,6 +1242,32 @@ static sss_status_t se051h_userid_key_provision() {
   smstatus = se05x_delete_key(x);                                              \
   ENSURE_OR_RETURN_ON_ERROR(smstatus == SM_OK, kStatus_SSS_Fail);
 
+#define SE05X_DELETE_CRYPTO_OBJ_TEMPLATE(pCtx, x)                              \
+  smstatus = se05x_delete_crypto_object(pCtx, x);                              \
+  ENSURE_OR_RETURN_ON_ERROR(smstatus == SM_OK, kStatus_SSS_Fail);
+
+static sss_status_t se051h_do_reset_cryptoobjects(ex_sss_boot_ctx_t *pCtx) {
+  smStatus_t smstatus = SM_NOT_OK;
+  uint8_t list[1024] = {0};
+  size_t listlen = sizeof(list);
+  size_t i;
+
+  smstatus = Se05x_API_ReadCryptoObjectList(
+      &((sss_se05x_session_t *)&pCtx->session)->s_ctx, list, &listlen);
+  if (smstatus != SM_OK) {
+    printf("Error in Se05x_API_ReadCryptoObjectList \n");
+    return kStatus_SSS_Fail;
+  }
+
+  for (i = 0; i < listlen; i += 4) {
+    uint32_t cryptoObjectId = list[i + 1] | (list[i + 0] << 8);
+    SE05X_DELETE_CRYPTO_OBJ_TEMPLATE(pCtx,
+                                     (SE05x_CryptoObjectID_t)cryptoObjectId);
+  }
+
+  return kStatus_SSS_Success;
+}
+
 static sss_status_t se051h_do_reset() {
   smStatus_t smstatus = SM_NOT_OK;
 
@@ -1237,7 +1291,19 @@ static sss_status_t se051h_do_reset() {
   SE05X_DELETE_KEY_TEMPLATE(SE051H_NCC_ID);
   SE05X_DELETE_KEY_TEMPLATE(SE051H_VR_ID);
   SE05X_DELETE_KEY_TEMPLATE(SE051H_DESCRIPTOR_CLUSTER_ID);
+
   // se05x_delete_spake2p_crypto_object();
+
+#if SSS_HAVE_APPLET_SE051_H
+  {
+    uint16_t endpoint_id = 0x0001;
+    smstatus = se05x_delete_key_with_ep(SE051H_DESCRIPTOR_CLUSTER_ID, endpoint_id);
+    if (smstatus != SM_OK) {
+      printf("Error in deleting the end point cluster id \n");
+    }
+  }
+#endif
+
   return kStatus_SSS_Success;
 }
 
@@ -1438,11 +1504,9 @@ void se051h_nfc_comm_prov(
     uint8_t provision_with_policy, uint8_t *dac_key, size_t dac_key_len,
     uint8_t *dac_cert, size_t dac_cert_len, uint8_t provision_verifiers,
     uint8_t do_delete_key, uint32_t delete_keyid, uint8_t do_readidlist,
-    uint8_t se05x_t4t_ac_opt) {
+    uint8_t se05x_t4t_ac_opt, uint8_t doresetcryptoobjects) {
   sss_status_t status = kStatus_SSS_Success;
   const char *portName = nullptr;
-
-  LOG_I("Provision the data for NFC comm for applet versions 8.26.x, 8.28.x (PRC1), 8.30.x (PRC2)");
 
   if (se05x_host_gpio_power_init() != 0) {
     LOG_E("SE05x - Error in se05x_host_gpio_power_init function");
@@ -1469,6 +1533,20 @@ void se051h_nfc_comm_prov(
     memcpy(&gex_sss_chip_ctx, pCtx, sizeof(ex_sss_boot_ctx_t));
   }
 
+  // Applet version check
+  {
+    pSe05xSession_t se05xSession = NULL;
+    se05xSession = &((sss_se05x_session_t *)&gex_sss_chip_ctx.session)->s_ctx;
+
+    if (!((se05xSession->applet_version == VERSION_8_26) ||
+          (se05xSession->applet_version == VERSION_8_28) ||
+          (se05xSession->applet_version == VERSION_8_30))) {
+      LOG_I("Provision Example cannot be run on this applet version. \
+Supported versions are 8.26.x, 8.28.x (PRC1), 8.30.x (PRC2)");
+      goto cleanup;
+    }
+  }
+
   if (provision_with_policy) {
     policy = 1;
   }
@@ -1478,6 +1556,14 @@ void se051h_nfc_comm_prov(
     status = se051h_do_reset();
     if (status != kStatus_SSS_Success) {
       LOG_E("Error in se051h_do_reset function");
+    }
+    goto cleanup;
+  }
+
+  if (doresetcryptoobjects) {
+    status = se051h_do_reset_cryptoobjects(&gex_sss_chip_ctx);
+    if (status != kStatus_SSS_Success) {
+      LOG_I("Error in se051h_do_reset_cryptoobjects \n");
     }
     goto cleanup;
   }
@@ -1496,8 +1582,7 @@ void se051h_nfc_comm_prov(
     goto cleanup;
   }
 
-  if (se05x_t4t_ac_opt != 0)
-  {
+  if (se05x_t4t_ac_opt != 0) {
 #if SSS_HAVE_APPLET_SE051_H && SSS_HAVE_SE05X_AUTH_NONE
     switch (se05x_t4t_ac_opt) {
     case se05x_t4t_ac_enable_read: {

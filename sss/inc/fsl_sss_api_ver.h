@@ -10,8 +10,8 @@
 
 /* clang-format off */
 #define SSS_APIS_PROD_NAME          "SSS_APIs"
-#define SSS_APIS_VER_STRING_NUM     "v04.07.04_03"
-#define SSS_APIS_PROD_NAME_VER_FULL "SSS_APIs_v04.07.04_03"
+#define SSS_APIS_VER_STRING_NUM     "v04.07.04_04"
+#define SSS_APIS_PROD_NAME_VER_FULL "SSS_APIs_v04.07.04_04"
 #define SSS_APIS_VER_MAJOR          (4u)
 #define SSS_APIS_VER_MINOR          (7u)
 #define SSS_APIS_VER_DEV            (4u)

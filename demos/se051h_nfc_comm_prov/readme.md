@@ -113,10 +113,11 @@ Note: It is mandatory to pass at-least one network interface.
 --provision_verifiers       ==> Provision dynamic verifiers and passcode
 --delete_key <HEX_KEYID>    ==> Delete key with specified hex key ID (e.g., 0x7FFF3002)
 --do_readidlist             ==> Read ID list from SE05x.
---t4t_enable_read            ==> Enable Contact less Read. (Not to be used with PCSC interface)
---t4t_disable_read           ==> Disable Contact less Read. (Not to be used with PCSC interface)
---t4t_enable_write           ==> Enable Contact less Write. (Not to be used with PCSC interface)
---t4t_disable_write          ==> Disable Contact less Write. (Not to be used with PCSC interface)
+--t4t_enable_read           ==> Enable Contact less Read. (Not to be used with PCSC interface)
+--t4t_disable_read          ==> Disable Contact less Read. (Not to be used with PCSC interface)
+--t4t_enable_write          ==> Enable Contact less Write. (Not to be used with PCSC interface)
+--t4t_disable_write         ==> Disable Contact less Write. (Not to be used with PCSC interface)
+--doreset-cryptoobjects     ==> Delete all crypto objects. (Any other inputs to example will be ignored.)
 ```
 
 # Running provision example on MCUs
