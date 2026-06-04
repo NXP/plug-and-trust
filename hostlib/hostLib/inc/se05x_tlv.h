@@ -13,6 +13,7 @@
 
 #include "nxLog.h"
 #include "nxScp03_Types.h"
+#include "fsl_sss_api.h"
 //#include <smCom.h>
 
 #if SSS_HAVE_SCP_SCP03_SSS

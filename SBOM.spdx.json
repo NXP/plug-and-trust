@@ -2,20 +2,20 @@
   "SPDXID": "SPDXRef-DOCUMENT",
   "spdxVersion": "SPDX-2.3",
   "creationInfo": {
-    "created": "2026-05-21T10:44:15Z",
+    "created": "2026-06-04T07:49:06Z",
     "creators": [
       "Organization: NXP"
     ],
     "licenseListVersion": "3.26"
   },
-  "name": "plug-and-trust-v04.07.04_03",
+  "name": "plug-and-trust-v04.07.04.05",
   "dataLicense": "CC0-1.0",
-  "documentNamespace": "https://nxp.com/spdx/fc48f7cc-cc03-4ab8-86b5-791b63368cf8",
+  "documentNamespace": "https://nxp.com/spdx/f9b8a161-1d0a-48b5-b6c8-7cf43773961f",
   "packages": [
     {
-      "SPDXID": "SPDXRef-package-fc48f7cc-cc03-4ab8-86b5-791b63368cf8",
+      "SPDXID": "SPDXRef-package-f9b8a161-1d0a-48b5-b6c8-7cf43773961f",
       "name": "plug-and-trust",
-      "versionInfo": "v04.07.04_03",
+      "versionInfo": "v04.07.04.05",
       "licenseConcluded": "(BSD-3-Clause)",
       "licenseDeclared": "(BSD-3-Clause)",
       "downloadLocation": "https://github.com/NXP/plug-and-trust",
@@ -25,7 +25,7 @@
       "filesAnalyzed": false
     },
     {
-      "SPDXID": "SPDXRef-package-fc48f7cc-cc03-4ab8-86b5-791b63368cf8---bbb85b99-6163-4bc9-a22d-48d98de906aa",
+      "SPDXID": "SPDXRef-package-f9b8a161-1d0a-48b5-b6c8-7cf43773961f---bbb85b99-6163-4bc9-a22d-48d98de906aa",
       "name": "libgpiod",
       "versionInfo": "2.1.3",
       "licenseConcluded": "LGPL-2.1-or-later",
@@ -44,7 +44,7 @@
       "filesAnalyzed": false
     },
     {
-      "SPDXID": "SPDXRef-package-fc48f7cc-cc03-4ab8-86b5-791b63368cf8---e66b18cd-ed35-42ec-b476-f3584122e0cb",
+      "SPDXID": "SPDXRef-package-f9b8a161-1d0a-48b5-b6c8-7cf43773961f---e66b18cd-ed35-42ec-b476-f3584122e0cb",
       "name": "mbed TLS",
       "versionInfo": "2.28.5",
       "licenseConcluded": "Apache-2.0",
@@ -93,7 +93,7 @@
       "filesAnalyzed": false
     },
     {
-      "SPDXID": "SPDXRef-package-fc48f7cc-cc03-4ab8-86b5-791b63368cf8---93ff9297-b6b8-4bd5-ba66-054528427fa3",
+      "SPDXID": "SPDXRef-package-f9b8a161-1d0a-48b5-b6c8-7cf43773961f---93ff9297-b6b8-4bd5-ba66-054528427fa3",
       "name": "mbed TLS",
       "versionInfo": "3.6.2",
       "licenseConcluded": "Apache-2.0",
@@ -142,7 +142,7 @@
       "filesAnalyzed": false
     },
     {
-      "SPDXID": "SPDXRef-package-fc48f7cc-cc03-4ab8-86b5-791b63368cf8---96f00a5f-9582-434f-8178-fe2e688e1501",
+      "SPDXID": "SPDXRef-package-f9b8a161-1d0a-48b5-b6c8-7cf43773961f---96f00a5f-9582-434f-8178-fe2e688e1501",
       "name": "OpenSSL",
       "versionInfo": "1.1.1l",
       "licenseConcluded": "(OpenSSL AND SSLeay-standalone)",
@@ -191,7 +191,7 @@
       "filesAnalyzed": false
     },
     {
-      "SPDXID": "SPDXRef-package-fc48f7cc-cc03-4ab8-86b5-791b63368cf8---c8c9917a-3e39-42bf-82b9-b02b576e57e9",
+      "SPDXID": "SPDXRef-package-f9b8a161-1d0a-48b5-b6c8-7cf43773961f---c8c9917a-3e39-42bf-82b9-b02b576e57e9",
       "name": "OpenSSL",
       "versionInfo": "3.0.14",
       "licenseConcluded": "Apache-2.0",
@@ -244,32 +244,32 @@
     {
       "spdxElementId": "SPDXRef-DOCUMENT",
       "relationshipType": "DESCRIBES",
-      "relatedSpdxElement": "SPDXRef-package-fc48f7cc-cc03-4ab8-86b5-791b63368cf8"
+      "relatedSpdxElement": "SPDXRef-package-f9b8a161-1d0a-48b5-b6c8-7cf43773961f"
     },
     {
-      "spdxElementId": "SPDXRef-package-fc48f7cc-cc03-4ab8-86b5-791b63368cf8",
+      "spdxElementId": "SPDXRef-package-f9b8a161-1d0a-48b5-b6c8-7cf43773961f",
       "relationshipType": "DYNAMIC_LINK",
-      "relatedSpdxElement": "SPDXRef-package-fc48f7cc-cc03-4ab8-86b5-791b63368cf8---93ff9297-b6b8-4bd5-ba66-054528427fa3"
+      "relatedSpdxElement": "SPDXRef-package-f9b8a161-1d0a-48b5-b6c8-7cf43773961f---93ff9297-b6b8-4bd5-ba66-054528427fa3"
     },
     {
-      "spdxElementId": "SPDXRef-package-fc48f7cc-cc03-4ab8-86b5-791b63368cf8",
+      "spdxElementId": "SPDXRef-package-f9b8a161-1d0a-48b5-b6c8-7cf43773961f",
       "relationshipType": "DYNAMIC_LINK",
-      "relatedSpdxElement": "SPDXRef-package-fc48f7cc-cc03-4ab8-86b5-791b63368cf8---96f00a5f-9582-434f-8178-fe2e688e1501"
+      "relatedSpdxElement": "SPDXRef-package-f9b8a161-1d0a-48b5-b6c8-7cf43773961f---96f00a5f-9582-434f-8178-fe2e688e1501"
     },
     {
-      "spdxElementId": "SPDXRef-package-fc48f7cc-cc03-4ab8-86b5-791b63368cf8",
+      "spdxElementId": "SPDXRef-package-f9b8a161-1d0a-48b5-b6c8-7cf43773961f",
       "relationshipType": "DYNAMIC_LINK",
-      "relatedSpdxElement": "SPDXRef-package-fc48f7cc-cc03-4ab8-86b5-791b63368cf8---bbb85b99-6163-4bc9-a22d-48d98de906aa"
+      "relatedSpdxElement": "SPDXRef-package-f9b8a161-1d0a-48b5-b6c8-7cf43773961f---bbb85b99-6163-4bc9-a22d-48d98de906aa"
     },
     {
-      "spdxElementId": "SPDXRef-package-fc48f7cc-cc03-4ab8-86b5-791b63368cf8",
+      "spdxElementId": "SPDXRef-package-f9b8a161-1d0a-48b5-b6c8-7cf43773961f",
       "relationshipType": "DYNAMIC_LINK",
-      "relatedSpdxElement": "SPDXRef-package-fc48f7cc-cc03-4ab8-86b5-791b63368cf8---c8c9917a-3e39-42bf-82b9-b02b576e57e9"
+      "relatedSpdxElement": "SPDXRef-package-f9b8a161-1d0a-48b5-b6c8-7cf43773961f---c8c9917a-3e39-42bf-82b9-b02b576e57e9"
     },
     {
-      "spdxElementId": "SPDXRef-package-fc48f7cc-cc03-4ab8-86b5-791b63368cf8",
+      "spdxElementId": "SPDXRef-package-f9b8a161-1d0a-48b5-b6c8-7cf43773961f",
       "relationshipType": "DYNAMIC_LINK",
-      "relatedSpdxElement": "SPDXRef-package-fc48f7cc-cc03-4ab8-86b5-791b63368cf8---e66b18cd-ed35-42ec-b476-f3584122e0cb"
+      "relatedSpdxElement": "SPDXRef-package-f9b8a161-1d0a-48b5-b6c8-7cf43773961f---e66b18cd-ed35-42ec-b476-f3584122e0cb"
     }
   ]
 }
