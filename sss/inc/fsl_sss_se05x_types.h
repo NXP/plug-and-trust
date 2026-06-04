@@ -53,7 +53,7 @@
 /* ************************************************************************** */
 
 /** Are we using SE05X as crypto subsystem? */
-#define SSS_SUBSYSTEM_TYPE_IS_SE05X(subsystem) (subsystem == kType_SSS_SE_SE05x)
+#define SSS_SUBSYSTEM_TYPE_IS_SE05X(subsystem) (subsystem == kType_SE_SSS_SE_SE05x)
 
 /** Are we using SE05X as crypto subsystem? */
 #define SSS_SESSION_TYPE_IS_SE05X(session) (session && SSS_SUBSYSTEM_TYPE_IS_SE05X(session->subsystem))
@@ -97,7 +97,7 @@
 
 struct _sss_se05x_session;
 
-/** @copydoc sss_tunnel_t */
+/** @copydoc se_sss_tunnel_t */
 typedef struct _sss_se05x_tunnel_context
 {
     /** Pointer to the base SE050 SEssion */
@@ -116,11 +116,11 @@ typedef struct _sss_se05x_tunnel_context
 #endif
 } sss_se05x_tunnel_context_t;
 
-/** @copydoc sss_session_t */
+/** @copydoc se_sss_session_t */
 typedef struct _sss_se05x_session
 {
     /** Indicates which security subsystem is selected to be used. */
-    sss_type_t subsystem;
+    se_sss_type_t subsystem;
 
     /** Connection context to SE050 */
 
@@ -133,7 +133,7 @@ typedef struct _sss_se05x_session
 
 struct _sss_se05x_object;
 
-/** @copydoc sss_key_store_t */
+/** @copydoc se_sss_key_store_t */
 typedef struct
 {
     /** Pointer to the session */
@@ -143,14 +143,14 @@ typedef struct
 
 } sss_se05x_key_store_t;
 
-/** @copydoc sss_object_t */
+/** @copydoc se_sss_object_t */
 typedef struct _sss_se05x_object
 {
     /** key store holding the data and other properties */
     sss_se05x_key_store_t *keyStore;
-    /** @copydoc sss_object_t::objectType */
+    /** @copydoc se_sss_object_t::objectType */
     uint32_t objectType;
-    /** @copydoc sss_object_t::cipherType */
+    /** @copydoc se_sss_object_t::cipherType */
     uint32_t cipherType;
     /** Application specific key identifier. The keyId is kept in the key  store
      * along with the key data and other properties. */
@@ -164,35 +164,35 @@ typedef struct _sss_se05x_object
 
 } sss_se05x_object_t;
 
-/** @copydoc sss_derive_key_t */
+/** @copydoc se_sss_derive_key_t */
 typedef struct
 {
-    /** @copydoc sss_derive_key_t::session */
+    /** @copydoc se_sss_derive_key_t::session */
     sss_se05x_session_t *session;
-    /** @copydoc sss_derive_key_t::keyObject */
+    /** @copydoc se_sss_derive_key_t::keyObject */
     sss_se05x_object_t *keyObject;
-    /** @copydoc sss_derive_key_t::algorithm */
+    /** @copydoc se_sss_derive_key_t::algorithm */
     sss_algorithm_t algorithm;
-    /** @copydoc sss_derive_key_t::mode */
+    /** @copydoc se_sss_derive_key_t::mode */
     sss_mode_t mode;
 
 } sss_se05x_derive_key_t;
 
-/** @copydoc sss_asymmetric_t */
+/** @copydoc se_sss_asymmetric_t */
 typedef struct
 {
-    /** @copydoc sss_asymmetric_t::session */
+    /** @copydoc se_sss_asymmetric_t::session */
     sss_se05x_session_t *session;
-    /** @copydoc sss_asymmetric_t::keyObject */
+    /** @copydoc se_sss_asymmetric_t::keyObject */
     sss_se05x_object_t *keyObject;
-    /** @copydoc sss_asymmetric_t::algorithm */
+    /** @copydoc se_sss_asymmetric_t::algorithm */
     sss_algorithm_t algorithm;
-    /** @copydoc sss_asymmetric_t::mode */
+    /** @copydoc se_sss_asymmetric_t::mode */
     sss_mode_t mode;
 
 } sss_se05x_asymmetric_t;
 
-/** @copydoc sss_symmetric_t */
+/** @copydoc se_sss_symmetric_t */
 typedef struct
 {
     /** Virtual connection between application (user context) and specific
@@ -200,9 +200,9 @@ typedef struct
     sss_se05x_session_t *session;
     /** Reference to key and it's properties. */
     sss_se05x_object_t *keyObject;
-    /** @copydoc sss_symmetric_t::algorithm */
+    /** @copydoc se_sss_symmetric_t::algorithm */
     sss_algorithm_t algorithm;
-    /** @copydoc sss_symmetric_t::mode */
+    /** @copydoc se_sss_symmetric_t::mode */
     sss_mode_t mode;
 
     /* Implementation specific part */
@@ -216,17 +216,17 @@ typedef struct
     size_t cache_data_len;
 } sss_se05x_symmetric_t;
 
-/** @copydoc sss_mac_t */
+/** @copydoc se_sss_mac_t */
 typedef struct
 {
-    /** copydoc sss_mac_t::session */
+    /** copydoc se_sss_mac_t::session */
     sss_se05x_session_t *session;
-    /** copydoc sss_mac_t::keyObject */
+    /** copydoc se_sss_mac_t::keyObject */
     sss_se05x_object_t *keyObject;
 
-    /** copydoc sss_mac_t::algorithm */
+    /** copydoc se_sss_mac_t::algorithm */
     sss_algorithm_t algorithm;
-    /** copydoc sss_mac_t::mode */
+    /** copydoc se_sss_mac_t::mode */
     sss_mode_t mode;
     /* Implementation specific part */
 
@@ -234,16 +234,16 @@ typedef struct
     SE05x_CryptoObjectID_t cryptoObjectId;
 } sss_se05x_mac_t;
 
-/** @copydoc sss_aead_t */
+/** @copydoc se_sss_aead_t */
 typedef struct
 {
-    /** @copydoc sss_aead_t::session */
+    /** @copydoc se_sss_aead_t::session */
     sss_se05x_session_t *session;
-    /** @copydoc sss_aead_t::keyObject */
+    /** @copydoc se_sss_aead_t::keyObject */
     sss_se05x_object_t *keyObject;
-    /** @copydoc sss_aead_t::algorithm */
+    /** @copydoc se_sss_aead_t::algorithm */
     sss_algorithm_t algorithm;
-    /** @copydoc sss_aead_t::mode */
+    /** @copydoc se_sss_aead_t::mode */
     sss_mode_t mode;
 
     /** Implementation specific part */
@@ -254,27 +254,27 @@ typedef struct
     size_t cache_data_len;
 } sss_se05x_aead_t;
 
-/** @copydoc sss_digest_t */
+/** @copydoc se_sss_digest_t */
 typedef struct
 {
     /** Virtual connection between application (user context) and specific
      * security subsystem and function thereof. */
     sss_se05x_session_t *session;
-    /** @copydoc sss_digest_t::algorithm */
+    /** @copydoc se_sss_digest_t::algorithm */
     sss_algorithm_t algorithm;
-    /** @copydoc sss_digest_t::mode */
+    /** @copydoc se_sss_digest_t::mode */
     sss_mode_t mode;
-    /** @copydoc sss_digest_t::digestFullLen */
+    /** @copydoc se_sss_digest_t::digestFullLen */
     size_t digestFullLen;
     /** Implementation specific part */
 
     SE05x_CryptoObjectID_t cryptoObjectId;
 } sss_se05x_digest_t;
 
-/** @copydoc sss_rng_context_t */
+/** @copydoc se_sss_rng_context_t */
 typedef struct
 {
-    /** @copydoc sss_rng_context_t::session */
+    /** @copydoc se_sss_rng_context_t::session */
     sss_se05x_session_t *session;
 } sss_se05x_rng_context_t;
 
@@ -593,7 +593,7 @@ sss_status_t sss_se05x_key_store_get_key_attst(sss_se05x_key_store_t *keyStore,
  *@}
  */ /* end of se05x_attest */
 
-uint32_t se05x_sssKeyTypeLenToCurveId(sss_cipher_type_t keyType, size_t keyBits);
+uint32_t se05x_sssKeyTypeLenToCurveId(se_sss_cipher_type_t keyType, size_t keyBits);
 
 /** @addtogroup se050_i2cm
  *
@@ -611,7 +611,7 @@ uint32_t se05x_sssKeyTypeLenToCurveId(sss_cipher_type_t keyType, size_t keyBits)
 * @pre p describes I2C master commands.
 * @post p contains execution state of I2C master commands, the I2C master commands can be overwritten to report on execution failure.
 */
-smStatus_t Se05x_i2c_master_txn(sss_session_t *sess, SE05x_I2CM_cmd_t *cmds, uint8_t cmdLen);
+smStatus_t Se05x_i2c_master_txn(se_sss_session_t *sess, SE05x_I2CM_cmd_t *cmds, uint8_t cmdLen);
 
 /** @brief Se05x_i2c_master_attst_txn
  *
@@ -631,8 +631,8 @@ smStatus_t Se05x_i2c_master_txn(sss_session_t *sess, SE05x_I2CM_cmd_t *cmds, uin
  * @pre p describes I2C master commands.
  * @post p contains execution state of I2C master commands, the I2C master commands can be overwritten to report on execution failure.
  */
-smStatus_t Se05x_i2c_master_attst_txn(sss_session_t *sess,
-    sss_object_t *keyObject,
+smStatus_t Se05x_i2c_master_attst_txn(se_sss_session_t *sess,
+    se_sss_object_t *keyObject,
     SE05x_I2CM_cmd_t *p,
     uint8_t *random_attst,
     size_t random_attstLen,

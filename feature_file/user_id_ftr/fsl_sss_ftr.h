@@ -405,7 +405,8 @@
 //#        error "Enable at-least one of 'PTMW_MBedTLS'"
 #endif
 
-
+/* Use PSA APIs instead of native mbedTLS APIs */
+#define SSS_USE_MBEDTLS_PSA_APIS 1
 
 /** PTMW_SE_RESET_LOGIC : Reset logic of Secure Element. The value of this will be used for 'SE_RESET_LOGIC' define in 'se05x_ic_reset' function. Select 1 (Active High) for SE050 and 51. Select 0 (Active low) for SE052.
  */

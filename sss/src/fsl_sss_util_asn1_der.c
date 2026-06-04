@@ -219,7 +219,7 @@ static int check_tag(int tag);
 
 sss_status_t sss_util_asn1_rsa_parse_private(const uint8_t *key,
     size_t keylen,
-    sss_cipher_type_t cipher_type,
+    se_sss_cipher_type_t cipher_type,
     uint8_t **modulus,
     size_t *modlen,
     uint8_t **pubExp,
@@ -586,7 +586,7 @@ exit:
 
 sss_status_t sss_util_asn1_rsa_parse_private_allow_invalid_key(const uint8_t *key,
     size_t keylen,
-    sss_cipher_type_t cipher_type,
+    se_sss_cipher_type_t cipher_type,
     uint8_t **modulus,
     size_t *modlen,
     uint8_t **pubExp,
@@ -1473,7 +1473,7 @@ exit:
     return status;
 }
 
-sss_status_t sss_util_asn1_get_oid_from_sssObj(sss_object_t *pkeyObject, uint32_t *output, uint8_t *outLen)
+sss_status_t sss_util_asn1_get_oid_from_sssObj(se_sss_object_t *pkeyObject, uint32_t *output, uint8_t *outLen)
 {
     sss_status_t status  = kStatus_SSS_Fail;
     uint8_t pbKey[256]   = {0};
@@ -1484,7 +1484,7 @@ sss_status_t sss_util_asn1_get_oid_from_sssObj(sss_object_t *pkeyObject, uint32_
     ENSURE_OR_GO_EXIT(output != NULL);
     ENSURE_OR_GO_EXIT(outLen != NULL);
 
-    status = sss_key_store_get_key(pkeyObject->keyStore, pkeyObject, pbKey, &pbKeyBytetLen, &pbKeyBitLen);
+    status = se_sss_key_store_get_key(pkeyObject->keyStore, pkeyObject, pbKey, &pbKeyBytetLen, &pbKeyBitLen);
 
     if (status != kStatus_SSS_Success) {
         goto exit;

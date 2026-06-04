@@ -143,29 +143,29 @@ ex_sss_boot_ctx_t gex_sss_chip_ctx;
 
 static sss_status_t se05x_set_key(const uint8_t *buffer, size_t bufferLen,
                                   size_t bitLen, sss_key_part_t keyPart,
-                                  sss_cipher_type_t cipherType, uint32_t keyId,
+                                  se_sss_cipher_type_t cipherType, uint32_t keyId,
                                   void *options, size_t optionsLen) {
   sss_status_t status = kStatus_SSS_Success;
-  sss_object_t keyObj;
+  se_sss_object_t keyObj;
 
-  status = sss_key_object_init(&keyObj, &gex_sss_chip_ctx.ks);
+  status = se_sss_key_object_init(&keyObj, &gex_sss_chip_ctx.ks);
   if (status != kStatus_SSS_Success) {
-    printf("Error in sss_key_object_init \n");
+    printf("Error in se_sss_key_object_init \n");
     return status;
   }
 
   status =
-      sss_key_object_allocate_handle(&keyObj, keyId, keyPart, cipherType,
+      se_sss_key_object_allocate_handle(&keyObj, keyId, keyPart, cipherType,
                                      bufferLen, kKeyObject_Mode_Persistent);
   if (status != kStatus_SSS_Success) {
-    printf("Error in sss_key_object_allocate_handle \n");
+    printf("Error in se_sss_key_object_allocate_handle \n");
     return status;
   }
 
-  status = sss_key_store_set_key(&gex_sss_chip_ctx.ks, &keyObj, buffer,
+  status = se_sss_key_store_set_key(&gex_sss_chip_ctx.ks, &keyObj, buffer,
                                  bufferLen, bitLen, options, optionsLen);
   if (status != kStatus_SSS_Success) {
-    printf("Error in sss_key_store_set_key \n");
+    printf("Error in se_sss_key_store_set_key \n");
   }
 
   return status;
@@ -235,7 +235,7 @@ void se05x_dev_attest_key_prov(ex_sss_boot_ctx_t *pCtx) {
   /* Set device attestation keyPair */
   printf("Set DA key at location - %02x \n", DEV_ATTESTATION_KEY_SE05X_ID);
   status = se05x_set_key(keyPairData, sizeof(keyPairData), 256,
-                         kSSS_KeyPart_Pair, kSSS_CipherType_EC_NIST_P,
+                         kSSS_KeyPart_Pair, kSE_SSS_CipherType_EC_NIST_P,
                          DEV_ATTESTATION_KEY_SE05X_ID, NULL, 0);
   if (status != kStatus_SSS_Success) {
     printf("Error in se05x_set_key \n");
@@ -246,7 +246,7 @@ void se05x_dev_attest_key_prov(ex_sss_boot_ctx_t *pCtx) {
   printf("Set DA cert at location - %02x \n", DEV_ATTESTATION_CERT_SE05X_ID);
   status = se05x_set_key(dev_attest_cert, sizeof(dev_attest_cert),
                          sizeof(dev_attest_cert) * 8, kSSS_KeyPart_Default,
-                         kSSS_CipherType_Certificate,
+                         kSE_SSS_CipherType_Certificate,
                          DEV_ATTESTATION_CERT_SE05X_ID, NULL, 0);
   if (status != kStatus_SSS_Success) {
     printf("Error in se05x_set_key \n");
@@ -360,7 +360,7 @@ void se05x_dev_attest_key_prov(ex_sss_boot_ctx_t *pCtx) {
     printf("Set TBS item list binFile at location - %02x \n",
            DEV_ATTESTATION_KEY_SE05X_ID_IS_TBS);
     status = se05x_set_key(tbsData, offset, offset * 8, kSSS_KeyPart_Default,
-                           kSSS_CipherType_Certificate,
+                           kSE_SSS_CipherType_Certificate,
                            DEV_ATTESTATION_KEY_SE05X_ID_IS_TBS, NULL, 0);
     if (status != kStatus_SSS_Success) {
       printf("Error in se05x_set_key \n");
@@ -372,7 +372,7 @@ void se05x_dev_attest_key_prov(ex_sss_boot_ctx_t *pCtx) {
     printf("Set TBS item list binFile at location - %02x \n",
            DEV_ATTESTATION_KEY_SE05X_ID_IS_TBS_TP);
     status = se05x_set_key(tbsData, offset, offset * 8, kSSS_KeyPart_Default,
-                           kSSS_CipherType_Certificate,
+                           kSE_SSS_CipherType_Certificate,
                            DEV_ATTESTATION_KEY_SE05X_ID_IS_TBS_TP, NULL, 0);
     if (status != kStatus_SSS_Success) {
       printf("Error in se05x_set_key \n");
@@ -384,7 +384,7 @@ void se05x_dev_attest_key_prov(ex_sss_boot_ctx_t *pCtx) {
     printf("Set device attestation keyPair (For internal sign) - %02x \n",
            DEV_ATTESTATION_KEY_SE05X_ID_IS);
     status = se05x_set_key(keyPairData, sizeof(keyPairData), 256,
-                           kSSS_KeyPart_Pair, kSSS_CipherType_EC_NIST_P,
+                           kSSS_KeyPart_Pair, kSE_SSS_CipherType_EC_NIST_P,
                            DEV_ATTESTATION_KEY_SE05X_ID_IS, &policy_for_ec_key,
                            sizeof(policy_for_ec_key));
     if (status != kStatus_SSS_Success) {
@@ -397,7 +397,7 @@ void se05x_dev_attest_key_prov(ex_sss_boot_ctx_t *pCtx) {
            CERT_DECLARATION_DATA_SE05X_ID);
     status = se05x_set_key(cert_declaration, sizeof(cert_declaration),
                            sizeof(cert_declaration) * 8, kSSS_KeyPart_Default,
-                           kSSS_CipherType_Certificate,
+                           kSE_SSS_CipherType_Certificate,
                            CERT_DECLARATION_DATA_SE05X_ID, NULL, 0);
     if (status != kStatus_SSS_Success) {
       printf("Error in se05x_set_key \n");

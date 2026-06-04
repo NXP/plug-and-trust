@@ -30,7 +30,7 @@ ex_sss_boot_ctx_t gex_sss_chip_ctx;
 static sss_status_t read_cer_and_get_passcode(uint32_t keyId,
                                               uint8_t passcode_set_no) {
   smStatus_t smstatus = SM_NOT_OK;
-  sss_object_t keyObject = {0};
+  se_sss_object_t keyObject = {0};
   sss_status_t status = kStatus_SSS_Success;
   SE05x_Result_t exists = kSE05x_Result_NA;
   uint8_t buf[1024] = {0};
@@ -52,13 +52,13 @@ static sss_status_t read_cer_and_get_passcode(uint32_t keyId,
   ENSURE_OR_RETURN_ON_ERROR(smstatus == SM_OK, kStatus_SSS_Fail);
 
   if (exists == kSE05x_Result_SUCCESS) {
-    status = sss_key_object_init(&keyObject, &gex_sss_chip_ctx.ks);
+    status = se_sss_key_object_init(&keyObject, &gex_sss_chip_ctx.ks);
     ENSURE_OR_RETURN_ON_ERROR(status == kStatus_SSS_Success, status);
 
-    status = sss_key_object_get_handle(&keyObject, keyId);
+    status = se_sss_key_object_get_handle(&keyObject, keyId);
     ENSURE_OR_RETURN_ON_ERROR(status == kStatus_SSS_Success, status);
 
-    status = sss_key_store_get_key(&gex_sss_chip_ctx.ks, &keyObject, buf,
+    status = se_sss_key_store_get_key(&gex_sss_chip_ctx.ks, &keyObject, buf,
                                    &buflen, &bufbitlen);
     ENSURE_OR_RETURN_ON_ERROR(status == kStatus_SSS_Success, status);
 

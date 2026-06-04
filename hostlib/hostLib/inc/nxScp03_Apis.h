@@ -41,13 +41,13 @@ extern "C" {
 * To Verify SE
 */
 sss_status_t nxScp03_HostLocal_VerifyCardCryptogram(
-    sss_object_t *keyObj, uint8_t *hostChallenge, uint8_t *cardChallenge, uint8_t *cardCryptogram);
+    se_sss_object_t *keyObj, uint8_t *hostChallenge, uint8_t *cardChallenge, uint8_t *cardCryptogram);
 
 /**
 * To Verify Host
 */
 sss_status_t nxScp03_HostLocal_CalculateHostCryptogram(
-    sss_object_t *keyObj, uint8_t *hostChallenge, uint8_t *cardChallenge, uint8_t *hostCryptogram);
+    se_sss_object_t *keyObj, uint8_t *hostChallenge, uint8_t *cardChallenge, uint8_t *hostCryptogram);
 
 /**
 * To sending secure Command APDU
@@ -76,7 +76,7 @@ void nxScp03_setDerivationData(
 * To Generate Session Keys
 */
 sss_status_t nxScp03_Generate_SessionKey(
-    sss_object_t *keyObj, uint8_t *inData, uint32_t inDataLen, uint8_t *outSignature, uint32_t *outSignatureLen);
+    se_sss_object_t *keyObj, uint8_t *inData, uint32_t inDataLen, uint8_t *outSignature, uint32_t *outSignatureLen);
 
 /**
 * To Maintain count of commands

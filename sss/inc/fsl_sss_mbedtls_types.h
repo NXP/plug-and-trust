@@ -20,7 +20,9 @@
 #endif
 
 #if SSS_HAVE_HOSTCRYPTO_MBEDTLS
-
+#if SSS_USE_MBEDTLS_PSA_APIS
+#include <psa/crypto.h>
+#else
 #if !defined(MBEDTLS_CONFIG_FILE)
 #if SSS_HAVE_MBEDTLS_2_X
 #include "mbedtls/config.h"
@@ -39,6 +41,7 @@
 #include <mbedtls/ccm.h>
 #include <mbedtls/md.h>
 #include <mbedtls/pk.h>
+#endif
 
 /**
  * @addtogroup sss_sw_mbedtls
@@ -49,7 +52,7 @@
 /* Defines                                                                    */
 /* ************************************************************************** */
 
-#define SSS_SUBSYSTEM_TYPE_IS_MBEDTLS(subsystem) (subsystem == kType_SSS_mbedTLS)
+#define SSS_SUBSYSTEM_TYPE_IS_MBEDTLS(subsystem) (subsystem == kType_SE_SSS_mbedTLS)
 
 #define SSS_SESSION_TYPE_IS_MBEDTLS(session) (session && SSS_SUBSYSTEM_TYPE_IS_MBEDTLS(session->subsystem))
 
@@ -80,14 +83,15 @@ struct _sss_mbedtls_session;
 typedef struct _sss_mbedtls_session
 {
     /*! Indicates which security subsystem is selected to be used. */
-    sss_type_t subsystem;
-
+    se_sss_type_t subsystem;
+#if !SSS_USE_MBEDTLS_PSA_APIS
     mbedtls_entropy_context *entropy;
     mbedtls_ctr_drbg_context *ctr_drbg;
 
 #ifdef MBEDTLS_FS_IO
     /* Root Path for persitant key store */
     const char *szRootPath;
+#endif
 #endif
 } sss_mbedtls_session_t;
 
@@ -96,13 +100,14 @@ struct _sss_mbedtls_object;
 typedef struct _sss_mbedtls_key_store
 {
     sss_mbedtls_session_t *session;
-
+#if !SSS_USE_MBEDTLS_PSA_APIS
 #ifdef MBEDTLS_FS_IO
     /*! Implementation specific part */
     struct _sss_mbedtls_object **objects;
     uint32_t max_object_count;
 
     keyStoreTable_t *keystore_shadow;
+#endif
 #endif
 } sss_mbedtls_key_store_t;
 
@@ -120,7 +125,7 @@ typedef struct _sss_mbedtls_object
     /*! Implementation specific part */
     /** Contents are malloced, so must be freed */
     uint32_t contents_must_free : 1;
-    /** Type of key. Persistnet/trainsient @ref sss_key_object_mode_t */
+    /** Type of key. Persistnet/trainsient @ref se_sss_key_object_mode_t */
     uint32_t keyMode : 3;
     /** Max size allocated */
     size_t contents_max_size;
@@ -128,9 +133,12 @@ typedef struct _sss_mbedtls_object
     size_t keyBitLen;
     uint32_t user_id;
     sss_mode_t purpose;
-    sss_access_permission_t accessRights;
+    se_sss_access_permission_t accessRights;
     /* malloced / referenced contents */
     void *contents;
+#if SSS_USE_MBEDTLS_PSA_APIS
+    psa_key_id_t psa_key_id;
+#endif
 } sss_mbedtls_object_t;
 
 typedef struct _sss_mbedtls_derive_key
@@ -139,6 +147,9 @@ typedef struct _sss_mbedtls_derive_key
     sss_mbedtls_object_t *keyObject;
     sss_algorithm_t algorithm; /*!  */
     sss_mode_t mode;           /*!  */
+#if SSS_USE_MBEDTLS_PSA_APIS
+    bool operation_initialized;
+#endif
 
 } sss_mbedtls_derive_key_t;
 
@@ -159,9 +170,14 @@ typedef struct _sss_mbedtls_symmetric
     sss_mbedtls_object_t *keyObject; /*!< Reference to key and it's properties. */
     sss_algorithm_t algorithm;       /*!  */
     sss_mode_t mode;                 /*!  */
+#if SSS_USE_MBEDTLS_PSA_APIS
+    psa_cipher_operation_t *cipher_op;
+    bool operation_initialized;
+#else
     mbedtls_cipher_context_t *cipher_ctx;
     uint8_t cache_data[16];
     size_t cache_data_len;
+#endif
 
 } sss_mbedtls_symmetric_t;
 
@@ -171,10 +187,14 @@ typedef struct _sss_mbedtls_mac
     sss_mbedtls_object_t *keyObject; /*! Reference to key and it's properties. */
     sss_algorithm_t algorithm;       /*!  */
     sss_mode_t mode;                 /*!  */
-
+#if SSS_USE_MBEDTLS_PSA_APIS
+    psa_mac_operation_t *mac_op;
+    bool operation_initialized;
+#else
     /*! Implementation specific part */
     mbedtls_cipher_context_t *cipher_ctx; /*For init- update -finish*/
     mbedtls_md_context_t *HmacCtx;
+#endif
 } sss_mbedtls_mac_t;
 
 typedef struct _sss_mbedtls_aead
@@ -185,10 +205,11 @@ typedef struct _sss_mbedtls_aead
     sss_mbedtls_object_t *keyObject; /*!< Reference to key and it's properties. */
     sss_algorithm_t algorithm;       /*!<  */
     sss_mode_t mode;                 /*!<  */
-
+#if !SSS_USE_MBEDTLS_PSA_APIS
     /*! Implementation specific part */
     mbedtls_gcm_context *gcm_ctx; /*!< Reference to gcm context. */
     mbedtls_ccm_context *ccm_ctx; /*!< Reference to ccm context. */
+#endif
     uint8_t *pNonce;              /*!< Reference to IV. */
     size_t nonceLen;              /*!< Store IV len. */
     const uint8_t *pCcm_aad;      /*!< Reference to AAD */
@@ -209,8 +230,13 @@ typedef struct _sss_mbedtls_digest
     sss_mode_t mode;           /*!<  */
     /*! Full digest length per algorithm definition. This field is initialized along with algorithm. */
     size_t digestFullLen;
+#if SSS_USE_MBEDTLS_PSA_APIS
+    psa_hash_operation_t *hash_op;
+    bool operation_initialized;
+#else
     /*! Implementation specific part */
     mbedtls_md_context_t md_ctx;
+#endif
 } sss_mbedtls_digest_t;
 
 typedef struct
@@ -219,7 +245,8 @@ typedef struct
 
 } sss_mbedtls_rng_context_t;
 
-#define sss_mbedtls_tunnel_t sss_tunnel_t
+#if !SSS_USE_MBEDTLS_PSA_APIS
+#define sss_mbedtls_tunnel_t se_sss_tunnel_t
 
 /* ************************************************************************** */
 /* Global Variables                                                           */
@@ -246,12 +273,12 @@ sss_status_t ks_mbedtls_fat_update(sss_mbedtls_key_store_t *keyStore);
 sss_status_t ks_mbedtls_key_object_create(sss_mbedtls_object_t *keyObject,
     uint32_t keyId,
     sss_key_part_t keyPart,
-    sss_cipher_type_t cipherType,
+    se_sss_cipher_type_t cipherType,
     size_t keyByteLenMax,
     uint32_t keyMode);
 
 /** @}  */
-
+#endif /* !SSS_USE_MBEDTLS_PSA_APIS*/
 #endif /* SSS_HAVE_HOSTCRYPTO_MBEDTLS */
 
 #endif /* SSS_APIS_INC_FSL_SSS_MBEDTLS_TYPES_H_ */

@@ -11,6 +11,11 @@
 #include "se051h_nfc_comm_prov.h"
 #include "task.h"
 #include <assert.h>
+#if SSS_USE_MBEDTLS_PSA_APIS
+#include "nvs_port.h"
+#include <settings.h>
+#endif
+#include <nxLog_App.h>
 #if defined(SSS_USE_FTR_FILE)
 #include "fsl_sss_ftr.h"
 #else
@@ -83,16 +88,32 @@
 
 static TaskHandle_t gSSSExRtosTaskHandle = NULL;
 
-#if (configAPPLICATION_ALLOCATED_HEAP && (!IMX_RT)) && (!FRDM_MCXW72)
-uint8_t __attribute__((section(".heap"))) ucHeap[configTOTAL_HEAP_SIZE];
-#endif
-
 void se051h_nfc_comm_task(void *pvParam);
 
 extern "C" void BOARD_InitHardware(void);
 
 int main(int argc, char *argv[]) {
   BOARD_InitHardware();
+#if SSS_USE_MBEDTLS_PSA_APIS
+  const struct flash_area *fa = NULL;
+  if (flash_area_open(SETTINGS_PARTITION, &fa) != 0) {
+      LOG_E("flash_area_open failed");
+      vTaskDelete(NULL);
+      return 1;
+  }
+
+  if (flash_init(fa->fa_dev) != 0) {
+      LOG_E("flash_init failed");
+      vTaskDelete(NULL);
+      return 1;
+  }
+
+  if (settings_subsys_init() != 0) {
+      LOG_E("settings_subsys_init failed");
+      vTaskDelete(NULL);
+      return 1;
+  }
+#endif
 #if (SSS_HAVE_HOSTCRYPTO_MBEDTLS) && (SSS_HAVE_MBEDTLS_2_X)
   CRYPTO_InitHardware();
 #endif
@@ -132,6 +153,7 @@ void se051h_nfc_comm_task(void *pvParam) {
       provision_with_policy, NULL, 0, NULL, 0, provision_verifiers,
       do_delete_key, delete_keyid, do_readidlist, se05x_t4t_access_ctrl_option,
       doresetcryproobjects);
+  vTaskDelete(NULL);
 }
 
 #if (defined(configCHECK_FOR_STACK_OVERFLOW) &&                                \

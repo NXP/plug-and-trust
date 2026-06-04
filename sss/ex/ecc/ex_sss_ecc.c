@@ -94,10 +94,10 @@ sss_status_t ex_sss_entry(ex_sss_boot_ctx_t *pCtx)
     size_t digestLen;
     uint8_t signature[256] = {0};
     size_t signatureLen;
-    sss_object_t keyPair        = {0};
-    sss_object_t key_pub        = {0};
-    sss_asymmetric_t ctx_asymm  = {0};
-    sss_asymmetric_t ctx_verify = {0};
+    se_sss_object_t keyPair        = {0};
+    se_sss_object_t key_pub        = {0};
+    se_sss_asymmetric_t ctx_asymm  = {0};
+    se_sss_asymmetric_t ctx_verify = {0};
 
     LOG_I("Running Elliptic Curve Cryptography Example ex_sss_ecc.c");
 
@@ -105,61 +105,61 @@ sss_status_t ex_sss_entry(ex_sss_boot_ctx_t *pCtx)
 
     /* doc:start ex_sss_asymmetric-allocate-key */
     /* Pre-requisite for Signing Part*/
-    status = sss_key_object_init(&keyPair, &pCtx->ks);
+    status = se_sss_key_object_init(&keyPair, &pCtx->ks);
     ENSURE_OR_GO_CLEANUP(status == kStatus_SSS_Success);
 
-    status = sss_key_object_allocate_handle(&keyPair,
+    status = se_sss_key_object_allocate_handle(&keyPair,
         MAKE_TEST_ID(__LINE__),
         kSSS_KeyPart_Pair,
-        kSSS_CipherType_EC_NIST_P,
+        kSE_SSS_CipherType_EC_NIST_P,
         sizeof(keyPairData),
         kKeyObject_Mode_Persistent);
     ENSURE_OR_GO_CLEANUP(status == kStatus_SSS_Success);
 
-    status = sss_key_store_set_key(&pCtx->ks, &keyPair, keyPairData, sizeof(keyPairData), EC_KEY_BIT_LEN, NULL, 0);
+    status = se_sss_key_store_set_key(&pCtx->ks, &keyPair, keyPairData, sizeof(keyPairData), EC_KEY_BIT_LEN, NULL, 0);
     ENSURE_OR_GO_CLEANUP(status == kStatus_SSS_Success);
 
     /* doc:end ex_sss_asymmetric-allocate-key */
 
     /* doc:start ex_sss_asymmetric-asym-sign */
-    status = sss_asymmetric_context_init(&ctx_asymm, &pCtx->session, &keyPair, kAlgorithm_SSS_SHA256, kMode_SSS_Sign);
+    status = se_sss_asymmetric_context_init(&ctx_asymm, &pCtx->session, &keyPair, kAlgorithm_SSS_SHA256, kMode_SSS_Sign);
     ENSURE_OR_GO_CLEANUP(status == kStatus_SSS_Success);
 
     signatureLen = sizeof(signature);
     /* Do Signing */
     LOG_I("Do Signing");
     LOG_MAU8_I("digest", digest, digestLen);
-    status = sss_asymmetric_sign_digest(&ctx_asymm, digest, digestLen, signature, &signatureLen);
+    status = se_sss_asymmetric_sign_digest(&ctx_asymm, digest, digestLen, signature, &signatureLen);
     ENSURE_OR_GO_CLEANUP(status == kStatus_SSS_Success);
     LOG_MAU8_I("signature", signature, signatureLen);
     LOG_I("Signing Successful !!!");
-    sss_asymmetric_context_free(&ctx_asymm);
+    se_sss_asymmetric_context_free(&ctx_asymm);
     /* doc:end ex_sss_asymmetric-asym-sign */
 
     /* Pre requiste for Verifying Part*/
-    status = sss_key_object_init(&key_pub, &pCtx->ks);
+    status = se_sss_key_object_init(&key_pub, &pCtx->ks);
     ENSURE_OR_GO_CLEANUP(status == kStatus_SSS_Success);
 
-    status = sss_key_object_allocate_handle(&key_pub,
+    status = se_sss_key_object_allocate_handle(&key_pub,
         MAKE_TEST_ID(__LINE__),
         kSSS_KeyPart_Public,
-        kSSS_CipherType_EC_NIST_P,
+        kSE_SSS_CipherType_EC_NIST_P,
         sizeof(extPubKeyData),
         kKeyObject_Mode_Persistent);
     ENSURE_OR_GO_CLEANUP(status == kStatus_SSS_Success);
 
-    status = sss_key_store_set_key(&pCtx->ks, &key_pub, extPubKeyData, sizeof(extPubKeyData), EC_KEY_BIT_LEN, NULL, 0);
+    status = se_sss_key_store_set_key(&pCtx->ks, &key_pub, extPubKeyData, sizeof(extPubKeyData), EC_KEY_BIT_LEN, NULL, 0);
     ENSURE_OR_GO_CLEANUP(status == kStatus_SSS_Success);
 
     /* doc:start ex_sss_asymmetric-asym-verify */
     status =
-        sss_asymmetric_context_init(&ctx_verify, &pCtx->session, &key_pub, kAlgorithm_SSS_SHA256, kMode_SSS_Verify);
+        se_sss_asymmetric_context_init(&ctx_verify, &pCtx->session, &key_pub, kAlgorithm_SSS_SHA256, kMode_SSS_Verify);
     ENSURE_OR_GO_CLEANUP(status == kStatus_SSS_Success);
 
     LOG_I("Do Verify");
     LOG_MAU8_I("digest", digest, digestLen);
     LOG_MAU8_I("signature", signature, signatureLen);
-    status = sss_asymmetric_verify_digest(&ctx_verify, digest, digestLen, signature, signatureLen);
+    status = se_sss_asymmetric_verify_digest(&ctx_verify, digest, digestLen, signature, signatureLen);
     ENSURE_OR_GO_CLEANUP(status == kStatus_SSS_Success);
     LOG_I("Verification Successful !!!");
     /* doc:end ex_sss_asymmetric-asym-verify */
@@ -172,12 +172,12 @@ cleanup:
         LOG_E("ex_sss_ecc Example Failed !!!...");
     }
     if (ctx_asymm.session != NULL) {
-        sss_asymmetric_context_free(&ctx_asymm);
+        se_sss_asymmetric_context_free(&ctx_asymm);
     }
     if (ctx_verify.session != NULL) {
-        sss_asymmetric_context_free(&ctx_verify);
+        se_sss_asymmetric_context_free(&ctx_verify);
     }
-    sss_key_object_free(&keyPair);
-    sss_key_object_free(&key_pub);
+    se_sss_key_object_free(&keyPair);
+    se_sss_key_object_free(&key_pub);
     return status;
 }

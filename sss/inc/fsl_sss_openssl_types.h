@@ -33,7 +33,7 @@
 /* Defines                                                                    */
 /* ************************************************************************** */
 
-#define SSS_SUBSYSTEM_TYPE_IS_OPENSSL(subsystem) (subsystem == kType_SSS_OpenSSL)
+#define SSS_SUBSYSTEM_TYPE_IS_OPENSSL(subsystem) (subsystem == kType_SE_SSS_OpenSSL)
 
 #define SSS_SESSION_TYPE_IS_OPENSSL(session) (session && SSS_SUBSYSTEM_TYPE_IS_OPENSSL(session->subsystem))
 
@@ -64,7 +64,7 @@ struct _sss_openssl_session;
 typedef struct _sss_openssl_session
 {
     /*! Indicates which security subsystem is selected to be used. */
-    sss_type_t subsystem;
+    se_sss_type_t subsystem;
 
     /* Root Path for persitant key store */
     const char *szRootPath;
@@ -98,7 +98,7 @@ typedef struct _sss_openssl_object
     /*! Implementation specific part */
     /** Contents are malloced, so must be freed */
     uint32_t contents_must_free : 1;
-    /** Type of key. Persistnet/trainsient @ref sss_key_object_mode_t */
+    /** Type of key. Persistnet/trainsient @ref se_sss_key_object_mode_t */
     uint32_t keyMode : 3;
     /** Max size allocated */
     size_t contents_max_size;
@@ -106,7 +106,7 @@ typedef struct _sss_openssl_object
     size_t keyBitLen;
     uint32_t user_id;
     sss_mode_t purpose;
-    sss_access_permission_t accessRights;
+    se_sss_access_permission_t accessRights;
     /* malloced / referenced contents */
     void *contents;
 } sss_openssl_object_t;
@@ -233,7 +233,7 @@ sss_status_t ks_openssl_remove_key(const sss_openssl_object_t *sss_key);
 sss_status_t sss_openssl_key_object_allocate(sss_openssl_object_t *keyObject,
     uint32_t keyId,
     sss_key_part_t keyPart,
-    sss_cipher_type_t cipherType,
+    se_sss_cipher_type_t cipherType,
     size_t keyByteLenMax,
     uint32_t keyMode);
 

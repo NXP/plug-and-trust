@@ -51,33 +51,33 @@
 
 #if SSSFTR_SE05X_AuthSession
 static sss_status_t ex_sss_se05x_prepare_host_userid(
-    sss_object_t *pObj, sss_key_store_t *pKs, uint8_t *se050Authkey, size_t authKeyLen);
+    se_sss_object_t *pObj, se_sss_key_store_t *pKs, uint8_t *se050Authkey, size_t authKeyLen);
 #endif
 
 #if SSS_HAVE_SCP_SCP03_SSS
 static sss_status_t ex_sss_se05x_prepare_host_platformscp(
-    NXSCP03_AuthCtx_t *pCtx, ex_SE05x_authCtx_t *pauthctx, sss_key_store_t *pKs);
+    NXSCP03_AuthCtx_t *pCtx, ex_SE05x_authCtx_t *pauthctx, se_sss_key_store_t *pKs);
 
 #if SSSFTR_SE05X_AuthECKey
 static sss_status_t ex_sss_se05x_prepare_host_eckey(SE05x_AuthCtx_ECKey_t *pCtx,
     ex_SE05x_authCtx_t *pauthctx,
-    sss_key_store_t *pKs,
+    se_sss_key_store_t *pKs,
     uint8_t *hostEcdsakey,
     size_t keylen);
 
 static sss_status_t Alloc_ECKeykey_toSE05xAuthctx(
-    sss_object_t *keyObject, sss_key_store_t *pKs, uint32_t keyId, sss_key_part_t keypart);
+    se_sss_object_t *keyObject, se_sss_key_store_t *pKs, uint32_t keyId, sss_key_part_t keypart);
 
 #endif // SSSFTR_SE05X_AuthECKey
 #if SSSFTR_SE05X_AuthSession
 static sss_status_t ex_sss_se05x_prepare_host_AppletScp03Keys(
-    NXSCP03_AuthCtx_t *pAuthCtx, ex_SE05x_authCtx_t *pauthctx, sss_key_store_t *host_k, uint8_t *authkey);
+    NXSCP03_AuthCtx_t *pAuthCtx, ex_SE05x_authCtx_t *pauthctx, se_sss_key_store_t *host_k, uint8_t *authkey);
 #endif
-static sss_status_t Alloc_Scp03key_toSE05xAuthctx(sss_object_t *keyObject, sss_key_store_t *pKs, uint32_t keyId);
+static sss_status_t Alloc_Scp03key_toSE05xAuthctx(se_sss_object_t *keyObject, se_sss_key_store_t *pKs, uint32_t keyId);
 
 #if SSSFTR_SE05X_AuthSession
 static sss_status_t Alloc_AppletScp03key_toSE05xAuthctx(
-    sss_object_t *keyObject, uint32_t keyId, sss_key_store_t *host_ks);
+    se_sss_object_t *keyObject, uint32_t keyId, se_sss_key_store_t *host_ks);
 #endif // SSSFTR_SE05X_AuthSession
 
 #endif
@@ -88,8 +88,8 @@ static sss_status_t Alloc_AppletScp03key_toSE05xAuthctx(
 
 #if SSS_HAVE_HOSTCRYPTO_ANY
 
-sss_status_t ex_sss_se05x_prepare_host(sss_session_t *host_session,
-    sss_key_store_t *host_ks,
+sss_status_t ex_sss_se05x_prepare_host(se_sss_session_t *host_session,
+    se_sss_key_store_t *host_ks,
     SE_Connect_Ctx_t *se05x_open_ctx,
     ex_SE05x_authCtx_t *se05x_auth_ctx,
     SE_AuthType_t auth_type)
@@ -146,8 +146,8 @@ sss_status_t ex_sss_se05x_prepare_host(sss_session_t *host_session,
     return status;
 }
 
-sss_status_t ex_sss_se05x_prepare_host_with_key(sss_session_t *host_session,
-    sss_key_store_t *host_ks,
+sss_status_t ex_sss_se05x_prepare_host_with_key(se_sss_session_t *host_session,
+    se_sss_key_store_t *host_ks,
     SE_Connect_Ctx_t *se05x_open_ctx,
     ex_SE05x_authCtx_t *se05x_auth_ctx,
     SE_AuthType_t auth_type,
@@ -159,18 +159,18 @@ sss_status_t ex_sss_se05x_prepare_host_with_key(sss_session_t *host_session,
     (void)authKey;
     (void)authKeyLen;
 
-    if (host_session->subsystem == kType_SSS_SubSystem_NONE) {
-        sss_type_t hostsubsystem = kType_SSS_SubSystem_NONE;
+    if (host_session->subsystem == kType_SE_SSS_SubSystem_NONE) {
+        se_sss_type_t hostsubsystem = kType_SE_SSS_SubSystem_NONE;
 
 #if SSS_HAVE_HOSTCRYPTO_MBEDTLS
-        hostsubsystem = kType_SSS_mbedTLS;
+        hostsubsystem = kType_SE_SSS_mbedTLS;
 #elif SSS_HAVE_HOSTCRYPTO_OPENSSL
-        hostsubsystem = kType_SSS_OpenSSL;
+        hostsubsystem = kType_SE_SSS_OpenSSL;
 #elif SSS_HAVE_HOSTCRYPTO_USER
-        hostsubsystem = kType_SSS_Software;
+        hostsubsystem = kType_SE_SSS_Software;
 #endif
 
-        status = sss_host_session_open(host_session, hostsubsystem, 0, kSSS_ConnectionType_Plain, NULL);
+        status = sss_host_session_open(host_session, hostsubsystem, 0, kSE_SSS_ConnectionType_Plain, NULL);
 
         if (kStatus_SSS_Success != status) {
             LOG_E("Failed to open Host Session");
@@ -178,12 +178,12 @@ sss_status_t ex_sss_se05x_prepare_host_with_key(sss_session_t *host_session,
         }
         status = sss_host_key_store_context_init(host_ks, host_session);
         if (kStatus_SSS_Success != status) {
-            LOG_E("Host: sss_key_store_context_init failed");
+            LOG_E("Host: se_sss_key_store_context_init failed");
             goto cleanup;
         }
         status = sss_host_key_store_allocate(host_ks, __LINE__);
         if (kStatus_SSS_Success != status) {
-            LOG_E("Host: sss_key_store_allocate failed");
+            LOG_E("Host: se_sss_key_store_allocate failed");
             goto cleanup;
         }
     }
@@ -239,14 +239,14 @@ cleanup:
 }
 
 /* Use this host crypto set up multiple sessions */
-sss_status_t ex_sss_se05x_prepare_host_keys(sss_session_t *pHostSession,
-    sss_key_store_t *pHostKs,
+sss_status_t ex_sss_se05x_prepare_host_keys(se_sss_session_t *pHostSession,
+    se_sss_key_store_t *pHostKs,
     SE_Connect_Ctx_t *pConnectCtx,
     ex_SE05x_authCtx_t *se05x_auth_ctx,
     uint32_t Id)
 {
     sss_status_t status      = kStatus_SSS_Fail;
-    sss_type_t hostsubsystem = kType_SSS_SubSystem_NONE;
+    se_sss_type_t hostsubsystem = kType_SE_SSS_SubSystem_NONE;
 #if SSSFTR_SE05X_AuthSession
     uint8_t *se050Authkey = NULL;
     size_t authKeyLen;
@@ -257,14 +257,14 @@ sss_status_t ex_sss_se05x_prepare_host_keys(sss_session_t *pHostSession,
     (void)Id;
 
 #if SSS_HAVE_HOSTCRYPTO_MBEDTLS
-    hostsubsystem = kType_SSS_mbedTLS;
+    hostsubsystem = kType_SE_SSS_mbedTLS;
 #elif SSS_HAVE_HOSTCRYPTO_OPENSSL
-    hostsubsystem = kType_SSS_OpenSSL;
+    hostsubsystem = kType_SE_SSS_OpenSSL;
 #elif SSS_HAVE_HOSTCRYPTO_USER
-    hostsubsystem = kType_SSS_Software;
+    hostsubsystem = kType_SE_SSS_Software;
 #endif
 
-    status = sss_host_session_open(pHostSession, hostsubsystem, 0, kSSS_ConnectionType_Plain, NULL);
+    status = sss_host_session_open(pHostSession, hostsubsystem, 0, kSE_SSS_ConnectionType_Plain, NULL);
 
     if (kStatus_SSS_Success != status) {
         LOG_E("Failed to open Host Session");
@@ -272,12 +272,12 @@ sss_status_t ex_sss_se05x_prepare_host_keys(sss_session_t *pHostSession,
     }
     status = sss_host_key_store_context_init(pHostKs, pHostSession);
     if (kStatus_SSS_Success != status) {
-        LOG_E("Host: sss_key_store_context_init failed");
+        LOG_E("Host: se_sss_key_store_context_init failed");
         goto cleanup;
     }
     status = sss_host_key_store_allocate(pHostKs, __LINE__);
     if (kStatus_SSS_Success != status) {
-        LOG_E("Host: sss_key_store_allocate failed");
+        LOG_E("Host: se_sss_key_store_allocate failed");
         goto cleanup;
     }
 
@@ -370,7 +370,7 @@ cleanup:
 * ***************************************************************************************************************** */
 #if SSSFTR_SE05X_AuthSession
 static sss_status_t ex_sss_se05x_prepare_host_userid(
-    sss_object_t *pObj, sss_key_store_t *pKs, uint8_t *se050Authkey, size_t authKeyLen)
+    se_sss_object_t *pObj, se_sss_key_store_t *pKs, uint8_t *se050Authkey, size_t authKeyLen)
 {
     sss_status_t status = kStatus_SSS_Fail;
     uint32_t keyId      = __LINE__;
@@ -391,7 +391,7 @@ static sss_status_t ex_sss_se05x_prepare_host_userid(
         }
 
         status = sss_host_key_object_allocate_handle(
-            pObj, keyId, kSSS_KeyPart_Default, kSSS_CipherType_UserID, authKeyLen + 1, kKeyObject_Mode_Persistent);
+            pObj, keyId, kSSS_KeyPart_Default, kSE_SSS_CipherType_UserID, authKeyLen + 1, kKeyObject_Mode_Persistent);
 
         if (status != kStatus_SSS_Success) {
             LOG_E("UserID: Allocate failed");
@@ -430,7 +430,7 @@ cleanup:
 #if SSS_HAVE_SCP_SCP03_SSS
 /* Function to Set Init and Allocate static Scp03Keys and Init Allocate dynamic keys */
 static sss_status_t ex_sss_se05x_prepare_host_platformscp(
-    NXSCP03_AuthCtx_t *pAuthCtx, ex_SE05x_authCtx_t *pEx_auth, sss_key_store_t *pKs)
+    NXSCP03_AuthCtx_t *pAuthCtx, ex_SE05x_authCtx_t *pEx_auth, se_sss_key_store_t *pKs)
 {
     sss_status_t status = kStatus_SSS_Fail;
 #if defined(SECURE_WORLD)
@@ -542,7 +542,7 @@ static sss_status_t ex_sss_se05x_prepare_host_platformscp(
 #endif
 
 #if SSS_HAVE_SCP_SCP03_SSS
-static sss_status_t Alloc_Scp03key_toSE05xAuthctx(sss_object_t *keyObject, sss_key_store_t *pKs, uint32_t keyId)
+static sss_status_t Alloc_Scp03key_toSE05xAuthctx(se_sss_object_t *keyObject, se_sss_key_store_t *pKs, uint32_t keyId)
 {
     sss_status_t status = kStatus_SSS_Fail;
     status              = sss_host_key_object_init(keyObject, pKs);
@@ -553,7 +553,7 @@ static sss_status_t Alloc_Scp03key_toSE05xAuthctx(sss_object_t *keyObject, sss_k
     status = sss_host_key_object_allocate_handle(keyObject,
         keyId,
         kSSS_KeyPart_Default,
-        kSSS_CipherType_AES,
+        kSE_SSS_CipherType_AES,
         SCP03_MAX_AUTH_KEY_SIZE,
         kKeyObject_Mode_Transient);
     return status;
@@ -561,7 +561,7 @@ static sss_status_t Alloc_Scp03key_toSE05xAuthctx(sss_object_t *keyObject, sss_k
 
 #if SSSFTR_SE05X_AuthECKey
 static sss_status_t Alloc_ECKeykey_toSE05xAuthctx(
-    sss_object_t *keyObject, sss_key_store_t *pKs, uint32_t keyId, sss_key_part_t keypart)
+    se_sss_object_t *keyObject, se_sss_key_store_t *pKs, uint32_t keyId, sss_key_part_t keypart)
 {
     sss_status_t status = kStatus_SSS_Fail;
     status              = sss_host_key_object_init(keyObject, pKs);
@@ -569,13 +569,13 @@ static sss_status_t Alloc_ECKeykey_toSE05xAuthctx(
         return status;
     }
     status = sss_host_key_object_allocate_handle(
-        keyObject, keyId, keypart, kSSS_CipherType_EC_NIST_P, 256, kKeyObject_Mode_Persistent);
+        keyObject, keyId, keypart, kSE_SSS_CipherType_EC_NIST_P, 256, kKeyObject_Mode_Persistent);
     return status;
 }
 
 static sss_status_t ex_sss_se05x_prepare_host_eckey(SE05x_AuthCtx_ECKey_t *pAuthCtx,
     ex_SE05x_authCtx_t *pEx_auth,
-    sss_key_store_t *pKs,
+    se_sss_key_store_t *pKs,
     uint8_t *hostEcdsakey,
     size_t keylen)
 {
@@ -638,7 +638,7 @@ static sss_status_t ex_sss_se05x_prepare_host_eckey(SE05x_AuthCtx_ECKey_t *pAuth
 #if SSSFTR_SE05X_AuthSession
 /* Function to Set Init and Allocate static Scp03Keys and Init Allocate dynamic keys */
 static sss_status_t ex_sss_se05x_prepare_host_AppletScp03Keys(
-    NXSCP03_AuthCtx_t *pAuthCtx, ex_SE05x_authCtx_t *pEx_auth, sss_key_store_t *host_k, uint8_t *authkey)
+    NXSCP03_AuthCtx_t *pAuthCtx, ex_SE05x_authCtx_t *pEx_auth, se_sss_key_store_t *host_k, uint8_t *authkey)
 {
     sss_status_t status              = kStatus_SSS_Fail;
     NXSCP03_StaticCtx_t *pStatic_ctx = NULL;
@@ -699,7 +699,7 @@ static sss_status_t ex_sss_se05x_prepare_host_AppletScp03Keys(
 }
 
 static sss_status_t Alloc_AppletScp03key_toSE05xAuthctx(
-    sss_object_t *keyObject, uint32_t keyId, sss_key_store_t *host_ks)
+    se_sss_object_t *keyObject, uint32_t keyId, se_sss_key_store_t *host_ks)
 {
     sss_status_t status = kStatus_SSS_Fail;
     status              = sss_host_key_object_init(keyObject, host_ks);
@@ -708,7 +708,7 @@ static sss_status_t Alloc_AppletScp03key_toSE05xAuthctx(
     }
 
     status = sss_host_key_object_allocate_handle(
-        keyObject, keyId, kSSS_KeyPart_Default, kSSS_CipherType_AES, AUTH_KEY_SIZE, kKeyObject_Mode_Persistent);
+        keyObject, keyId, kSSS_KeyPart_Default, kSE_SSS_CipherType_AES, AUTH_KEY_SIZE, kKeyObject_Mode_Persistent);
     return status;
 }
 #endif // SSSFTR_SE05X_AuthSession

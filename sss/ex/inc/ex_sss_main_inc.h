@@ -132,7 +132,7 @@ int main(int argc, const char *argv[])
     status = ex_sss_boot_factory_reset((PCONTEXT));
 #endif
 
-    if (kType_SSS_SubSystem_NONE == ((PCONTEXT)->session.subsystem)) {
+    if (kType_SE_SSS_SubSystem_NONE == ((PCONTEXT)->session.subsystem)) {
         /* Nothing to do. Device is not opened
          * This is needed for the case when we open a generic communication
          * channel, without being specific to SE05X

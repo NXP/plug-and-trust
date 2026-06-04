@@ -116,15 +116,15 @@ sss_status_t ex_sss_boot_factory_reset(ex_sss_boot_ctx_t *pCtx)
 sss_status_t ex_sss_key_store_and_object_init(ex_sss_boot_ctx_t *pCtx)
 {
     sss_status_t status;
-    status = sss_key_store_context_init(&pCtx->ks, &pCtx->session);
+    status = se_sss_key_store_context_init(&pCtx->ks, &pCtx->session);
     if (status != kStatus_SSS_Success) {
-        LOG_E(" sss_key_store_context_init Failed...");
+        LOG_E(" se_sss_key_store_context_init Failed...");
         goto cleanup;
     }
 
-    status = sss_key_store_allocate(&pCtx->ks, __LINE__);
+    status = se_sss_key_store_allocate(&pCtx->ks, __LINE__);
     if (status != kStatus_SSS_Success) {
-        LOG_E(" sss_key_store_allocate Failed...");
+        LOG_E(" se_sss_key_store_allocate Failed...");
         goto cleanup;
     }
 
@@ -176,9 +176,9 @@ void ex_sss_session_close(ex_sss_boot_ctx_t *pCtx)
 #endif
 #endif
 
-    if (pCtx->session.subsystem != kType_SSS_SubSystem_NONE) {
-        sss_session_close(&pCtx->session);
-        sss_session_delete(&pCtx->session);
+    if (pCtx->session.subsystem != kType_SE_SSS_SubSystem_NONE) {
+        se_sss_session_close(&pCtx->session);
+        se_sss_session_delete(&pCtx->session);
     }
 
 #if SSS_HAVE_APPLET_SE05X_IOT
@@ -192,9 +192,9 @@ void ex_sss_session_close(ex_sss_boot_ctx_t *pCtx)
 #endif /* SSS_HAVE_HOSTCRYPTO_ANY */
 
     if (pCtx->pTunnel_ctx && pCtx->pTunnel_ctx->session) {
-        if (pCtx->pTunnel_ctx->session->subsystem != kType_SSS_SubSystem_NONE) {
-            sss_session_close(pCtx->pTunnel_ctx->session);
-            sss_tunnel_context_free(pCtx->pTunnel_ctx);
+        if (pCtx->pTunnel_ctx->session->subsystem != kType_SE_SSS_SubSystem_NONE) {
+            se_sss_session_close(pCtx->pTunnel_ctx->session);
+            se_sss_tunnel_context_free(pCtx->pTunnel_ctx);
         }
     }
 
@@ -230,14 +230,14 @@ void ex_sss_session_close(ex_sss_boot_ctx_t *pCtx)
     if (pCtx->host_ks.session != NULL) {
         sss_host_key_store_context_free(&pCtx->host_ks);
     }
-    if (pCtx->host_session.subsystem != kType_SSS_SubSystem_NONE) {
+    if (pCtx->host_session.subsystem != kType_SE_SSS_SubSystem_NONE) {
         sss_host_session_close(&pCtx->host_session);
     }
 #endif // SSS_HAVE_HOSTCRYPTO_ANY
 #endif
 
     if (pCtx->ks.session != NULL) {
-        sss_key_store_context_free(&pCtx->ks);
+        se_sss_key_store_context_free(&pCtx->ks);
     }
 }
 
@@ -248,20 +248,20 @@ sss_status_t ex_sss_boot_open_host_session(ex_sss_boot_ctx_t *pCtx)
 
 #if SSS_HAVE_APPLET_SE05X_IOT
     if (pCtx->host_ks.session == NULL) {
-        status = sss_session_open(&pCtx->host_session, kType_SSS_Software, 0, kSSS_ConnectionType_Plain, NULL);
+        status = se_sss_session_open(&pCtx->host_session, kType_SE_SSS_Software, 0, kSE_SSS_ConnectionType_Plain, NULL);
         if (kStatus_SSS_Success != status) {
             LOG_E("Failed to open mbedtls Session");
             return status;
         }
 
-        status = sss_key_store_context_init(&pCtx->host_ks, &pCtx->host_session);
+        status = se_sss_key_store_context_init(&pCtx->host_ks, &pCtx->host_session);
         if (kStatus_SSS_Success != status) {
-            LOG_E("sss_key_store_context_init failed");
+            LOG_E("se_sss_key_store_context_init failed");
             return status;
         }
-        status = sss_key_store_allocate(&pCtx->host_ks, __LINE__);
+        status = se_sss_key_store_allocate(&pCtx->host_ks, __LINE__);
         if (kStatus_SSS_Success != status) {
-            LOG_E("sss_key_store_allocate failed");
+            LOG_E("se_sss_key_store_allocate failed");
             return status;
         }
     }

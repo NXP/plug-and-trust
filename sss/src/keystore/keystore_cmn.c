@@ -62,7 +62,7 @@ void ks_common_init_fat(keyStoreTable_t *keystore_shadow, keyIdAndTypeIndexLooku
 sss_status_t ks_common_update_fat(keyStoreTable_t *keystore_shadow,
     uint32_t extId,
     sss_key_part_t key_part,
-    sss_cipher_type_t cipherType,
+    se_sss_cipher_type_t cipherType,
     uint8_t intIndex,
     uint32_t accessPermission,
     uint16_t keyLen)
@@ -90,7 +90,7 @@ sss_status_t ks_common_update_fat(keyStoreTable_t *keystore_shadow,
         }
     }
 
-    if (key_part == kSSS_KeyPart_Default && (cipherType == kSSS_CipherType_AES || cipherType == kSSS_CipherType_HMAC)) {
+    if (key_part == kSSS_KeyPart_Default && (cipherType == kSE_SSS_CipherType_AES || cipherType == kSE_SSS_CipherType_HMAC)) {
         if ((keyLen > (UINT16_MAX - 16)) || (keyLen == 0)) {
             retval = kStatus_SSS_Fail;
             goto cleanup;
@@ -168,77 +168,77 @@ sss_status_t keystore_shadow_From2_To_3(keyStoreTable_t *keystore_shadow)
                 continue;
             case 1:
                 keyEntry->keyPart    = kSSS_KeyPart_Default;
-                keyEntry->cipherType = kSSS_CipherType_Certificate;
+                keyEntry->cipherType = kSE_SSS_CipherType_Certificate;
                 break;
             case 2:
                 keyEntry->keyPart    = kSSS_KeyPart_Default;
-                keyEntry->cipherType = kSSS_CipherType_AES;
+                keyEntry->cipherType = kSE_SSS_CipherType_AES;
                 break;
             case 3:
                 keyEntry->keyPart    = kSSS_KeyPart_Default;
-                keyEntry->cipherType = kSSS_CipherType_DES;
+                keyEntry->cipherType = kSE_SSS_CipherType_DES;
                 break;
             case 4:
                 keyEntry->keyPart    = kSSS_KeyPart_Default;
-                keyEntry->cipherType = kSSS_CipherType_CMAC;
+                keyEntry->cipherType = kSE_SSS_CipherType_CMAC;
                 break;
 #if SSSFTR_RSA
             case 5:
                 keyEntry->keyPart    = kSSS_KeyPart_Public;
-                keyEntry->cipherType = kSSS_CipherType_RSA_CRT;
+                keyEntry->cipherType = kSE_SSS_CipherType_RSA_CRT;
                 break;
 #endif
             case 6:
                 keyEntry->keyPart    = kSSS_KeyPart_Public;
-                keyEntry->cipherType = kSSS_CipherType_EC_NIST_P;
+                keyEntry->cipherType = kSE_SSS_CipherType_EC_NIST_P;
                 break;
             case 7:
                 keyEntry->keyPart    = kSSS_KeyPart_Public;
-                keyEntry->cipherType = kSSS_CipherType_EC_MONTGOMERY;
+                keyEntry->cipherType = kSE_SSS_CipherType_EC_MONTGOMERY;
                 break;
             case 8:
                 keyEntry->keyPart    = kSSS_KeyPart_Public;
-                keyEntry->cipherType = kSSS_CipherType_EC_TWISTED_ED;
+                keyEntry->cipherType = kSE_SSS_CipherType_EC_TWISTED_ED;
                 break;
 #if SSSFTR_RSA
             case 9:
                 keyEntry->keyPart    = kSSS_KeyPart_Private;
-                keyEntry->cipherType = kSSS_CipherType_RSA_CRT;
+                keyEntry->cipherType = kSE_SSS_CipherType_RSA_CRT;
                 break;
 #endif
             case 10:
                 keyEntry->keyPart    = kSSS_KeyPart_Private;
-                keyEntry->cipherType = kSSS_CipherType_EC_NIST_P;
+                keyEntry->cipherType = kSE_SSS_CipherType_EC_NIST_P;
                 break;
             case 11:
                 keyEntry->keyPart    = kSSS_KeyPart_Private;
-                keyEntry->cipherType = kSSS_CipherType_EC_MONTGOMERY;
+                keyEntry->cipherType = kSE_SSS_CipherType_EC_MONTGOMERY;
                 break;
             case 12:
                 keyEntry->keyPart    = kSSS_KeyPart_Private;
-                keyEntry->cipherType = kSSS_CipherType_EC_TWISTED_ED;
+                keyEntry->cipherType = kSE_SSS_CipherType_EC_TWISTED_ED;
                 break;
 #if SSSFTR_RSA
             case 13:
                 keyEntry->keyPart    = kSSS_KeyPart_Pair;
-                keyEntry->cipherType = kSSS_CipherType_RSA_CRT;
+                keyEntry->cipherType = kSE_SSS_CipherType_RSA_CRT;
                 break;
 #endif
             case 14:
                 keyEntry->keyPart    = kSSS_KeyPart_Pair;
-                keyEntry->cipherType = kSSS_CipherType_EC_NIST_P;
+                keyEntry->cipherType = kSE_SSS_CipherType_EC_NIST_P;
                 break;
             case 15:
                 keyEntry->keyPart    = kSSS_KeyPart_Pair;
-                keyEntry->cipherType = kSSS_CipherType_EC_MONTGOMERY;
+                keyEntry->cipherType = kSE_SSS_CipherType_EC_MONTGOMERY;
                 break;
             case 16:
                 keyEntry->keyPart    = kSSS_KeyPart_Pair;
-                keyEntry->cipherType = kSSS_CipherType_EC_TWISTED_ED;
+                keyEntry->cipherType = kSE_SSS_CipherType_EC_TWISTED_ED;
                 break;
             case 17:
                 keyEntry->keyPart    = kSSS_KeyPart_Default;
-                keyEntry->cipherType = kSSS_CipherType_UserID;
+                keyEntry->cipherType = kSE_SSS_CipherType_UserID;
                 break;
             default:
                 LOG_E("Error in keystore_shadow_From2_To_3");
@@ -265,8 +265,8 @@ sss_status_t keystore_shadow_From3_To_4(keyStoreTable_t *keystore_shadow)
             case kSSS_KeyPart_NONE:
                 break;
             case kSSS_KeyPart_Default:
-                if (keyEntry->cipherType == kSSS_CipherType_Certificate) {
-                    keyEntry->cipherType = kSSS_CipherType_Binary;
+                if (keyEntry->cipherType == kSE_SSS_CipherType_Certificate) {
+                    keyEntry->cipherType = kSE_SSS_CipherType_Binary;
                 }
                 break;
             default:

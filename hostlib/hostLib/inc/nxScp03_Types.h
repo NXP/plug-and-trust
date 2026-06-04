@@ -30,7 +30,6 @@
 #if SSS_HAVE_HOSTCRYPTO_USER
 #   include <fsl_sss_user_apis.h>
 #endif
-
 #include "sm_api.h"
 
 /** @addtogroup se05x_scp03
@@ -92,9 +91,9 @@ typedef enum
  */
 typedef struct
 {
-    sss_object_t Enc;  //!< session channel encryption key
-    sss_object_t Mac;  //!< session command authentication key
-    sss_object_t Rmac; //!< session response authentication key
+    se_sss_object_t Enc;  //!< session channel encryption key
+    se_sss_object_t Mac;  //!< session command authentication key
+    se_sss_object_t Rmac; //!< session response authentication key
     uint8_t MCV[16];        //!<  MAC chaining value
     uint8_t cCounter[16];   //!<  command counter
     uint8_t SecurityLevel;  //!< security level set
@@ -120,9 +119,9 @@ typedef struct
     /** AES Key size */
     int key_len;
     /** Encryption key object */
-    sss_object_t Enc;
-    sss_object_t Mac; //!< static secure channel authentication key obj
-    sss_object_t Dek; //!< data encryption key obj
+    se_sss_object_t Enc;
+    se_sss_object_t Mac; //!< static secure channel authentication key obj
+    se_sss_object_t Dek; //!< data encryption key obj
 } NXSCP03_StaticCtx_t;
 
 /**
@@ -142,13 +141,13 @@ typedef struct
 typedef struct
 {
     /** Host ECDSA Private key */
-    sss_object_t HostEcdsaObj;
+    se_sss_object_t HostEcdsaObj;
     /** Host ephemeral ECC key pair */
-    sss_object_t HostEcKeypair;
+    se_sss_object_t HostEcKeypair;
     /** SE ECC public key */
-    sss_object_t SeEcPubKey;
+    se_sss_object_t SeEcPubKey;
     /** Host master Secret */
-    sss_object_t masterSec;
+    se_sss_object_t masterSec;
 } NXECKey03_StaticCtx_t;
 
 /** Keys to connect for a ECKey Connection */
@@ -174,16 +173,16 @@ typedef struct
 typedef struct
 {
     /** The corresponding authentication object on the Host */
-    sss_object_t * pObj;
+    se_sss_object_t * pObj;
 } SE05x_AuthCtx_ID_t;
 
 
 /** Legacy, only for A71CH with Host Crypto */
 typedef struct
 {
-    sss_object_t pKeyEnc; //!< SSS AES Enc Key object
-    sss_object_t pKeyMac; //!< SSS AES Mac Key object
-    sss_object_t pKeyDek; //!< SSS AES Dek Key object
+    se_sss_object_t pKeyEnc; //!< SSS AES Enc Key object
+    se_sss_object_t pKeyMac; //!< SSS AES Mac Key object
+    se_sss_object_t pKeyDek; //!< SSS AES Dek Key object
 } SM_SECURE_SCP03_KEYOBJ;
 
 /** Authentication mechanims */
@@ -225,7 +224,7 @@ typedef struct _SE_AuthCtx
         /** Reserved memory for implementation specific extension */
         struct
         {
-            uint8_t data[SSS_AUTH_MAX_CONTEXT_SIZE];
+            uint8_t data[SE_SSS_AUTH_MAX_CONTEXT_SIZE];
         } extension;
     } ctx;
 } SE_AuthCtx_t;
@@ -249,7 +248,7 @@ typedef struct
     /* =================================== */
 
     /** If we connect logically, via some software layer */
-    sss_tunnel_t *tunnelCtx;
+    se_sss_tunnel_t *tunnelCtx;
 
     /** How exactly are we going to connect physically */
     SSS_Conn_Type_t connType;
@@ -302,7 +301,7 @@ typedef struct
     /** Reserved memory for implementation specific extension */
     struct
     {
-        uint8_t data[SSS_CONNECT_MAX_CONTEXT_SIZE];
+        uint8_t data[SE_SSS_CONNECT_MAX_CONTEXT_SIZE];
     } extension;
 } sss_connect_ctx_t;
 

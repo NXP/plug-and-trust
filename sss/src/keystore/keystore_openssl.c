@@ -63,7 +63,7 @@ sss_status_t ks_openssl_load_key(sss_openssl_object_t *sss_key, keyStoreTable_t 
             sss_key->cipherType = shadowEntry->cipherType;
             sss_key->objectType = (shadowEntry->keyPart & 0x0F);
             ks_sw_getKeyFileName(
-                file_name, sizeof(file_name), (const sss_object_t *)sss_key, sss_key->keyStore->session->szRootPath);
+                file_name, sizeof(file_name), (const se_sss_object_t *)sss_key, sss_key->keyStore->session->szRootPath);
             retval = kStatus_SSS_Success;
             break;
         }
@@ -111,13 +111,13 @@ sss_status_t ks_openssl_load_key(sss_openssl_object_t *sss_key, keyStoreTable_t 
             retval = sss_openssl_key_object_allocate(sss_key,
                 shadowEntry->extKeyId,
                 (sss_key_part_t)(shadowEntry->keyPart & 0x0F),
-                (sss_cipher_type_t)(shadowEntry->cipherType),
+                (se_sss_cipher_type_t)(shadowEntry->cipherType),
                 size,
                 kKeyObject_Mode_Persistent);
             if (retval == kStatus_SSS_Success) {
                 switch (sss_key->cipherType) {
-                case kSSS_CipherType_RSA:
-                case kSSS_CipherType_RSA_CRT: {
+                case kSE_SSS_CipherType_RSA:
+                case kSE_SSS_CipherType_RSA_CRT: {
                     if (sss_key->contents != NULL) {
                         SSS_FREE((void *)sss_key->contents);
                     }
@@ -141,11 +141,11 @@ sss_status_t ks_openssl_load_key(sss_openssl_object_t *sss_key, keyStoreTable_t 
                     }
                     sss_key->keyBitLen = evp_pkey_bits;
                 } break;
-                case kSSS_CipherType_EC_NIST_P:
-                case kSSS_CipherType_EC_NIST_K:
-                case kSSS_CipherType_EC_BRAINPOOL:
-                case kSSS_CipherType_EC_MONTGOMERY:
-                case kSSS_CipherType_EC_TWISTED_ED: {
+                case kSE_SSS_CipherType_EC_NIST_P:
+                case kSE_SSS_CipherType_EC_NIST_K:
+                case kSE_SSS_CipherType_EC_BRAINPOOL:
+                case kSE_SSS_CipherType_EC_MONTGOMERY:
+                case kSE_SSS_CipherType_EC_TWISTED_ED: {
                     if (sss_key->contents != NULL) {
                         EVP_PKEY_free((EVP_PKEY *)sss_key->contents);
                     }
@@ -187,7 +187,7 @@ sss_status_t ks_openssl_store_key(const sss_openssl_object_t *sss_key)
     FILE *fp                           = NULL;
     unsigned char *Buffer              = NULL;
     ks_sw_getKeyFileName(
-        file_name, sizeof(file_name), (const sss_object_t *)sss_key, sss_key->keyStore->session->szRootPath);
+        file_name, sizeof(file_name), (const se_sss_object_t *)sss_key, sss_key->keyStore->session->szRootPath);
     fp = fopen(file_name, "wb+");
     if (fp == NULL) {
         LOG_E("Can not open file");
@@ -269,7 +269,7 @@ sss_status_t ks_openssl_remove_key(const sss_openssl_object_t *sss_key)
     sss_status_t retval                = kStatus_SSS_Fail;
     char file_name[MAX_FILE_NAME_SIZE] = {0};
     ks_sw_getKeyFileName(
-        file_name, sizeof(file_name), (const sss_object_t *)sss_key, sss_key->keyStore->session->szRootPath);
+        file_name, sizeof(file_name), (const se_sss_object_t *)sss_key, sss_key->keyStore->session->szRootPath);
     if (0 == UNLINK(file_name)) {
         retval = kStatus_SSS_Success;
     }

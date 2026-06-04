@@ -25,11 +25,11 @@ int add_taglength_to_data(uint8_t **buf,
     size_t cmdLen,
     bool extendedLength);
 
-uint32_t se05x_sssKeyTypeLenToCurveId(sss_cipher_type_t cipherType, size_t keyBits)
+uint32_t se05x_sssKeyTypeLenToCurveId(se_sss_cipher_type_t cipherType, size_t keyBits)
 {
     uint32_t u32_curve_id = 0;
     switch (cipherType) {
-    case kSSS_CipherType_EC_NIST_P: {
+    case kSE_SSS_CipherType_EC_NIST_P: {
         SE05x_ECCurve_t eCurveID;
         switch (keyBits) {
 #if SSS_HAVE_EC_NIST_192
@@ -60,7 +60,7 @@ uint32_t se05x_sssKeyTypeLenToCurveId(sss_cipher_type_t cipherType, size_t keyBi
         break;
     }
 #if SSS_HAVE_EC_BP
-    case kSSS_CipherType_EC_BRAINPOOL: {
+    case kSE_SSS_CipherType_EC_BRAINPOOL: {
         SE05x_ECCurve_t eCurveID;
         switch (keyBits) {
         case 160:
@@ -92,7 +92,7 @@ uint32_t se05x_sssKeyTypeLenToCurveId(sss_cipher_type_t cipherType, size_t keyBi
     }
 #endif
 #if SSS_HAVE_EC_NIST_K
-    case kSSS_CipherType_EC_NIST_K: {
+    case kSE_SSS_CipherType_EC_NIST_K: {
         SE05x_ECCurve_t eCurveID;
         switch (keyBits) {
         case 160:
@@ -115,7 +115,7 @@ uint32_t se05x_sssKeyTypeLenToCurveId(sss_cipher_type_t cipherType, size_t keyBi
     }
 #endif
 #if SSS_HAVE_EC_MONT
-    case kSSS_CipherType_EC_MONTGOMERY: {
+    case kSE_SSS_CipherType_EC_MONTGOMERY: {
         SE05x_ECCurve_t eCurveID;
         switch (keyBits) {
 #if SSS_HAVE_SE05X_VER_GTE_07_02
@@ -134,7 +134,7 @@ uint32_t se05x_sssKeyTypeLenToCurveId(sss_cipher_type_t cipherType, size_t keyBi
     }
 #endif
 #if SSS_HAVE_EC_ED
-    case kSSS_CipherType_EC_TWISTED_ED: {
+    case kSE_SSS_CipherType_EC_TWISTED_ED: {
         SE05x_ECCurve_t eCurveID;
         switch (keyBits) {
         case 256:
@@ -243,7 +243,7 @@ int add_taglength_to_data(uint8_t **buf,
 }
 
 // LCOV_EXCL_START
-smStatus_t Se05x_i2c_master_txn(sss_session_t *sess, SE05x_I2CM_cmd_t *p, uint8_t noOftags)
+smStatus_t Se05x_i2c_master_txn(se_sss_session_t *sess, SE05x_I2CM_cmd_t *p, uint8_t noOftags)
 {
     smStatus_t retval                              = SM_NOT_OK;
     uint8_t buffer[SE05X_I2CM_MAX_BUF_SIZE_CMD]    = {0};
@@ -261,7 +261,7 @@ smStatus_t Se05x_i2c_master_txn(sss_session_t *sess, SE05x_I2CM_cmd_t *p, uint8_
     const uint8_t *pSendbuf = &buffer[0];
     size_t SendLen          = 0;
 
-    if (se05x_session->subsystem == kType_SSS_SE_SE05x) {
+    if (se05x_session->subsystem == kType_SE_SSS_SE_SE05x) {
         se050session_id = &se05x_session->s_ctx;
     }
     else {
@@ -395,8 +395,8 @@ cleanup:
     return retval;
 }
 
-smStatus_t Se05x_i2c_master_attst_txn(sss_session_t *sess,
-    sss_object_t *keyObject,
+smStatus_t Se05x_i2c_master_attst_txn(se_sss_session_t *sess,
+    se_sss_object_t *keyObject,
     SE05x_I2CM_cmd_t *p,
     uint8_t *random_attst,
     size_t random_attstLen,
@@ -426,7 +426,7 @@ smStatus_t Se05x_i2c_master_attst_txn(sss_session_t *sess,
     sss_se05x_object_t *keyObject_attst = (sss_se05x_object_t *)keyObject;
     attestID                            = keyObject_attst->keyId;
 
-    if (se05x_session->subsystem == kType_SSS_SE_SE05x) {
+    if (se05x_session->subsystem == kType_SE_SSS_SE_SE05x) {
         se050session_id = &se05x_session->s_ctx;
     }
     else {

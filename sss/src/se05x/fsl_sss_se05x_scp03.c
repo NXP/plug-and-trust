@@ -71,7 +71,7 @@ static uint16_t getDataDerivationValue(int keyLen);
 * To authenticate the initiated secure channel
 */
 static sss_status_t nxScp03_GP_ExternalAuthenticate(
-    pSe05xSession_t se05xSession, sss_object_t *keyObj, uint8_t *updateMCV, uint8_t *hostCryptogram);
+    pSe05xSession_t se05xSession, se_sss_object_t *keyObj, uint8_t *updateMCV, uint8_t *hostCryptogram);
 
 sss_status_t nxScp03_AuthenticateChannel(pSe05xSession_t se05xSession, NXSCP03_AuthCtx_t *pAuthScp03)
 {
@@ -79,7 +79,7 @@ sss_status_t nxScp03_AuthenticateChannel(pSe05xSession_t se05xSession, NXSCP03_A
     uint8_t hostChallenge[] = INITIAL_HOST_CHALLANGE;
 #else
     uint8_t hostChallenge[SCP_GP_HOST_CHALLENGE_LEN] = {0};
-    sss_rng_context_t rngctx;
+    se_sss_rng_context_t rngctx;
 #endif
     uint8_t keyDivData[SCP_GP_IU_KEY_DIV_DATA_LEN];
     uint16_t keyDivDataLen = sizeof(keyDivData);
@@ -171,13 +171,13 @@ exit:
 }
 
 static sss_status_t nxScp03_GP_ExternalAuthenticate(
-    pSe05xSession_t se05xSession, sss_object_t *keyObj, uint8_t *updateMCV, uint8_t *hostCryptogram)
+    pSe05xSession_t se05xSession, se_sss_object_t *keyObj, uint8_t *updateMCV, uint8_t *hostCryptogram)
 {
     smStatus_t st = SM_NOT_OK;
     uint8_t txBuf[64];
     uint8_t macToAdd[AES_KEY_LEN_nBYTE] = {0};
 
-    sss_mac_t macCtx;
+    se_sss_mac_t macCtx;
     sss_algorithm_t algorithm = kAlgorithm_SSS_CMAC_AES;
     sss_mode_t mode           = kMode_SSS_Mac;
     size_t signatureLen       = sizeof(macToAdd);
@@ -248,7 +248,7 @@ exit:
 }
 
 sss_status_t nxScp03_HostLocal_CalculateHostCryptogram(
-    sss_object_t *keyObj, uint8_t *hostChallenge, uint8_t *cardChallenge, uint8_t *hostCryptogram)
+    se_sss_object_t *keyObj, uint8_t *hostChallenge, uint8_t *cardChallenge, uint8_t *hostCryptogram)
 {
     uint8_t ddA[128];
     uint16_t ddALen = sizeof(ddA);
@@ -281,7 +281,7 @@ exit:
 }
 
 sss_status_t nxScp03_HostLocal_VerifyCardCryptogram(
-    sss_object_t *keyObj, uint8_t *hostChallenge, uint8_t *cardChallenge, uint8_t *cardCryptogram)
+    se_sss_object_t *keyObj, uint8_t *hostChallenge, uint8_t *cardChallenge, uint8_t *cardCryptogram)
 {
     uint8_t ddA[128];
     uint16_t ddALen = sizeof(ddA);
@@ -439,9 +439,9 @@ exit:
 }
 
 sss_status_t nxScp03_Generate_SessionKey(
-    sss_object_t *keyObj, uint8_t *inData, uint32_t inDataLen, uint8_t *outSignature, uint32_t *outSignatureLen)
+    se_sss_object_t *keyObj, uint8_t *inData, uint32_t inDataLen, uint8_t *outSignature, uint32_t *outSignatureLen)
 {
-    sss_mac_t macCtx;
+    se_sss_mac_t macCtx;
     sss_algorithm_t algorithm = kAlgorithm_SSS_CMAC_AES;
     sss_mode_t mode           = kMode_SSS_Mac;
     sss_status_t status       = kStatus_SSS_Fail;

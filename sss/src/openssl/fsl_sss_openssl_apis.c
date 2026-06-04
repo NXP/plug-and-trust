@@ -132,9 +132,9 @@ static sss_status_t sss_openssl_aead_ccm_update(sss_openssl_aead_t *context, con
 
 // LCOV_EXCL_START
 sss_status_t sss_openssl_session_create(sss_openssl_session_t *session,
-    sss_type_t subsystem,
+    se_sss_type_t subsystem,
     uint32_t application_id,
-    sss_connection_type_t connection_type,
+    se_sss_connection_type_t connection_type,
     void *connectionData)
 {
     sss_status_t retval = kStatus_SSS_Success;
@@ -149,9 +149,9 @@ sss_status_t sss_openssl_session_create(sss_openssl_session_t *session,
 // LCOV_EXCL_STOP
 
 sss_status_t sss_openssl_session_open(sss_openssl_session_t *session,
-    sss_type_t subsystem,
+    se_sss_type_t subsystem,
     uint32_t application_id,
-    sss_connection_type_t connection_type,
+    se_sss_connection_type_t connection_type,
     void *connectionData)
 {
     sss_status_t retval = kStatus_SSS_InvalidArgument;
@@ -255,7 +255,7 @@ cleanup:
 sss_status_t sss_openssl_key_object_allocate(sss_openssl_object_t *keyObject,
     uint32_t keyId,
     sss_key_part_t keyPart,
-    sss_cipher_type_t cipherType,
+    se_sss_cipher_type_t cipherType,
     size_t keyByteLenMax,
     uint32_t keyMode)
 {
@@ -269,7 +269,7 @@ sss_status_t sss_openssl_key_object_allocate(sss_openssl_object_t *keyObject,
     keyObject->contents_must_free = 1;
     keyObject->keyMode            = keyMode;
     /* Bitwise OR of all sss_access_permission. */
-    keyObject->accessRights = kAccessPermission_SSS_All_Permission;
+    keyObject->accessRights = kAccessPermission_SE_SSS_All_Permission;
     switch (keyPart) {
     case kSSS_KeyPart_Default:
         size = keyByteLenMax;
@@ -301,7 +301,7 @@ cleanup:
 sss_status_t sss_openssl_key_object_allocate_handle(sss_openssl_object_t *keyObject,
     uint32_t keyId,
     sss_key_part_t keyPart,
-    sss_cipher_type_t cipherType,
+    se_sss_cipher_type_t cipherType,
     size_t keyByteLenMax,
     uint32_t options)
 {
@@ -381,7 +381,7 @@ sss_status_t sss_openssl_key_object_set_user(sss_openssl_object_t *keyObject, ui
 {
     sss_status_t retval = kStatus_SSS_Success;
     AX_UNUSED_ARG(options);
-    if (!(keyObject->accessRights & kAccessPermission_SSS_ChangeAttributes)) {
+    if (!(keyObject->accessRights & kAccessPermission_SE_SSS_ChangeAttributes)) {
         LOG_E(" Don't have access rights to change the attributes");
         return kStatus_SSS_Fail;
     }
@@ -393,7 +393,7 @@ sss_status_t sss_openssl_key_object_set_purpose(sss_openssl_object_t *keyObject,
 {
     sss_status_t retval = kStatus_SSS_Success;
     AX_UNUSED_ARG(options);
-    if (!(keyObject->accessRights & kAccessPermission_SSS_ChangeAttributes)) {
+    if (!(keyObject->accessRights & kAccessPermission_SE_SSS_ChangeAttributes)) {
         LOG_E(" Don't have access rights to change the attributes");
         return kStatus_SSS_Fail;
     }
@@ -405,16 +405,16 @@ sss_status_t sss_openssl_key_object_set_access(sss_openssl_object_t *keyObject, 
 {
     sss_status_t retval = kStatus_SSS_Success;
     AX_UNUSED_ARG(options);
-    if (!(keyObject->accessRights & kAccessPermission_SSS_ChangeAttributes)) {
+    if (!(keyObject->accessRights & kAccessPermission_SE_SSS_ChangeAttributes)) {
         LOG_E(" Don't have access rights to use the key");
 
         return kStatus_SSS_Fail;
     }
-    keyObject->accessRights = (sss_access_permission_t)access;
+    keyObject->accessRights = (se_sss_access_permission_t)access;
     return retval;
 }
 
-sss_status_t sss_openssl_key_object_set_eccgfp_group(sss_openssl_object_t *keyObject, sss_eccgfp_group_t *group)
+sss_status_t sss_openssl_key_object_set_eccgfp_group(sss_openssl_object_t *keyObject, se_sss_eccgfp_group_t *group)
 {
     sss_status_t retval = kStatus_SSS_Success;
     AX_UNUSED_ARG(keyObject);
@@ -477,8 +477,8 @@ void sss_openssl_key_object_free(sss_openssl_object_t *keyObject)
 
     if (keyObject->contents != NULL && keyObject->contents_must_free) {
         switch (keyObject->cipherType) {
-        case kSSS_CipherType_RSA:
-        case kSSS_CipherType_RSA_CRT:
+        case kSE_SSS_CipherType_RSA:
+        case kSE_SSS_CipherType_RSA_CRT:
             pKey = (EVP_PKEY *)keyObject->contents;
 #if (OPENSSL_VERSION_NUMBER < 0x10100000L)
             pRSA = (RSA *)EVP_PKEY_get0(pKey);
@@ -492,11 +492,11 @@ void sss_openssl_key_object_free(sss_openssl_object_t *keyObject)
 #endif
             EVP_PKEY_free(pKey);
             break;
-        case kSSS_CipherType_EC_NIST_P:
-        case kSSS_CipherType_EC_NIST_K:
-        case kSSS_CipherType_EC_BRAINPOOL:
-        case kSSS_CipherType_EC_MONTGOMERY:
-        case kSSS_CipherType_EC_TWISTED_ED:
+        case kSE_SSS_CipherType_EC_NIST_P:
+        case kSE_SSS_CipherType_EC_NIST_K:
+        case kSE_SSS_CipherType_EC_BRAINPOOL:
+        case kSE_SSS_CipherType_EC_MONTGOMERY:
+        case kSE_SSS_CipherType_EC_TWISTED_ED:
             pKey = (EVP_PKEY *)keyObject->contents;
             EVP_PKEY_free(pKey);
             break;
@@ -758,7 +758,7 @@ sss_status_t sss_openssl_derive_key_dh(sss_openssl_derive_key_t *context,
     pKeyPrv = (EVP_PKEY *)context->keyObject->contents;
     pKeyExt = (EVP_PKEY *)otherPartyKeyObject->contents;
 
-    if (context->keyObject->cipherType == kSSS_CipherType_EC_MONTGOMERY) {
+    if (context->keyObject->cipherType == kSE_SSS_CipherType_EC_MONTGOMERY) {
         EVP_PKEY_CTX *ctx;
         ctx = EVP_PKEY_CTX_new(pKeyPrv, NULL);
         if (!ctx) {
@@ -957,11 +957,11 @@ sss_status_t sss_openssl_key_store_set_key(sss_openssl_key_store_t *keyStore,
 #else
     ENSURE_OR_GO_CLEANUP(keyObject->contents);
 #endif
-    if (!(keyObject->accessRights & kAccessPermission_SSS_Write)) {
+    if (!(keyObject->accessRights & kAccessPermission_SE_SSS_Write)) {
         return retval;
     }
 
-    if ((keyObject->objectType == kSSS_KeyPart_Pair) && (keyObject->cipherType == kSSS_CipherType_EC_MONTGOMERY)) {
+    if ((keyObject->objectType == kSSS_KeyPart_Pair) && (keyObject->cipherType == kSE_SSS_CipherType_EC_MONTGOMERY)) {
         LOG_W("OpenSSL keystore cannot handle EC_MONT keypair with public key: Removing public key");
         ENSURE_OR_GO_CLEANUP(dataLen <= opensslDataLen);
         memcpy(opensslData, data, dataLen);
@@ -994,24 +994,24 @@ sss_status_t sss_openssl_key_store_generate_key(
     sss_openssl_key_store_t *keyStore, sss_openssl_object_t *keyObject, size_t keyBitLen, void *options)
 {
     sss_status_t retval           = kStatus_SSS_Success;
-    sss_cipher_type_t cipher_type = 0;
+    se_sss_cipher_type_t cipher_type = 0;
 
     ENSURE_OR_GO_EXIT(keyStore);
     ENSURE_OR_GO_EXIT(keyObject);
-    cipher_type = (sss_cipher_type_t) keyObject->cipherType;
+    cipher_type = (se_sss_cipher_type_t) keyObject->cipherType;
 
     AX_UNUSED_ARG(options);
 
     switch (cipher_type) {
-    case kSSS_CipherType_EC_NIST_P:
-    case kSSS_CipherType_EC_NIST_K:
-    case kSSS_CipherType_EC_BRAINPOOL:
-    case kSSS_CipherType_EC_MONTGOMERY:
-    case kSSS_CipherType_EC_TWISTED_ED:
+    case kSE_SSS_CipherType_EC_NIST_P:
+    case kSE_SSS_CipherType_EC_NIST_K:
+    case kSE_SSS_CipherType_EC_BRAINPOOL:
+    case kSE_SSS_CipherType_EC_MONTGOMERY:
+    case kSE_SSS_CipherType_EC_TWISTED_ED:
         retval = sss_openssl_generate_ecp_key(keyObject, keyBitLen);
         break;
-    case kSSS_CipherType_RSA:
-    case kSSS_CipherType_RSA_CRT:
+    case kSE_SSS_CipherType_RSA:
+    case kSE_SSS_CipherType_RSA_CRT:
         retval = sss_openssl_generate_rsa_key(keyObject, keyBitLen);
         break;
     default:
@@ -1035,7 +1035,7 @@ sss_status_t sss_openssl_key_store_get_key(sss_openssl_key_store_t *keyStore,
 
     AX_UNUSED_ARG(keyStore);
 
-    if (!(keyObject->accessRights & kAccessPermission_SSS_Read)) {
+    if (!(keyObject->accessRights & kAccessPermission_SE_SSS_Read)) {
         return kStatus_SSS_Fail;
     }
 
@@ -1105,7 +1105,7 @@ sss_status_t sss_openssl_key_store_erase_key(sss_openssl_key_store_t *keyStore, 
     ENSURE_OR_GO_EXIT(keyObject);
     ENSURE_OR_GO_EXIT(keyObject->keyStore);
 
-    if (!(keyObject->accessRights & kAccessPermission_SSS_Delete)) {
+    if (!(keyObject->accessRights & kAccessPermission_SE_SSS_Delete)) {
         LOG_E("Don't have access right to delete the key");
         return retval;
     }
@@ -1210,7 +1210,7 @@ sss_status_t sss_openssl_asymmetric_context_init(sss_openssl_asymmetric_t *conte
 
     ENSURE_OR_GO_CLEANUP(context);
     ENSURE_OR_GO_CLEANUP(keyObject);
-    ENSURE_OR_GO_CLEANUP(keyObject->keyStore->session->subsystem == kType_SSS_OpenSSL);
+    ENSURE_OR_GO_CLEANUP(keyObject->keyStore->session->subsystem == kType_SE_SSS_OpenSSL);
 
     context->session   = session;
     context->keyObject = keyObject;
@@ -1276,7 +1276,7 @@ sss_status_t sss_openssl_asymmetric_encrypt(
     char *pErr = NULL;
     int padding = 0;
 
-    if (!(context->keyObject->accessRights & kAccessPermission_SSS_Use)) {
+    if (!(context->keyObject->accessRights & kAccessPermission_SE_SSS_Use)) {
         return kStatus_SSS_Fail;
     }
 
@@ -1377,7 +1377,7 @@ sss_status_t sss_openssl_asymmetric_decrypt(
     char *pErr = NULL;
     int padding = 0;
 
-    if (!(context->keyObject->accessRights & kAccessPermission_SSS_Use)) {
+    if (!(context->keyObject->accessRights & kAccessPermission_SE_SSS_Use)) {
         return kStatus_SSS_Fail;
     }
 
@@ -1467,7 +1467,7 @@ static int openssl_get_hash_ptr_set_padding(
         *hashfPtr = NULL;
     }
 
-    if (cipherType == kSSS_CipherType_RSA || cipherType == kSSS_CipherType_RSA_CRT) {
+    if (cipherType == kSE_SSS_CipherType_RSA || cipherType == kSE_SSS_CipherType_RSA_CRT) {
         if ((EVP_PKEY_CTX_set_rsa_padding(pKey_Ctx, openssl_get_padding(algorithm))) <= 0) {
             return 1;
         }
@@ -1492,14 +1492,14 @@ sss_status_t sss_openssl_asymmetric_sign_digest(sss_openssl_asymmetric_t *contex
     void *hashfPtr         = NULL;
     int ret                = 0;
 
-    if (!(context->keyObject->accessRights & kAccessPermission_SSS_Use)) {
+    if (!(context->keyObject->accessRights & kAccessPermission_SE_SSS_Use)) {
         return kStatus_SSS_Fail;
     }
 
     pKey = (EVP_PKEY *)context->keyObject->contents;
 #if (OPENSSL_VERSION_NUMBER < 0x10100000L)
 #else
-    if (context->keyObject->cipherType == kSSS_CipherType_EC_MONTGOMERY) {
+    if (context->keyObject->cipherType == kSE_SSS_CipherType_EC_MONTGOMERY) {
         EVP_MD_CTX *pKey_md_Ctx = NULL;
         pKey_md_Ctx = (EVP_MD_CTX *)EVP_MD_CTX_create();
         if (1 != EVP_DigestSignInit(pKey_md_Ctx, NULL, NULL, NULL, pKey)) {
@@ -1533,10 +1533,10 @@ sss_status_t sss_openssl_asymmetric_sign_digest(sss_openssl_asymmetric_t *contex
     * For RSA, null hash pointer is valid, as sign with no hash is available.
     * Sign with no hash is invalid for ecc keys.
     */
-    if (context->keyObject->cipherType == kSSS_CipherType_EC_NIST_P ||
-        context->keyObject->cipherType == kSSS_CipherType_EC_NIST_K ||
-        context->keyObject->cipherType == kSSS_CipherType_EC_BRAINPOOL ||
-        context->keyObject->cipherType == kSSS_CipherType_EC_TWISTED_ED) {
+    if (context->keyObject->cipherType == kSE_SSS_CipherType_EC_NIST_P ||
+        context->keyObject->cipherType == kSE_SSS_CipherType_EC_NIST_K ||
+        context->keyObject->cipherType == kSE_SSS_CipherType_EC_BRAINPOOL ||
+        context->keyObject->cipherType == kSE_SSS_CipherType_EC_TWISTED_ED) {
         if (NULL == hashfPtr) {
             retval = kStatus_SSS_Fail;
             goto exit;
@@ -1592,14 +1592,14 @@ sss_status_t sss_openssl_asymmetric_verify_digest(sss_openssl_asymmetric_t *cont
     void *hashfPtr         = NULL;
     int ret                = 0;
 
-    if (!(context->keyObject->accessRights & kAccessPermission_SSS_Use)) {
+    if (!(context->keyObject->accessRights & kAccessPermission_SE_SSS_Use)) {
         return kStatus_SSS_Fail;
     }
 
     pKey = (EVP_PKEY *)context->keyObject->contents;
 #if (OPENSSL_VERSION_NUMBER < 0x10100000L)
 #else
-    if (context->keyObject->cipherType == kSSS_CipherType_EC_MONTGOMERY) {
+    if (context->keyObject->cipherType == kSE_SSS_CipherType_EC_MONTGOMERY) {
         EVP_MD_CTX *pKey_md_Ctx = NULL;
         pKey_md_Ctx = (EVP_MD_CTX *)EVP_MD_CTX_create();
         if (1 != EVP_DigestVerifyInit(pKey_md_Ctx, NULL, NULL, NULL, pKey)) {
@@ -1634,10 +1634,10 @@ sss_status_t sss_openssl_asymmetric_verify_digest(sss_openssl_asymmetric_t *cont
     * For RSA, null hash pointer is valid, as sign with no hash is available.
     * Sign with no hash is invalid for ecc keys.
     */
-    if (context->keyObject->cipherType == kSSS_CipherType_EC_NIST_P ||
-        context->keyObject->cipherType == kSSS_CipherType_EC_NIST_K ||
-        context->keyObject->cipherType == kSSS_CipherType_EC_BRAINPOOL ||
-        context->keyObject->cipherType == kSSS_CipherType_EC_TWISTED_ED) {
+    if (context->keyObject->cipherType == kSE_SSS_CipherType_EC_NIST_P ||
+        context->keyObject->cipherType == kSE_SSS_CipherType_EC_NIST_K ||
+        context->keyObject->cipherType == kSE_SSS_CipherType_EC_BRAINPOOL ||
+        context->keyObject->cipherType == kSE_SSS_CipherType_EC_TWISTED_ED) {
         if (NULL == hashfPtr) {
             retval = kStatus_SSS_Fail;
             goto exit;
@@ -1676,7 +1676,7 @@ sss_status_t sss_openssl_asymmetric_sign(
 
     pKey = (EVP_PKEY *)context->keyObject->contents;
 
-    if (context->keyObject->cipherType == kSSS_CipherType_EC_TWISTED_ED) {
+    if (context->keyObject->cipherType == kSE_SSS_CipherType_EC_TWISTED_ED) {
         pKey_md_Ctx = (EVP_MD_CTX *)EVP_MD_CTX_create();
         if (1 != EVP_DigestSignInit(pKey_md_Ctx, NULL, NULL, NULL, pKey)) {
             goto exit;
@@ -1713,7 +1713,7 @@ sss_status_t sss_openssl_asymmetric_verify(
 
     pKey = (EVP_PKEY *)context->keyObject->contents;
 
-    if (context->keyObject->cipherType == kSSS_CipherType_EC_TWISTED_ED) {
+    if (context->keyObject->cipherType == kSE_SSS_CipherType_EC_TWISTED_ED) {
         pKey_md_Ctx = (EVP_MD_CTX *)EVP_MD_CTX_create();
         if (1 != EVP_DigestVerifyInit(pKey_md_Ctx, NULL, NULL, NULL, pKey)) {
             goto exit;
@@ -4142,7 +4142,7 @@ static sss_status_t sss_openssl_generate_ecp_key(sss_openssl_object_t *keyObject
     const char *curve   = NULL;
     int nid             = 0;
 
-    if (keyObject->cipherType == kSSS_CipherType_EC_NIST_P) {
+    if (keyObject->cipherType == kSE_SSS_CipherType_EC_NIST_P) {
         switch (keyBitLen) {
         case 192:
             curve = "P-192";
@@ -4165,7 +4165,7 @@ static sss_status_t sss_openssl_generate_ecp_key(sss_openssl_object_t *keyObject
             goto exit;
         }
     }
-    else if (keyObject->cipherType == kSSS_CipherType_EC_BRAINPOOL) {
+    else if (keyObject->cipherType == kSE_SSS_CipherType_EC_BRAINPOOL) {
         switch (keyBitLen) {
         case 192:
             curve = "brainpoolP192r1";
@@ -4194,7 +4194,7 @@ static sss_status_t sss_openssl_generate_ecp_key(sss_openssl_object_t *keyObject
             goto exit;
         }
     }
-    else if (keyObject->cipherType == kSSS_CipherType_EC_NIST_K) {
+    else if (keyObject->cipherType == kSE_SSS_CipherType_EC_NIST_K) {
         switch (keyBitLen) {
         case 160:
             curve = "secp160k1";
@@ -4214,7 +4214,7 @@ static sss_status_t sss_openssl_generate_ecp_key(sss_openssl_object_t *keyObject
             goto exit;
         }
     }
-    else if (keyObject->cipherType == kSSS_CipherType_EC_TWISTED_ED) {
+    else if (keyObject->cipherType == kSE_SSS_CipherType_EC_TWISTED_ED) {
         switch (keyBitLen) {
         case 256:
             nid = NID_ED25519;
@@ -4225,7 +4225,7 @@ static sss_status_t sss_openssl_generate_ecp_key(sss_openssl_object_t *keyObject
             goto exit;
         }
     }
-    else if (keyObject->cipherType == kSSS_CipherType_EC_MONTGOMERY) {
+    else if (keyObject->cipherType == kSE_SSS_CipherType_EC_MONTGOMERY) {
         switch (keyBitLen) {
         case 256:
             nid = NID_X25519;
@@ -4299,7 +4299,7 @@ static sss_status_t sss_openssl_generate_ecp_key(sss_openssl_object_t *keyObject
         goto exit;
     }
 
-    if (keyObject->cipherType == kSSS_CipherType_EC_NIST_P) {
+    if (keyObject->cipherType == kSE_SSS_CipherType_EC_NIST_P) {
         switch (keyBitLen) {
         case 192:
             nid = NID_X9_62_prime192v1;
@@ -4322,7 +4322,7 @@ static sss_status_t sss_openssl_generate_ecp_key(sss_openssl_object_t *keyObject
             goto exit;
         }
     }
-    else if (keyObject->cipherType == kSSS_CipherType_EC_BRAINPOOL) {
+    else if (keyObject->cipherType == kSE_SSS_CipherType_EC_BRAINPOOL) {
         switch (keyBitLen) {
         case 192:
             nid = NID_brainpoolP192r1;
@@ -4351,7 +4351,7 @@ static sss_status_t sss_openssl_generate_ecp_key(sss_openssl_object_t *keyObject
             goto exit;
         }
     }
-    else if (keyObject->cipherType == kSSS_CipherType_EC_NIST_K) {
+    else if (keyObject->cipherType == kSE_SSS_CipherType_EC_NIST_K) {
         switch (keyBitLen) {
         case 160:
             nid = NID_secp160k1;
@@ -4373,7 +4373,7 @@ static sss_status_t sss_openssl_generate_ecp_key(sss_openssl_object_t *keyObject
     }
 #if (OPENSSL_VERSION_NUMBER < 0x10100000L)
 #else
-    else if (keyObject->cipherType == kSSS_CipherType_EC_MONTGOMERY) {
+    else if (keyObject->cipherType == kSE_SSS_CipherType_EC_MONTGOMERY) {
         switch (keyBitLen) {
         case 256:
             nid = NID_X25519;
@@ -4387,7 +4387,7 @@ static sss_status_t sss_openssl_generate_ecp_key(sss_openssl_object_t *keyObject
             goto exit;
         }
     }
-    else if (keyObject->cipherType == kSSS_CipherType_EC_TWISTED_ED) {
+    else if (keyObject->cipherType == kSE_SSS_CipherType_EC_TWISTED_ED) {
         switch (keyBitLen) {
         case 256:
             nid = NID_ED25519;
@@ -4574,20 +4574,20 @@ static sss_status_t openssl_convert_to_bio(sss_openssl_object_t *keyObject, char
         break;
     case kSSS_KeyPart_Private:
     case kSSS_KeyPart_Pair: {
-        if (keyObject->cipherType == kSSS_CipherType_RSA || keyObject->cipherType == kSSS_CipherType_RSA_CRT) {
+        if (keyObject->cipherType == kSE_SSS_CipherType_RSA || keyObject->cipherType == kSE_SSS_CipherType_RSA_CRT) {
             start = BEGIN_RSA_PRIVATE;
             end   = END_RSA_PRIVATE;
             break;
         }
-        else if (keyObject->cipherType == kSSS_CipherType_EC_NIST_P ||
-                 keyObject->cipherType == kSSS_CipherType_EC_NIST_K ||
-                 keyObject->cipherType == kSSS_CipherType_EC_BRAINPOOL) {
+        else if (keyObject->cipherType == kSE_SSS_CipherType_EC_NIST_P ||
+                 keyObject->cipherType == kSE_SSS_CipherType_EC_NIST_K ||
+                 keyObject->cipherType == kSE_SSS_CipherType_EC_BRAINPOOL) {
             start = BEGIN_EC_PRIVATE;
             end   = END_EC_PRIVATE;
             break;
         }
-        else if (keyObject->cipherType == kSSS_CipherType_EC_MONTGOMERY ||
-                 keyObject->cipherType == kSSS_CipherType_EC_TWISTED_ED) {
+        else if (keyObject->cipherType == kSE_SSS_CipherType_EC_MONTGOMERY ||
+                 keyObject->cipherType == kSE_SSS_CipherType_EC_TWISTED_ED) {
             start = BEGIN_PRIVATE;
             end   = END_PRIVATE;
             break;

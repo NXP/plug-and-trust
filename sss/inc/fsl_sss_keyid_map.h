@@ -59,7 +59,7 @@ typedef struct
      * B0,B1,B2,B3 -> Key part  and  B4,B5,B6,B7 -> (No of slots taken - 1) */
     uint8_t keyPart;
     uint8_t accessPermission;
-    uint8_t cipherType; /* Of type sss_cipher_type_t */
+    uint8_t cipherType; /* Of type se_sss_cipher_type_t */
     /** Internal index */
     uint8_t keyIntIndex;
 } keyIdAndTypeIndexLookup_t;
@@ -120,7 +120,7 @@ void ks_common_init_fat(
 sss_status_t ks_common_update_fat(keyStoreTable_t *keystore_shadow,
     uint32_t extId,
     sss_key_part_t object_part,
-    sss_cipher_type_t cipher_type,
+    se_sss_cipher_type_t cipher_type,
     uint8_t intIndex,
     uint32_t accessPermission,
     uint16_t keyLen);
@@ -176,7 +176,7 @@ void ks_sw_fat_remove(const char *szRootPath);
 void ks_sw_fat_free(keyStoreTable_t *keystore_shadow);
 void ks_sw_fat_allocate(keyStoreTable_t **keystore_shadow);
 void ks_sw_getKeyFileName(
-    char *const file_name, const size_t size, const sss_object_t *sss_key, const char *root_folder);
+    char *const file_name, const size_t size, const se_sss_object_t *sss_key, const char *root_folder);
 sss_status_t ks_sw_fat_load(const char *szRootPath, keyStoreTable_t *pKeystore_shadow);
 
 #endif /* SSS_INC_KEYID_MAP_H_ */

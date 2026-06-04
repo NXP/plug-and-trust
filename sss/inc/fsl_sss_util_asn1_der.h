@@ -13,7 +13,7 @@
 #include "fsl_sss_ftr_default.h"
 #endif
 
-#include <fsl_sss_api.h>
+#include "inc/fsl_sss_api.h"
 
 /* ************************************************************************** */
 /* Defines                                                                    */
@@ -85,7 +85,7 @@ extern const size_t der_rsa_4096_len;
 /**/
 sss_status_t sss_util_asn1_rsa_parse_private(const uint8_t *key,
     size_t keylen,
-    sss_cipher_type_t cipher_type,
+    se_sss_cipher_type_t cipher_type,
     uint8_t **modulus,
     size_t *modlen,
     uint8_t **pubExp,
@@ -105,7 +105,7 @@ sss_status_t sss_util_asn1_rsa_parse_private(const uint8_t *key,
 
 sss_status_t sss_util_asn1_rsa_parse_private_allow_invalid_key(const uint8_t *key,
     size_t keylen,
-    sss_cipher_type_t cipher_type,
+    se_sss_cipher_type_t cipher_type,
     uint8_t **modulus,
     size_t *modlen,
     uint8_t **pubExp,
@@ -137,7 +137,7 @@ sss_status_t sss_util_asn1_rsa_get_public(
 
 sss_status_t sss_util_asn1_get_oid_from_header(uint8_t *input, size_t inLen, uint32_t *output, uint8_t *outLen);
 
-sss_status_t sss_util_asn1_get_oid_from_sssObj(sss_object_t *pkeyObject, uint32_t *output, uint8_t *outLen);
+sss_status_t sss_util_asn1_get_oid_from_sssObj(se_sss_object_t *pkeyObject, uint32_t *output, uint8_t *outLen);
 
 sss_status_t sss_util_pkcs8_asn1_get_ec_public_key_index(
     const uint8_t *input, size_t inLen, uint16_t *outkeyIndex, size_t *publicKeyLen);

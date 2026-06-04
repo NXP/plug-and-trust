@@ -134,7 +134,7 @@ sss_status_t nxECKey_AuthenticateChannel(
     /*Erase the host key pair as it is no longer needed*/
     memset(hostEckaPub, 0, sizeof(hostEckaPub));
     memset(hostPubkey, 0, sizeof(hostPubkey));
-    sss_key_object_free(&pStatic_ctx->HostEcKeypair);
+    se_sss_key_object_free(&pStatic_ctx->HostEcKeypair);
 
     status = nxECKey_calculate_master_secret(pAuthFScp, drSE, drSELen, shsSecret, shsSecretLen);
     ENSURE_OR_GO_EXIT(status == kStatus_SSS_Success);
@@ -234,7 +234,7 @@ static sss_status_t nxECKey_calculate_master_secret(
     SE05x_AuthCtx_ECKey_t *pAuthFScp, uint8_t *rnd, size_t rndLen, uint8_t *sharedSecret, size_t sharedSecretLen)
 {
     sss_status_t status = kStatus_SSS_Fail;
-    sss_digest_t md;
+    se_sss_digest_t md;
     uint8_t derivationInput[100] = {0};
     uint8_t masterSk[32];
     size_t masterSkLen                 = sizeof(masterSk);
@@ -324,7 +324,7 @@ sss_status_t nxECKey_InternalAuthenticate(pSe05xSession_t se05xSession,
     uint8_t *pRspbuf    = &rspbuf[0];
     size_t rspbufLen    = ARRAY_SIZE(rspbuf);
     size_t rspIndex     = 0;
-    sss_digest_t md;
+    se_sss_digest_t md;
     uint8_t md_host5F37[32];
     size_t md_host5F37Len              = sizeof(md_host5F37);
     NXECKey03_StaticCtx_t *pStatic_ctx = pAuthFScp->pStatic_ctx;
@@ -335,7 +335,7 @@ sss_status_t nxECKey_InternalAuthenticate(pSe05xSession_t se05xSession,
     const tlvHeader_t hdr               = {{CLA_GP_7816 | CLA_GP_SECURITY_BIT, INS_GP_INTERNAL_AUTHENTICATE, 00, 00}};
     uint8_t scpParms[3]                 = {0xAB, SCP_CONFIG, SECURITY_LEVEL};
     uint8_t appletName[APPLET_NAME_LEN] = APPLET_NAME;
-    sss_asymmetric_t asym;
+    se_sss_asymmetric_t asym;
     uint8_t sig_host5F37[100] = {0};
     size_t sig_host5F37Len    = sizeof(sig_host5F37);
 
@@ -500,8 +500,8 @@ sss_status_t nxECKey_Calculate_Shared_secret(
     SE05x_AuthCtx_ECKey_t *pAuthFScp, uint8_t *sharedSecret, size_t *sharedSecretLen)
 {
     sss_status_t status      = kStatus_SSS_Fail;
-    sss_derive_key_t dervCtx = {0};
-    sss_object_t shsSecret   = {0};
+    se_sss_derive_key_t dervCtx = {0};
+    se_sss_object_t shsSecret   = {0};
 
     NXECKey03_StaticCtx_t *pStatic_ctx = pAuthFScp->pStatic_ctx;
     size_t sharedSecBitLen             = 0;
@@ -510,7 +510,7 @@ sss_status_t nxECKey_Calculate_Shared_secret(
     ENSURE_OR_GO_CLEANUP(status == kStatus_SSS_Success);
 
     status = sss_host_key_object_allocate_handle(
-        &shsSecret, __LINE__, kSSS_KeyPart_Default, kSSS_CipherType_AES, 32, kKeyObject_Mode_Transient);
+        &shsSecret, __LINE__, kSSS_KeyPart_Default, kSE_SSS_CipherType_AES, 32, kKeyObject_Mode_Transient);
     ENSURE_OR_GO_CLEANUP(status == kStatus_SSS_Success);
 
     status = sss_host_derive_key_context_init(&dervCtx,

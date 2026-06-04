@@ -21,15 +21,6 @@ if (CONFIG_SE05X_LIB)
     get_property(SDK_INCLUDES TARGET ${CONFIG_SDK_EXTERNAL_TARGET} PROPERTY INTERFACE_INCLUDE_DIRECTORIES)
     get_property(SDK_DEFINES TARGET ${CONFIG_SDK_EXTERNAL_TARGET} PROPERTY INTERFACE_COMPILE_DEFINITIONS)
 
-    # Filter out includes containing "secure-subsystem"
-    set(FILTERED_SDK_INCLUDES "")
-    foreach(include_dir ${SDK_INCLUDES})
-        string(FIND "${include_dir}" "secure-subsystem" found_pos)
-        if(${found_pos} EQUAL -1)
-            list(APPEND FILTERED_SDK_INCLUDES ${include_dir})
-        endif()
-    endforeach()
-
     target_sources(simw_lib PRIVATE
         ${SIMW_LIB_DIR}/hostlib/hostLib/libCommon/infra/global_platf.c
         ${SIMW_LIB_DIR}/hostlib/hostLib/libCommon/infra/sm_apdu.c
@@ -52,6 +43,7 @@ if (CONFIG_SE05X_LIB)
         ${SIMW_LIB_DIR}/sss/src/keystore/keystore_cmn.c
         ${SIMW_LIB_DIR}/sss/src/keystore/keystore_pc.c
         ${SIMW_LIB_DIR}/sss/src/mbedtls/fsl_sss_mbedtls_apis.c
+        ${SIMW_LIB_DIR}/sss/src/psa/fsl_sss_psa_apis.c
         ${SIMW_LIB_DIR}/sss/src/se05x/fsl_sss_se05x_apis.c
         ${SIMW_LIB_DIR}/sss/src/se05x/fsl_sss_se05x_mw.c
         ${SIMW_LIB_DIR}/sss/src/se05x/fsl_sss_se05x_policy.c
@@ -62,7 +54,7 @@ if (CONFIG_SE05X_LIB)
     )
 
     target_include_directories(simw_lib PUBLIC
-        ${FILTERED_SDK_INCLUDES}
+        ${SDK_INCLUDES}
         ${SIMW_LIB_DIR}/sss
         ${SIMW_LIB_DIR}/sss/inc
         ${SIMW_LIB_DIR}/sss/port/default

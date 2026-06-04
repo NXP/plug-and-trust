@@ -84,7 +84,7 @@ sss_status_t nxSCP03_Encrypt_CommandAPDU(NXSCP03_DynCtx_t *pdySCP03SessCtx, uint
     LOG_MAU8_D(" Input:cmdBuf", cmdBuf, *pCmdBufLen);
 
     if (*pCmdBufLen != 0) {
-        sss_symmetric_t symm;
+        se_sss_symmetric_t symm;
         uint8_t iv[16] = {0};
         uint8_t *pIv = (uint8_t *)iv;
         uint8_t apduPayloadToEncrypt[NX_SCP03_MAX_BUFFER_SIZE] = {0};
@@ -128,7 +128,7 @@ uint16_t nxpSCP03_Decrypt_ResponseAPDU(
     uint16_t status = SCP_FAIL;
     sss_algorithm_t algorithm = kAlgorithm_SSS_CMAC_AES;
     sss_mode_t mode = kMode_SSS_Mac;
-    sss_mac_t macCtx;
+    se_sss_mac_t macCtx;
     uint8_t sw[SCP_GP_SW_LEN];
     uint8_t respMac[SCP_CMAC_SIZE] = {0};
     size_t signatureLen = sizeof(respMac);
@@ -140,7 +140,7 @@ uint16_t nxpSCP03_Decrypt_ResponseAPDU(
     uint8_t plaintextResponse[NX_SCP03_MAX_BUFFER_SIZE]={0};
     sss_algorithm_t algorithm_aes = kAlgorithm_SSS_AES_CBC;
     sss_mode_t mode_aes = kMode_SSS_Decrypt;
-    sss_symmetric_t symm;
+    se_sss_symmetric_t symm;
     size_t actualRespLen = 0;
 
     AX_UNUSED_ARG(hasle);
@@ -298,7 +298,7 @@ static sss_status_t nxpSCP03_Get_ResponseICV(NXSCP03_DynCtx_t *pdySCP03SessCtx, 
     uint8_t ivZero[SCP_IV_SIZE] = {
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
     sss_status_t status = kStatus_SSS_Fail;
-    sss_symmetric_t symm;
+    se_sss_symmetric_t symm;
     size_t dataLen = 0;
     uint8_t paddedCounterBlock[SCP_IV_SIZE] = {
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
@@ -371,7 +371,7 @@ sss_status_t nxpSCP03_CalculateMac_CommandAPDU(
     NXSCP03_DynCtx_t *pdySCP03SessCtx, uint8_t *pCmdBuf, size_t cmdBufLen, uint8_t *mac, size_t *macLen)
 {
     sss_status_t sss_status = kStatus_SSS_Fail;
-    sss_mac_t macCtx;
+    se_sss_mac_t macCtx;
     sss_algorithm_t algorithm = kAlgorithm_SSS_CMAC_AES;
     sss_mode_t mode = kMode_SSS_Mac;
 
@@ -409,7 +409,7 @@ static sss_status_t nxSCP03_Calculate_CommandICV(NXSCP03_DynCtx_t *pdySCP03SessC
     uint8_t ivZero[SCP_KEY_SIZE] = {
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
     sss_status_t status = kStatus_SSS_Fail;
-    sss_symmetric_t symm;
+    se_sss_symmetric_t symm;
     size_t dataLen = 0;
 
     ENSURE_OR_GO_EXIT(pdySCP03SessCtx != NULL);

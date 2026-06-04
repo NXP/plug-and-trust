@@ -39,50 +39,50 @@ const uint8_t se050Authkey[] = EX_SSS_AUTH_SE05X_UserID_VALUE;
 #if (SSS_HAVE_SE05X_AUTH_USERID)
 #define SSS_EX_SE05x_AUTH_MECH kSSS_AuthType_ID
 #define SSS_EX_SE05x_AUTH_ID kEX_SSS_ObjID_UserID_Auth
-#define SSS_EX_CONNECTION_TYPE kSSS_ConnectionType_Password
+#define SSS_EX_CONNECTION_TYPE kSE_SSS_ConnectionType_Password
 #endif
 
 #if (SSS_HAVE_SE05X_AUTH_PLATFSCP03)
 #define SSS_EX_SE05x_AUTH_MECH kSSS_AuthType_SCP03
-#define SSS_EX_CONNECTION_TYPE kSSS_ConnectionType_Encrypted
+#define SSS_EX_CONNECTION_TYPE kSE_SSS_ConnectionType_Encrypted
 #endif
 
 #if (SSS_HAVE_SE05X_AUTH_USERID_PLATFSCP03)
 #define SSS_EX_SE05x_AUTH_MECH kSSS_AuthType_SCP03
 #define SSS_EX_SE05x_TUNN_AUTH_MECH kSSS_AuthType_ID
 #define SSS_EX_SE05x_AUTH_ID kEX_SSS_ObjID_UserID_Auth
-#define SSS_EX_CONNECTION_TYPE kSSS_ConnectionType_Encrypted
+#define SSS_EX_CONNECTION_TYPE kSE_SSS_ConnectionType_Encrypted
 #endif
 
 #if (SSS_HAVE_SE05X_AUTH_AESKEY_PLATFSCP03)
 #define SSS_EX_SE05x_AUTH_MECH kSSS_AuthType_SCP03
 #define SSS_EX_SE05x_TUNN_AUTH_MECH kSSS_AuthType_AESKey
 #define SSS_EX_SE05x_AUTH_ID kEX_SSS_ObjID_APPLETSCP03_Auth
-#define SSS_EX_CONNECTION_TYPE kSSS_ConnectionType_Encrypted
+#define SSS_EX_CONNECTION_TYPE kSE_SSS_ConnectionType_Encrypted
 #endif
 
 #if (SSS_HAVE_SE05X_AUTH_ECKEY_PLATFSCP03)
 #define SSS_EX_SE05x_AUTH_MECH kSSS_AuthType_SCP03
 #define SSS_EX_SE05x_TUNN_AUTH_MECH kSSS_AuthType_ECKey
 #define SSS_EX_SE05x_AUTH_ID kEX_SSS_objID_ECKEY_Auth
-#define SSS_EX_CONNECTION_TYPE kSSS_ConnectionType_Encrypted
+#define SSS_EX_CONNECTION_TYPE kSE_SSS_ConnectionType_Encrypted
 #endif
 
 #if (SSS_HAVE_SE05X_AUTH_AESKEY)
 #define SSS_EX_SE05x_AUTH_MECH kSSS_AuthType_AESKey
 #define SSS_EX_SE05x_AUTH_ID kEX_SSS_ObjID_APPLETSCP03_Auth
-#define SSS_EX_CONNECTION_TYPE kSSS_ConnectionType_Encrypted
+#define SSS_EX_CONNECTION_TYPE kSE_SSS_ConnectionType_Encrypted
 #endif
 
 #if (SSS_HAVE_SE05X_AUTH_ECKEY)
 #define SSS_EX_SE05x_AUTH_MECH kSSS_AuthType_ECKey
 #define SSS_EX_SE05x_AUTH_ID kEX_SSS_objID_ECKEY_Auth
-#define SSS_EX_CONNECTION_TYPE kSSS_ConnectionType_Encrypted
+#define SSS_EX_CONNECTION_TYPE kSE_SSS_ConnectionType_Encrypted
 #endif
 
 #if (SSS_HAVE_SE05X_AUTH_NONE)
 #define SSS_EX_SE05x_AUTH_MECH kSSS_AuthType_None
-#define SSS_EX_CONNECTION_TYPE kSSS_ConnectionType_Plain
+#define SSS_EX_CONNECTION_TYPE kSE_SSS_ConnectionType_Plain
 #endif
 
 #ifndef SSS_EX_SE05x_AUTH_MECH
@@ -90,14 +90,14 @@ const uint8_t se050Authkey[] = EX_SSS_AUTH_SE05X_UserID_VALUE;
 #endif
 
 #ifndef SSS_EX_CONNECTION_TYPE
-#define SSS_EX_CONNECTION_TYPE kSSS_ConnectionType_Plain
+#define SSS_EX_CONNECTION_TYPE kSE_SSS_ConnectionType_Plain
 #endif
 
 #ifndef SSS_EX_SE05x_TUNN_AUTH_MECH
 #define SSS_EX_SE05x_TUNN_AUTH_MECH kSSS_AuthType_None
 #else
 /* Only define if using Tunnel*/
-sss_tunnel_t gTunnel_ctx;
+se_sss_tunnel_t gTunnel_ctx;
 ex_sss_platf_ctx_t gPlatfCtx;
 #endif
 
@@ -117,10 +117,10 @@ sss_status_t ex_sss_boot_se05x_open(ex_sss_boot_ctx_t *pCtx, const char *portNam
 {
     sss_status_t status           = kStatus_SSS_Fail;
     SE_Connect_Ctx_t *pConnectCtx = NULL;
-    sss_session_t *pPfSession     = NULL;
+    se_sss_session_t *pPfSession     = NULL;
 #if (SSS_HAVE_SE05X_AUTH_USERID_PLATFSCP03) || (SSS_HAVE_SE05X_AUTH_AESKEY_PLATFSCP03) || \
     (SSS_HAVE_SE05X_AUTH_ECKEY_PLATFSCP03)
-    sss_connection_type_t connectType = kSSS_ConnectionType_Plain;
+    se_sss_connection_type_t connectType = kSE_SSS_ConnectionType_Plain;
     SE05x_Connect_Ctx_t *pchannlCtxt  = NULL;
 #endif
 
@@ -207,17 +207,17 @@ sss_status_t ex_sss_boot_se05x_open(ex_sss_boot_ctx_t *pCtx, const char *portNam
 #endif // SSS_HAVE_HOSTCRYPTO_ANY
 
     if (SSS_EX_SE05x_AUTH_MECH == kSSS_AuthType_SCP03 || SSS_EX_SE05x_AUTH_MECH == kSSS_AuthType_None) {
-        status = sss_session_open(pPfSession, kType_SSS_SE_SE05x, 0, SSS_EX_CONNECTION_TYPE, pConnectCtx);
+        status = se_sss_session_open(pPfSession, kType_SE_SSS_SE_SE05x, 0, SSS_EX_CONNECTION_TYPE, pConnectCtx);
         if (kStatus_SSS_Success != status) {
-            LOG_E("sss_session_open failed");
+            LOG_E("se_sss_session_open failed");
             goto cleanup;
         }
     }
 #ifdef SSS_EX_SE05x_AUTH_ID
     else {
-        status = sss_session_open(pPfSession, kType_SSS_SE_SE05x, auth_id, SSS_EX_CONNECTION_TYPE, pConnectCtx);
+        status = se_sss_session_open(pPfSession, kType_SE_SSS_SE_SE05x, auth_id, SSS_EX_CONNECTION_TYPE, pConnectCtx);
         if (kStatus_SSS_Success != status) {
-            LOG_E("sss_session_open failed");
+            LOG_E("se_sss_session_open failed");
         }
     }
 #else
@@ -239,23 +239,23 @@ sss_status_t ex_sss_boot_se05x_open(ex_sss_boot_ctx_t *pCtx, const char *portNam
         goto cleanup;
     }
 
-    status = sss_tunnel_context_init(pCtx->pTunnel_ctx, pPfSession /* session */);
+    status = se_sss_tunnel_context_init(pCtx->pTunnel_ctx, pPfSession /* session */);
     if (kStatus_SSS_Success != status) {
-        LOG_E("sss_tunnel_context_init failed");
+        LOG_E("se_sss_tunnel_context_init failed");
         goto cleanup;
     }
 
     pchannlCtxt->connType  = kType_SE_Conn_Type_Channel;
     pchannlCtxt->tunnelCtx = pCtx->pTunnel_ctx;
     if (pchannlCtxt->auth.authType == kSSS_AuthType_ID) {
-        connectType = kSSS_ConnectionType_Password;
+        connectType = kSE_SSS_ConnectionType_Password;
     }
     else {
-        connectType = kSSS_ConnectionType_Encrypted;
+        connectType = kSE_SSS_ConnectionType_Encrypted;
     }
-    status = sss_session_open(&pCtx->session, kType_SSS_SE_SE05x, auth_id, connectType, pchannlCtxt);
+    status = se_sss_session_open(&pCtx->session, kType_SE_SSS_SE_SE05x, auth_id, connectType, pchannlCtxt);
     if (kStatus_SSS_Success != status) {
-        LOG_E("sss_session_open failed");
+        LOG_E("se_sss_session_open failed");
         goto cleanup;
     }
 
@@ -273,10 +273,10 @@ sss_status_t ex_sss_boot_se05x_open_on_Id(ex_sss_boot_ctx_t *pCtx, const char *p
 {
     sss_status_t status           = kStatus_SSS_Fail;
     SE_Connect_Ctx_t *pConnectCtx = NULL;
-    sss_session_t *pPfSession     = NULL;
+    se_sss_session_t *pPfSession     = NULL;
 #if (SSS_HAVE_SE05X_AUTH_USERID_PLATFSCP03) || (SSS_HAVE_SE05X_AUTH_AESKEY_PLATFSCP03) || \
     (SSS_HAVE_SE05X_AUTH_ECKEY_PLATFSCP03)
-    sss_connection_type_t connectType = kSSS_ConnectionType_Plain;
+    se_sss_connection_type_t connectType = kSE_SSS_ConnectionType_Plain;
     ex_sss_platf_ctx_t *pPlatfCtx     = NULL;
     SE05x_Connect_Ctx_t *pchannlCtxt  = NULL;
 #endif
@@ -370,17 +370,17 @@ sss_status_t ex_sss_boot_se05x_open_on_Id(ex_sss_boot_ctx_t *pCtx, const char *p
     }
 #endif // SSS_HAVE_HOSTCRYPTO_ANY
     if (SSS_EX_SE05x_AUTH_MECH == kSSS_AuthType_SCP03 || SSS_EX_SE05x_AUTH_MECH == kSSS_AuthType_None) {
-        status = sss_session_open(pPfSession, kType_SSS_SE_SE05x, 0, SSS_EX_CONNECTION_TYPE, pConnectCtx);
+        status = se_sss_session_open(pPfSession, kType_SE_SSS_SE_SE05x, 0, SSS_EX_CONNECTION_TYPE, pConnectCtx);
         if (kStatus_SSS_Success != status) {
-            LOG_E("sss_session_open failed");
+            LOG_E("se_sss_session_open failed");
             goto cleanup;
         }
     }
 #ifdef SSS_EX_SE05x_AUTH_ID
     else {
-        status = sss_session_open(pPfSession, kType_SSS_SE_SE05x, auth_id, SSS_EX_CONNECTION_TYPE, pConnectCtx);
+        status = se_sss_session_open(pPfSession, kType_SE_SSS_SE_SE05x, auth_id, SSS_EX_CONNECTION_TYPE, pConnectCtx);
         if (kStatus_SSS_Success != status) {
-            LOG_E("sss_session_open failed");
+            LOG_E("se_sss_session_open failed");
         }
     }
 #else
@@ -402,23 +402,23 @@ sss_status_t ex_sss_boot_se05x_open_on_Id(ex_sss_boot_ctx_t *pCtx, const char *p
         goto cleanup;
     }
 
-    status = sss_tunnel_context_init(pCtx->pTunnel_ctx, pPfSession /* session */);
+    status = se_sss_tunnel_context_init(pCtx->pTunnel_ctx, pPfSession /* session */);
     if (kStatus_SSS_Success != status) {
-        LOG_E("sss_tunnel_context_init failed");
+        LOG_E("se_sss_tunnel_context_init failed");
         goto cleanup;
     }
 
     pchannlCtxt->connType  = kType_SE_Conn_Type_Channel;
     pchannlCtxt->tunnelCtx = pCtx->pTunnel_ctx;
     if (pchannlCtxt->auth.authType == kSSS_AuthType_ID) {
-        connectType = kSSS_ConnectionType_Password;
+        connectType = kSE_SSS_ConnectionType_Password;
     }
     else {
-        connectType = kSSS_ConnectionType_Encrypted;
+        connectType = kSE_SSS_ConnectionType_Encrypted;
     }
-    status = sss_session_open(&pCtx->session, kType_SSS_SE_SE05x, auth_id, connectType, pchannlCtxt);
+    status = se_sss_session_open(&pCtx->session, kType_SE_SSS_SE_SE05x, auth_id, connectType, pchannlCtxt);
     if (kStatus_SSS_Success != status) {
-        LOG_E("sss_session_open failed");
+        LOG_E("se_sss_session_open failed");
         goto cleanup;
     }
 

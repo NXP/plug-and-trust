@@ -252,24 +252,24 @@ uint8_t sss_mgf_mask_func(uint8_t *dst, size_t dlen, uint8_t *src, size_t slen, 
     size_t i, use_len;
     uint8_t ret         = 1;
     sss_status_t status = kStatus_SSS_Fail;
-    sss_digest_t digest = {
+    se_sss_digest_t digest = {
         0,
     };
     size_t digestLen           = 512; /* MAX - SHA512*/
     size_t hash_length         = slen;
-    sss_session_t host_session = {0};
+    se_sss_session_t host_session = {0};
 #if SSS_HAVE_HOSTCRYPTO_MBEDTLS
-    const sss_type_t host_crypto = kType_SSS_mbedTLS;
+    const se_sss_type_t host_crypto = kType_SE_SSS_mbedTLS;
 #elif SSS_HAVE_HOSTCRYPTO_OPENSSL
-    const sss_type_t host_crypto = kType_SSS_OpenSSL;
+    const se_sss_type_t host_crypto = kType_SE_SSS_OpenSSL;
 #else
-    const sss_type_t host_crypto = kType_SSS_SubSystem_NONE;
+    const se_sss_type_t host_crypto = kType_SE_SSS_SubSystem_NONE;
 #endif
 
     memset(mask, 0, 64);
     memset(counter, 0, 4);
 
-    status = sss_host_session_open(&host_session, host_crypto, 0, kSSS_ConnectionType_Plain, NULL);
+    status = sss_host_session_open(&host_session, host_crypto, 0, kSE_SSS_ConnectionType_Plain, NULL);
     if (kStatus_SSS_Success != status) {
         goto exit;
     }
@@ -283,32 +283,32 @@ uint8_t sss_mgf_mask_func(uint8_t *dst, size_t dlen, uint8_t *src, size_t slen, 
             use_len = dlen;
         }
 
-        status = sss_digest_context_init(&digest, &host_session, sha_algorithm, kMode_SSS_Digest);
+        status = se_sss_digest_context_init(&digest, &host_session, sha_algorithm, kMode_SSS_Digest);
         if (status != kStatus_SSS_Success) {
             goto exit;
         }
 
-        status = sss_digest_init(&digest);
+        status = se_sss_digest_init(&digest);
         if (status != kStatus_SSS_Success) {
             goto exit;
         }
 
-        status = sss_digest_update(&digest, src, slen);
+        status = se_sss_digest_update(&digest, src, slen);
         if (status != kStatus_SSS_Success) {
             goto exit;
         }
 
-        status = sss_digest_update(&digest, counter, 4);
+        status = se_sss_digest_update(&digest, counter, 4);
         if (status != kStatus_SSS_Success) {
             goto exit;
         }
 
-        status = sss_digest_finish(&digest, mask, &digestLen);
+        status = se_sss_digest_finish(&digest, mask, &digestLen);
         if (status != kStatus_SSS_Success) {
             goto exit;
         }
 
-        sss_digest_context_free(&digest);
+        se_sss_digest_context_free(&digest);
 
         for (i = 0; i < use_len; ++i) {
             *p++ ^= mask[i];
@@ -323,7 +323,7 @@ uint8_t sss_mgf_mask_func(uint8_t *dst, size_t dlen, uint8_t *src, size_t slen, 
 
 exit:
     if (digest.session != NULL) {
-        sss_digest_context_free(&digest);
+        se_sss_digest_context_free(&digest);
     }
     sss_host_session_close(&host_session);
 
@@ -351,23 +351,23 @@ smStatus_t emsa_encode(
     uint32_t hash_length = 0;
     uint32_t offset      = 0;
     size_t msb;
-    sss_rng_context_t rng;
-    sss_digest_t digest;
+    se_sss_rng_context_t rng;
+    se_sss_digest_t digest;
     sss_algorithm_t sha_algorithm = kAlgorithm_None;
     size_t digestLen              = 512; /* MAX - SHA512*/
     sss_status_t status           = kStatus_SSS_Fail;
     uint16_t key_size_bytes       = 0;
     smStatus_t ret_val            = SM_NOT_OK;
-    sss_session_t host_session    = {0};
+    se_sss_session_t host_session    = {0};
 #if SSS_HAVE_HOSTCRYPTO_MBEDTLS
-    const sss_type_t host_crypto = kType_SSS_mbedTLS;
+    const se_sss_type_t host_crypto = kType_SE_SSS_mbedTLS;
 #elif SSS_HAVE_HOSTCRYPTO_OPENSSL
-    const sss_type_t host_crypto = kType_SSS_OpenSSL;
+    const se_sss_type_t host_crypto = kType_SE_SSS_OpenSSL;
 #else
-    const sss_type_t host_crypto = kType_SSS_SubSystem_NONE;
+    const se_sss_type_t host_crypto = kType_SE_SSS_SubSystem_NONE;
 #endif
 
-    status = sss_host_session_open(&host_session, host_crypto, 0, kSSS_ConnectionType_Plain, NULL);
+    status = sss_host_session_open(&host_session, host_crypto, 0, kSE_SSS_ConnectionType_Plain, NULL);
     if (kStatus_SSS_Success != status) {
         goto exit;
     }
@@ -426,12 +426,12 @@ smStatus_t emsa_encode(
     *outLen    = outlength;
 
     /* Generate salt of length saltlength */
-    status = sss_rng_context_init(&rng, &host_session /* session */);
+    status = se_sss_rng_context_init(&rng, &host_session /* session */);
     if (status != kStatus_SSS_Success) {
         goto exit;
     }
 
-    status = sss_rng_get_random(&rng, salt, saltlength);
+    status = se_sss_rng_get_random(&rng, salt, saltlength);
     if (status != kStatus_SSS_Success) {
         goto exit;
     }
@@ -442,37 +442,37 @@ smStatus_t emsa_encode(
     memcpy(p, salt, saltlength);
     p += saltlength;
 
-    status = sss_digest_context_init(&digest, &host_session, sha_algorithm, kMode_SSS_Digest);
+    status = se_sss_digest_context_init(&digest, &host_session, sha_algorithm, kMode_SSS_Digest);
     if (status != kStatus_SSS_Success) {
         goto exit;
     }
 
-    status = sss_digest_init(&digest);
+    status = se_sss_digest_init(&digest);
     if (status != kStatus_SSS_Success) {
         goto exit;
     }
 
-    status = sss_digest_update(&digest, p, 8);
+    status = se_sss_digest_update(&digest, p, 8);
     if (status != kStatus_SSS_Success) {
         goto exit;
     }
 
-    status = sss_digest_update(&digest, hash, hash_len);
+    status = se_sss_digest_update(&digest, hash, hash_len);
     if (status != kStatus_SSS_Success) {
         goto exit;
     }
 
-    status = sss_digest_update(&digest, salt, saltlength);
+    status = se_sss_digest_update(&digest, salt, saltlength);
     if (status != kStatus_SSS_Success) {
         goto exit;
     }
 
-    status = sss_digest_finish(&digest, p, &digestLen);
+    status = se_sss_digest_finish(&digest, p, &digestLen);
     if (status != kStatus_SSS_Success) {
         goto exit;
     }
 
-    sss_digest_context_free(&digest);
+    se_sss_digest_context_free(&digest);
 
     if (msb % 8 == 0) {
         offset = 1;
@@ -507,16 +507,16 @@ smStatus_t emsa_decode_and_compare(
     uint32_t observed_salt_len, msb;
     uint8_t buf[1024];
     sss_algorithm_t sha_algorithm = kAlgorithm_None;
-    sss_digest_t digest;
+    se_sss_digest_t digest;
     size_t digestLen           = 512; /* MAX - SHA512*/
     sss_status_t status        = kStatus_SSS_Fail;
-    sss_session_t host_session = {0};
+    se_sss_session_t host_session = {0};
 #if SSS_HAVE_HOSTCRYPTO_MBEDTLS
-    const sss_type_t host_crypto = kType_SSS_mbedTLS;
+    const se_sss_type_t host_crypto = kType_SE_SSS_mbedTLS;
 #elif SSS_HAVE_HOSTCRYPTO_OPENSSL
-    const sss_type_t host_crypto = kType_SSS_OpenSSL;
+    const se_sss_type_t host_crypto = kType_SE_SSS_OpenSSL;
 #else
-    const sss_type_t host_crypto = kType_SSS_SubSystem_NONE;
+    const se_sss_type_t host_crypto = kType_SE_SSS_SubSystem_NONE;
 #endif
 
     ENSURE_OR_GO_EXIT(sig != NULL);
@@ -525,7 +525,7 @@ smStatus_t emsa_decode_and_compare(
 
     memcpy(buf, sig, sig_len);
 
-    status = sss_host_session_open(&host_session, host_crypto, 0, kSSS_ConnectionType_Plain, NULL);
+    status = sss_host_session_open(&host_session, host_crypto, 0, kSE_SSS_ConnectionType_Plain, NULL);
     if (kStatus_SSS_Success != status) {
         goto exit;
     }
@@ -590,37 +590,37 @@ smStatus_t emsa_decode_and_compare(
 
     observed_salt_len = hash_start - p;
 
-    status = sss_digest_context_init(&digest, &host_session, sha_algorithm, kMode_SSS_Digest);
+    status = se_sss_digest_context_init(&digest, &host_session, sha_algorithm, kMode_SSS_Digest);
     if (status != kStatus_SSS_Success) {
         goto exit;
     }
 
-    status = sss_digest_init(&digest);
+    status = se_sss_digest_init(&digest);
     if (status != kStatus_SSS_Success) {
         goto exit;
     }
 
-    status = sss_digest_update(&digest, zeros, 8);
+    status = se_sss_digest_update(&digest, zeros, 8);
     if (status != kStatus_SSS_Success) {
         goto exit;
     }
 
-    status = sss_digest_update(&digest, hash, hash_len);
+    status = se_sss_digest_update(&digest, hash, hash_len);
     if (status != kStatus_SSS_Success) {
         goto exit;
     }
 
-    status = sss_digest_update(&digest, p, observed_salt_len);
+    status = se_sss_digest_update(&digest, p, observed_salt_len);
     if (status != kStatus_SSS_Success) {
         goto exit;
     }
 
-    status = sss_digest_finish(&digest, result, &digestLen);
+    status = se_sss_digest_finish(&digest, result, &digestLen);
     if (status != kStatus_SSS_Success) {
         goto exit;
     }
 
-    sss_digest_context_free(&digest);
+    se_sss_digest_context_free(&digest);
 
     if (memcmp(hash_start, result, hlen) != 0) {
         goto exit;

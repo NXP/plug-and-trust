@@ -65,7 +65,7 @@
 
 /* For the key sss_key, what will the file name look like */
 void ks_sw_getKeyFileName(
-    char *const file_name, const size_t size, const sss_object_t *sss_key, const char *root_folder)
+    char *const file_name, const size_t size, const se_sss_object_t *sss_key, const char *root_folder)
 {
     uint32_t keyId      = sss_key->keyId;
     uint16_t keyType    = 0;
@@ -284,7 +284,7 @@ sss_status_t ks_mbedtls_load_key(sss_mbedtls_object_t *sss_key, keyStoreTable_t 
             sss_key->objectType = (shadowEntry->keyPart & 0x0F);
 
             ks_sw_getKeyFileName(
-                file_name, sizeof(file_name), (const sss_object_t *)sss_key, sss_key->keyStore->session->szRootPath);
+                file_name, sizeof(file_name), (const se_sss_object_t *)sss_key, sss_key->keyStore->session->szRootPath);
             retval = kStatus_SSS_Success;
             break;
         }
@@ -345,7 +345,7 @@ sss_status_t ks_mbedtls_load_key(sss_mbedtls_object_t *sss_key, keyStoreTable_t 
     retval = ks_mbedtls_key_object_create(sss_key,
         shadowEntry->extKeyId,
         (sss_key_part_t)(shadowEntry->keyPart & 0x0F),
-        (sss_cipher_type_t)(shadowEntry->cipherType),
+        (se_sss_cipher_type_t)(shadowEntry->cipherType),
         size,
         kKeyObject_Mode_Persistent);
     ENSURE_OR_GO_CLEANUP(kStatus_SSS_Success == retval)
@@ -371,7 +371,7 @@ sss_status_t ks_mbedtls_store_key(const sss_mbedtls_object_t *sss_key)
     mbedtls_pk_context *pk;
 
     ks_sw_getKeyFileName(
-        file_name, sizeof(file_name), (const sss_object_t *)sss_key, sss_key->keyStore->session->szRootPath);
+        file_name, sizeof(file_name), (const se_sss_object_t *)sss_key, sss_key->keyStore->session->szRootPath);
     fp = fopen(file_name, "wb+");
     if (fp == NULL) {
         LOG_E(" Can not open the file");
@@ -445,7 +445,7 @@ sss_status_t ks_mbedtls_remove_key(const sss_mbedtls_object_t *sss_key)
     sss_status_t retval                = kStatus_SSS_Fail;
     char file_name[MAX_FILE_NAME_SIZE] = {0};
     ks_sw_getKeyFileName(
-        file_name, sizeof(file_name), (const sss_object_t *)sss_key, sss_key->keyStore->session->szRootPath);
+        file_name, sizeof(file_name), (const se_sss_object_t *)sss_key, sss_key->keyStore->session->szRootPath);
     if (0 == UNLINK(file_name)) {
         retval = kStatus_SSS_Success;
     }

@@ -9,7 +9,7 @@
 #define MBEDTLS_DO_LITTLE_ENDIAN
 
 #if SSS_HAVE_HOSTCRYPTO_MBEDTLS
-
+#if !SSS_USE_MBEDTLS_PSA_APIS
 #include <mbedtls/version.h>
 #include <stdlib.h>
 #ifdef MBEDTLS_FS_IO
@@ -56,7 +56,7 @@ int mbedtls_entropy_func_3_X(void *data, unsigned char *output, size_t len);
 
 #if SSSFTR_SW_ECC && SSS_HAVE_TESTCOUNTERPART
 static sss_status_t sss_mbedtls_generate_ecp_key(
-    mbedtls_pk_context *pkey, sss_mbedtls_session_t *pSession, size_t keyBitLen, sss_cipher_type_t key_typ);
+    mbedtls_pk_context *pkey, sss_mbedtls_session_t *pSession, size_t keyBitLen, se_sss_cipher_type_t key_typ);
 #endif
 
 #if SSSFTR_SW_RSA && SSS_HAVE_TESTCOUNTERPART
@@ -99,9 +99,9 @@ static sss_status_t sss_mbedtls_aead_ccm_update(sss_mbedtls_aead_t *context, con
 
 // LCOV_EXCL_START
 sss_status_t sss_mbedtls_session_create(sss_mbedtls_session_t *session,
-    sss_type_t subsystem,
+    se_sss_type_t subsystem,
     uint32_t application_id,
-    sss_connection_type_t connection_type,
+    se_sss_connection_type_t connection_type,
     void *connectionData)
 {
     sss_status_t retval = kStatus_SSS_Success;
@@ -116,9 +116,9 @@ sss_status_t sss_mbedtls_session_create(sss_mbedtls_session_t *session,
 // LCOV_EXCL_STOP
 
 sss_status_t sss_mbedtls_session_open(sss_mbedtls_session_t *session,
-    sss_type_t subsystem,
+    se_sss_type_t subsystem,
     uint32_t application_id,
-    sss_connection_type_t connection_type,
+    se_sss_connection_type_t connection_type,
     void *connectionData)
 {
     sss_status_t retval      = kStatus_SSS_InvalidArgument;
@@ -127,7 +127,7 @@ sss_status_t sss_mbedtls_session_open(sss_mbedtls_session_t *session,
     ENSURE_OR_GO_EXIT(session != NULL);
     memset(session, 0, sizeof(*session));
     AX_UNUSED_ARG(application_id);
-    ENSURE_OR_GO_EXIT(connection_type == kSSS_ConnectionType_Plain);
+    ENSURE_OR_GO_EXIT(connection_type == kSE_SSS_ConnectionType_Plain);
 
 #ifdef MBEDTLS_FS_IO
     if (connectionData == NULL) {
@@ -230,7 +230,7 @@ cleanup:
 sss_status_t sss_mbedtls_key_object_allocate_handle(sss_mbedtls_object_t *keyObject,
     uint32_t keyId,
     sss_key_part_t key_part,
-    sss_cipher_type_t cipherType,
+    se_sss_cipher_type_t cipherType,
     size_t keyByteLenMax,
     uint32_t options)
 {
@@ -328,7 +328,7 @@ sss_status_t sss_mbedtls_key_object_set_user(sss_mbedtls_object_t *keyObject, ui
 {
     sss_status_t retval = kStatus_SSS_Fail;
     AX_UNUSED_ARG(options);
-    ENSURE_OR_GO_EXIT((keyObject->accessRights & kAccessPermission_SSS_ChangeAttributes));
+    ENSURE_OR_GO_EXIT((keyObject->accessRights & kAccessPermission_SE_SSS_ChangeAttributes));
     retval             = kStatus_SSS_Success;
     keyObject->user_id = user;
 exit:
@@ -339,7 +339,7 @@ sss_status_t sss_mbedtls_key_object_set_purpose(sss_mbedtls_object_t *keyObject,
 {
     sss_status_t retval = kStatus_SSS_Fail;
     AX_UNUSED_ARG(options);
-    ENSURE_OR_GO_EXIT((keyObject->accessRights & kAccessPermission_SSS_ChangeAttributes));
+    ENSURE_OR_GO_EXIT((keyObject->accessRights & kAccessPermission_SE_SSS_ChangeAttributes));
     retval             = kStatus_SSS_Success;
     keyObject->purpose = purpose;
 exit:
@@ -350,15 +350,15 @@ sss_status_t sss_mbedtls_key_object_set_access(sss_mbedtls_object_t *keyObject, 
 {
     sss_status_t retval = kStatus_SSS_Fail;
     AX_UNUSED_ARG(options);
-    ENSURE_OR_GO_EXIT((keyObject->accessRights & kAccessPermission_SSS_ChangeAttributes));
+    ENSURE_OR_GO_EXIT((keyObject->accessRights & kAccessPermission_SE_SSS_ChangeAttributes));
     retval                  = kStatus_SSS_Success;
-    keyObject->accessRights = (sss_access_permission_t)access;
+    keyObject->accessRights = (se_sss_access_permission_t)access;
 exit:
     return retval;
 }
 
 // LCOV_EXCL_START
-sss_status_t sss_mbedtls_key_object_set_eccgfp_group(sss_mbedtls_object_t *keyObject, sss_eccgfp_group_t *group)
+sss_status_t sss_mbedtls_key_object_set_eccgfp_group(sss_mbedtls_object_t *keyObject, se_sss_eccgfp_group_t *group)
 {
     sss_status_t retval = kStatus_SSS_Success;
     AX_UNUSED_ARG(keyObject);
@@ -631,7 +631,7 @@ sss_status_t sss_mbedtls_derive_key_dh(sss_mbedtls_derive_key_t *context,
     mbedtls_mpi_init(&rawSharedData);
 
     /* Compute the size of the shared secret */
-    if (otherPartyKeyObject->cipherType == kSSS_CipherType_EC_MONTGOMERY) {
+    if (otherPartyKeyObject->cipherType == kSE_SSS_CipherType_EC_MONTGOMERY) {
 #if SSS_HAVE_MBEDTLS_3_X
         if (pEcpPrv->MBEDTLS_PRIVATE(grp).id == MBEDTLS_ECP_DP_CURVE448) {
 #else
@@ -698,7 +698,7 @@ sss_status_t sss_mbedtls_derive_key_dh(sss_mbedtls_derive_key_t *context,
     }
     mbedtls_mpi_free(&rawSharedData);
 #ifdef MBEDTLS_DO_LITTLE_ENDIAN
-    if (otherPartyKeyObject->cipherType == kSSS_CipherType_EC_MONTGOMERY) {
+    if (otherPartyKeyObject->cipherType == kSE_SSS_CipherType_EC_MONTGOMERY) {
         // Change Endianness Shared Secret in case of Montgomery Curve
         uint8_t *pVal = (uint8_t *)derivedKeyObject->contents;
         for (size_t keyValueIdx = 0; keyValueIdx < (derivedKeyObject->contents_size >> 1); keyValueIdx++) {
@@ -831,7 +831,7 @@ sss_status_t sss_mbedtls_key_store_set_key(sss_mbedtls_key_store_t *keyStore,
     ENSURE_OR_GO_CLEANUP(keyObject);
     ENSURE_OR_GO_CLEANUP(keyObject->contents);
 
-    ENSURE_OR_GO_CLEANUP((keyObject->accessRights & kAccessPermission_SSS_Write));
+    ENSURE_OR_GO_CLEANUP((keyObject->accessRights & kAccessPermission_SE_SSS_Write));
     //pk = (mbedtls_pk_context *)keyObject->contents;
     retval = sss_mbedtls_set_key(keyObject, data, dataLen, keyBitLen);
 cleanup:
@@ -846,7 +846,7 @@ sss_status_t sss_mbedtls_key_store_generate_key(
     sss_mbedtls_session_t *pS = NULL;
     mbedtls_pk_context *pkey;
     sss_key_part_t key_part       = kSSS_KeyPart_NONE;
-    sss_cipher_type_t cipher_type = kSSS_CipherType_NONE;
+    se_sss_cipher_type_t cipher_type = kSE_SSS_CipherType_NONE;
     ENSURE_OR_GO_CLEANUP(keyStore);
     ENSURE_OR_GO_CLEANUP(keyObject);
     ENSURE_OR_GO_CLEANUP(keyObject->contents); /* Must be allocated in allocate handle */
@@ -855,7 +855,7 @@ sss_status_t sss_mbedtls_key_store_generate_key(
 
     pS          = keyStore->session;
     key_part    = (sss_key_part_t)keyObject->objectType;
-    cipher_type = (sss_cipher_type_t)keyObject->cipherType;
+    cipher_type = (se_sss_cipher_type_t)keyObject->cipherType;
 
     pkey = (mbedtls_pk_context *)keyObject->contents;
     if (key_part != kSSS_KeyPart_Pair) {
@@ -866,15 +866,15 @@ sss_status_t sss_mbedtls_key_store_generate_key(
     mbedtls_pk_init(pkey);
     switch (cipher_type) {
 #if SSSFTR_SW_ECC
-    case kSSS_CipherType_EC_NIST_P:
-    case kSSS_CipherType_EC_NIST_K:
-    case kSSS_CipherType_EC_BRAINPOOL:
-    case kSSS_CipherType_EC_MONTGOMERY:
+    case kSE_SSS_CipherType_EC_NIST_P:
+    case kSE_SSS_CipherType_EC_NIST_K:
+    case kSE_SSS_CipherType_EC_BRAINPOOL:
+    case kSE_SSS_CipherType_EC_MONTGOMERY:
         retval = sss_mbedtls_generate_ecp_key(pkey, pS, keyBitLen, cipher_type);
         break;
 #endif
 #if SSSFTR_SW_RSA
-    case kSSS_CipherType_RSA:
+    case kSE_SSS_CipherType_RSA:
         retval = sss_mbedtls_generate_rsa_key(pkey, pS, keyBitLen);
         break;
 #endif
@@ -903,7 +903,7 @@ sss_status_t sss_mbedtls_key_store_get_key(sss_mbedtls_key_store_t *keyStore,
     AX_UNUSED_ARG(keyStore);
 
     ENSURE_OR_GO_CLEANUP(keyObject);
-    ENSURE_OR_GO_CLEANUP((keyObject->accessRights & kAccessPermission_SSS_Read));
+    ENSURE_OR_GO_CLEANUP((keyObject->accessRights & kAccessPermission_SE_SSS_Read));
     ENSURE_OR_GO_CLEANUP(data);
     ENSURE_OR_GO_CLEANUP(dataLen);
 
@@ -921,7 +921,7 @@ sss_status_t sss_mbedtls_key_store_get_key(sss_mbedtls_key_store_t *keyStore,
     case kSSS_KeyPart_Public:
     case kSSS_KeyPart_Pair:
         pk = (mbedtls_pk_context *)keyObject->contents;
-        if (keyObject->cipherType == kSSS_CipherType_EC_MONTGOMERY) {
+        if (keyObject->cipherType == kSE_SSS_CipherType_EC_MONTGOMERY) {
             mbedtls_ecp_keypair *pEcpPub = mbedtls_pk_ec(*pk);
             ENSURE_OR_GO_CLEANUP(pEcpPub);
             size_t pubKey_size = 0;
@@ -1029,7 +1029,7 @@ sss_status_t sss_mbedtls_key_store_erase_key(sss_mbedtls_key_store_t *keyStore, 
     ENSURE_OR_GO_EXIT(keyObject);
     ENSURE_OR_GO_EXIT(keyObject->keyStore);
 
-    ENSURE_OR_GO_EXIT((keyObject->accessRights & kAccessPermission_SSS_Delete));
+    ENSURE_OR_GO_EXIT((keyObject->accessRights & kAccessPermission_SE_SSS_Delete));
 
     if (keyObject->keyMode == kKeyObject_Mode_Persistent) {
 #if defined(MBEDTLS_FS_IO) && !AX_EMBEDDED
@@ -1102,7 +1102,7 @@ sss_status_t sss_mbedtls_asymmetric_context_init(sss_mbedtls_asymmetric_t *conte
 #if SSSFTR_SW_ECC || SSSFTR_SW_RSA
     ENSURE_OR_GO_CLEANUP(context);
     ENSURE_OR_GO_CLEANUP(keyObject);
-    ENSURE_OR_GO_CLEANUP(keyObject->keyStore->session->subsystem == kType_SSS_mbedTLS);
+    ENSURE_OR_GO_CLEANUP(keyObject->keyStore->session->subsystem == kType_SE_SSS_mbedTLS);
 
     context->session   = session;
     context->keyObject = keyObject;
@@ -1125,7 +1125,7 @@ sss_status_t sss_mbedtls_asymmetric_encrypt(
     mbedtls_pk_context *pKey     = (mbedtls_pk_context *)keyObj->contents;
     sss_algorithm_t algo         = context->algorithm;
     mbedtls_rsa_context *rsa;
-    ENSURE_OR_GO_EXIT((context->keyObject->accessRights & kAccessPermission_SSS_Use));
+    ENSURE_OR_GO_EXIT((context->keyObject->accessRights & kAccessPermission_SE_SSS_Use));
     retval = kStatus_SSS_Success;
 
     switch (algo) {
@@ -1178,7 +1178,7 @@ sss_status_t sss_mbedtls_asymmetric_decrypt(
     mbedtls_pk_context *pKey;
     sss_algorithm_t algo = context->algorithm;
     retval               = kStatus_SSS_Success;
-    ENSURE_OR_GO_EXIT((context->keyObject->accessRights & kAccessPermission_SSS_Use));
+    ENSURE_OR_GO_EXIT((context->keyObject->accessRights & kAccessPermission_SE_SSS_Use));
 
     pKey = (mbedtls_pk_context *)keyObj->contents;
 
@@ -1292,7 +1292,7 @@ sss_status_t sss_mbedtls_asymmetric_sign_digest(sss_mbedtls_asymmetric_t *contex
     sss_mbedtls_session_t *pS;
     mbedtls_pk_context *pKey;
 
-    ENSURE_OR_GO_EXIT((context->keyObject->accessRights & kAccessPermission_SSS_Use));
+    ENSURE_OR_GO_EXIT((context->keyObject->accessRights & kAccessPermission_SE_SSS_Use));
 
     pS   = context->session;
     pKey = (mbedtls_pk_context *)context->keyObject->contents;
@@ -1327,7 +1327,7 @@ sss_status_t sss_mbedtls_asymmetric_verify_digest(sss_mbedtls_asymmetric_t *cont
     mbedtls_md_type_t md_alg = MBEDTLS_MD_NONE;
     mbedtls_pk_context *pKey;
 
-    ENSURE_OR_GO_EXIT((context->keyObject->accessRights & kAccessPermission_SSS_Use));
+    ENSURE_OR_GO_EXIT((context->keyObject->accessRights & kAccessPermission_SE_SSS_Use));
 
     pKey = (mbedtls_pk_context *)context->keyObject->contents;
 
@@ -3232,7 +3232,7 @@ static sss_status_t sss_mbedtls_set_key(
     case kSSS_KeyPart_Private:
     case kSSS_KeyPart_Pair: {
         mbedtls_pk_context *pk = (mbedtls_pk_context *)keyObject->contents;
-        if (keyObject->cipherType == kSSS_CipherType_EC_MONTGOMERY) {
+        if (keyObject->cipherType == kSE_SSS_CipherType_EC_MONTGOMERY) {
             mbedtls_ecp_keypair *pEcpPrv = NULL;
             sss_status_t asn_retval      = kStatus_SSS_Fail;
             ret                          = mbedtls_pk_setup(pk, mbedtls_pk_info_from_type(MBEDTLS_PK_ECKEY));
@@ -3358,7 +3358,7 @@ static sss_status_t sss_mbedtls_set_key(
         // SIMW-2696.
         uint8_t base64_format[1996] = {0};
         mbedtls_pk_context *pk      = (mbedtls_pk_context *)keyObject->contents;
-        if (keyObject->cipherType == kSSS_CipherType_EC_MONTGOMERY) {
+        if (keyObject->cipherType == kSE_SSS_CipherType_EC_MONTGOMERY) {
             mbedtls_ecp_keypair *pEcpPub = NULL;
 
             ret = mbedtls_pk_setup(pk, mbedtls_pk_info_from_type(MBEDTLS_PK_ECKEY));
@@ -3586,7 +3586,7 @@ static mbedtls_ecp_group_id get_mont_group_id(size_t keyBitLen)
 }
 
 static sss_status_t sss_mbedtls_generate_ecp_key(
-    mbedtls_pk_context *pkey, sss_mbedtls_session_t *pSession, size_t keyBitLen, sss_cipher_type_t cipher_typ)
+    mbedtls_pk_context *pkey, sss_mbedtls_session_t *pSession, size_t keyBitLen, se_sss_cipher_type_t cipher_typ)
 {
     int ret;
     sss_status_t retval          = kStatus_SSS_Fail;
@@ -3596,16 +3596,16 @@ static sss_status_t sss_mbedtls_generate_ecp_key(
     ENSURE_OR_GO_EXIT(ret == 0);
     retval = kStatus_SSS_Success;
 
-    if (cipher_typ == kSSS_CipherType_EC_NIST_P) {
+    if (cipher_typ == kSE_SSS_CipherType_EC_NIST_P) {
         groupId = get_nist_p_group_id(keyBitLen);
     }
-    else if (cipher_typ == kSSS_CipherType_EC_BRAINPOOL) {
+    else if (cipher_typ == kSE_SSS_CipherType_EC_BRAINPOOL) {
         groupId = get_bp_group_id(keyBitLen);
     }
-    else if (cipher_typ == kSSS_CipherType_EC_NIST_K) {
+    else if (cipher_typ == kSE_SSS_CipherType_EC_NIST_K) {
         groupId = get_nist_k_group_id(keyBitLen);
     }
-    else if (cipher_typ == kSSS_CipherType_EC_MONTGOMERY) {
+    else if (cipher_typ == kSE_SSS_CipherType_EC_MONTGOMERY) {
         groupId = get_mont_group_id(keyBitLen);
     }
     else {
@@ -3761,7 +3761,7 @@ static sss_status_t sss_mbedtls_hkdf_extract(
 sss_status_t ks_mbedtls_key_object_create(sss_mbedtls_object_t *keyObject,
     uint32_t keyId,
     sss_key_part_t keyPart,
-    sss_cipher_type_t cipherType,
+    se_sss_cipher_type_t cipherType,
     size_t keyByteLenMax,
     uint32_t keyMode)
 {
@@ -3776,7 +3776,7 @@ sss_status_t ks_mbedtls_key_object_create(sss_mbedtls_object_t *keyObject,
     keyObject->contents_must_free = 1;
     keyObject->keyMode            = keyMode;
     /* Bitwise OR of all sss_access_permission. */
-    keyObject->accessRights = kAccessPermission_SSS_All_Permission;
+    keyObject->accessRights = kAccessPermission_SE_SSS_All_Permission;
     switch (keyPart) {
     case kSSS_KeyPart_Default:
         size = keyByteLenMax;
@@ -3803,4 +3803,5 @@ cleanup:
     return retval;
 }
 
+#endif /* !SSS_USE_MBEDTLS_PSA_APIS */
 #endif /* SSS_HAVE_HOSTCRYPTO_MBEDTLS */

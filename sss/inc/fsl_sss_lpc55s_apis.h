@@ -26,40 +26,40 @@ extern "C" {
 /* Functions                                                                  */
 /* ************************************************************************** */
 
-/** @copydoc sss_session_open
+/** @copydoc se_sss_session_open
  *
  */
-sss_status_t sss_lpc55s_impl_session_open(sss_session_t *session,
-    sss_type_t subsystem,
+sss_status_t sss_lpc55s_impl_session_open(se_sss_session_t *session,
+    se_sss_type_t subsystem,
     uint32_t application_id,
-    sss_connection_type_t connection_type,
+    se_sss_connection_type_t connection_type,
     void *connectionData);
 
-/** @copydoc sss_session_close
+/** @copydoc se_sss_session_close
  *
  */
-void sss_lpc55s_impl_session_close(sss_session_t *session);
+void sss_lpc55s_impl_session_close(se_sss_session_t *session);
 
 /**
  * @addtogroup sss_lpc55s_impl_mac
  * @{
  */
-/** @copydoc sss_mac_context_init
+/** @copydoc se_sss_mac_context_init
  *
  */
 sss_status_t sss_lpc55s_impl_mac_context_init(
-    sss_mac_t *context, sss_session_t *session, sss_object_t *keyObject, sss_algorithm_t algorithm, sss_mode_t mode);
+    se_sss_mac_t *context, se_sss_session_t *session, se_sss_object_t *keyObject, sss_algorithm_t algorithm, sss_mode_t mode);
 
-/** @copydoc sss_mac_one_go
+/** @copydoc se_sss_mac_one_go
  *
  */
 sss_status_t sss_lpc55s_impl_mac_one_go(
-    sss_mac_t *context, const uint8_t *message, size_t messageLen, uint8_t *mac, size_t *macLen);
+    se_sss_mac_t *context, const uint8_t *message, size_t messageLen, uint8_t *mac, size_t *macLen);
 
-/** @copydoc sss_mac_context_free
+/** @copydoc se_sss_mac_context_free
  *
  */
-void sss_lpc55s_impl_mac_context_free(sss_mac_t *context);
+void sss_lpc55s_impl_mac_context_free(se_sss_mac_t *context);
 
 /** Re-define sss_host_session_open to be redirected 
  *  from HashCrypt session open 

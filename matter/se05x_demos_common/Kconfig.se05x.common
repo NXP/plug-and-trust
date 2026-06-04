@@ -8,9 +8,22 @@ mainmenu "SE05X examples"
 config CHIP_SE05X
 	bool "Enable Secure Element support"
 	select SE05X_LIB
-	select MCUX_COMPONENT_middleware.mbedtls3x if SE05X_SCP03 || SE05X_USER_ID || SE05X_AES_KEY || SE05X_EC_KEY || SE05X_SCP03_USER_ID || SE05X_SCP03_AES_KEY || SE05X_SCP03_EC_KEY
 	help
 		Use Secure Element to perform crypto operations.
+
+config SE05X_SECURE_SESSION
+	bool
+	default y if SE05X_SCP03 || SE05X_USER_ID || SE05X_AES_KEY || SE05X_EC_KEY || SE05X_SCP03_USER_ID || SE05X_SCP03_AES_KEY || SE05X_SCP03_EC_KEY
+	select MCUX_COMPONENT_middleware.SECURE_STORAGE
+	select MCUX_COMPONENT_middleware.wireless.framework.zephyr_port.nvs
+	select MCUX_COMPONENT_middleware.wireless.framework.zephyr_common
+	select NVS
+	select SETTINGS
+	select SETTINGS_RUNTIME
+	select MCUX_COMPONENT_middleware.wireless.framework
+	help
+	  Helper symbol that is enabled when any SE05X feature requiring
+	  secure session is enabled.
 
 # Include defaults for SDK Kconfig
 config MCUX_PRJSEG_module.board.use_board_clock
@@ -68,6 +81,7 @@ config CHIP_NXP_RW612_SDK_DEPENDENCIES
 	select MCUX_COMPONENT_middleware.freertos-kernel.cm33_non_trustzone
 	select MCUX_COMPONENT_middleware.mbedtls3x
 	select MCUX_COMPONENT_component.psa_crypto_driver.els_pkc
+	select MCUX_COMPONENT_component.osa
     help
         NXP RW612 platform sdk dependencies.
 
@@ -97,8 +111,8 @@ config CHIP_NXP_MCXW72_SDK_DEPENDENCIES
 	select MCUX_COMPONENT_component.lptmr_time_stamp_adapter
 	select MCUX_COMPONENT_driver.lpspi
 	select MCUX_COMPONENT_middleware.wireless.ble_host
-	select MCUX_COMPONENT_middleware.wireless.framework
 	select MCUX_COMPONENT_component.messaging
+	select MCUX_COMPONENT_middleware.wireless.framework
 	select MCUX_COMPONENT_middleware.wireless.framework.seclib_rng
 	select MCUX_COMPONENT_middleware.wireless.framework.module_info
 	select MCUX_COMPONENT_middleware.wireless.framework.function_lib
@@ -131,6 +145,13 @@ config CHIP_NXP_PLATFORM_RT1060
 	help
 		NXP RT1060 platform.
 
+config CHIP_NXP_MBEDTLS_TIME_OPTIM_ENABLE
+  bool "Enable mbedTLS software time optimization"
+  depends on CHIP_NXP_PLATFORM_RT1060
+  default y
+  help
+    Enable mbedTLS software time optimization
+
 config CHIP_WIFI
 	bool "Enable Wi-Fi support"
 	default y if MCUX_HW_BOARD_evkcmimxrt1060
@@ -156,6 +177,30 @@ config CHIP_NXP_PLATFORM_FOLDER_NAME
 	default "mcxw72" if MCUX_HW_DEVICE_MCXW727C
 	help
 		Defines the platform folder name to be used.
+
+if MCUX_COMPONENT_middleware.SECURE_STORAGE
+
+choice MCUX_COMPONENT_middleware.SECURE_STORAGE_ITS_IMPLEMENTATION
+    default MCUX_COMPONENT_middleware.SECURE_STORAGE_ITS_IMPLEMENTATION_WITH_ONLY_STORE
+endchoice
+
+choice SECURE_STORAGE_ITS_STORE_IMPLEMENTATION
+    default MCUX_COMPONENT_middleware.SECURE_STORAGE_ITS_STORE_IMPLEMENTATION_SETTINGS
+endchoice
+
+endif # MCUX_COMPONENT_middleware.SECURE_STORAGE
+
+if MCUX_COMPONENT_middleware.wireless.framework.zephyr_port.nvs
+choice MCUX_COMPONENT_middleware.wireless.framework.zephyr_port.nvs.flash_selection
+    default MCUX_COMPONENT_middleware.wireless.framework.zephyr_port.nvs.external_flash if MCUX_HW_DEVICE_RW612 || MCUX_HW_DEVICE_RW610 || MCUX_HW_DEVICE_MIMXRT1061 || MCUX_HW_DEVICE_MIMXRT1062
+    default MCUX_COMPONENT_middleware.wireless.framework.zephyr_port.nvs.internal_flash if MCUX_HW_DEVICE_MCXW727C
+endchoice
+endif
+
+choice MCUX_COMPONENT_middleware.wireless.framework.seclib_rng_port
+    default MCUX_COMPONENT_middleware.wireless.framework.seclib_rng_port.psa if MCUX_HW_DEVICE_MCXW727C
+endchoice
+
 # FreeRTOS defaults
 config configTICK_RATE_HZ
 	default 1000
@@ -224,7 +269,7 @@ config INCLUDE_xTaskGetHandle
 config configKERNEL_PROVIDED_STATIC_MEMORY
 	default y
 
-if SE05X_SCP03 || SE05X_USER_ID || SE05X_AES_KEY || SE05X_EC_KEY || SE05X_SCP03_USER_ID || SE05X_SCP03_AES_KEY || SE05X_SCP03_EC_KEY || MCUX_HW_DEVICE_MCXW727C
+if SE05X_SECURE_SESSION || MCUX_HW_DEVICE_MCXW727C
 	choice MCUX_COMPONENT_middleware.mbedtls.port.selection
 		default MCUX_COMPONENT_middleware.mbedtls.port.els_pkc if MCUX_HW_DEVICE_RW612 || MCUX_HW_DEVICE_RW610
 		default MCUX_COMPONENT_middleware.mbedtls.port.ksdk if MCUX_HW_DEVICE_MIMXRT1061 || MCUX_HW_DEVICE_MIMXRT1062

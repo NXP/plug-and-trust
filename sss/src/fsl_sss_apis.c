@@ -1,9 +1,9 @@
 /*
  *
- * Copyright 2018-2020,2024 NXP
+ * Copyright 2018-2020,2024,2026 NXP
  * SPDX-License-Identifier: BSD-3-Clause
  */
-#include <fsl_sss_api.h>
+#include "inc/fsl_sss_api.h"
 
 #if defined(SSS_USE_FTR_FILE)
 #include "fsl_sss_ftr.h"
@@ -34,10 +34,10 @@
 
 #if (SSS_HAVE_SSS > 1)
 
-sss_status_t sss_session_create(sss_session_t *session,
-    sss_type_t subsystem,
+sss_status_t se_sss_session_create(se_sss_session_t *session,
+    se_sss_type_t subsystem,
     uint32_t application_id,
-    sss_connection_type_t connection_type,
+    se_sss_connection_type_t connection_type,
     void *connectionData)
 {
     AX_UNUSED_ARG(session);
@@ -45,19 +45,19 @@ sss_status_t sss_session_create(sss_session_t *session,
     AX_UNUSED_ARG(connection_type);
     AX_UNUSED_ARG(connectionData);
 
-    if (kType_SSS_Software == subsystem) {
+    if (kType_SE_SSS_Software == subsystem) {
 #if SSS_HAVE_HOSTCRYPTO_OPENSSL
         /* if I have openSSL */
-        subsystem = kType_SSS_OpenSSL;
+        subsystem = kType_SE_SSS_OpenSSL;
 #endif
 #if SSS_HAVE_HOSTCRYPTO_MBEDTLS
         /* if I have mbed TLS */
-        subsystem = kType_SSS_mbedTLS;
+        subsystem = kType_SE_SSS_mbedTLS;
 #endif
     }
-    else if (kType_SSS_SecureElement == subsystem) {
+    else if (kType_SE_SSS_SecureElement == subsystem) {
 #if SSS_HAVE_APPLET_SE05X_IOT
-        subsystem = kType_SSS_SE_SE05x;
+        subsystem = kType_SE_SSS_SE_SE05x;
 #endif
     }
 
@@ -84,26 +84,26 @@ sss_status_t sss_session_create(sss_session_t *session,
     return kStatus_SSS_InvalidArgument;
 }
 
-sss_status_t sss_session_open(sss_session_t *session,
-    sss_type_t subsystem,
+sss_status_t se_sss_session_open(se_sss_session_t *session,
+    se_sss_type_t subsystem,
     uint32_t application_id,
-    sss_connection_type_t connection_type,
+    se_sss_connection_type_t connection_type,
     void *connectionData)
 {
-    if (kType_SSS_Software == subsystem) {
+    if (kType_SE_SSS_Software == subsystem) {
 #if SSS_HAVE_HOSTCRYPTO_OPENSSL
         /* if I have openSSL */
-        subsystem = kType_SSS_OpenSSL;
+        subsystem = kType_SE_SSS_OpenSSL;
 #endif
 #if SSS_HAVE_HOSTCRYPTO_MBEDTLS
         /* if I have mbed TLS */
-        subsystem = kType_SSS_mbedTLS;
+        subsystem = kType_SE_SSS_mbedTLS;
 #endif
     }
-    else if (kType_SSS_SecureElement == subsystem) {
+    else if (kType_SE_SSS_SecureElement == subsystem) {
 #if SSS_HAVE_APPLET
 
-        subsystem = kType_SSS_SE_SE05x;
+        subsystem = kType_SE_SSS_SE_SE05x;
 #endif
     }
 
@@ -140,7 +140,7 @@ sss_status_t sss_session_open(sss_session_t *session,
     return kStatus_SSS_InvalidArgument;
 }
 
-sss_status_t sss_session_prop_get_u32(sss_session_t *session, uint32_t property, uint32_t *pValue)
+sss_status_t se_sss_session_prop_get_u32(se_sss_session_t *session, uint32_t property, uint32_t *pValue)
 {
 #if SSS_HAVE_SSCP
     if (SSS_SESSION_TYPE_IS_SSCP(session)) {
@@ -169,7 +169,7 @@ sss_status_t sss_session_prop_get_u32(sss_session_t *session, uint32_t property,
     return kStatus_SSS_InvalidArgument;
 }
 
-sss_status_t sss_session_prop_get_au8(sss_session_t *session, uint32_t property, uint8_t *pValue, size_t *pValueLen)
+sss_status_t se_sss_session_prop_get_au8(se_sss_session_t *session, uint32_t property, uint8_t *pValue, size_t *pValueLen)
 {
 #if SSS_HAVE_SSCP
     if (SSS_SESSION_TYPE_IS_SSCP(session)) {
@@ -198,7 +198,7 @@ sss_status_t sss_session_prop_get_au8(sss_session_t *session, uint32_t property,
     return kStatus_SSS_InvalidArgument;
 }
 
-void sss_session_close(sss_session_t *session)
+void se_sss_session_close(se_sss_session_t *session)
 {
 #if SSS_HAVE_SSCP
     if (SSS_SESSION_TYPE_IS_SSCP(session)) {
@@ -232,7 +232,7 @@ void sss_session_close(sss_session_t *session)
 #endif /* SSS_HAVE_HOSTCRYPTO_USER */
 }
 
-void sss_session_delete(sss_session_t *session)
+void se_sss_session_delete(se_sss_session_t *session)
 {
 #if SSS_HAVE_SSCP
     if (SSS_SESSION_TYPE_IS_SSCP(session)) {
@@ -256,7 +256,7 @@ void sss_session_delete(sss_session_t *session)
 #endif /* SSS_HAVE_HOSTCRYPTO_OPENSSL */
 }
 
-sss_status_t sss_key_object_init(sss_object_t *keyObject, sss_key_store_t *keyStore)
+sss_status_t se_sss_key_object_init(se_sss_object_t *keyObject, se_sss_key_store_t *keyStore)
 {
 #if SSS_HAVE_SSCP
     if (SSS_KEY_STORE_TYPE_IS_SSCP(keyStore)) {
@@ -306,10 +306,10 @@ sss_status_t sss_key_object_init(sss_object_t *keyObject, sss_key_store_t *keySt
     return kStatus_SSS_InvalidArgument;
 }
 
-sss_status_t sss_key_object_allocate_handle(sss_object_t *keyObject,
+sss_status_t se_sss_key_object_allocate_handle(se_sss_object_t *keyObject,
     uint32_t keyId,
     sss_key_part_t keyPart,
-    sss_cipher_type_t cipherType,
+    se_sss_cipher_type_t cipherType,
     size_t keyByteLenMax,
     uint32_t options)
 {
@@ -350,7 +350,7 @@ sss_status_t sss_key_object_allocate_handle(sss_object_t *keyObject,
     return kStatus_SSS_InvalidArgument;
 }
 
-sss_status_t sss_key_object_get_handle(sss_object_t *keyObject, uint32_t keyId)
+sss_status_t se_sss_key_object_get_handle(se_sss_object_t *keyObject, uint32_t keyId)
 {
 #if SSS_HAVE_SSCP
     if (SSS_OBJECT_TYPE_IS_SSCP(keyObject)) {
@@ -379,7 +379,7 @@ sss_status_t sss_key_object_get_handle(sss_object_t *keyObject, uint32_t keyId)
     return kStatus_SSS_InvalidArgument;
 }
 
-sss_status_t sss_key_object_set_user(sss_object_t *keyObject, uint32_t user, uint32_t options)
+sss_status_t se_sss_key_object_set_user(se_sss_object_t *keyObject, uint32_t user, uint32_t options)
 {
 #if SSS_HAVE_SSCP
     if (SSS_OBJECT_TYPE_IS_SSCP(keyObject)) {
@@ -408,7 +408,7 @@ sss_status_t sss_key_object_set_user(sss_object_t *keyObject, uint32_t user, uin
     return kStatus_SSS_InvalidArgument;
 }
 
-sss_status_t sss_key_object_set_purpose(sss_object_t *keyObject, sss_mode_t purpose, uint32_t options)
+sss_status_t se_sss_key_object_set_purpose(se_sss_object_t *keyObject, sss_mode_t purpose, uint32_t options)
 {
 #if SSS_HAVE_SSCP
     if (SSS_OBJECT_TYPE_IS_SSCP(keyObject)) {
@@ -437,7 +437,7 @@ sss_status_t sss_key_object_set_purpose(sss_object_t *keyObject, sss_mode_t purp
     return kStatus_SSS_InvalidArgument;
 }
 
-sss_status_t sss_key_object_set_access(sss_object_t *keyObject, uint32_t access, uint32_t options)
+sss_status_t se_sss_key_object_set_access(se_sss_object_t *keyObject, uint32_t access, uint32_t options)
 {
 #if SSS_HAVE_SSCP
     if (SSS_OBJECT_TYPE_IS_SSCP(keyObject)) {
@@ -466,7 +466,7 @@ sss_status_t sss_key_object_set_access(sss_object_t *keyObject, uint32_t access,
     return kStatus_SSS_InvalidArgument;
 }
 
-sss_status_t sss_key_object_set_eccgfp_group(sss_object_t *keyObject, sss_eccgfp_group_t *group)
+sss_status_t se_sss_key_object_set_eccgfp_group(se_sss_object_t *keyObject, se_sss_eccgfp_group_t *group)
 {
 #if SSS_HAVE_SSCP
     if (SSS_OBJECT_TYPE_IS_SSCP(keyObject)) {
@@ -495,7 +495,7 @@ sss_status_t sss_key_object_set_eccgfp_group(sss_object_t *keyObject, sss_eccgfp
     return kStatus_SSS_InvalidArgument;
 }
 
-sss_status_t sss_key_object_get_user(sss_object_t *keyObject, uint32_t *user)
+sss_status_t se_sss_key_object_get_user(se_sss_object_t *keyObject, uint32_t *user)
 {
 #if SSS_HAVE_SSCP
     if (SSS_OBJECT_TYPE_IS_SSCP(keyObject)) {
@@ -524,7 +524,7 @@ sss_status_t sss_key_object_get_user(sss_object_t *keyObject, uint32_t *user)
     return kStatus_SSS_InvalidArgument;
 }
 
-sss_status_t sss_key_object_get_purpose(sss_object_t *keyObject, sss_mode_t *purpose)
+sss_status_t se_sss_key_object_get_purpose(se_sss_object_t *keyObject, sss_mode_t *purpose)
 {
 #if SSS_HAVE_SSCP
     if (SSS_OBJECT_TYPE_IS_SSCP(keyObject)) {
@@ -553,7 +553,7 @@ sss_status_t sss_key_object_get_purpose(sss_object_t *keyObject, sss_mode_t *pur
     return kStatus_SSS_InvalidArgument;
 }
 
-sss_status_t sss_key_object_get_access(sss_object_t *keyObject, uint32_t *access)
+sss_status_t se_sss_key_object_get_access(se_sss_object_t *keyObject, uint32_t *access)
 {
 #if SSS_HAVE_SSCP
     if (SSS_OBJECT_TYPE_IS_SSCP(keyObject)) {
@@ -582,7 +582,7 @@ sss_status_t sss_key_object_get_access(sss_object_t *keyObject, uint32_t *access
     return kStatus_SSS_InvalidArgument;
 }
 
-void sss_key_object_free(sss_object_t *keyObject)
+void se_sss_key_object_free(se_sss_object_t *keyObject)
 {
 #if SSS_HAVE_SSCP
     if (SSS_OBJECT_TYPE_IS_SSCP(keyObject)) {
@@ -616,9 +616,9 @@ void sss_key_object_free(sss_object_t *keyObject)
 #endif /* SSS_HAVE_HOSTCRYPTO_USER */
 }
 
-sss_status_t sss_derive_key_context_init(sss_derive_key_t *context,
-    sss_session_t *session,
-    sss_object_t *keyObject,
+sss_status_t se_sss_derive_key_context_init(se_sss_derive_key_t *context,
+    se_sss_session_t *session,
+    se_sss_object_t *keyObject,
     sss_algorithm_t algorithm,
     sss_mode_t mode)
 {
@@ -671,12 +671,12 @@ sss_status_t sss_derive_key_context_init(sss_derive_key_t *context,
     return kStatus_SSS_InvalidArgument;
 }
 
-sss_status_t sss_derive_key_go(sss_derive_key_t *context,
+sss_status_t se_sss_derive_key_go(se_sss_derive_key_t *context,
     const uint8_t *saltData,
     size_t saltLen,
     const uint8_t *info,
     size_t infoLen,
-    sss_object_t *derivedKeyObject,
+    se_sss_object_t *derivedKeyObject,
     uint16_t deriveDataLen,
     uint8_t *hkdfOutput,
     size_t *hkdfOutputLen)
@@ -747,12 +747,12 @@ sss_status_t sss_derive_key_go(sss_derive_key_t *context,
 /*
   Salt is public information and is passed as an array.
 */
-sss_status_t sss_derive_key_one_go(sss_derive_key_t *context,
+sss_status_t se_sss_derive_key_one_go(se_sss_derive_key_t *context,
     const uint8_t *saltData,
     size_t saltLen,
     const uint8_t *info,
     size_t infoLen,
-    sss_object_t *derivedKeyObject,
+    se_sss_object_t *derivedKeyObject,
     uint16_t deriveDataLen)
 {
 #if SSS_HAVE_SSCP
@@ -790,11 +790,11 @@ sss_status_t sss_derive_key_one_go(sss_derive_key_t *context,
     return kStatus_SSS_InvalidArgument;
 }
 
-sss_status_t sss_derive_key_sobj_one_go(sss_derive_key_t *context,
-    sss_object_t *saltKeyObject,
+sss_status_t se_sss_derive_key_sobj_one_go(se_sss_derive_key_t *context,
+    se_sss_object_t *saltKeyObject,
     const uint8_t *info,
     size_t infoLen,
-    sss_object_t *derivedKeyObject,
+    se_sss_object_t *derivedKeyObject,
     uint16_t deriveDataLen)
 {
 #if SSS_HAVE_SSCP
@@ -836,8 +836,8 @@ sss_status_t sss_derive_key_sobj_one_go(sss_derive_key_t *context,
     return kStatus_SSS_InvalidArgument;
 }
 
-sss_status_t sss_derive_key_dh(
-    sss_derive_key_t *context, sss_object_t *otherPartyKeyObject, sss_object_t *derivedKeyObject)
+sss_status_t se_sss_derive_key_dh(
+    se_sss_derive_key_t *context, se_sss_object_t *otherPartyKeyObject, se_sss_object_t *derivedKeyObject)
 {
 #if SSS_HAVE_SSCP
     if (SSS_DERIVE_KEY_TYPE_IS_SSCP(context)) {
@@ -874,7 +874,7 @@ sss_status_t sss_derive_key_dh(
     return kStatus_SSS_InvalidArgument;
 }
 
-void sss_derive_key_context_free(sss_derive_key_t *context)
+void se_sss_derive_key_context_free(se_sss_derive_key_t *context)
 {
 #if SSS_HAVE_SSCP
     if (SSS_DERIVE_KEY_TYPE_IS_SSCP(context)) {
@@ -902,7 +902,7 @@ void sss_derive_key_context_free(sss_derive_key_t *context)
 #endif /* SSS_HAVE_HOSTCRYPTO_OPENSSL */
 }
 
-sss_status_t sss_key_store_context_init(sss_key_store_t *keyStore, sss_session_t *session)
+sss_status_t se_sss_key_store_context_init(se_sss_key_store_t *keyStore, se_sss_session_t *session)
 {
 #if SSS_HAVE_SSCP
     if (SSS_SESSION_TYPE_IS_SSCP(session)) {
@@ -952,7 +952,7 @@ sss_status_t sss_key_store_context_init(sss_key_store_t *keyStore, sss_session_t
     return kStatus_SSS_InvalidArgument;
 }
 
-sss_status_t sss_key_store_allocate(sss_key_store_t *keyStore, uint32_t keyStoreId)
+sss_status_t se_sss_key_store_allocate(se_sss_key_store_t *keyStore, uint32_t keyStoreId)
 {
 #if SSS_HAVE_SSCP
     if (SSS_KEY_STORE_TYPE_IS_SSCP(keyStore)) {
@@ -987,7 +987,7 @@ sss_status_t sss_key_store_allocate(sss_key_store_t *keyStore, uint32_t keyStore
     return kStatus_SSS_InvalidArgument;
 }
 
-sss_status_t sss_key_store_save(sss_key_store_t *keyStore)
+sss_status_t se_sss_key_store_save(se_sss_key_store_t *keyStore)
 {
 #if SSS_HAVE_SSCP
     if (SSS_KEY_STORE_TYPE_IS_SSCP(keyStore)) {
@@ -1016,7 +1016,7 @@ sss_status_t sss_key_store_save(sss_key_store_t *keyStore)
     return kStatus_SSS_InvalidArgument;
 }
 
-sss_status_t sss_key_store_load(sss_key_store_t *keyStore)
+sss_status_t se_sss_key_store_load(se_sss_key_store_t *keyStore)
 {
 #if SSS_HAVE_SSCP
     if (SSS_KEY_STORE_TYPE_IS_SSCP(keyStore)) {
@@ -1045,17 +1045,17 @@ sss_status_t sss_key_store_load(sss_key_store_t *keyStore)
     return kStatus_SSS_InvalidArgument;
 }
 
-sss_status_t sss_key_store_set_key(sss_key_store_t *keyStore,
-    sss_object_t *keyObject,
+sss_status_t se_sss_key_store_set_key(se_sss_key_store_t *keyStore,
+    se_sss_object_t *keyObject,
     const uint8_t *data,
     size_t dataLen,
     size_t keyBitLen,
     void *options,
     size_t optionsLen)
 {
-    LOG_D("sss_key_store_set_key(@%08X, cipherType=%s, keyBitLen=%d)",
+    LOG_D("se_sss_key_store_set_key(@%08X, cipherType=%s, keyBitLen=%d)",
         keyObject->keyId,
-        sss_cipher_type_sz(keyObject->cipherType),
+        se_sss_cipher_type_sz(keyObject->cipherType),
         keyBitLen);
 #if SSS_HAVE_SSCP
     if (SSS_KEY_STORE_TYPE_IS_SSCP(keyStore)) {
@@ -1099,12 +1099,12 @@ sss_status_t sss_key_store_set_key(sss_key_store_t *keyStore,
     return kStatus_SSS_InvalidArgument;
 }
 
-sss_status_t sss_key_store_generate_key(
-    sss_key_store_t *keyStore, sss_object_t *keyObject, size_t keyBitLen, void *options)
+sss_status_t se_sss_key_store_generate_key(
+    se_sss_key_store_t *keyStore, se_sss_object_t *keyObject, size_t keyBitLen, void *options)
 {
-    LOG_D("sss_key_store_generate_key(@%08X, cipherType=%s, keyBitLen=%d)",
+    LOG_D("se_sss_key_store_generate_key(@%08X, cipherType=%s, keyBitLen=%d)",
         keyObject->keyId,
-        sss_cipher_type_sz(keyObject->cipherType),
+        se_sss_cipher_type_sz(keyObject->cipherType),
         keyBitLen);
 #if SSS_HAVE_SSCP
     if (SSS_KEY_STORE_TYPE_IS_SSCP(keyStore)) {
@@ -1137,8 +1137,8 @@ sss_status_t sss_key_store_generate_key(
     return kStatus_SSS_InvalidArgument;
 }
 
-sss_status_t sss_key_store_get_key(
-    sss_key_store_t *keyStore, sss_object_t *keyObject, uint8_t *data, size_t *dataLen, size_t *pKeyBitLen)
+sss_status_t se_sss_key_store_get_key(
+    se_sss_key_store_t *keyStore, se_sss_object_t *keyObject, uint8_t *data, size_t *dataLen, size_t *pKeyBitLen)
 {
 #if SSS_HAVE_SSCP
     if (SSS_KEY_STORE_TYPE_IS_SSCP(keyStore)) {
@@ -1178,7 +1178,7 @@ sss_status_t sss_key_store_get_key(
     return kStatus_SSS_InvalidArgument;
 }
 
-sss_status_t sss_key_store_open_key(sss_key_store_t *keyStore, sss_object_t *keyObject)
+sss_status_t se_sss_key_store_open_key(se_sss_key_store_t *keyStore, se_sss_object_t *keyObject)
 {
 #if SSS_HAVE_SSCP
     if (SSS_KEY_STORE_TYPE_IS_SSCP(keyStore)) {
@@ -1211,7 +1211,7 @@ sss_status_t sss_key_store_open_key(sss_key_store_t *keyStore, sss_object_t *key
     return kStatus_SSS_InvalidArgument;
 }
 
-sss_status_t sss_key_store_freeze_key(sss_key_store_t *keyStore, sss_object_t *keyObject)
+sss_status_t se_sss_key_store_freeze_key(se_sss_key_store_t *keyStore, se_sss_object_t *keyObject)
 {
 #if SSS_HAVE_SSCP
     if (SSS_KEY_STORE_TYPE_IS_SSCP(keyStore)) {
@@ -1244,7 +1244,7 @@ sss_status_t sss_key_store_freeze_key(sss_key_store_t *keyStore, sss_object_t *k
     return kStatus_SSS_InvalidArgument;
 }
 
-sss_status_t sss_key_store_erase_key(sss_key_store_t *keyStore, sss_object_t *keyObject)
+sss_status_t se_sss_key_store_erase_key(se_sss_key_store_t *keyStore, se_sss_object_t *keyObject)
 {
 #if SSS_HAVE_SSCP
     if (SSS_KEY_STORE_TYPE_IS_SSCP(keyStore)) {
@@ -1277,7 +1277,7 @@ sss_status_t sss_key_store_erase_key(sss_key_store_t *keyStore, sss_object_t *ke
     return kStatus_SSS_InvalidArgument;
 }
 
-void sss_key_store_context_free(sss_key_store_t *keyStore)
+void se_sss_key_store_context_free(se_sss_key_store_t *keyStore)
 {
 #if SSS_HAVE_SSCP
     if (SSS_KEY_STORE_TYPE_IS_SSCP(keyStore)) {
@@ -1305,9 +1305,9 @@ void sss_key_store_context_free(sss_key_store_t *keyStore)
 #endif /* SSS_HAVE_HOSTCRYPTO_OPENSSL */
 }
 
-sss_status_t sss_asymmetric_context_init(sss_asymmetric_t *context,
-    sss_session_t *session,
-    sss_object_t *keyObject,
+sss_status_t se_sss_asymmetric_context_init(se_sss_asymmetric_t *context,
+    se_sss_session_t *session,
+    se_sss_object_t *keyObject,
     sss_algorithm_t algorithm,
     sss_mode_t mode)
 {
@@ -1360,8 +1360,8 @@ sss_status_t sss_asymmetric_context_init(sss_asymmetric_t *context,
     return kStatus_SSS_InvalidArgument;
 }
 
-sss_status_t sss_asymmetric_encrypt(
-    sss_asymmetric_t *context, const uint8_t *srcData, size_t srcLen, uint8_t *destData, size_t *destLen)
+sss_status_t se_sss_asymmetric_encrypt(
+    se_sss_asymmetric_t *context, const uint8_t *srcData, size_t srcLen, uint8_t *destData, size_t *destLen)
 {
 #if SSS_HAVE_SSCP
     if (SSS_ASYMMETRIC_TYPE_IS_SSCP(context)) {
@@ -1390,8 +1390,8 @@ sss_status_t sss_asymmetric_encrypt(
     return kStatus_SSS_InvalidArgument;
 }
 
-sss_status_t sss_asymmetric_decrypt(
-    sss_asymmetric_t *context, const uint8_t *srcData, size_t srcLen, uint8_t *destData, size_t *destLen)
+sss_status_t se_sss_asymmetric_decrypt(
+    se_sss_asymmetric_t *context, const uint8_t *srcData, size_t srcLen, uint8_t *destData, size_t *destLen)
 {
 #if SSS_HAVE_SSCP
     if (SSS_ASYMMETRIC_TYPE_IS_SSCP(context)) {
@@ -1420,8 +1420,8 @@ sss_status_t sss_asymmetric_decrypt(
     return kStatus_SSS_InvalidArgument;
 }
 
-sss_status_t sss_asymmetric_sign_digest(
-    sss_asymmetric_t *context, uint8_t *digest, size_t digestLen, uint8_t *signature, size_t *signatureLen)
+sss_status_t se_sss_asymmetric_sign_digest(
+    se_sss_asymmetric_t *context, uint8_t *digest, size_t digestLen, uint8_t *signature, size_t *signatureLen)
 {
 #if SSS_HAVE_SSCP
     if (SSS_ASYMMETRIC_TYPE_IS_SSCP(context)) {
@@ -1450,8 +1450,8 @@ sss_status_t sss_asymmetric_sign_digest(
     return kStatus_SSS_InvalidArgument;
 }
 
-sss_status_t sss_asymmetric_verify_digest(
-    sss_asymmetric_t *context, uint8_t *digest, size_t digestLen, uint8_t *signature, size_t signatureLen)
+sss_status_t se_sss_asymmetric_verify_digest(
+    se_sss_asymmetric_t *context, uint8_t *digest, size_t digestLen, uint8_t *signature, size_t signatureLen)
 {
 #if SSS_HAVE_SSCP
     if (SSS_ASYMMETRIC_TYPE_IS_SSCP(context)) {
@@ -1480,7 +1480,7 @@ sss_status_t sss_asymmetric_verify_digest(
     return kStatus_SSS_InvalidArgument;
 }
 
-void sss_asymmetric_context_free(sss_asymmetric_t *context)
+void se_sss_asymmetric_context_free(se_sss_asymmetric_t *context)
 {
 #if SSS_HAVE_SSCP
     if (SSS_ASYMMETRIC_TYPE_IS_SSCP(context)) {
@@ -1508,9 +1508,9 @@ void sss_asymmetric_context_free(sss_asymmetric_t *context)
 #endif /* SSS_HAVE_HOSTCRYPTO_OPENSSL */
 }
 
-sss_status_t sss_symmetric_context_init(sss_symmetric_t *context,
-    sss_session_t *session,
-    sss_object_t *keyObject,
+sss_status_t se_sss_symmetric_context_init(se_sss_symmetric_t *context,
+    se_sss_session_t *session,
+    se_sss_object_t *keyObject,
     sss_algorithm_t algorithm,
     sss_mode_t mode)
 {
@@ -1565,8 +1565,8 @@ sss_status_t sss_symmetric_context_init(sss_symmetric_t *context,
     return kStatus_SSS_InvalidArgument;
 }
 
-sss_status_t sss_cipher_one_go(
-    sss_symmetric_t *context, uint8_t *iv, size_t ivLen, const uint8_t *srcData, uint8_t *destData, size_t dataLen)
+sss_status_t se_sss_cipher_one_go(
+    se_sss_symmetric_t *context, uint8_t *iv, size_t ivLen, const uint8_t *srcData, uint8_t *destData, size_t dataLen)
 {
     LOG_D("FN: %s", __FUNCTION__);
     LOG_MAU8_D(" Input: IV", iv, ivLen);
@@ -1598,7 +1598,7 @@ sss_status_t sss_cipher_one_go(
     return kStatus_SSS_InvalidArgument;
 }
 
-sss_status_t sss_cipher_one_go_v2(sss_symmetric_t *context,
+sss_status_t se_sss_cipher_one_go_v2(se_sss_symmetric_t *context,
     uint8_t *iv,
     size_t ivLen,
     const uint8_t *srcData,
@@ -1634,7 +1634,7 @@ sss_status_t sss_cipher_one_go_v2(sss_symmetric_t *context,
     return kStatus_SSS_InvalidArgument;
 }
 
-sss_status_t sss_cipher_init(sss_symmetric_t *context, uint8_t *iv, size_t ivLen)
+sss_status_t se_sss_cipher_init(se_sss_symmetric_t *context, uint8_t *iv, size_t ivLen)
 {
 #if SSS_HAVE_SSCP
     if (SSS_SYMMETRIC_TYPE_IS_SSCP(context)) {
@@ -1667,8 +1667,8 @@ sss_status_t sss_cipher_init(sss_symmetric_t *context, uint8_t *iv, size_t ivLen
     return kStatus_SSS_InvalidArgument;
 }
 
-sss_status_t sss_cipher_update(
-    sss_symmetric_t *context, const uint8_t *srcData, size_t srcLen, uint8_t *destData, size_t *destLen)
+sss_status_t se_sss_cipher_update(
+    se_sss_symmetric_t *context, const uint8_t *srcData, size_t srcLen, uint8_t *destData, size_t *destLen)
 {
 #if SSS_HAVE_SSCP
     if (SSS_SYMMETRIC_TYPE_IS_SSCP(context)) {
@@ -1697,8 +1697,8 @@ sss_status_t sss_cipher_update(
     return kStatus_SSS_InvalidArgument;
 }
 
-sss_status_t sss_cipher_finish(
-    sss_symmetric_t *context, const uint8_t *srcData, size_t srcLen, uint8_t *destData, size_t *destLen)
+sss_status_t se_sss_cipher_finish(
+    se_sss_symmetric_t *context, const uint8_t *srcData, size_t srcLen, uint8_t *destData, size_t *destLen)
 {
 #if SSS_HAVE_SSCP
     if (SSS_SYMMETRIC_TYPE_IS_SSCP(context)) {
@@ -1727,7 +1727,7 @@ sss_status_t sss_cipher_finish(
     return kStatus_SSS_InvalidArgument;
 }
 
-sss_status_t sss_cipher_crypt_ctr(sss_symmetric_t *context,
+sss_status_t se_sss_cipher_crypt_ctr(se_sss_symmetric_t *context,
     const uint8_t *srcData,
     uint8_t *destData,
     size_t size,
@@ -1766,7 +1766,7 @@ sss_status_t sss_cipher_crypt_ctr(sss_symmetric_t *context,
     return kStatus_SSS_InvalidArgument;
 }
 
-void sss_symmetric_context_free(sss_symmetric_t *context)
+void se_sss_symmetric_context_free(se_sss_symmetric_t *context)
 {
     LOG_D("FN: %s", __FUNCTION__);
 #if SSS_HAVE_SSCP
@@ -1795,8 +1795,8 @@ void sss_symmetric_context_free(sss_symmetric_t *context)
 #endif /* SSS_HAVE_HOSTCRYPTO_OPENSSL */
 }
 
-sss_status_t sss_aead_context_init(
-    sss_aead_t *context, sss_session_t *session, sss_object_t *keyObject, sss_algorithm_t algorithm, sss_mode_t mode)
+sss_status_t se_sss_aead_context_init(
+    se_sss_aead_t *context, se_sss_session_t *session, se_sss_object_t *keyObject, sss_algorithm_t algorithm, sss_mode_t mode)
 {
 #if SSS_HAVE_SSCP
     if (SSS_SESSION_TYPE_IS_SSCP(session)) {
@@ -1845,7 +1845,7 @@ sss_status_t sss_aead_context_init(
     return kStatus_SSS_InvalidArgument;
 }
 
-sss_status_t sss_aead_one_go(sss_aead_t *context,
+sss_status_t se_sss_aead_one_go(se_sss_aead_t *context,
     const uint8_t *srcData,
     uint8_t *destData,
     size_t size,
@@ -1885,8 +1885,8 @@ sss_status_t sss_aead_one_go(sss_aead_t *context,
     return kStatus_SSS_InvalidArgument;
 }
 
-sss_status_t sss_aead_init(
-    sss_aead_t *context, uint8_t *nonce, size_t nonceLen, size_t tagLen, size_t aadLen, size_t payloadLen)
+sss_status_t se_sss_aead_init(
+    se_sss_aead_t *context, uint8_t *nonce, size_t nonceLen, size_t tagLen, size_t aadLen, size_t payloadLen)
 {
 #if SSS_HAVE_SSCP
     if (SSS_AEAD_TYPE_IS_SSCP(context)) {
@@ -1919,7 +1919,7 @@ sss_status_t sss_aead_init(
     return kStatus_SSS_InvalidArgument;
 }
 
-sss_status_t sss_aead_update_aad(sss_aead_t *context, const uint8_t *aadData, size_t aadDataLen)
+sss_status_t se_sss_aead_update_aad(se_sss_aead_t *context, const uint8_t *aadData, size_t aadDataLen)
 {
 #if SSS_HAVE_SSCP
     if (SSS_AEAD_TYPE_IS_SSCP(context)) {
@@ -1948,8 +1948,8 @@ sss_status_t sss_aead_update_aad(sss_aead_t *context, const uint8_t *aadData, si
     return kStatus_SSS_InvalidArgument;
 }
 
-sss_status_t sss_aead_update(
-    sss_aead_t *context, const uint8_t *srcData, size_t srcLen, uint8_t *destData, size_t *destLen)
+sss_status_t se_sss_aead_update(
+    se_sss_aead_t *context, const uint8_t *srcData, size_t srcLen, uint8_t *destData, size_t *destLen)
 {
 #if SSS_HAVE_SSCP
     if (SSS_AEAD_TYPE_IS_SSCP(context)) {
@@ -1978,7 +1978,7 @@ sss_status_t sss_aead_update(
     return kStatus_SSS_InvalidArgument;
 }
 
-sss_status_t sss_aead_finish(sss_aead_t *context,
+sss_status_t se_sss_aead_finish(se_sss_aead_t *context,
     const uint8_t *srcData,
     size_t srcLen,
     uint8_t *destData,
@@ -2013,7 +2013,7 @@ sss_status_t sss_aead_finish(sss_aead_t *context,
     return kStatus_SSS_InvalidArgument;
 }
 
-void sss_aead_context_free(sss_aead_t *context)
+void se_sss_aead_context_free(se_sss_aead_t *context)
 {
 #if SSS_HAVE_SSCP
     if (SSS_AEAD_TYPE_IS_SSCP(context)) {
@@ -2041,8 +2041,8 @@ void sss_aead_context_free(sss_aead_t *context)
 #endif /* SSS_HAVE_HOSTCRYPTO_OPENSSL */
 }
 
-sss_status_t sss_mac_context_init(
-    sss_mac_t *context, sss_session_t *session, sss_object_t *keyObject, sss_algorithm_t algorithm, sss_mode_t mode)
+sss_status_t se_sss_mac_context_init(
+    se_sss_mac_t *context, se_sss_session_t *session, se_sss_object_t *keyObject, sss_algorithm_t algorithm, sss_mode_t mode)
 {
     LOG_D("FN: %s", __FUNCTION__);
     LOG_D("Input:algorithm %02x", algorithm);
@@ -2094,7 +2094,7 @@ sss_status_t sss_mac_context_init(
     return kStatus_SSS_InvalidArgument;
 }
 
-sss_status_t sss_mac_one_go(sss_mac_t *context, const uint8_t *message, size_t messageLen, uint8_t *mac, size_t *macLen)
+sss_status_t se_sss_mac_one_go(se_sss_mac_t *context, const uint8_t *message, size_t messageLen, uint8_t *mac, size_t *macLen)
 {
     LOG_D("FN: %s", __FUNCTION__);
     LOG_MAU8_D(" Input: message", message, messageLen);
@@ -2126,7 +2126,7 @@ sss_status_t sss_mac_one_go(sss_mac_t *context, const uint8_t *message, size_t m
     return kStatus_SSS_InvalidArgument;
 }
 
-sss_status_t sss_mac_init(sss_mac_t *context)
+sss_status_t se_sss_mac_init(se_sss_mac_t *context)
 {
     LOG_D("FN: %s", __FUNCTION__);
 #if SSS_HAVE_SSCP
@@ -2160,7 +2160,7 @@ sss_status_t sss_mac_init(sss_mac_t *context)
     return kStatus_SSS_InvalidArgument;
 }
 
-sss_status_t sss_mac_update(sss_mac_t *context, const uint8_t *message, size_t messageLen)
+sss_status_t se_sss_mac_update(se_sss_mac_t *context, const uint8_t *message, size_t messageLen)
 {
     LOG_D("FN: %s", __FUNCTION__);
     LOG_MAU8_D(" Input: message", message, messageLen);
@@ -2192,7 +2192,7 @@ sss_status_t sss_mac_update(sss_mac_t *context, const uint8_t *message, size_t m
     return kStatus_SSS_InvalidArgument;
 }
 
-sss_status_t sss_mac_finish(sss_mac_t *context, uint8_t *mac, size_t *macLen)
+sss_status_t se_sss_mac_finish(se_sss_mac_t *context, uint8_t *mac, size_t *macLen)
 {
     LOG_D("FN: %s", __FUNCTION__);
 #if SSS_HAVE_SSCP
@@ -2222,7 +2222,7 @@ sss_status_t sss_mac_finish(sss_mac_t *context, uint8_t *mac, size_t *macLen)
     return kStatus_SSS_InvalidArgument;
 }
 
-void sss_mac_context_free(sss_mac_t *context)
+void se_sss_mac_context_free(se_sss_mac_t *context)
 {
     LOG_D("FN: %s", __FUNCTION__);
 #if SSS_HAVE_SSCP
@@ -2251,8 +2251,8 @@ void sss_mac_context_free(sss_mac_t *context)
 #endif /* SSS_HAVE_HOSTCRYPTO_OPENSSL */
 }
 
-sss_status_t sss_digest_context_init(
-    sss_digest_t *context, sss_session_t *session, sss_algorithm_t algorithm, sss_mode_t mode)
+sss_status_t se_sss_digest_context_init(
+    se_sss_digest_t *context, se_sss_session_t *session, sss_algorithm_t algorithm, sss_mode_t mode)
 {
 #if SSS_HAVE_SSCP
     if (SSS_SESSION_TYPE_IS_SSCP(session)) {
@@ -2293,8 +2293,8 @@ sss_status_t sss_digest_context_init(
     return kStatus_SSS_InvalidArgument;
 }
 
-sss_status_t sss_digest_one_go(
-    sss_digest_t *context, const uint8_t *message, size_t messageLen, uint8_t *digest, size_t *digestLen)
+sss_status_t se_sss_digest_one_go(
+    se_sss_digest_t *context, const uint8_t *message, size_t messageLen, uint8_t *digest, size_t *digestLen)
 {
 #if SSS_HAVE_SSCP
     if (SSS_DIGEST_TYPE_IS_SSCP(context)) {
@@ -2323,7 +2323,7 @@ sss_status_t sss_digest_one_go(
     return kStatus_SSS_InvalidArgument;
 }
 
-sss_status_t sss_digest_init(sss_digest_t *context)
+sss_status_t se_sss_digest_init(se_sss_digest_t *context)
 {
 #if SSS_HAVE_SSCP
     if (SSS_DIGEST_TYPE_IS_SSCP(context)) {
@@ -2356,7 +2356,7 @@ sss_status_t sss_digest_init(sss_digest_t *context)
     return kStatus_SSS_InvalidArgument;
 }
 
-sss_status_t sss_digest_update(sss_digest_t *context, const uint8_t *message, size_t messageLen)
+sss_status_t se_sss_digest_update(se_sss_digest_t *context, const uint8_t *message, size_t messageLen)
 {
 #if SSS_HAVE_SSCP
     if (SSS_DIGEST_TYPE_IS_SSCP(context)) {
@@ -2385,7 +2385,7 @@ sss_status_t sss_digest_update(sss_digest_t *context, const uint8_t *message, si
     return kStatus_SSS_InvalidArgument;
 }
 
-sss_status_t sss_digest_finish(sss_digest_t *context, uint8_t *digest, size_t *digestLen)
+sss_status_t se_sss_digest_finish(se_sss_digest_t *context, uint8_t *digest, size_t *digestLen)
 {
 #if SSS_HAVE_SSCP
     if (SSS_DIGEST_TYPE_IS_SSCP(context)) {
@@ -2414,7 +2414,7 @@ sss_status_t sss_digest_finish(sss_digest_t *context, uint8_t *digest, size_t *d
     return kStatus_SSS_InvalidArgument;
 }
 
-void sss_digest_context_free(sss_digest_t *context)
+void se_sss_digest_context_free(se_sss_digest_t *context)
 {
 #if SSS_HAVE_SSCP
     if (SSS_DIGEST_TYPE_IS_SSCP(context)) {
@@ -2442,7 +2442,7 @@ void sss_digest_context_free(sss_digest_t *context)
 #endif /* SSS_HAVE_HOSTCRYPTO_OPENSSL */
 }
 
-sss_status_t sss_rng_context_init(sss_rng_context_t *context, sss_session_t *session)
+sss_status_t se_sss_rng_context_init(se_sss_rng_context_t *context, se_sss_session_t *session)
 {
     LOG_D("FN: %s", __FUNCTION__);
 #if SSS_HAVE_SSCP
@@ -2484,7 +2484,7 @@ sss_status_t sss_rng_context_init(sss_rng_context_t *context, sss_session_t *ses
     return kStatus_SSS_InvalidArgument;
 }
 
-sss_status_t sss_rng_get_random(sss_rng_context_t *context, uint8_t *random_data, size_t dataLen)
+sss_status_t se_sss_rng_get_random(se_sss_rng_context_t *context, uint8_t *random_data, size_t dataLen)
 {
     LOG_D("FN: %s", __FUNCTION__);
 #if SSS_HAVE_SSCP
@@ -2514,7 +2514,7 @@ sss_status_t sss_rng_get_random(sss_rng_context_t *context, uint8_t *random_data
     return kStatus_SSS_InvalidArgument;
 }
 
-sss_status_t sss_rng_context_free(sss_rng_context_t *context)
+sss_status_t se_sss_rng_context_free(se_sss_rng_context_t *context)
 {
     LOG_D("FN: %s", __FUNCTION__);
 #if SSS_HAVE_SSCP
@@ -2544,7 +2544,7 @@ sss_status_t sss_rng_context_free(sss_rng_context_t *context)
     return kStatus_SSS_InvalidArgument;
 }
 
-sss_status_t sss_tunnel_context_init(sss_tunnel_t *context, sss_session_t *session)
+sss_status_t se_sss_tunnel_context_init(se_sss_tunnel_t *context, se_sss_session_t *session)
 {
 #if 0 && SSS_HAVE_SSCP
     if (SSS_SESSION_TYPE_IS_SSCP(session)) {
@@ -2569,10 +2569,10 @@ sss_status_t sss_tunnel_context_init(sss_tunnel_t *context, sss_session_t *sessi
     return kStatus_SSS_InvalidArgument;
 }
 
-sss_status_t sss_tunnel(sss_tunnel_t *context,
+sss_status_t se_sss_tunnel(se_sss_tunnel_t *context,
     uint8_t *data,
     size_t dataLen,
-    sss_object_t *keyObjects,
+    se_sss_object_t *keyObjects,
     uint32_t keyObjectCount,
     uint32_t tunnelType)
 {
@@ -2636,7 +2636,7 @@ sss_status_t sss_tunnel(sss_tunnel_t *context,
     return kStatus_SSS_InvalidArgument;
 }
 
-void sss_tunnel_context_free(sss_tunnel_t *context)
+void se_sss_tunnel_context_free(se_sss_tunnel_t *context)
 {
 #if SSS_HAVE_SSCP
     /* NA */
@@ -2659,7 +2659,7 @@ void sss_tunnel_context_free(sss_tunnel_t *context)
     case kStatus_SSS_##SUFFIX:                \
         return "kStatus_SSS_" #SUFFIX
 
-const char *sss_status_sz(sss_status_t status)
+const char *se_sss_status_sz(sss_status_t status)
 {
     switch (status) {
         CASE_X_RETRUN_STR_kStatus_SSS(Success);
@@ -2673,10 +2673,10 @@ const char *sss_status_sz(sss_status_t status)
 }
 
 #define CASE_X_RETRUN_STR_kSSS_CipherType(SUFFIX) \
-    case kSSS_CipherType_##SUFFIX:                \
-        return "kSSS_CipherType_" #SUFFIX
+    case kSE_SSS_CipherType_##SUFFIX:                \
+        return "kSE_SSS_CipherType_" #SUFFIX
 
-const char *sss_cipher_type_sz(sss_cipher_type_t cipher_type)
+const char *se_sss_cipher_type_sz(se_sss_cipher_type_t cipher_type)
 {
     switch (cipher_type) {
         CASE_X_RETRUN_STR_kSSS_CipherType(AES);
@@ -2698,8 +2698,8 @@ const char *sss_cipher_type_sz(sss_cipher_type_t cipher_type)
         CASE_X_RETRUN_STR_kSSS_CipherType(PCR);
         CASE_X_RETRUN_STR_kSSS_CipherType(ReservedPin);
     default:
-        LOG_W("sss_cipher_type_sz status=0x%X Unknown", cipher_type);
-        return "Unknown sss_cipher_type_t";
+        LOG_W("se_sss_cipher_type_sz status=0x%X Unknown", cipher_type);
+        return "Unknown se_sss_cipher_type_t";
     }
 }
 

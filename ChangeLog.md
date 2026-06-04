@@ -1,5 +1,20 @@
 # Plug-And-Trust Mini Package Change Log
 
+## v04.07.04.05
+
+- SSS APIs of MbedTLS are extended to support with PSA APIs
+- Names of structures, API names from `sss/inc/fsl_sss_api.h` file and some and enumeration values are changed to co-exist with secure enclave files.
+  - sss_object_t changed to se_sss_object_t.
+  - sss_symmetric_t changed to se_sss_symmetric_t.
+  - sss_digest_t changed to se_sss_digest_t.
+  - sss_mac_t changed to se_sss_mac_t.
+  - sss_asymmetric_t changed se_sss_asymmetric_t.
+  - sss_tunnel_t changed to se_sss_tunnel_t.
+  - sss_derive_key_t changed to se_sss_derive_key_t.
+  - All APIs from `sss/inc/fsl_sss_api.h` are prefixed with `se_`.
+  - Names in enumeration `se_sss_cipher_type_t` are changed.
+  - Values of sss_mode_t are changed.
+
 ## v04.07.04.04
 
 - NFC commissioning Provision example - Do reset option (Deleting all objects) updated to delete descriptor cluster with end point.

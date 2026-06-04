@@ -42,31 +42,31 @@
 #if 0
 typedef struct
 {
-    sss_session_t currentSession;
+    se_sss_session_t currentSession;
 
-    sss_key_store_t ks;
+    se_sss_key_store_t ks;
 
     sss_sscp_session_t *sscp_session;
 
     sscp_context_t sscp;
-    sss_asymmetric_t asymVerifyCtx;
-    sss_asymmetric_t asymm;
-    sss_object_t keyPair;
-    sss_object_t extPubkey;
+    se_sss_asymmetric_t asymVerifyCtx;
+    se_sss_asymmetric_t asymm;
+    se_sss_object_t keyPair;
+    se_sss_object_t extPubkey;
 
-    sss_object_t Device_Cert;
-    sss_object_t Pubkey;
-    sss_object_t interCaCert;
-    sss_object_t interkeyPair;
-    sss_object_t clientCert;
+    se_sss_object_t Device_Cert;
+    se_sss_object_t Pubkey;
+    se_sss_object_t interCaCert;
+    se_sss_object_t interkeyPair;
+    se_sss_object_t clientCert;
 #if SSS_HAVE_APPLET_SE05X_IOT
-    sss_session_t hostSession;
-    sss_key_store_t hostKs;
-    sss_object_t hostKey;
+    se_sss_session_t hostSession;
+    se_sss_key_store_t hostKs;
+    se_sss_object_t hostKey;
 #endif
-    sss_symmetric_t symm;
-    sss_rng_context_t rng;
-    sss_mac_t mac;
+    se_sss_symmetric_t symm;
+    se_sss_rng_context_t rng;
+    se_sss_mac_t mac;
 
 } sss_ex_ctx_t;
 

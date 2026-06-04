@@ -46,7 +46,7 @@ extern "C" {
 #define SSS_ASSERT(condition) //assert_static(condition)
 
 /*! @brief Compile time sizeof() check */
-#define SSCP_BUILD_ASSURE(condition, msg) assert_static(condition)
+#define SSCP_PNT_BUILD_ASSURE(condition, msg) assert_static(condition)
 
 /* snprintf definition for MSVisualC */
 #ifdef _MSC_VER

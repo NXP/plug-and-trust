@@ -34,26 +34,26 @@ static uint8_t policy = 0;
 
 static sss_status_t se051h_set_key(const uint8_t *buffer, size_t bufferLen,
                                    size_t bitLen, sss_key_part_t keyPart,
-                                   sss_cipher_type_t cipherType, uint32_t keyId,
+                                   se_sss_cipher_type_t cipherType, uint32_t keyId,
                                    void *options, size_t optionsLen) {
   sss_status_t status = kStatus_SSS_Success;
-  sss_object_t keyObj;
+  se_sss_object_t keyObj;
   smStatus_t smstatus = SM_NOT_OK;
   Se05xPolicy_t se05x_policy;
   uint8_t wifi_policies_buff[MAX_POLICY_BUFFER_SIZE] = WIFI_POLICY_BUFF;
   uint8_t policies_buff[MAX_POLICY_BUFFER_SIZE] = BINARY_POLICY_BUFF;
   uint8_t hmac_policies_buff[MAX_POLICY_BUFFER_SIZE] = HMAC_POLICY_BUFF;
 
-  status = sss_key_object_init(&keyObj, &gex_sss_chip_ctx.ks);
+  status = se_sss_key_object_init(&keyObj, &gex_sss_chip_ctx.ks);
   ENSURE_OR_RETURN_ON_ERROR(status == kStatus_SSS_Success, status);
 
   status =
-      sss_key_object_allocate_handle(&keyObj, keyId, keyPart, cipherType,
+      se_sss_key_object_allocate_handle(&keyObj, keyId, keyPart, cipherType,
                                      bufferLen, kKeyObject_Mode_Persistent);
   ENSURE_OR_RETURN_ON_ERROR(status == kStatus_SSS_Success, status);
 
-  if (cipherType == kSSS_CipherType_Binary ||
-      cipherType == kSSS_CipherType_Certificate) {
+  if (cipherType == kSE_SSS_CipherType_Binary ||
+      cipherType == kSE_SSS_CipherType_Certificate) {
     if (policy) {
       if (keyId == SE051H_WIFI_CRED_ID_APP_8_4 ||
           keyId == SE051H_WIFI_CRED_ID_APP_8_8) {
@@ -70,8 +70,8 @@ static sss_status_t se051h_set_key(const uint8_t *buffer, size_t bufferLen,
     }
 
     if (bufferLen > UINT16_MAX) {
-      LOG_E("Buffer length exceeds maximum allowed size");
-      return kStatus_SSS_Fail;
+        LOG_E("Buffer length exceeds maximum allowed size");
+        return kStatus_SSS_Fail;
     }
     smstatus = Se05x_API_WriteBinary_Ver(
         &((sss_se05x_session_t *)&gex_sss_chip_ctx.session)->s_ctx,
@@ -80,7 +80,7 @@ static sss_status_t se051h_set_key(const uint8_t *buffer, size_t bufferLen,
       LOG_E("Error in setting Binary/Certificate");
       status = kStatus_SSS_Fail;
     }
-  } else if (cipherType == kSSS_CipherType_HMAC) {
+  } else if (cipherType == kSE_SSS_CipherType_HMAC) {
     SE05x_KeyID_t kekID = SE05x_KeyID_KEK_NONE;
     sss_se05x_key_store_t *se05x_keyStore =
         (sss_se05x_key_store_t *)&gex_sss_chip_ctx.ks;
@@ -109,10 +109,10 @@ static sss_status_t se051h_set_key(const uint8_t *buffer, size_t bufferLen,
       options = NULL;
       optionsLen = 0;
     }
-    status = sss_key_store_set_key(&gex_sss_chip_ctx.ks, &keyObj, buffer,
+    status = se_sss_key_store_set_key(&gex_sss_chip_ctx.ks, &keyObj, buffer,
                                    bufferLen, bitLen, options, optionsLen);
     if (status != kStatus_SSS_Success) {
-      printf("Error in sss_key_store_set_key \n");
+      printf("Error in se_sss_key_store_set_key \n");
     }
   }
 
@@ -169,29 +169,28 @@ static smStatus_t se05x_delete_key(uint32_t keyid) {
 }
 
 #if SSS_HAVE_APPLET_SE051_H
-static sss_status_t se051h_set_key_with_ep(const uint8_t *buffer,
-                                           size_t bufferLen,
-                                           sss_cipher_type_t cipherType,
-                                           uint32_t keyId,
-                                           uint16_t endpointID) {
+static sss_status_t se051h_set_key_with_ep(const uint8_t *buffer, size_t bufferLen,
+                                   se_sss_cipher_type_t cipherType, uint32_t keyId,
+                                   uint16_t endpointID) {
   sss_status_t status = kStatus_SSS_Success;
   smStatus_t smstatus = SM_NOT_OK;
   Se05xPolicy_t se05x_policy;
   uint8_t policies_buff[MAX_POLICY_BUFFER_SIZE] = BINARY_POLICY_BUFF;
 
-  if (cipherType == kSSS_CipherType_Binary ||
-      cipherType == kSSS_CipherType_Certificate) {
-    if (policy) {
-      se05x_policy.value = policies_buff;
-      se05x_policy.value_len = POLICY_BUF_LEN;
-    } else {
-      se05x_policy.value = NULL;
-      se05x_policy.value_len = 0;
-    }
+  if (cipherType == kSE_SSS_CipherType_Binary ||
+      cipherType == kSE_SSS_CipherType_Certificate) {
+        if (policy) {
+          se05x_policy.value = policies_buff;
+          se05x_policy.value_len = POLICY_BUF_LEN;
+        }
+        else {
+            se05x_policy.value = NULL;
+            se05x_policy.value_len = 0;
+        }
 
     if (bufferLen > UINT16_MAX) {
-      LOG_E("Buffer length exceeds maximum allowed size");
-      return kStatus_SSS_Fail;
+        LOG_E("Buffer length exceeds maximum allowed size");
+        return kStatus_SSS_Fail;
     }
     smstatus = Se05x_API_WriteBinary_V2(
         &((sss_se05x_session_t *)&gex_sss_chip_ctx.session)->s_ctx,
@@ -296,7 +295,7 @@ se051h_provision_pbkdf_parameters(uint8_t tp_spake_passcode_set_no,
   status =
       se051h_set_key(pbkdf_Buffer, sizeof(pbkdf_Buffer),
                      sizeof(pbkdf_Buffer) * 8, kSSS_KeyPart_Default,
-                     kSSS_CipherType_Binary, SE051H_PBKDF_PARAMS_ID, NULL, 0);
+                     kSE_SSS_CipherType_Binary, SE051H_PBKDF_PARAMS_ID, NULL, 0);
   if (status != kStatus_SSS_Success) {
     printf("Error in se051h_provision_pbkdf_parameters\n");
   }
@@ -320,7 +319,7 @@ static sss_status_t se051h_provision_spake2p_verifiers_passcode_salt() {
         SE051H_PASSCODE_ID);
   status = se051h_set_key(passcode_buffer, sizeof(passcode_buffer),
                           sizeof(passcode_buffer) * 8, kSSS_KeyPart_Default,
-                          kSSS_CipherType_Binary, SE051H_PASSCODE_ID, NULL, 0);
+                          kSE_SSS_CipherType_Binary, SE051H_PASSCODE_ID, NULL, 0);
   ENSURE_OR_GO_CLEANUP(status == kStatus_SSS_Success);
 
   smstatus = se05x_delete_key(SE051H_HMAC_KEY_W0_ID);
@@ -332,7 +331,7 @@ static sss_status_t se051h_provision_spake2p_verifiers_passcode_salt() {
         SE051H_HMAC_KEY_W0_ID);
   status = se051h_set_key(hmac_key_w0, sizeof(hmac_key_w0),
                           sizeof(hmac_key_w0) * 8, kSSS_KeyPart_Default,
-                          kSSS_CipherType_HMAC, SE051H_HMAC_KEY_W0_ID, NULL, 0);
+                          kSE_SSS_CipherType_HMAC, SE051H_HMAC_KEY_W0_ID, NULL, 0);
   ENSURE_OR_GO_CLEANUP(status == kStatus_SSS_Success);
 
   smstatus = se05x_delete_key(SE051H_HMAC_KEY_L_ID);
@@ -344,15 +343,14 @@ static sss_status_t se051h_provision_spake2p_verifiers_passcode_salt() {
         SE051H_HMAC_KEY_L_ID);
   status = se051h_set_key(hmac_key_L, sizeof(hmac_key_L),
                           sizeof(hmac_key_L) * 8, kSSS_KeyPart_Default,
-                          kSSS_CipherType_HMAC, SE051H_HMAC_KEY_L_ID, NULL, 0);
+                          kSE_SSS_CipherType_HMAC, SE051H_HMAC_KEY_L_ID, NULL, 0);
   ENSURE_OR_GO_CLEANUP(status == kStatus_SSS_Success);
 
 cleanup:
   return status;
 }
 
-static sss_status_t se051h_provision_dac_cert(uint8_t *dac_cert_in,
-                                              size_t dac_cert_in_len) {
+static sss_status_t se051h_provision_dac_cert(uint8_t *dac_cert_in, size_t dac_cert_in_len) {
   sss_status_t status = kStatus_SSS_Fail;
   smStatus_t smstatus = SM_NOT_OK;
 
@@ -367,14 +365,14 @@ static sss_status_t se051h_provision_dac_cert(uint8_t *dac_cert_in,
     LOG_I("Writing Device Attestation Certificate to SE05x at Key id = %x",
           SE051H_DAC_ID);
     status = se051h_set_key(dac_cert_in, dac_cert_in_len, dac_cert_in_len * 8,
-                            kSSS_KeyPart_Default, kSSS_CipherType_Certificate,
+                            kSSS_KeyPart_Default, kSE_SSS_CipherType_Certificate,
                             SE051H_DAC_ID, NULL, 0);
   } else {
     LOG_I("Writing Device Attestation Certificate (from "
           "se051h_nfc_comm_prov.h) to SE05x at Key id = %x",
           SE051H_DAC_ID);
     status = se051h_set_key(dac_cer, sizeof(dac_cer), sizeof(dac_cer) * 8,
-                            kSSS_KeyPart_Default, kSSS_CipherType_Certificate,
+                            kSSS_KeyPart_Default, kSE_SSS_CipherType_Certificate,
                             SE051H_DAC_ID, NULL, 0);
   }
   if (status != kStatus_SSS_Success) {
@@ -396,7 +394,7 @@ static sss_status_t se051h_provision_pai_cert() {
   /*set Device Attestation certificate*/
   LOG_I("Writing PAI certificate to SE05x at Key id = %x", SE051H_PAI_ID);
   status = se051h_set_key(pai_cer, sizeof(pai_cer), sizeof(pai_cer) * 8,
-                          kSSS_KeyPart_Default, kSSS_CipherType_Certificate,
+                          kSSS_KeyPart_Default, kSE_SSS_CipherType_Certificate,
                           SE051H_PAI_ID, NULL, 0);
   if (status != kStatus_SSS_Success) {
     printf("Error in se051h_set_pai_cert\n");
@@ -405,8 +403,7 @@ static sss_status_t se051h_provision_pai_cert() {
   return status;
 }
 
-static sss_status_t se051h_provision_da_key(uint8_t *dac_key,
-                                            size_t dac_key_len) {
+static sss_status_t se051h_provision_da_key(uint8_t *dac_key, size_t dac_key_len) {
 
   sss_status_t status = kStatus_SSS_Fail;
   smStatus_t smstatus = SM_NOT_OK;
@@ -441,7 +438,7 @@ static sss_status_t se051h_provision_da_key(uint8_t *dac_key,
     LOG_I("Writing DA private key to SE05x at Key id = %x",
           SE051H_DA_KEY_PAIR_ID);
     status = se051h_set_key(dac_key, dac_key_len, 256, kSSS_KeyPart_Pair,
-                            kSSS_CipherType_EC_NIST_P, SE051H_DA_KEY_PAIR_ID,
+                            kSE_SSS_CipherType_EC_NIST_P, SE051H_DA_KEY_PAIR_ID,
                             &policy_for_DA_key, sizeof(policy_for_DA_key));
   } else {
 
@@ -449,7 +446,7 @@ static sss_status_t se051h_provision_da_key(uint8_t *dac_key,
           "Key id = %x",
           SE051H_DA_KEY_PAIR_ID);
     status = se051h_set_key(privKey, sizeof(privKey), 256, kSSS_KeyPart_Pair,
-                            kSSS_CipherType_EC_NIST_P, SE051H_DA_KEY_PAIR_ID,
+                            kSE_SSS_CipherType_EC_NIST_P, SE051H_DA_KEY_PAIR_ID,
                             &policy_for_DA_key, sizeof(policy_for_DA_key));
   }
 
@@ -473,7 +470,7 @@ static sss_status_t se051h_provision_attest_tbs() {
   LOG_I("Writing Attestation TBS at Key id = %x", SE051H_ATTEST_TBS);
   status = se051h_set_key(attest_tbs, sizeof(attest_tbs),
                           sizeof(attest_tbs) * 8, kSSS_KeyPart_Default,
-                          kSSS_CipherType_Binary, SE051H_ATTEST_TBS, NULL, 0);
+                          kSE_SSS_CipherType_Binary, SE051H_ATTEST_TBS, NULL, 0);
   if (status != kStatus_SSS_Success) {
     printf("Error in writing se051h_provision_attest_tbs data\n");
   }
@@ -494,7 +491,7 @@ static sss_status_t se051h_provision_select_response() {
         SE051H_SELECT_RESPONSE_ID);
   status = se051h_set_key(select_response, sizeof(select_response),
                           sizeof(select_response) * 8, kSSS_KeyPart_Default,
-                          kSSS_CipherType_Binary, SE051H_SELECT_RESPONSE_ID,
+                          kSE_SSS_CipherType_Binary, SE051H_SELECT_RESPONSE_ID,
                           NULL, 0);
   if (status != kStatus_SSS_Success) {
     printf("Error in se051h_provision_select_response\n");
@@ -534,9 +531,9 @@ static sss_status_t se051h_provision_node_oper_key() {
 
   LOG_I("Writing Node Operational key to SE05x at Key id = %x",
         SE051H_NODE_OP_KEY_ID);
-  status = se051h_set_key(no_key, sizeof(no_key), 256, kSSS_KeyPart_Pair,
-                          kSSS_CipherType_EC_NIST_P, SE051H_NODE_OP_KEY_ID,
-                          &policy_for_NO_key, sizeof(policy_for_NO_key));
+  status =
+      se051h_set_key(no_key, sizeof(no_key), 256, kSSS_KeyPart_Pair,
+                     kSE_SSS_CipherType_EC_NIST_P, SE051H_NODE_OP_KEY_ID, &policy_for_NO_key, sizeof(policy_for_NO_key));
   if (status != kStatus_SSS_Success) {
     printf("Error in se051h_provision_node_oper_key\n");
   }
@@ -558,7 +555,7 @@ static sss_status_t se051h_provision_node_oper_cert() {
         SE051H_NOC_ID);
   status =
       se051h_set_key(noc, sizeof(noc), sizeof(noc) * 8, kSSS_KeyPart_Default,
-                     kSSS_CipherType_Certificate, SE051H_NOC_ID, NULL, 0);
+                     kSE_SSS_CipherType_Certificate, SE051H_NOC_ID, NULL, 0);
   if (status != kStatus_SSS_Success) {
     printf("Error in se051h_provision_node_oper_cert\n");
   }
@@ -578,7 +575,7 @@ static sss_status_t se051h_provision_root_cert() {
   /* set Root certificate */
   LOG_I("Writing Root certificate to SE05x at Key id = %x", SE051H_ROOT_CER_ID);
   status = se051h_set_key(root_ca, sizeof(root_ca), sizeof(root_ca) * 8,
-                          kSSS_KeyPart_Default, kSSS_CipherType_Certificate,
+                          kSSS_KeyPart_Default, kSE_SSS_CipherType_Certificate,
                           SE051H_ROOT_CER_ID, NULL, 0);
   if (status != kStatus_SSS_Success) {
     printf("Error in se051h_provision_root_cert\n");
@@ -600,7 +597,7 @@ static sss_status_t se051h_provision_ssid_passcode() {
         SE051H_WIFI_CRED_ID_APP_8_4);
   status = se051h_set_key(wifi_cred_data, sizeof(wifi_cred_data),
                           sizeof(wifi_cred_data) * 8, kSSS_KeyPart_Default,
-                          kSSS_CipherType_Binary, SE051H_WIFI_CRED_ID_APP_8_4,
+                          kSE_SSS_CipherType_Binary, SE051H_WIFI_CRED_ID_APP_8_4,
                           NULL, 0);
   if (status != kStatus_SSS_Success) {
     printf("Error in se051h_provision_ssid_passcode\n");
@@ -622,7 +619,7 @@ static sss_status_t se051h_provision_ssid_passcode_app_8_8() {
         SE051H_WIFI_CRED_ID_APP_8_8);
   status = se051h_set_key(wifi_cred_data, sizeof(wifi_cred_data),
                           sizeof(wifi_cred_data) * 8, kSSS_KeyPart_Default,
-                          kSSS_CipherType_Binary, SE051H_WIFI_CRED_ID_APP_8_8,
+                          kSE_SSS_CipherType_Binary, SE051H_WIFI_CRED_ID_APP_8_8,
                           NULL, 0);
   if (status != kStatus_SSS_Success) {
     printf("Error in se051h_provision_ssid_passcode_app_8_8\n");
@@ -643,7 +640,7 @@ static sss_status_t se051h_provision_acl() {
 
   LOG_I("Writing acl to SE05x at Key id = %x", SE051H_ACL_ID);
   status = se051h_set_key(acl_data, sizeof(acl_data), sizeof(acl_data) * 8,
-                          kSSS_KeyPart_Default, kSSS_CipherType_Binary,
+                          kSSS_KeyPart_Default, kSE_SSS_CipherType_Binary,
                           SE051H_ACL_ID, NULL, 0);
   if (status != kStatus_SSS_Success) {
     printf("Error in se051h_provision_acl\n");
@@ -663,7 +660,7 @@ static sss_status_t se051h_provision_identity_protection_key() {
 
   LOG_I("Writing ipk to SE05x at Key id = %x", SE051H_IPK_ID);
   status = se051h_set_key(ipk_data, sizeof(ipk_data), sizeof(ipk_data) * 8,
-                          kSSS_KeyPart_Default, kSSS_CipherType_Binary,
+                          kSSS_KeyPart_Default, kSE_SSS_CipherType_Binary,
                           SE051H_IPK_ID, NULL, 0);
   if (status != kStatus_SSS_Success) {
     printf("Error in se051h_provision_identity_protection_key\n");
@@ -713,7 +710,7 @@ static sss_status_t se051h_provision_basic_info_cluster() {
   status = se051h_set_key(
       Basic_info_cluster_data, sizeof(Basic_info_cluster_data),
       sizeof(Basic_info_cluster_data) * 8, kSSS_KeyPart_Default,
-      kSSS_CipherType_Binary, SE051H_BASIC_INFO_CLUSTER_ID, NULL, 0);
+      kSE_SSS_CipherType_Binary, SE051H_BASIC_INFO_CLUSTER_ID, NULL, 0);
   if (status != kStatus_SSS_Success) {
     printf("Error in se051h_set_basic_info_cluster_data\n");
   }
@@ -753,7 +750,7 @@ static sss_status_t se051h_provision_general_comm_cluster() {
   status = se051h_set_key(
       Genaral_comm_cluster_data, sizeof(Genaral_comm_cluster_data),
       sizeof(Genaral_comm_cluster_data) * 8, kSSS_KeyPart_Default,
-      kSSS_CipherType_Binary, SE051H_GENERAL_COMM_CLUSTER_ID, NULL, 0);
+      kSE_SSS_CipherType_Binary, SE051H_GENERAL_COMM_CLUSTER_ID, NULL, 0);
   if (status != kStatus_SSS_Success) {
     printf("Error in se051h_set_Genaral_comm_cluster_data\n");
   }
@@ -791,7 +788,7 @@ static sss_status_t se051h_provision_operational_cred_cluster() {
         SE051H_OP_CRED_CLUSTER_ID);
   status = se051h_set_key(OCC_cluster_data, sizeof(OCC_cluster_data),
                           sizeof(OCC_cluster_data) * 8, kSSS_KeyPart_Default,
-                          kSSS_CipherType_Binary, SE051H_OP_CRED_CLUSTER_ID,
+                          kSE_SSS_CipherType_Binary, SE051H_OP_CRED_CLUSTER_ID,
                           NULL, 0);
   if (status != kStatus_SSS_Success) {
     printf("Error in se051h_set_OCC_cluster_data\n");
@@ -828,7 +825,7 @@ static sss_status_t se051h_provision_access_control_cluster() {
 
   LOG_I("Writing ACL data to SE05x at Key id = %x", SE051H_ACC_ID);
   status = se051h_set_key(acl_data, sizeof(acl_data), sizeof(acl_data) * 8,
-                          kSSS_KeyPart_Default, kSSS_CipherType_Binary,
+                          kSSS_KeyPart_Default, kSE_SSS_CipherType_Binary,
                           SE051H_ACC_ID, NULL, 0);
   if (status != kStatus_SSS_Success) {
     printf("Error in se051h_set_acl_data\n");
@@ -872,7 +869,7 @@ se051h_provision_network_comm_cluster(uint8_t device_network_type) {
 
   LOG_I("Writing ncc data to SE05x at Key id = %x", SE051H_NCC_ID);
   status = se051h_set_key(ncc_buf, sizeof(ncc_buf), sizeof(ncc_buf) * 8,
-                          kSSS_KeyPart_Default, kSSS_CipherType_Binary,
+                          kSSS_KeyPart_Default, kSE_SSS_CipherType_Binary,
                           SE051H_NCC_ID, NULL, 0);
   if (status != kStatus_SSS_Success) {
     printf("Error in se051h_set_ncc_data\n");
@@ -893,7 +890,7 @@ static sss_status_t se051h_provision_vendor_reserved() {
   LOG_I("Writing vendor reserved data to SE05x at Key id = %x", SE051H_VR_ID);
   status = se051h_set_key(vendor_reserved, sizeof(vendor_reserved),
                           sizeof(vendor_reserved) * 8, kSSS_KeyPart_Default,
-                          kSSS_CipherType_Binary, SE051H_VR_ID, NULL, 0);
+                          kSE_SSS_CipherType_Binary, SE051H_VR_ID, NULL, 0);
   if (status != kStatus_SSS_Success) {
     printf("Error in se051h_provision_vendor_reserved\n");
   }
@@ -954,24 +951,20 @@ static sss_status_t se051h_provision_descriptor_cluster() {
         SE051H_DESCRIPTOR_CLUSTER_ID);
   status = se051h_set_key(descriptor_cluster, sizeof(descriptor_cluster),
                           sizeof(descriptor_cluster) * 8, kSSS_KeyPart_Default,
-                          kSSS_CipherType_Binary, SE051H_DESCRIPTOR_CLUSTER_ID,
-                          NULL, 0);
+                          kSE_SSS_CipherType_Binary, SE051H_DESCRIPTOR_CLUSTER_ID, NULL, 0);
   if (status != kStatus_SSS_Success) {
     LOG_E("Error in se051h_provision_descriptor_cluster\n");
   }
 
 #if SSS_HAVE_APPLET_SE051_H
   /* Provision descriptor cluster data for endpoint 0x0001 */
-  smstatus =
-      se05x_delete_key_with_ep(SE051H_DESCRIPTOR_CLUSTER_ID, endpoint_id);
+
+  smstatus = se05x_delete_key_with_ep(SE051H_DESCRIPTOR_CLUSTER_ID, endpoint_id);
   ENSURE_OR_RETURN_ON_ERROR(smstatus == SM_OK, kStatus_SSS_Fail);
 
-  LOG_I("Writing descriptor cluster data with endpoint to SE05x at Key id = "
-        "0x%04X%08X",
-        endpoint_id, SE051H_DESCRIPTOR_CLUSTER_ID);
-  status = se051h_set_key_with_ep(
-      descriptor_cluster, sizeof(descriptor_cluster), kSSS_CipherType_Binary,
-      SE051H_DESCRIPTOR_CLUSTER_ID, endpoint_id);
+  LOG_I("Writing descriptor cluster data with endpoint to SE05x at Key id = 0x%04X%08X", endpoint_id, SE051H_DESCRIPTOR_CLUSTER_ID);
+  status = se051h_set_key_with_ep(descriptor_cluster, sizeof(descriptor_cluster),
+                          kSE_SSS_CipherType_Binary, SE051H_DESCRIPTOR_CLUSTER_ID, endpoint_id);
   if (status != kStatus_SSS_Success) {
     LOG_E("Error in se051h_provision_descriptor_cluster with end_point\n");
   }
@@ -1320,7 +1313,7 @@ static sss_status_t se051h_readid_list(void) {
   size_t i;
   smStatus_t retStatus = SM_NOT_OK;
   uint16_t outputOffset = 0;
-  sss_object_t key_object = {0};
+  se_sss_object_t key_object = {0};
   sss_status_t sss_status = kStatus_SSS_Fail;
 
   do {
@@ -1337,12 +1330,12 @@ static sss_status_t se051h_readid_list(void) {
       {
         printf("Key id - %02" PRIx32 "   , ", id);
 
-        sss_status = sss_key_object_init(&key_object, &gex_sss_chip_ctx.ks);
+        sss_status = se_sss_key_object_init(&key_object, &gex_sss_chip_ctx.ks);
         if (sss_status != kStatus_SSS_Success) {
-          printf("sss_key_object_init failed\n");
+          printf("se_sss_key_object_init failed\n");
           continue;
         }
-        sss_status = sss_key_object_get_handle(&key_object, id);
+        sss_status = se_sss_key_object_get_handle(&key_object, id);
         if (sss_status != kStatus_SSS_Success) {
           printf("Object Type - Not available");
         } else {
@@ -1350,58 +1343,58 @@ static sss_status_t se051h_readid_list(void) {
           case kSSS_KeyPart_NONE:
             printf("Object Type - None");
             break;
-          case kSSS_CipherType_AES:
+          case kSE_SSS_CipherType_AES:
             printf("Object Type - AES Key");
             break;
-          case kSSS_CipherType_DES:
+          case kSE_SSS_CipherType_DES:
             printf("Object Type - DES Key");
             break;
-          case kSSS_CipherType_CMAC:
+          case kSE_SSS_CipherType_CMAC:
             printf("Object Type - CMAC Key");
             break;
-          case kSSS_CipherType_HMAC:
+          case kSE_SSS_CipherType_HMAC:
             printf("Object Type - HMAC Key");
             break;
-          case kSSS_CipherType_MAC:
+          case kSE_SSS_CipherType_MAC:
             printf("Object Type - MAC Key");
             break;
-          case kSSS_CipherType_RSA:
+          case kSE_SSS_CipherType_RSA:
             printf("Object Type - RSA Key");
             break;
-          case kSSS_CipherType_RSA_CRT:
+          case kSE_SSS_CipherType_RSA_CRT:
             printf("Object Type - RSA CRT Key");
             break;
-          case kSSS_CipherType_EC_NIST_P:
+          case kSE_SSS_CipherType_EC_NIST_P:
             printf("Object Type - EC NIST-P Key");
             break;
-          case kSSS_CipherType_EC_NIST_K:
+          case kSE_SSS_CipherType_EC_NIST_K:
             printf("Object Type - EC NIST-K Key");
             break;
-          case kSSS_CipherType_EC_MONTGOMERY:
+          case kSE_SSS_CipherType_EC_MONTGOMERY:
             printf("Object Type - EC MONTGOMERY Key");
             break;
-          case kSSS_CipherType_EC_TWISTED_ED:
+          case kSE_SSS_CipherType_EC_TWISTED_ED:
             printf("Object Type - EC Twisted Key");
             break;
-          case kSSS_CipherType_EC_BRAINPOOL:
+          case kSE_SSS_CipherType_EC_BRAINPOOL:
             printf("Object Type - EC Brainpool Key");
             break;
-          case kSSS_CipherType_UserID:
+          case kSE_SSS_CipherType_UserID:
             printf("Object Type - User ID");
             break;
-          case kSSS_CipherType_Certificate:
+          case kSE_SSS_CipherType_Certificate:
             printf("Object Type - Certificate");
             break;
-          case kSSS_CipherType_Binary:
+          case kSE_SSS_CipherType_Binary:
             printf("Object Type - Binary");
             break;
-          case kSSS_CipherType_Count:
+          case kSE_SSS_CipherType_Count:
             printf("Object Type - Count");
             break;
-          case kSSS_CipherType_PCR:
+          case kSE_SSS_CipherType_PCR:
             printf("Object Type - PCR");
             break;
-          case kSSS_CipherType_ReservedPin:
+          case kSE_SSS_CipherType_ReservedPin:
             printf("Object Type - Reserved Pin");
             break;
           default:
