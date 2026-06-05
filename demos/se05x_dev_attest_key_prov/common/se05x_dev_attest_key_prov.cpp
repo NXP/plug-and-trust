@@ -143,8 +143,9 @@ ex_sss_boot_ctx_t gex_sss_chip_ctx;
 
 static sss_status_t se05x_set_key(const uint8_t *buffer, size_t bufferLen,
                                   size_t bitLen, sss_key_part_t keyPart,
-                                  se_sss_cipher_type_t cipherType, uint32_t keyId,
-                                  void *options, size_t optionsLen) {
+                                  se_sss_cipher_type_t cipherType,
+                                  uint32_t keyId, void *options,
+                                  size_t optionsLen) {
   sss_status_t status = kStatus_SSS_Success;
   se_sss_object_t keyObj;
 
@@ -156,14 +157,14 @@ static sss_status_t se05x_set_key(const uint8_t *buffer, size_t bufferLen,
 
   status =
       se_sss_key_object_allocate_handle(&keyObj, keyId, keyPart, cipherType,
-                                     bufferLen, kKeyObject_Mode_Persistent);
+                                        bufferLen, kKeyObject_Mode_Persistent);
   if (status != kStatus_SSS_Success) {
     printf("Error in se_sss_key_object_allocate_handle \n");
     return status;
   }
 
   status = se_sss_key_store_set_key(&gex_sss_chip_ctx.ks, &keyObj, buffer,
-                                 bufferLen, bitLen, options, optionsLen);
+                                    bufferLen, bitLen, options, optionsLen);
   if (status != kStatus_SSS_Success) {
     printf("Error in se_sss_key_store_set_key \n");
   }

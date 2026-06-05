@@ -34,8 +34,9 @@ static uint8_t policy = 0;
 
 static sss_status_t se051h_set_key(const uint8_t *buffer, size_t bufferLen,
                                    size_t bitLen, sss_key_part_t keyPart,
-                                   se_sss_cipher_type_t cipherType, uint32_t keyId,
-                                   void *options, size_t optionsLen) {
+                                   se_sss_cipher_type_t cipherType,
+                                   uint32_t keyId, void *options,
+                                   size_t optionsLen) {
   sss_status_t status = kStatus_SSS_Success;
   se_sss_object_t keyObj;
   smStatus_t smstatus = SM_NOT_OK;
@@ -49,7 +50,7 @@ static sss_status_t se051h_set_key(const uint8_t *buffer, size_t bufferLen,
 
   status =
       se_sss_key_object_allocate_handle(&keyObj, keyId, keyPart, cipherType,
-                                     bufferLen, kKeyObject_Mode_Persistent);
+                                        bufferLen, kKeyObject_Mode_Persistent);
   ENSURE_OR_RETURN_ON_ERROR(status == kStatus_SSS_Success, status);
 
   if (cipherType == kSE_SSS_CipherType_Binary ||
@@ -70,8 +71,8 @@ static sss_status_t se051h_set_key(const uint8_t *buffer, size_t bufferLen,
     }
 
     if (bufferLen > UINT16_MAX) {
-        LOG_E("Buffer length exceeds maximum allowed size");
-        return kStatus_SSS_Fail;
+      LOG_E("Buffer length exceeds maximum allowed size");
+      return kStatus_SSS_Fail;
     }
     smstatus = Se05x_API_WriteBinary_Ver(
         &((sss_se05x_session_t *)&gex_sss_chip_ctx.session)->s_ctx,
@@ -110,7 +111,7 @@ static sss_status_t se051h_set_key(const uint8_t *buffer, size_t bufferLen,
       optionsLen = 0;
     }
     status = se_sss_key_store_set_key(&gex_sss_chip_ctx.ks, &keyObj, buffer,
-                                   bufferLen, bitLen, options, optionsLen);
+                                      bufferLen, bitLen, options, optionsLen);
     if (status != kStatus_SSS_Success) {
       printf("Error in se_sss_key_store_set_key \n");
     }
@@ -169,9 +170,11 @@ static smStatus_t se05x_delete_key(uint32_t keyid) {
 }
 
 #if SSS_HAVE_APPLET_SE051_H
-static sss_status_t se051h_set_key_with_ep(const uint8_t *buffer, size_t bufferLen,
-                                   se_sss_cipher_type_t cipherType, uint32_t keyId,
-                                   uint16_t endpointID) {
+static sss_status_t se051h_set_key_with_ep(const uint8_t *buffer,
+                                           size_t bufferLen,
+                                           se_sss_cipher_type_t cipherType,
+                                           uint32_t keyId,
+                                           uint16_t endpointID) {
   sss_status_t status = kStatus_SSS_Success;
   smStatus_t smstatus = SM_NOT_OK;
   Se05xPolicy_t se05x_policy;
@@ -179,18 +182,17 @@ static sss_status_t se051h_set_key_with_ep(const uint8_t *buffer, size_t bufferL
 
   if (cipherType == kSE_SSS_CipherType_Binary ||
       cipherType == kSE_SSS_CipherType_Certificate) {
-        if (policy) {
-          se05x_policy.value = policies_buff;
-          se05x_policy.value_len = POLICY_BUF_LEN;
-        }
-        else {
-            se05x_policy.value = NULL;
-            se05x_policy.value_len = 0;
-        }
+    if (policy) {
+      se05x_policy.value = policies_buff;
+      se05x_policy.value_len = POLICY_BUF_LEN;
+    } else {
+      se05x_policy.value = NULL;
+      se05x_policy.value_len = 0;
+    }
 
     if (bufferLen > UINT16_MAX) {
-        LOG_E("Buffer length exceeds maximum allowed size");
-        return kStatus_SSS_Fail;
+      LOG_E("Buffer length exceeds maximum allowed size");
+      return kStatus_SSS_Fail;
     }
     smstatus = Se05x_API_WriteBinary_V2(
         &((sss_se05x_session_t *)&gex_sss_chip_ctx.session)->s_ctx,
@@ -222,7 +224,9 @@ static smStatus_t se05x_delete_key_with_ep(uint32_t keyid,
         &exists, endpointID);
     if (smstatus == SM_OK) {
       if (exists == kSE05x_Result_SUCCESS) {
-        LOG_I("Deleting object id : " "0x%04X%08X", endpointID, keyid);
+        LOG_I("Deleting object id : "
+              "0x%04X%08X",
+              endpointID, keyid);
         smstatus = Se05x_API_DeleteSecureObject_V2(
             &((sss_se05x_session_t *)&gex_sss_chip_ctx.session)->s_ctx, keyid,
             endpointID);
@@ -292,10 +296,10 @@ se051h_provision_pbkdf_parameters(uint8_t tp_spake_passcode_set_no,
 
   LOG_I("Writing PBKDF Parameters to SE05x at Key id = %x",
         SE051H_PBKDF_PARAMS_ID);
-  status =
-      se051h_set_key(pbkdf_Buffer, sizeof(pbkdf_Buffer),
-                     sizeof(pbkdf_Buffer) * 8, kSSS_KeyPart_Default,
-                     kSE_SSS_CipherType_Binary, SE051H_PBKDF_PARAMS_ID, NULL, 0);
+  status = se051h_set_key(pbkdf_Buffer, sizeof(pbkdf_Buffer),
+                          sizeof(pbkdf_Buffer) * 8, kSSS_KeyPart_Default,
+                          kSE_SSS_CipherType_Binary, SE051H_PBKDF_PARAMS_ID,
+                          NULL, 0);
   if (status != kStatus_SSS_Success) {
     printf("Error in se051h_provision_pbkdf_parameters\n");
   }
@@ -317,9 +321,10 @@ static sss_status_t se051h_provision_spake2p_verifiers_passcode_salt() {
   LOG_I("Writing Pass code Parameters (from se051h_nfc_comm_prov.h) to SE05x "
         "at Key id = %x",
         SE051H_PASSCODE_ID);
-  status = se051h_set_key(passcode_buffer, sizeof(passcode_buffer),
-                          sizeof(passcode_buffer) * 8, kSSS_KeyPart_Default,
-                          kSE_SSS_CipherType_Binary, SE051H_PASSCODE_ID, NULL, 0);
+  status =
+      se051h_set_key(passcode_buffer, sizeof(passcode_buffer),
+                     sizeof(passcode_buffer) * 8, kSSS_KeyPart_Default,
+                     kSE_SSS_CipherType_Binary, SE051H_PASSCODE_ID, NULL, 0);
   ENSURE_OR_GO_CLEANUP(status == kStatus_SSS_Success);
 
   smstatus = se05x_delete_key(SE051H_HMAC_KEY_W0_ID);
@@ -329,9 +334,10 @@ static sss_status_t se051h_provision_spake2p_verifiers_passcode_salt() {
   LOG_I("Writing HMAC Key(w0) (from se051h_nfc_comm_prov.h) to SE05x at Key id "
         "= %x",
         SE051H_HMAC_KEY_W0_ID);
-  status = se051h_set_key(hmac_key_w0, sizeof(hmac_key_w0),
-                          sizeof(hmac_key_w0) * 8, kSSS_KeyPart_Default,
-                          kSE_SSS_CipherType_HMAC, SE051H_HMAC_KEY_W0_ID, NULL, 0);
+  status =
+      se051h_set_key(hmac_key_w0, sizeof(hmac_key_w0), sizeof(hmac_key_w0) * 8,
+                     kSSS_KeyPart_Default, kSE_SSS_CipherType_HMAC,
+                     SE051H_HMAC_KEY_W0_ID, NULL, 0);
   ENSURE_OR_GO_CLEANUP(status == kStatus_SSS_Success);
 
   smstatus = se05x_delete_key(SE051H_HMAC_KEY_L_ID);
@@ -341,16 +347,18 @@ static sss_status_t se051h_provision_spake2p_verifiers_passcode_salt() {
   LOG_I("Writing HMAC Key(L) (from se051h_nfc_comm_prov.h) to SE05x at Key id "
         "= %x",
         SE051H_HMAC_KEY_L_ID);
-  status = se051h_set_key(hmac_key_L, sizeof(hmac_key_L),
-                          sizeof(hmac_key_L) * 8, kSSS_KeyPart_Default,
-                          kSE_SSS_CipherType_HMAC, SE051H_HMAC_KEY_L_ID, NULL, 0);
+  status =
+      se051h_set_key(hmac_key_L, sizeof(hmac_key_L), sizeof(hmac_key_L) * 8,
+                     kSSS_KeyPart_Default, kSE_SSS_CipherType_HMAC,
+                     SE051H_HMAC_KEY_L_ID, NULL, 0);
   ENSURE_OR_GO_CLEANUP(status == kStatus_SSS_Success);
 
 cleanup:
   return status;
 }
 
-static sss_status_t se051h_provision_dac_cert(uint8_t *dac_cert_in, size_t dac_cert_in_len) {
+static sss_status_t se051h_provision_dac_cert(uint8_t *dac_cert_in,
+                                              size_t dac_cert_in_len) {
   sss_status_t status = kStatus_SSS_Fail;
   smStatus_t smstatus = SM_NOT_OK;
 
@@ -364,16 +372,16 @@ static sss_status_t se051h_provision_dac_cert(uint8_t *dac_cert_in, size_t dac_c
   if (dac_cert_in != NULL && dac_cert_in_len != 0) {
     LOG_I("Writing Device Attestation Certificate to SE05x at Key id = %x",
           SE051H_DAC_ID);
-    status = se051h_set_key(dac_cert_in, dac_cert_in_len, dac_cert_in_len * 8,
-                            kSSS_KeyPart_Default, kSE_SSS_CipherType_Certificate,
-                            SE051H_DAC_ID, NULL, 0);
+    status = se051h_set_key(
+        dac_cert_in, dac_cert_in_len, dac_cert_in_len * 8, kSSS_KeyPart_Default,
+        kSE_SSS_CipherType_Certificate, SE051H_DAC_ID, NULL, 0);
   } else {
     LOG_I("Writing Device Attestation Certificate (from "
           "se051h_nfc_comm_prov.h) to SE05x at Key id = %x",
           SE051H_DAC_ID);
-    status = se051h_set_key(dac_cer, sizeof(dac_cer), sizeof(dac_cer) * 8,
-                            kSSS_KeyPart_Default, kSE_SSS_CipherType_Certificate,
-                            SE051H_DAC_ID, NULL, 0);
+    status = se051h_set_key(
+        dac_cer, sizeof(dac_cer), sizeof(dac_cer) * 8, kSSS_KeyPart_Default,
+        kSE_SSS_CipherType_Certificate, SE051H_DAC_ID, NULL, 0);
   }
   if (status != kStatus_SSS_Success) {
     printf("Error in se051h_set_dev_attest_cert\n");
@@ -403,7 +411,8 @@ static sss_status_t se051h_provision_pai_cert() {
   return status;
 }
 
-static sss_status_t se051h_provision_da_key(uint8_t *dac_key, size_t dac_key_len) {
+static sss_status_t se051h_provision_da_key(uint8_t *dac_key,
+                                            size_t dac_key_len) {
 
   sss_status_t status = kStatus_SSS_Fail;
   smStatus_t smstatus = SM_NOT_OK;
@@ -468,9 +477,10 @@ static sss_status_t se051h_provision_attest_tbs() {
   ENSURE_OR_RETURN_ON_ERROR(smstatus == SM_OK, kStatus_SSS_Fail);
 
   LOG_I("Writing Attestation TBS at Key id = %x", SE051H_ATTEST_TBS);
-  status = se051h_set_key(attest_tbs, sizeof(attest_tbs),
-                          sizeof(attest_tbs) * 8, kSSS_KeyPart_Default,
-                          kSE_SSS_CipherType_Binary, SE051H_ATTEST_TBS, NULL, 0);
+  status =
+      se051h_set_key(attest_tbs, sizeof(attest_tbs), sizeof(attest_tbs) * 8,
+                     kSSS_KeyPart_Default, kSE_SSS_CipherType_Binary,
+                     SE051H_ATTEST_TBS, NULL, 0);
   if (status != kStatus_SSS_Success) {
     printf("Error in writing se051h_provision_attest_tbs data\n");
   }
@@ -531,9 +541,9 @@ static sss_status_t se051h_provision_node_oper_key() {
 
   LOG_I("Writing Node Operational key to SE05x at Key id = %x",
         SE051H_NODE_OP_KEY_ID);
-  status =
-      se051h_set_key(no_key, sizeof(no_key), 256, kSSS_KeyPart_Pair,
-                     kSE_SSS_CipherType_EC_NIST_P, SE051H_NODE_OP_KEY_ID, &policy_for_NO_key, sizeof(policy_for_NO_key));
+  status = se051h_set_key(no_key, sizeof(no_key), 256, kSSS_KeyPart_Pair,
+                          kSE_SSS_CipherType_EC_NIST_P, SE051H_NODE_OP_KEY_ID,
+                          &policy_for_NO_key, sizeof(policy_for_NO_key));
   if (status != kStatus_SSS_Success) {
     printf("Error in se051h_provision_node_oper_key\n");
   }
@@ -597,8 +607,8 @@ static sss_status_t se051h_provision_ssid_passcode() {
         SE051H_WIFI_CRED_ID_APP_8_4);
   status = se051h_set_key(wifi_cred_data, sizeof(wifi_cred_data),
                           sizeof(wifi_cred_data) * 8, kSSS_KeyPart_Default,
-                          kSE_SSS_CipherType_Binary, SE051H_WIFI_CRED_ID_APP_8_4,
-                          NULL, 0);
+                          kSE_SSS_CipherType_Binary,
+                          SE051H_WIFI_CRED_ID_APP_8_4, NULL, 0);
   if (status != kStatus_SSS_Success) {
     printf("Error in se051h_provision_ssid_passcode\n");
   }
@@ -619,8 +629,8 @@ static sss_status_t se051h_provision_ssid_passcode_app_8_8() {
         SE051H_WIFI_CRED_ID_APP_8_8);
   status = se051h_set_key(wifi_cred_data, sizeof(wifi_cred_data),
                           sizeof(wifi_cred_data) * 8, kSSS_KeyPart_Default,
-                          kSE_SSS_CipherType_Binary, SE051H_WIFI_CRED_ID_APP_8_8,
-                          NULL, 0);
+                          kSE_SSS_CipherType_Binary,
+                          SE051H_WIFI_CRED_ID_APP_8_8, NULL, 0);
   if (status != kStatus_SSS_Success) {
     printf("Error in se051h_provision_ssid_passcode_app_8_8\n");
   }
@@ -951,7 +961,8 @@ static sss_status_t se051h_provision_descriptor_cluster() {
         SE051H_DESCRIPTOR_CLUSTER_ID);
   status = se051h_set_key(descriptor_cluster, sizeof(descriptor_cluster),
                           sizeof(descriptor_cluster) * 8, kSSS_KeyPart_Default,
-                          kSE_SSS_CipherType_Binary, SE051H_DESCRIPTOR_CLUSTER_ID, NULL, 0);
+                          kSE_SSS_CipherType_Binary,
+                          SE051H_DESCRIPTOR_CLUSTER_ID, NULL, 0);
   if (status != kStatus_SSS_Success) {
     LOG_E("Error in se051h_provision_descriptor_cluster\n");
   }
@@ -959,12 +970,16 @@ static sss_status_t se051h_provision_descriptor_cluster() {
 #if SSS_HAVE_APPLET_SE051_H
   /* Provision descriptor cluster data for endpoint 0x0001 */
 
-  smstatus = se05x_delete_key_with_ep(SE051H_DESCRIPTOR_CLUSTER_ID, endpoint_id);
+  smstatus =
+      se05x_delete_key_with_ep(SE051H_DESCRIPTOR_CLUSTER_ID, endpoint_id);
   ENSURE_OR_RETURN_ON_ERROR(smstatus == SM_OK, kStatus_SSS_Fail);
 
-  LOG_I("Writing descriptor cluster data with endpoint to SE05x at Key id = 0x%04X%08X", endpoint_id, SE051H_DESCRIPTOR_CLUSTER_ID);
-  status = se051h_set_key_with_ep(descriptor_cluster, sizeof(descriptor_cluster),
-                          kSE_SSS_CipherType_Binary, SE051H_DESCRIPTOR_CLUSTER_ID, endpoint_id);
+  LOG_I("Writing descriptor cluster data with endpoint to SE05x at Key id = "
+        "0x%04X%08X",
+        endpoint_id, SE051H_DESCRIPTOR_CLUSTER_ID);
+  status = se051h_set_key_with_ep(
+      descriptor_cluster, sizeof(descriptor_cluster), kSE_SSS_CipherType_Binary,
+      SE051H_DESCRIPTOR_CLUSTER_ID, endpoint_id);
   if (status != kStatus_SSS_Success) {
     LOG_E("Error in se051h_provision_descriptor_cluster with end_point\n");
   }
@@ -1290,7 +1305,8 @@ static sss_status_t se051h_do_reset() {
 #if SSS_HAVE_APPLET_SE051_H
   {
     uint16_t endpoint_id = 0x0001;
-    smstatus = se05x_delete_key_with_ep(SE051H_DESCRIPTOR_CLUSTER_ID, endpoint_id);
+    smstatus =
+        se05x_delete_key_with_ep(SE051H_DESCRIPTOR_CLUSTER_ID, endpoint_id);
     if (smstatus != SM_OK) {
       printf("Error in deleting the end point cluster id \n");
     }

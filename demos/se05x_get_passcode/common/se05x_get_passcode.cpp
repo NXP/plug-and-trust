@@ -59,7 +59,7 @@ static sss_status_t read_cer_and_get_passcode(uint32_t keyId,
     ENSURE_OR_RETURN_ON_ERROR(status == kStatus_SSS_Success, status);
 
     status = se_sss_key_store_get_key(&gex_sss_chip_ctx.ks, &keyObject, buf,
-                                   &buflen, &bufbitlen);
+                                      &buflen, &bufbitlen);
     ENSURE_OR_RETURN_ON_ERROR(status == kStatus_SSS_Success, status);
 
     uint32_t setUpPINCode_se05x = (BCD_TO_DEC(buf[offset + 3])) +

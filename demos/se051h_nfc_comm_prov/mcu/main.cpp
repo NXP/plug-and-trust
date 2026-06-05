@@ -97,21 +97,21 @@ int main(int argc, char *argv[]) {
 #if SSS_USE_MBEDTLS_PSA_APIS
   const struct flash_area *fa = NULL;
   if (flash_area_open(SETTINGS_PARTITION, &fa) != 0) {
-      LOG_E("flash_area_open failed");
-      vTaskDelete(NULL);
-      return 1;
+    LOG_E("flash_area_open failed");
+    vTaskDelete(NULL);
+    return 1;
   }
 
   if (flash_init(fa->fa_dev) != 0) {
-      LOG_E("flash_init failed");
-      vTaskDelete(NULL);
-      return 1;
+    LOG_E("flash_init failed");
+    vTaskDelete(NULL);
+    return 1;
   }
 
   if (settings_subsys_init() != 0) {
-      LOG_E("settings_subsys_init failed");
-      vTaskDelete(NULL);
-      return 1;
+    LOG_E("settings_subsys_init failed");
+    vTaskDelete(NULL);
+    return 1;
   }
 #endif
 #if (SSS_HAVE_HOSTCRYPTO_MBEDTLS) && (SSS_HAVE_MBEDTLS_2_X)

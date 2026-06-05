@@ -1,5 +1,10 @@
 # Plug-And-Trust Mini Package Change Log
 
+## v04.07.04.07
+
+- `se05x_get_passcode` and `se05x_dev_attest_key_prov` examples build fix for PSA.
+- `SSS_USE_MBEDTLS_PSA_APIS` define added for feature files of MbedTLS 2.x
+
 ## v04.07.04.05
 
 - SSS APIs of MbedTLS are extended to support with PSA APIs
