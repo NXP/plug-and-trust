@@ -4,6 +4,7 @@
 
 rsource "../../../../../../config/nxp/cmake/Kconfig.matter.nxp"
 rsource "../../../../../../third_party/simw-top-mini/repo/matter/zephyr/Kconfig"
+rsource "../common/Kconfig.prov.common"
 
 # Secure Element
 config CHIP_SE05X

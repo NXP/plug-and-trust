@@ -1,0 +1,87 @@
+#
+# Copyright 2026 NXP
+# SPDX-License-Identifier: BSD-3-Clause
+config SE05X_DO_RESET
+	bool "Delete all provisioned data (QR code is not deleted)"
+	default n
+	help
+		Delete all provisioned data except QR code.
+
+config SE05X_DO_EC_KEY_PROVISION
+	bool "Provision EC key"
+	default n
+	help
+		Enable EC key provisioning.
+
+config SE05X_DO_USER_ID_PROVISION
+	bool "Provision User ID"
+	default n
+	help
+		Enable User ID provisioning.
+
+config SE05X_DO_AES_KEY_PROVISION
+	bool "Provision AES key"
+	default n
+	help
+		Enable AES key provisioning.
+
+config SE05X_ONLY_T4T_PROVISION
+	bool "Provision only QR code in T4T applet"
+	default n
+	help
+		Provision only QR code in T4T applet.
+
+config SE05X_TP_SPAKE_PASSCODE_SET_NO
+	int "Trust Provisioned pass-code set number"
+	range 1 3
+	default 1
+	help
+		Trust Provisioned pass-code set to be used (Possible values 1, 2, 3).
+
+config SE05X_TP_SPAKE_ITER_TO_BE_USED
+	int "Trust Provisioned iteration count"
+	default 1000
+	help
+		Trust Provisioned iteration count to be used.
+		Possible values: 1000, 5000, 10000, 50000, 100000.
+
+choice SE05X_DEVICE_NETWORK_TYPE
+	prompt "Device network interface type"
+	default SE05X_DEVICE_NETWORK_TYPE_WIFI
+	help
+		Select the network interface type for NFC commissioning.
+
+config SE05X_DEVICE_NETWORK_TYPE_WIFI
+	bool "WiFi network interface"
+	help
+		Enable WiFi network interface for NFC commissioning.
+
+config SE05X_DEVICE_NETWORK_TYPE_THREAD
+	bool "Thread network interface"
+	help
+		Enable Thread network interface for NFC commissioning.
+
+config SE05X_DEVICE_NETWORK_TYPE_ETHERNET
+	bool "Ethernet network interface"
+	help
+		Enable Ethernet network interface for NFC commissioning.
+
+endchoice
+
+config SE05X_PROVISION_WITH_POLICY
+	bool "Provision with policy"
+	default n
+	help
+		Enable provisioning with policy.
+
+config SE05X_PROVISION_VERIFIERS
+	bool "Provision Verifiers"
+	default n
+	help
+		Enable provisioning Verifiers.
+
+config SE05X_DO_READIDLIST
+	bool "Read ID list from SE05x"
+	default n
+	help
+		Read ID list from SE05x.

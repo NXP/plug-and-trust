@@ -53,7 +53,7 @@ int main(int argc, char *argv[]) {
 void se051_get_passcode_task(void *, void *, void *)
 {
   uint8_t passcode_set_no = CONFIG_SE05X_TP_SPAKE_PASSCODE_SET_NO;
-  se05x_get_passcode(passcode_set_no);
+  se05x_get_passcode(NULL, passcode_set_no);
 }
 
 extern "C" void __wrap_exit(int __status) { assert(0); }

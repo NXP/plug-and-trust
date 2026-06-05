@@ -124,6 +124,8 @@ void se051h_nfc_comm_task(void *, void *, void *)
   uint8_t do_delete_key = 0;
   uint32_t delete_keyid = 0;
   uint8_t do_readidlist = CONFIG_SE05X_DO_READIDLIST;
+  uint8_t se05x_t4t_access_ctrl_option = 0;
+  uint8_t doresetcryproobjects = 0;
 
   se051h_nfc_comm_prov(NULL, do_reset, only_t4t_provision, qrcode_ptr,
                        qrcodeLen, is_qr_code, device_network_type, tp_spake_passcode_set_no,
@@ -132,7 +134,9 @@ void se051h_nfc_comm_task(void *, void *, void *)
                        NULL, 0,
                        NULL, 0,
                        provision_verifiers,
-                       do_delete_key, delete_keyid, do_readidlist);
+                       do_delete_key, delete_keyid, do_readidlist,
+                       se05x_t4t_access_ctrl_option,
+                       doresetcryproobjects);
 }
 
 extern "C" void __wrap_exit(int __status) { assert(0); }

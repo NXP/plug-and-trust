@@ -45,7 +45,7 @@ int main(int argc, char *argv[]) {
 }
 
 void se05x_dev_attest_task(void *, void *, void *) {
-  se05x_dev_attest_key_prov();
+  se05x_dev_attest_key_prov(NULL);
 }
 
 extern "C" void __wrap_exit(int __status) { assert(0); }
