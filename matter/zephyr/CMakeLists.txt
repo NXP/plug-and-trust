@@ -23,6 +23,9 @@ if (CONFIG_SE05X_LIB)
     zephyr_include_directories($<TARGET_PROPERTY:simw_lib,INTERFACE_INCLUDE_DIRECTORIES>)
     zephyr_compile_definitions($<TARGET_PROPERTY:simw_lib,INTERFACE_COMPILE_DEFINITIONS>)
 
+    zephyr_include_directories("$<TARGET_PROPERTY:app,INTERFACE_INCLUDE_DIRECTORIES>")
+    zephyr_compile_definitions($<TARGET_PROPERTY:app,INTERFACE_COMPILE_DEFINITIONS>)
+
     zephyr_library_sources(
         ${SIMW_LIB_DIR}/hostlib/hostLib/libCommon/infra/global_platf.c
         ${SIMW_LIB_DIR}/hostlib/hostLib/libCommon/infra/sm_apdu.c
@@ -44,7 +47,7 @@ if (CONFIG_SE05X_LIB)
         ${SIMW_LIB_DIR}/sss/src/fsl_sss_util_rsa_sign_utils.c
         ${SIMW_LIB_DIR}/sss/src/keystore/keystore_cmn.c
         ${SIMW_LIB_DIR}/sss/src/keystore/keystore_pc.c
-        ${SIMW_LIB_DIR}/sss/src/mbedtls/fsl_sss_mbedtls_apis.c
+        ${SIMW_LIB_DIR}/sss/src/psa/fsl_sss_psa_apis.c
         ${SIMW_LIB_DIR}/sss/src/se05x/fsl_sss_se05x_apis.c
         ${SIMW_LIB_DIR}/sss/src/se05x/fsl_sss_se05x_mw.c
         ${SIMW_LIB_DIR}/sss/src/se05x/fsl_sss_se05x_policy.c
@@ -56,6 +59,7 @@ if (CONFIG_SE05X_LIB)
     )
 
     zephyr_include_directories(
+        ${SDK_INCLUDES}
         ${SIMW_LIB_DIR}/sss/
         ${SIMW_LIB_DIR}/sss/inc
         ${SIMW_LIB_DIR}/sss/port/default
@@ -75,6 +79,7 @@ if (CONFIG_SE05X_LIB)
     )
 
     zephyr_compile_definitions(
+        ${SDK_DEFINES}
         SSS_USE_FTR_FILE
         T1oI2C
         T1oI2C_UM11225
@@ -88,6 +93,11 @@ if (CONFIG_SE05X_LIB)
             ${SIMW_LIB_DIR}/sss/src/se05x/fsl_sss_se05x_eckey.c
             ${SIMW_LIB_DIR}/sss/src/se05x/fsl_sss_se05x_scp03.c
         )
+
+        zephyr_compile_definitions(
+            MBEDTLS_USER_CONFIG_FILE=\"${SIMW_LIB_DIR}/matter/se05x_demos_common/se05x_mbedtls_user_zephyr_config.h\"
+        )
+
     endif()
 
     if (CONFIG_SE05X_SCP03)
