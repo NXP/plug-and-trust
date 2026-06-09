@@ -2,20 +2,20 @@
   "SPDXID": "SPDXRef-DOCUMENT",
   "spdxVersion": "SPDX-2.3",
   "creationInfo": {
-    "created": "2026-06-05T15:08:19Z",
+    "created": "2026-06-09T14:24:20Z",
     "creators": [
       "Organization: NXP"
     ],
-    "licenseListVersion": "3.26"
+    "licenseListVersion": "3.28"
   },
-  "name": "plug-and-trust-v04.07.04.09",
+  "name": "plug-and-trust-v04.07.04.13",
   "dataLicense": "CC0-1.0",
-  "documentNamespace": "https://nxp.com/spdx/9dab44c8-64b5-47c4-9244-29300188270a",
+  "documentNamespace": "https://nxp.com/spdx/de24ada2-5d94-404e-b44d-98c4030b9fbe",
   "packages": [
     {
-      "SPDXID": "SPDXRef-package-9dab44c8-64b5-47c4-9244-29300188270a",
+      "SPDXID": "SPDXRef-package-de24ada2-5d94-404e-b44d-98c4030b9fbe",
       "name": "plug-and-trust",
-      "versionInfo": "v04.07.04.09",
+      "versionInfo": "v04.07.04.13",
       "licenseConcluded": "(BSD-3-Clause)",
       "licenseDeclared": "(BSD-3-Clause)",
       "downloadLocation": "https://github.com/NXP/plug-and-trust",
@@ -25,7 +25,30 @@
       "filesAnalyzed": false
     },
     {
-      "SPDXID": "SPDXRef-package-9dab44c8-64b5-47c4-9244-29300188270a---bbb85b99-6163-4bc9-a22d-48d98de906aa",
+      "SPDXID": "SPDXRef-package-de24ada2-5d94-404e-b44d-98c4030b9fbe---de867e90-6ad7-4792-807e-3967c5362fc0",
+      "name": "FreeRTOS iot-reference",
+      "versionInfo": "v202203.00",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "downloadLocation": "NOASSERTION",
+      "originator": "Organization: freertos",
+      "supplier": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "OTHER",
+          "referenceLocator": "a4afa5c6-ff4c-4c86-83ad-73efade92f96",
+          "referenceType": "BlackDuck-ComponentOrigin"
+        },
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:github/freertos/iot-reference-nxp-rt1060@v202203.00",
+          "referenceType": "purl"
+        }
+      ],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-de24ada2-5d94-404e-b44d-98c4030b9fbe---bbb85b99-6163-4bc9-a22d-48d98de906aa",
       "name": "libgpiod",
       "versionInfo": "2.1.3",
       "licenseConcluded": "LGPL-2.1-or-later",
@@ -44,7 +67,7 @@
       "filesAnalyzed": false
     },
     {
-      "SPDXID": "SPDXRef-package-9dab44c8-64b5-47c4-9244-29300188270a---e66b18cd-ed35-42ec-b476-f3584122e0cb",
+      "SPDXID": "SPDXRef-package-de24ada2-5d94-404e-b44d-98c4030b9fbe---e66b18cd-ed35-42ec-b476-f3584122e0cb",
       "name": "mbed TLS",
       "versionInfo": "2.28.5",
       "licenseConcluded": "Apache-2.0",
@@ -93,7 +116,7 @@
       "filesAnalyzed": false
     },
     {
-      "SPDXID": "SPDXRef-package-9dab44c8-64b5-47c4-9244-29300188270a---93ff9297-b6b8-4bd5-ba66-054528427fa3",
+      "SPDXID": "SPDXRef-package-de24ada2-5d94-404e-b44d-98c4030b9fbe---93ff9297-b6b8-4bd5-ba66-054528427fa3",
       "name": "mbed TLS",
       "versionInfo": "3.6.2",
       "licenseConcluded": "Apache-2.0",
@@ -142,7 +165,7 @@
       "filesAnalyzed": false
     },
     {
-      "SPDXID": "SPDXRef-package-9dab44c8-64b5-47c4-9244-29300188270a---96f00a5f-9582-434f-8178-fe2e688e1501",
+      "SPDXID": "SPDXRef-package-de24ada2-5d94-404e-b44d-98c4030b9fbe---96f00a5f-9582-434f-8178-fe2e688e1501",
       "name": "OpenSSL",
       "versionInfo": "1.1.1l",
       "licenseConcluded": "(OpenSSL AND SSLeay-standalone)",
@@ -191,7 +214,7 @@
       "filesAnalyzed": false
     },
     {
-      "SPDXID": "SPDXRef-package-9dab44c8-64b5-47c4-9244-29300188270a---c8c9917a-3e39-42bf-82b9-b02b576e57e9",
+      "SPDXID": "SPDXRef-package-de24ada2-5d94-404e-b44d-98c4030b9fbe---c8c9917a-3e39-42bf-82b9-b02b576e57e9",
       "name": "OpenSSL",
       "versionInfo": "3.0.14",
       "licenseConcluded": "Apache-2.0",
@@ -244,32 +267,37 @@
     {
       "spdxElementId": "SPDXRef-DOCUMENT",
       "relationshipType": "DESCRIBES",
-      "relatedSpdxElement": "SPDXRef-package-9dab44c8-64b5-47c4-9244-29300188270a"
+      "relatedSpdxElement": "SPDXRef-package-de24ada2-5d94-404e-b44d-98c4030b9fbe"
     },
     {
-      "spdxElementId": "SPDXRef-package-9dab44c8-64b5-47c4-9244-29300188270a",
+      "spdxElementId": "SPDXRef-package-de24ada2-5d94-404e-b44d-98c4030b9fbe",
       "relationshipType": "DYNAMIC_LINK",
-      "relatedSpdxElement": "SPDXRef-package-9dab44c8-64b5-47c4-9244-29300188270a---93ff9297-b6b8-4bd5-ba66-054528427fa3"
+      "relatedSpdxElement": "SPDXRef-package-de24ada2-5d94-404e-b44d-98c4030b9fbe---93ff9297-b6b8-4bd5-ba66-054528427fa3"
     },
     {
-      "spdxElementId": "SPDXRef-package-9dab44c8-64b5-47c4-9244-29300188270a",
+      "spdxElementId": "SPDXRef-package-de24ada2-5d94-404e-b44d-98c4030b9fbe",
       "relationshipType": "DYNAMIC_LINK",
-      "relatedSpdxElement": "SPDXRef-package-9dab44c8-64b5-47c4-9244-29300188270a---96f00a5f-9582-434f-8178-fe2e688e1501"
+      "relatedSpdxElement": "SPDXRef-package-de24ada2-5d94-404e-b44d-98c4030b9fbe---96f00a5f-9582-434f-8178-fe2e688e1501"
     },
     {
-      "spdxElementId": "SPDXRef-package-9dab44c8-64b5-47c4-9244-29300188270a",
+      "spdxElementId": "SPDXRef-package-de24ada2-5d94-404e-b44d-98c4030b9fbe",
       "relationshipType": "DYNAMIC_LINK",
-      "relatedSpdxElement": "SPDXRef-package-9dab44c8-64b5-47c4-9244-29300188270a---bbb85b99-6163-4bc9-a22d-48d98de906aa"
+      "relatedSpdxElement": "SPDXRef-package-de24ada2-5d94-404e-b44d-98c4030b9fbe---bbb85b99-6163-4bc9-a22d-48d98de906aa"
     },
     {
-      "spdxElementId": "SPDXRef-package-9dab44c8-64b5-47c4-9244-29300188270a",
+      "spdxElementId": "SPDXRef-package-de24ada2-5d94-404e-b44d-98c4030b9fbe",
       "relationshipType": "DYNAMIC_LINK",
-      "relatedSpdxElement": "SPDXRef-package-9dab44c8-64b5-47c4-9244-29300188270a---c8c9917a-3e39-42bf-82b9-b02b576e57e9"
+      "relatedSpdxElement": "SPDXRef-package-de24ada2-5d94-404e-b44d-98c4030b9fbe---c8c9917a-3e39-42bf-82b9-b02b576e57e9"
     },
     {
-      "spdxElementId": "SPDXRef-package-9dab44c8-64b5-47c4-9244-29300188270a",
+      "spdxElementId": "SPDXRef-package-de24ada2-5d94-404e-b44d-98c4030b9fbe",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-package-de24ada2-5d94-404e-b44d-98c4030b9fbe---de867e90-6ad7-4792-807e-3967c5362fc0"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-de24ada2-5d94-404e-b44d-98c4030b9fbe",
       "relationshipType": "DYNAMIC_LINK",
-      "relatedSpdxElement": "SPDXRef-package-9dab44c8-64b5-47c4-9244-29300188270a---e66b18cd-ed35-42ec-b476-f3584122e0cb"
+      "relatedSpdxElement": "SPDXRef-package-de24ada2-5d94-404e-b44d-98c4030b9fbe---e66b18cd-ed35-42ec-b476-f3584122e0cb"
     }
   ]
 }
