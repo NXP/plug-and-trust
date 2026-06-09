@@ -94,10 +94,6 @@ if (CONFIG_SE05X_LIB)
             ${SIMW_LIB_DIR}/sss/src/se05x/fsl_sss_se05x_scp03.c
         )
 
-        zephyr_compile_definitions(
-            MBEDTLS_USER_CONFIG_FILE=\"${SIMW_LIB_DIR}/matter/se05x_demos_common/se05x_mbedtls_user_zephyr_config.h\"
-        )
-
     endif()
 
     if (CONFIG_SE05X_SCP03)

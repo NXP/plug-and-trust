@@ -68,15 +68,15 @@ sss_status_t nxECKey_AuthenticateChannel(
 {
     sss_status_t status = kStatus_SSS_Fail;
     // Host public key to send to the SE for internal authenticate
-    uint8_t hostEckaPub[100];
+    uint8_t hostEckaPub[100]= {0};
     size_t hostEckaPubLen = sizeof(hostEckaPub);
     size_t hostEckabitLen;
     // Random bytes to retrive from SE in internal authenticate
-    uint8_t drSE[20];
+    uint8_t drSE[20] = {0};
     size_t drSELen = sizeof(drSE);
-    uint8_t receipt[16];
+    uint8_t receipt[16] = {0};
     size_t receiptLen = sizeof(receipt);
-    uint8_t shsSecret[32];
+    uint8_t shsSecret[32] = {0};
     size_t shsSecretLen                = sizeof(shsSecret);
     size_t offset                      = 0;
     NXECKey03_StaticCtx_t *pStatic_ctx = pAuthFScp->pStatic_ctx;
@@ -89,7 +89,7 @@ sss_status_t nxECKey_AuthenticateChannel(
     /* clang-format on */
 
     /* Get the Host ephemeral key */
-    uint8_t hostPubkey[100];
+    uint8_t hostPubkey[100] = {0};
     status = sss_host_key_store_get_key(
         pStatic_ctx->HostEcKeypair.keyStore, &pStatic_ctx->HostEcKeypair, hostPubkey, &hostEckaPubLen, &hostEckabitLen);
     ENSURE_OR_GO_EXIT(status == kStatus_SSS_Success);

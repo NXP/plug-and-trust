@@ -17,7 +17,7 @@
 #include "mbedtls/threading.h"
 #include "threading_alt.h"
 #endif
-#include "mbedtls/pk.h"
+#include "mbedtls/asn1.h"
 
 /* ************************************************************************** */
 /* Private helper declarations                                                */
@@ -98,132 +98,197 @@ static psa_key_id_t sss_app_key_id_to_psa(uint32_t sss_key_id) {
 }
 
 /**
- * Extract raw ECC public key from X.509 SubjectPublicKeyInfo using mbedTLS
+ * Extract raw ECC public key from X.509 SubjectPublicKeyInfo using ASN.1 parser
+ *
+ * X.509 SubjectPublicKeyInfo structure:
+ * SEQUENCE {
+ *   algorithm AlgorithmIdentifier,
+ *   subjectPublicKey BIT STRING  <- This contains the raw 0x04||X||Y
+ * }
  */
-static sss_status_t extract_ecc_public_key_from_x509(const uint8_t *x509_data,
-                                                     size_t x509_len,
-                                                     uint8_t *raw_key,
-                                                     size_t *raw_key_len,
-                                                     size_t expected_key_bits) {
-  int ret;
-  mbedtls_pk_context pk;
-  mbedtls_ecp_keypair *ecp;
-  size_t expected_raw_len =
-      (expected_key_bits / 8) * 2 + 1; // 65 for P-256 (0x04 + x + y)
+static sss_status_t extract_ecc_public_key_from_x509(
+    const uint8_t *x509_data,
+    size_t x509_len,
+    uint8_t *raw_key,
+    size_t *raw_key_len,
+    size_t expected_key_bits)
+{
+    int ret;
+    unsigned char *p = (unsigned char *)x509_data;
+    const unsigned char *end = x509_data + x509_len;
+    size_t len;
+    size_t expected_raw_len = (expected_key_bits / 8) * 2 + 1;  // 0x04 + X + Y
 
-  mbedtls_pk_init(&pk);
+    /* Parse outer SEQUENCE */
+    ret = mbedtls_asn1_get_tag(&p, end, &len,
+                               MBEDTLS_ASN1_CONSTRUCTED | MBEDTLS_ASN1_SEQUENCE);
+    if (ret != 0) {
+        LOG_E("Failed to parse X.509 outer SEQUENCE: -0x%04x", -ret);
+        return kStatus_SSS_Fail;
+    }
 
-  /* Parse the X.509 SubjectPublicKeyInfo */
-  ret = mbedtls_pk_parse_public_key(&pk, x509_data, x509_len);
-  if (ret != 0) {
-    LOG_E("mbedtls_pk_parse_public_key failed: -0x%04x", -ret);
-    mbedtls_pk_free(&pk);
-    return kStatus_SSS_Fail;
-  }
+    end = p + len;
 
-  /* Verify it's an ECC key */
-  if (mbedtls_pk_get_type(&pk) != MBEDTLS_PK_ECKEY &&
-      mbedtls_pk_get_type(&pk) != MBEDTLS_PK_ECDSA) {
-    LOG_E("Not an ECC public key");
-    mbedtls_pk_free(&pk);
-    return kStatus_SSS_Fail;
-  }
+    /* Parse AlgorithmIdentifier SEQUENCE - we skip validation */
+    ret = mbedtls_asn1_get_tag(&p, end, &len,
+                               MBEDTLS_ASN1_CONSTRUCTED | MBEDTLS_ASN1_SEQUENCE);
+    if (ret != 0) {
+        LOG_E("Failed to parse AlgorithmIdentifier: -0x%04x", -ret);
+        return kStatus_SSS_Fail;
+    }
 
-  /* Get the ECC key pair structure */
-  ecp = mbedtls_pk_ec(pk);
-  if (ecp == NULL) {
-    LOG_E("Failed to get ECC key pair");
-    mbedtls_pk_free(&pk);
-    return kStatus_SSS_Fail;
-  }
+    /* Skip algorithm identifier entirely (assume caller knows it's ECC) */
+    p += len;
 
-  /* Check buffer size */
-  if (*raw_key_len < expected_raw_len) {
-    LOG_E("Output buffer too small for raw public key");
-    mbedtls_pk_free(&pk);
-    return kStatus_SSS_Fail;
-  }
+    /* Parse subjectPublicKey BIT STRING */
+    ret = mbedtls_asn1_get_bitstring_null(&p, end, &len);
+    if (ret != 0) {
+        LOG_E("Failed to parse public key BIT STRING: -0x%04x", -ret);
+        return kStatus_SSS_Fail;
+    }
 
-  /* Export the public key point in uncompressed format (0x04 || x || y) */
-  ret = mbedtls_ecp_point_write_binary(
-      &ecp->MBEDTLS_PRIVATE(grp), &ecp->MBEDTLS_PRIVATE(Q),
-      MBEDTLS_ECP_PF_UNCOMPRESSED, raw_key_len, raw_key, expected_raw_len);
+    /* Verify length matches expected */
+    if (len != expected_raw_len) {
+        LOG_E("Public key length mismatch: got %zu, expected %zu", len, expected_raw_len);
+        return kStatus_SSS_Fail;
+    }
 
-  if (ret != 0) {
-    LOG_E("Failed to write public key: -0x%04x", -ret);
-    mbedtls_pk_free(&pk);
-    return kStatus_SSS_Fail;
-  }
+    /* Check buffer size */
+    if (*raw_key_len < len) {
+        LOG_E("Output buffer too small: need %zu, have %zu", len, *raw_key_len);
+        return kStatus_SSS_Fail;
+    }
 
-  LOG_D("Extracted %lu-byte raw ECC public key from X.509",
-        (unsigned long)*raw_key_len);
+    /* Verify it starts with 0x04 (uncompressed point marker) */
+    if (p[0] != 0x04) {
+        LOG_E("Invalid ECC public key format (expected 0x04, got 0x%02x)", p[0]);
+        return kStatus_SSS_Fail;
+    }
 
-  mbedtls_pk_free(&pk);
-  return kStatus_SSS_Success;
+    /* Copy raw public key (0x04 || X || Y) */
+    memcpy(raw_key, p, len);
+    *raw_key_len = len;
+
+    LOG_D("Extracted %lu-byte raw ECC public key from X.509", len);
+    return kStatus_SSS_Success;
 }
 
 /**
- * Extract raw ECC private key from DER/PKCS#8 format using mbedTLS
+ * Extract raw ECC private key from DER/PKCS#8 using ASN.1 parser
+ *
+ * PKCS#8 PrivateKeyInfo structure:
+ * SEQUENCE {
+ *   version INTEGER,
+ *   algorithm AlgorithmIdentifier,
+ *   privateKey OCTET STRING  <- Contains ECPrivateKey
+ * }
+ *
+ * ECPrivateKey structure (RFC 5915):
+ * SEQUENCE {
+ *   version INTEGER,
+ *   privateKey OCTET STRING,  <- This is the raw scalar 'd'
+ *   [0] parameters OPTIONAL,
+ *   [1] publicKey OPTIONAL
+ * }
  */
-static sss_status_t extract_ecc_private_key_from_der(const uint8_t *der_data,
-                                                     size_t der_len,
-                                                     uint8_t *raw_key,
-                                                     size_t *raw_key_len,
-                                                     size_t expected_key_bits) {
-  int ret;
-  mbedtls_pk_context pk;
-  mbedtls_ecp_keypair *ecp;
-  size_t expected_raw_len = expected_key_bits / 8; // 32 for P-256
+static sss_status_t extract_ecc_private_key_from_der(
+    const uint8_t *der_data,
+    size_t der_len,
+    uint8_t *raw_key,
+    size_t *raw_key_len,
+    size_t expected_key_bits)
+{
+    int ret;
+    unsigned char *p = (unsigned char *)der_data;
+    const unsigned char *end = der_data + der_len;
+    size_t len;
+    int version;
+    size_t expected_raw_len = expected_key_bits / 8;
 
-  mbedtls_pk_init(&pk);
+    /* Try PKCS#8 format first */
+    unsigned char *p_pkcs8 = p;
 
-  /* Parse the DER-encoded private key */
-  ret = mbedtls_pk_parse_key(&pk, der_data, der_len, NULL, 0, NULL, NULL);
-  if (ret != 0) {
-    LOG_E("mbedtls_pk_parse_key failed: -0x%04x", -ret);
-    mbedtls_pk_free(&pk);
-    return kStatus_SSS_Fail;
-  }
+    /* Parse outer SEQUENCE */
+    ret = mbedtls_asn1_get_tag(&p, end, &len,
+                               MBEDTLS_ASN1_CONSTRUCTED | MBEDTLS_ASN1_SEQUENCE);
+    if (ret != 0) {
+        LOG_E("Failed to parse outer SEQUENCE: -0x%04x", -ret);
+        return kStatus_SSS_Fail;
+    }
 
-  /* Verify it's an ECC key */
-  if (mbedtls_pk_get_type(&pk) != MBEDTLS_PK_ECKEY &&
-      mbedtls_pk_get_type(&pk) != MBEDTLS_PK_ECDSA) {
-    LOG_E("Not an ECC key");
-    mbedtls_pk_free(&pk);
-    return kStatus_SSS_Fail;
-  }
+    end = p + len;
 
-  /* Get the ECC key pair structure */
-  ecp = mbedtls_pk_ec(pk);
-  if (ecp == NULL) {
-    LOG_E("Failed to get ECC key pair");
-    mbedtls_pk_free(&pk);
-    return kStatus_SSS_Fail;
-  }
+    /* Parse version INTEGER */
+    ret = mbedtls_asn1_get_int(&p, end, &version);
+    if (ret != 0) {
+        /* Not PKCS#8, try SEC1 format */
+        p = p_pkcs8;
+        end = der_data + der_len;
+        goto parse_sec1;
+    }
 
-  /* Check buffer size */
-  if (*raw_key_len < expected_raw_len) {
-    LOG_E("Output buffer too small for raw private key");
-    mbedtls_pk_free(&pk);
-    return kStatus_SSS_Fail;
-  }
+    /* PKCS#8: Skip AlgorithmIdentifier (no validation) */
+    ret = mbedtls_asn1_get_tag(&p, end, &len,
+                               MBEDTLS_ASN1_CONSTRUCTED | MBEDTLS_ASN1_SEQUENCE);
+    if (ret != 0) {
+        LOG_E("Failed to parse AlgorithmIdentifier: -0x%04x", -ret);
+        return kStatus_SSS_Fail;
+    }
+    p += len;
 
-  /* Extract the private key scalar 'd' */
-  ret = mbedtls_mpi_write_binary(&ecp->MBEDTLS_PRIVATE(d), raw_key,
-                                 expected_raw_len);
-  if (ret != 0) {
-    LOG_E("Failed to write private key: -0x%04x", -ret);
-    mbedtls_pk_free(&pk);
-    return kStatus_SSS_Fail;
-  }
+    /* Parse privateKey OCTET STRING (contains ECPrivateKey) */
+    ret = mbedtls_asn1_get_tag(&p, end, &len, MBEDTLS_ASN1_OCTET_STRING);
+    if (ret != 0) {
+        LOG_E("Failed to parse privateKey OCTET STRING: -0x%04x", -ret);
+        return kStatus_SSS_Fail;
+    }
 
-  *raw_key_len = expected_raw_len;
+    /* Now p points to ECPrivateKey, update end */
+    end = p + len;
 
-  LOG_D("Extracted %lu-byte raw ECC private key from DER",
-        (unsigned long)expected_raw_len);
+parse_sec1:
+    /* Parse ECPrivateKey SEQUENCE */
+    ret = mbedtls_asn1_get_tag(&p, end, &len,
+                               MBEDTLS_ASN1_CONSTRUCTED | MBEDTLS_ASN1_SEQUENCE);
+    if (ret != 0) {
+        LOG_E("Failed to parse ECPrivateKey SEQUENCE: -0x%04x", -ret);
+        return kStatus_SSS_Fail;
+    }
 
-  mbedtls_pk_free(&pk);
-  return kStatus_SSS_Success;
+    end = p + len;
+
+    /* Parse version INTEGER (should be 1) */
+    ret = mbedtls_asn1_get_int(&p, end, &version);
+    if (ret != 0 || version != 1) {
+        LOG_E("Invalid ECPrivateKey version: %d", version);
+        return kStatus_SSS_Fail;
+    }
+
+    /* Parse privateKey OCTET STRING - this is the raw scalar 'd' */
+    ret = mbedtls_asn1_get_tag(&p, end, &len, MBEDTLS_ASN1_OCTET_STRING);
+    if (ret != 0) {
+        LOG_E("Failed to parse private key OCTET STRING: -0x%04x", -ret);
+        return kStatus_SSS_Fail;
+    }
+
+    /* Verify length */
+    if (len != expected_raw_len) {
+        LOG_E("Private key length mismatch: got %zu, expected %zu", len, expected_raw_len);
+        return kStatus_SSS_Fail;
+    }
+
+    /* Check buffer size */
+    if (*raw_key_len < len) {
+        LOG_E("Output buffer too small: need %zu, have %zu", len, *raw_key_len);
+        return kStatus_SSS_Fail;
+    }
+
+    /* Copy raw private key scalar */
+    memcpy(raw_key, p, len);
+    *raw_key_len = len;
+
+    LOG_D("Extracted %lu-byte raw ECC private key from DER", len);
+    return kStatus_SSS_Success;
 }
 
 /* Helper function to convert key data to PSA-compatible format */
@@ -774,6 +839,7 @@ sss_mbedtls_import_key_with_algorithm(sss_mbedtls_object_t *keyObject,
 
   if (psa_status != PSA_SUCCESS) {
     LOG_E("PSA import key failed: %d", psa_status);
+    retval = kStatus_SSS_Fail;
     goto cleanup;
   }
 
@@ -1348,6 +1414,7 @@ sss_mbedtls_key_store_generate_key(sss_mbedtls_key_store_t *keyStore,
   psa_status = psa_generate_key(&attributes, &key_id);
   if (psa_status != PSA_SUCCESS) {
     LOG_E("PSA generate key failed: %d", psa_status);
+    retval = kStatus_SSS_Fail;
     goto cleanup;
   }
 

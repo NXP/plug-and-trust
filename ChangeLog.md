@@ -1,5 +1,10 @@
 # Plug-And-Trust Mini Package Change Log
 
+## v04.07.04.13
+
+- Fixes for static analysis findings.
+- Bug fix - `se05x_get_passcode`, `se05x_dev_attest_key_prov` and `se051h_nfc_comm_prov` examples updated for secure session in Zephyr build.
+
 ## v04.07.04.11
 
 - `se05x_get_passcode`, `se05x_dev_attest_key_prov` and `se051h_nfc_comm_prov` examples updated for secure session in Zephyr build.

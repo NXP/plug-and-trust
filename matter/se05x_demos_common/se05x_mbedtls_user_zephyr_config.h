@@ -9,6 +9,9 @@
 #include "fsl_sss_ftr_default.h"
 #endif
 
+#define MBEDTLS_PSA_CRYPTO_DRIVERS
+
+#if !SSS_HAVE_MBEDTLS_3_X
 #if SSS_USE_MBEDTLS_PSA_APIS
 #define PSA_WANT_ALG_CMAC 1
 #define PSA_WANT_ALG_CBC_NO_PADDING 1
@@ -26,5 +29,6 @@
 #endif
 #ifndef MBEDTLS_PK_HAVE_ECC_KEYS
 #define MBEDTLS_PK_HAVE_ECC_KEYS
+#endif
 #endif
 #endif
