@@ -158,3 +158,25 @@ smStatus_t Se05x_API_CreateCryptoObject_WithTargetSecObj(pSe05xSession_t session
     SE05x_CryptoContext_t cryptoContext,
     SE05x_CryptoModeSubType_t subtype,
     uint32_t targetSecureObjectID);
+
+/** Se05x_API_PAKERefreshPrecomp
+*
+* See @ref Se05x_API_PAKERefreshPrecomp.
+* Used to Refresh pre-computed ephemeral values for PAKE Verifier (SPAKE2PLUS_DEVICE_TYPE_B)
+* @param[in]  session_ctx     Session Context
+* @param[in]  cryptoObjectID  Identifier of the PAKE Crypto Object (CC_PAKE).
+* @param[in]  objectID_w0     Identifier of AESKey or HMACKey containing w0.
+*                             Must be non-readable.
+* @param[in]  objectID_L      Identifier of HMACKey containing L.
+* @param[in]  objectID_w0N    Identifier of ECKey containing w0*N. Pass 0 to
+*                             omit (optional).
+* @param[in]  numSlots        Number of precomputation slots to regenerate, or
+*                             to create on first invocation. Pass 0 to omit
+*                             and use the applet default of 5.
+*/
+smStatus_t Se05x_API_PAKERefreshPrecomp(pSe05xSession_t session_ctx,
+    SE05x_CryptoObjectID_t cryptoObjectID,
+    uint32_t objectID_w0,
+    uint32_t objectID_L,
+    uint32_t objectID_w0N,
+    uint8_t numSlots);

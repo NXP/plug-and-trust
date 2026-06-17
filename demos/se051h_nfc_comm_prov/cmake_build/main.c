@@ -261,7 +261,7 @@ sss_status_t ex_sss_entry(ex_sss_boot_ctx_t *pCtx) {
     for (int i = 1; i < argc - 1; i++) {
       if (strcmp(argv[i], "--help") == 0) {
         print_help();
-        return 0;
+        return kStatus_SSS_Success;
       } else if (strcmp(argv[i], "--doreset") == 0) {
         do_reset = 1;
         parameter_error = 0;
@@ -460,7 +460,7 @@ sss_status_t ex_sss_entry(ex_sss_boot_ctx_t *pCtx) {
 
   if (parameter_error) {
     print_help();
-    return 0;
+    return kStatus_SSS_Success;
   }
 
   if (do_reset == 0 && do_ec_key_provision == 0 && do_user_id_provision == 0 &&

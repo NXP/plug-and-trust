@@ -1,5 +1,12 @@
 # Plug-And-Trust Mini Package Change Log
 
+## v04.07.04.15
+
+- APDU added for PAKE refresh - :func:`Se05x_API_PAKERefreshPrecomp`.
+- Corrected pake mode enumeration name from `kSE05x_SPAKE2PLUS_P256_SHA256_HKDF_HMAC` to `kSE05x_SPAKE2PLUS_P256_SHA256_HKDF_HMAC_v02`.
+- Fixes for static analysis findings.
+- Version check removed for matter APDUs in file - `hostlib\hostLib\se05x_03_xx_xx\se05x_matter_APDU_impl.h`
+
 ## v04.07.04.13
 
 - Fixes for static analysis findings.
