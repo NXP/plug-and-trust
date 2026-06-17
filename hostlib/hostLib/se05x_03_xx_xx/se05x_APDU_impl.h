@@ -493,7 +493,7 @@ smStatus_t Se05x_API_WriteUserID(pSe05xSession_t session_ctx,
     const SE05x_AttestationType_t attestation_type)
 {
     smStatus_t retStatus = SM_NOT_OK;
-    tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_WRITE | attestation_type, kSE05x_P1_UserID, kSE05x_P2_DEFAULT}};
+    tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_WRITE | (SE05x_INS_t)attestation_type, kSE05x_P1_UserID, kSE05x_P2_DEFAULT}};
     uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
     size_t cmdbufLen = 0;
     uint8_t *pCmdbuf = &cmdbuf[0];

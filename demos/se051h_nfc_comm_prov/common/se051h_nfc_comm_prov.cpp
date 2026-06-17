@@ -912,7 +912,7 @@ static sss_status_t se051h_provision_spake_object() {
   uint8_t create_crypto_obj = 1;
   SE05x_CryptoModeSubType_t subtype;
   SE05x_CryptoObjectID_t spakeObjectId = kSE05x_CryptoObject_PAKE_NFC_COMM;
-  subtype.pakeMode = kSE05x_SPAKE2PLUS_P256_SHA256_HKDF_HMAC;
+  subtype.pakeMode = kSE05x_SPAKE2PLUS_P256_SHA256_HKDF_HMAC_v02;
 
   smstatus = Se05x_API_ReadCryptoObjectList(
       &((sss_se05x_session_t *)&gex_sss_chip_ctx.session)->s_ctx, list,

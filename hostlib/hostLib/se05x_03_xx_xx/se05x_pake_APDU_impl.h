@@ -158,7 +158,7 @@ smStatus_t Se05x_API_PAKEComputeKeyShare(pSe05xSession_t session_ctx,
 {
     smStatus_t retStatus = SM_NOT_OK;
     tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_CRYPTO, kSE05x_P1_PAKE, kSE05x_P2_UPDATE}};
-    uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
+    uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD] = {0};
     size_t cmdbufLen = 0;
     uint8_t *pCmdbuf = &cmdbuf[0];
     int tlvRet       = 0;
@@ -207,7 +207,7 @@ smStatus_t Se05x_API_PAKEComputeSessionKeys(pSe05xSession_t session_ctx,
 {
     smStatus_t retStatus = SM_NOT_OK;
     tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_CRYPTO, kSE05x_P1_PAKE, kSE05x_P2_GENERATE}};
-    uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
+    uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD] = {0};
     size_t cmdbufLen = 0;
     uint8_t *pCmdbuf = &cmdbuf[0];
     int tlvRet       = 0;
@@ -260,7 +260,7 @@ smStatus_t Se05x_API_PAKEVerifySessionKeys(pSe05xSession_t session_ctx,
 {
     smStatus_t retStatus = SM_NOT_OK;
     tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_CRYPTO, kSE05x_P1_PAKE, kSE05x_P2_VERIFY}};
-    uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
+    uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD] = {0};
     size_t cmdbufLen = 0;
     uint8_t *pCmdbuf = &cmdbuf[0];
     int tlvRet       = 0;
@@ -305,7 +305,7 @@ smStatus_t Se05x_API_PAKEReadDeviceType(
 {
     smStatus_t retStatus = SM_NOT_OK;
     tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_READ, kSE05x_P1_PAKE, kSE05x_P2_DEFAULT}};
-    uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
+    uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD] = {0};
     size_t cmdbufLen = 0;
     uint8_t *pCmdbuf = &cmdbuf[0];
     int tlvRet       = 0;
@@ -348,7 +348,7 @@ smStatus_t Se05x_API_PAKEReadState(
 {
     smStatus_t retStatus = SM_NOT_OK;
     tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_READ, kSE05x_P1_PAKE, kSE05x_P2_READ_STATE}};
-    uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
+    uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD] = {0};
     size_t cmdbufLen = 0;
     uint8_t *pCmdbuf = &cmdbuf[0];
     int tlvRet       = 0;
@@ -573,6 +573,60 @@ smStatus_t Se05x_API_CreateCryptoObject_WithTargetSecObj(pSe05xSession_t session
     if (0 != tlvRet) {
         goto cleanup;
     }
+    retStatus = DoAPDUTx_s_Case3(session_ctx, &hdr, cmdbuf, cmdbufLen);
+
+cleanup:
+    return retStatus;
+}
+
+smStatus_t Se05x_API_PAKERefreshPrecomp(pSe05xSession_t session_ctx,
+    SE05x_CryptoObjectID_t cryptoObjectID,
+    uint32_t objectID_w0,
+    uint32_t objectID_L,
+    uint32_t objectID_w0N,
+    uint8_t numSlots)
+{
+    smStatus_t retStatus = SM_NOT_OK;
+    tlvHeader_t hdr      = {{kSE05x_CLA, kSE05x_INS_MGMT, kSE05x_P1_PAKE, kSE05x_P2_REFRESH}};
+    uint8_t cmdbuf[SE05X_MAX_BUF_SIZE_CMD];
+    size_t cmdbufLen = 0;
+    uint8_t *pCmdbuf = &cmdbuf[0];
+    int tlvRet       = 0;
+
+#if VERBOSE_APDU_LOGS
+    NEWLINE();
+    nLog("APDU", NX_LEVEL_DEBUG, "PAKERefreshPrecomp []");
+#endif /* VERBOSE_APDU_LOGS */
+
+    tlvRet = TLVSET_CryptoObjectID("cryptoObjectID", &pCmdbuf, &cmdbufLen, kSE05x_TAG_2, cryptoObjectID);
+    if (0 != tlvRet) {
+        goto cleanup;
+    }
+
+    tlvRet = TLVSET_U32("objectID w0", &pCmdbuf, &cmdbufLen, kSE05x_TAG_3, objectID_w0);
+    if (0 != tlvRet) {
+        goto cleanup;
+    }
+
+    tlvRet = TLVSET_U32("objectID L", &pCmdbuf, &cmdbufLen, kSE05x_TAG_5, objectID_L);
+    if (0 != tlvRet) {
+        goto cleanup;
+    }
+
+    if (objectID_w0N != 0) {
+        tlvRet = TLVSET_U32("objectID w0*N", &pCmdbuf, &cmdbufLen, kSE05x_TAG_6, objectID_w0N);
+        if (0 != tlvRet) {
+            goto cleanup;
+        }
+    }
+
+    if (numSlots != 0) {
+        tlvRet = TLVSET_U8("numSlots", &pCmdbuf, &cmdbufLen, kSE05x_TAG_8, numSlots);
+        if (0 != tlvRet) {
+            goto cleanup;
+        }
+    }
+
     retStatus = DoAPDUTx_s_Case3(session_ctx, &hdr, cmdbuf, cmdbufLen);
 
 cleanup:

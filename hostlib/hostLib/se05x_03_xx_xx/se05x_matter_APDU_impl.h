@@ -22,9 +22,6 @@
 #define NEWLINE must be already defined
 #endif
 
-// Check if applet version minor is greater than or equals to 20 (0x14 hex) - for version x.20.x.00
-#define SE05X_CHECK_MINOR_GTE_20_VERSION(app_ver) (((app_ver >> 16) & 0xFF) >= 0x14)
-
 smStatus_t Se05x_API_WriteBinary_V2(pSe05xSession_t session_ctx,
     pSe05xPolicy_t policy,
     uint32_t objectID,
@@ -41,12 +38,6 @@ smStatus_t Se05x_API_WriteBinary_V2(pSe05xSession_t session_ctx,
     size_t cmdbufLen = 0;
     uint8_t *pCmdbuf = &cmdbuf[0];
     int tlvRet       = 0;
-
-    // Check if applet version minor is greater than or equals to 20 (x.20.x)
-    if (!SE05X_CHECK_MINOR_GTE_20_VERSION(session_ctx->applet_version)) {
-        retStatus = SM_ERR_CONDITIONS_NOT_SATISFIED;
-        goto cleanup;
-    }
 
 #if VERBOSE_APDU_LOGS
     NEWLINE();
@@ -99,12 +90,6 @@ smStatus_t Se05x_API_ReadObject_V2(
     uint8_t *pRspbuf                       = &rspbuf[0];
     size_t rspbufLen                       = ARRAY_SIZE(rspbuf);
     size_t rspIndex                        = 0;
-
-    // Check if applet version minor is greater than or equals to 20 (x.20.x)
-    if (!SE05X_CHECK_MINOR_GTE_20_VERSION(session_ctx->applet_version)) {
-        retStatus = SM_ERR_CONDITIONS_NOT_SATISFIED;
-        goto cleanup;
-    }
 
 #if VERBOSE_APDU_LOGS
     NEWLINE();
@@ -160,12 +145,6 @@ smStatus_t Se05x_API_ReadObjectAttributes_V2(
     size_t rspbufLen                       = ARRAY_SIZE(rspbuf);
     size_t rspIndex                        = 0;
 
-    // Check if applet version minor is greater than or equals to 20 (x.20.x)
-    if (!SE05X_CHECK_MINOR_GTE_20_VERSION(session_ctx->applet_version)) {
-        retStatus = SM_ERR_CONDITIONS_NOT_SATISFIED;
-        goto cleanup;
-    }
-
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "ReadObjectAttributes_V2 []");
@@ -212,12 +191,6 @@ smStatus_t Se05x_API_ReadType_V2(
     uint8_t *pRspbuf                       = &rspbuf[0];
     size_t rspbufLen                       = ARRAY_SIZE(rspbuf);
     size_t rspIndex                        = 0;
-
-        // Check if applet version minor is greater than or equals to 20 (x.20.x)
-    if (!SE05X_CHECK_MINOR_GTE_20_VERSION(session_ctx->applet_version)) {
-        retStatus = SM_ERR_CONDITIONS_NOT_SATISFIED;
-        goto cleanup;
-    }
 
 #if VERBOSE_APDU_LOGS
     NEWLINE();
@@ -266,12 +239,6 @@ smStatus_t Se05x_API_ReadSize_V2(pSe05xSession_t session_ctx, uint32_t objectID,
     size_t rspbufLen                       = ARRAY_SIZE(rspbuf);
     size_t rspIndex                        = 0;
 
-    // Check if applet version minor is greater than or equals to 20 (x.20.x)
-    if (!SE05X_CHECK_MINOR_GTE_20_VERSION(session_ctx->applet_version)) {
-        retStatus = SM_ERR_CONDITIONS_NOT_SATISFIED;
-        goto cleanup;
-    }
-
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "ReadSize_V2 []");
@@ -314,12 +281,6 @@ smStatus_t Se05x_API_CheckObjectExists_V2(
     size_t rspbufLen                       = ARRAY_SIZE(rspbuf);
     size_t rspIndex                        = 0;
 
-    // Check if applet version minor is greater than or equals to 20 (x.20.x)
-    if (!SE05X_CHECK_MINOR_GTE_20_VERSION(session_ctx->applet_version)) {
-        retStatus = SM_ERR_CONDITIONS_NOT_SATISFIED;
-        goto cleanup;
-    }
-
 #if VERBOSE_APDU_LOGS
     NEWLINE();
     nLog("APDU", NX_LEVEL_DEBUG, "CheckObjectExists_V2 []");
@@ -356,12 +317,6 @@ smStatus_t Se05x_API_DeleteSecureObject_V2(pSe05xSession_t session_ctx, uint32_t
     size_t cmdbufLen = 0;
     uint8_t *pCmdbuf = &cmdbuf[0];
     int tlvRet       = 0;
-
-    // Check if applet version minor is greater than or equals to 20 (x.20.x)
-    if (!SE05X_CHECK_MINOR_GTE_20_VERSION(session_ctx->applet_version)) {
-        retStatus = SM_ERR_CONDITIONS_NOT_SATISFIED;
-        goto cleanup;
-    }
 
 #if VERBOSE_APDU_LOGS
     NEWLINE();
