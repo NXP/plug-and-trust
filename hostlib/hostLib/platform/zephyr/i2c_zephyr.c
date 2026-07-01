@@ -89,9 +89,12 @@ unsigned int axI2CWrite(void * conn_ctx, unsigned char bus_unused_param, unsigne
 unsigned int axI2CRead(void * conn_ctx, unsigned char bus, unsigned char addr, unsigned char * pRx, unsigned short rxLen)
 {
     unsigned int rv;
+
     if (i2c_read(i2c_dev, pRx, rxLen, SE05X_I2C_DEV_ADDR))
     {
-        // SMLOG_E("i2c read failed\n");
+        // SMLOG_E("i2c read failed");
+        // SMLOG_E("Attempting I2C bus recovery");
+        i2c_recover_bus(i2c_dev);
         BackOffDelay_Wait();
         rv = I2C_FAILED;
     } else {

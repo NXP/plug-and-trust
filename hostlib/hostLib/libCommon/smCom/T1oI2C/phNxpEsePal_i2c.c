@@ -189,7 +189,9 @@ int phPalEse_i2c_write(void *pDevHandle, uint8_t *pBuffer, int nNbBytesToWrite)
         }
         else {
             numWrote = nNbBytesToWrite;
-            //sm_sleep(ESE_POLL_DELAY_MS);
+#ifdef __ZEPHYR__
+            sm_sleep(2*ESE_POLL_DELAY_MS);
+#endif
             break;
         }
     } while (ret != I2C_OK);

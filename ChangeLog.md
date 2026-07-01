@@ -1,5 +1,9 @@
 # Plug-And-Trust Mini Package Change Log
 
+## v04.07.04.17
+
+- Additional 2ms delay added for Zephyr I2C read.
+
 ## v04.07.04.15
 
 - APDU added for PAKE refresh - :func:`Se05x_API_PAKERefreshPrecomp`.
