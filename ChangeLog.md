@@ -2,7 +2,7 @@
 
 ## v04.07.04.17
 
-- Additional 2ms delay added for Zephyr I2C read.
+- Additional 2ms delay added for Zephyr I2C write.
 
 ## v04.07.04.15
 
