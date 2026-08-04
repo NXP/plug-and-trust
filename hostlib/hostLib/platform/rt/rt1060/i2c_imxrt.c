@@ -187,6 +187,11 @@ void axI2CTerm(
     void* conn_ctx,
     int mode)
 {
+#if defined(SDK_OS_FREE_RTOS) && (SDK_OS_FREE_RTOS == 1)
+    LPI2C_RTOS_Deinit(&gmaster_rtos_handle);
+#else
+    LPI2C_MasterDeinit(AX_I2CM);
+#endif
 }
 
 #if defined(SDK_OS_FREE_RTOS) && (SDK_OS_FREE_RTOS == 1)
