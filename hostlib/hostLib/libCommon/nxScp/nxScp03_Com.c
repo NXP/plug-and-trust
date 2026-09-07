@@ -186,6 +186,11 @@ uint16_t nxpSCP03_Decrypt_ResponseAPDU(
             return status;
         }
     }
+    else {
+        /* Response too short to carry an R-MAC -- reject fail-closed. */
+        LOG_E("Response too short for R-MAC (%zu bytes), rejecting", *pRspBufLen);
+        return SCP_FAIL;
+    }
 
     LOG_D("RMAC verified successfully...Decrypt Response Data");
     // Decrypt Response Data Field in case Reponse Mac verified OK
@@ -237,10 +242,11 @@ uint16_t nxpSCP03_Decrypt_ResponseAPDU(
         status = SCP_OK;
     }
 
-    if (((pdySCP03SessCtx->authType == kSSS_AuthType_AESKey) || (pdySCP03SessCtx->authType == kSSS_AuthType_ECKey)) ||
-        ((pdySCP03SessCtx->authType == kSSS_AuthType_SCP03) && cmdBufLen > 0)) {
-        status = SCP_OK;
-        nxpSCP03_Inc_CommandCounter(pdySCP03SessCtx);
+    if (status == SCP_OK) {
+        if (((pdySCP03SessCtx->authType == kSSS_AuthType_AESKey) || (pdySCP03SessCtx->authType == kSSS_AuthType_ECKey)) ||
+            ((pdySCP03SessCtx->authType == kSSS_AuthType_SCP03) && cmdBufLen > 0)) {
+            nxpSCP03_Inc_CommandCounter(pdySCP03SessCtx);
+        }
     }
 
 exit:

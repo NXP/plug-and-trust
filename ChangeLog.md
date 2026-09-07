@@ -1,5 +1,10 @@
 # Plug-And-Trust Mini Package Change Log
 
+## v04.07.04.19
+
+- Bug fix - Fix for SCP03 response MAC verification skipped for short responses
+- Bug fix - S-frame decoder TLV lengths checks added
+
 ## v04.07.04.17
 
 - Additional 2ms delay added for Zephyr I2C write.

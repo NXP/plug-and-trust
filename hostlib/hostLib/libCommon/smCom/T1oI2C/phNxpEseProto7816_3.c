@@ -665,28 +665,45 @@ static bool_t phNxpEseProto7816_RecoverySteps(void)
  * Returns          void
  *
  ******************************************************************************/
-static void phNxpEseProto7816_DecodeSFrameData(uint8_t *p_data)
+static void phNxpEseProto7816_DecodeSFrameData(uint8_t *p_data, uint16_t data_len)
 {
-    uint8_t maxSframeLen = 0, frameOffset = 0;
+    /* Use uint16_t to prevent uint8_t wrap-around that could cause an
+     * infinite loop when an attacker supplies crafted TLV lengths. */
+    uint16_t maxSframeLen = 0, frameOffset = 0;
 
     ENSURE_OR_GO_EXIT(p_data != NULL);
+    ENSURE_OR_GO_EXIT(data_len > 0u);
 #if defined(T1oI2C_UM11225)
     frameOffset = PH_PROPTO_7816_LEN_UPPER_OFFSET;
 #elif defined(T1oI2C_GP1_0)
     /* current GP implementation support max payload of 0x00FE, so considering lower offset */
     frameOffset = PH_PROPTO_7816_LEN_LOWER_OFFSET;
 #endif
-    maxSframeLen = p_data[frameOffset] + frameOffset; /* to be in sync with offset which starts from index 0 */
-    while(maxSframeLen > frameOffset)
+    /* Bounds-check the length field before reading it. */
+    ENSURE_OR_GO_EXIT(frameOffset < data_len);
+    maxSframeLen = (uint16_t)p_data[frameOffset] + frameOffset; /* sync with offset from index 0 */
+    /* Clamp to actual buffer size to prevent OOB reads. */
+    if (maxSframeLen >= data_len) {
+        LOG_E("%s S-frame declared length %u exceeds buffer %u",
+              __FUNCTION__, (unsigned)maxSframeLen, (unsigned)data_len);
+        goto exit;
+    }
+    while (maxSframeLen > frameOffset)
     {
-        frameOffset += 1; /* To get the Type (TLV) */
-        LOG_D("%s frameoffset=%d value=0x%x ", __FUNCTION__, frameOffset, p_data[frameOffset]);
-        if ((UINT8_MAX - frameOffset) < p_data[frameOffset + 1]) {
-            LOG_E("frameOffset will wrap");
-            return;
+        frameOffset += 1u; /* advance past Type byte */
+        /* Need at least Type + Length bytes within bounds. */
+        if ((frameOffset + 1u) >= data_len) {
+            LOG_E("%s S-frame TLV overruns buffer at offset %u",
+                  __FUNCTION__, (unsigned)frameOffset);
+            goto exit;
         }
-        frameOffset += p_data[frameOffset + 1]; /* Goto the end of current marker */
-
+        LOG_D("%s frameoffset=%u value=0x%x", __FUNCTION__, (unsigned)frameOffset, p_data[frameOffset]);
+        frameOffset += (uint16_t)p_data[frameOffset + 1u]; /* skip to end of current TLV */
+        /* Defensive: if TLV length jumped past buffer end, terminate cleanly
+         * rather than relying on the while-condition to catch it next iteration. */
+        if (frameOffset >= data_len) {
+            goto exit;
+        }
     }
 exit:
     return;
@@ -727,11 +744,12 @@ static bool_t phNxpEseProto7816_DecodeFrame(uint8_t *p_data, uint32_t data_len)
 
     ENSURE_OR_GO_EXIT(p_data != NULL);
 
-    pcb = p_data[PH_PROPTO_7816_PCB_OFFSET];
     if(data_len < PH_PROTO_7816_INF_FILED)
     {
         return FALSE;
     }
+
+    pcb = p_data[PH_PROPTO_7816_PCB_OFFSET];
 
     if (!(pcb & 0x80)) /* I-FRAME decoded should come here */
     {
@@ -960,7 +978,7 @@ static bool_t phNxpEseProto7816_DecodeFrame(uint8_t *p_data, uint32_t data_len)
 #if defined(T1oI2C_UM11225)
             case INTF_RESET_RSP:
                 if(p_data[PH_PROPTO_7816_FRAME_LENGTH_OFFSET] > 0) {
-                    phNxpEseProto7816_DecodeSFrameData(p_data);
+                    phNxpEseProto7816_DecodeSFrameData(p_data, (uint16_t)data_len);
                 }
                 if (FALSE == phNxpEseProro7816_SaveRxframeData(&p_data[PH_PROPTO_7816_INF_BYTE_OFFSET], data_len - PH_PROTO_7816_INF_FILED))
                 {
@@ -984,7 +1002,7 @@ static bool_t phNxpEseProto7816_DecodeFrame(uint8_t *p_data, uint32_t data_len)
             case PROP_END_APDU_RSP:
                 pRx_lastRcvdSframeInfo->sFrameType = PROP_END_APDU_RSP;
                 if(p_data[PH_PROPTO_7816_FRAME_LENGTH_OFFSET] > 0) {
-                    phNxpEseProto7816_DecodeSFrameData(p_data);
+                    phNxpEseProto7816_DecodeSFrameData(p_data, (uint16_t)data_len);
                 }
                 phNxpEseProto7816_3_Var.phNxpEseNextTx_Cntx.FrameType= UNKNOWN;
                 phNxpEseProto7816_3_Var.phNxpEseProto7816_nextTransceiveState = IDLE_STATE;
@@ -992,7 +1010,7 @@ static bool_t phNxpEseProto7816_DecodeFrame(uint8_t *p_data, uint32_t data_len)
             case ATR_RES:
                 pRx_lastRcvdSframeInfo->sFrameType = ATR_RES;
                 if(p_data[PH_PROPTO_7816_FRAME_LENGTH_OFFSET] > 0) {
-                    phNxpEseProto7816_DecodeSFrameData(p_data);
+                    phNxpEseProto7816_DecodeSFrameData(p_data, (uint16_t)data_len);
                 }
                 if (FALSE == phNxpEseProro7816_SaveRxframeData(&p_data[PH_PROPTO_7816_INF_BYTE_OFFSET], data_len - PH_PROTO_7816_INF_FILED))
                 {
@@ -1006,7 +1024,7 @@ static bool_t phNxpEseProto7816_DecodeFrame(uint8_t *p_data, uint32_t data_len)
             case CHIP_RESET_RES:
                 pRx_lastRcvdSframeInfo->sFrameType = CHIP_RESET_RES;
                 if(p_data[PH_PROPTO_7816_FRAME_LENGTH_OFFSET] > 0) {
-                    phNxpEseProto7816_DecodeSFrameData(p_data);
+                    phNxpEseProto7816_DecodeSFrameData(p_data, (uint16_t)data_len);
                 }
                 phNxpEseProto7816_3_Var.phNxpEseNextTx_Cntx.FrameType= UNKNOWN;
                 phNxpEseProto7816_3_Var.phNxpEseProto7816_nextTransceiveState = IDLE_STATE;
@@ -1015,7 +1033,7 @@ static bool_t phNxpEseProto7816_DecodeFrame(uint8_t *p_data, uint32_t data_len)
 #if defined(T1oI2C_GP1_0)
             case SWR_RSP:
                 if(p_data[PH_PROPTO_7816_FRAME_LENGTH_OFFSET] > 0) {
-                    phNxpEseProto7816_DecodeSFrameData(p_data);
+                    phNxpEseProto7816_DecodeSFrameData(p_data, (uint16_t)data_len);
                 }
                 if(phNxpEseProto7816_3_Var.recoveryCounter > PH_PROTO_7816_FRAME_RETRY_COUNT){
                     /*Max recovery counter reached, send failure to APDU layer  */
@@ -1033,7 +1051,7 @@ static bool_t phNxpEseProto7816_DecodeFrame(uint8_t *p_data, uint32_t data_len)
             case RELEASE_RES:
                 pRx_lastRcvdSframeInfo->sFrameType = RELEASE_RES;
                 if(p_data[PH_PROPTO_7816_FRAME_LENGTH_OFFSET] > 0) {
-                    phNxpEseProto7816_DecodeSFrameData(p_data);
+                    phNxpEseProto7816_DecodeSFrameData(p_data, (uint16_t)data_len);
                 }
                 phNxpEseProto7816_3_Var.phNxpEseNextTx_Cntx.FrameType= UNKNOWN;
                 phNxpEseProto7816_3_Var.phNxpEseProto7816_nextTransceiveState = IDLE_STATE;
@@ -1041,7 +1059,7 @@ static bool_t phNxpEseProto7816_DecodeFrame(uint8_t *p_data, uint32_t data_len)
             case CIP_RES:
                 pRx_lastRcvdSframeInfo->sFrameType = CIP_RES;
                 if(p_data[PH_PROPTO_7816_FRAME_LENGTH_OFFSET] > 0) {
-                    phNxpEseProto7816_DecodeSFrameData(p_data);
+                    phNxpEseProto7816_DecodeSFrameData(p_data, (uint16_t)data_len);
                 }
                 if (FALSE == phNxpEseProro7816_SaveRxframeData(&p_data[PH_PROPTO_7816_INF_BYTE_OFFSET], data_len - PH_PROTO_7816_INF_FILED))
                 {
@@ -1055,7 +1073,7 @@ static bool_t phNxpEseProto7816_DecodeFrame(uint8_t *p_data, uint32_t data_len)
             case COLD_RESET_RES:
                 pRx_lastRcvdSframeInfo->sFrameType = COLD_RESET_RES;
                 if(p_data[PH_PROPTO_7816_FRAME_LENGTH_OFFSET] > 0) {
-                    phNxpEseProto7816_DecodeSFrameData(p_data);
+                    phNxpEseProto7816_DecodeSFrameData(p_data, (uint16_t)data_len);
                 }
                 phNxpEseProto7816_3_Var.phNxpEseNextTx_Cntx.FrameType= UNKNOWN;
                 phNxpEseProto7816_3_Var.phNxpEseProto7816_nextTransceiveState = IDLE_STATE;
@@ -1064,7 +1082,7 @@ static bool_t phNxpEseProto7816_DecodeFrame(uint8_t *p_data, uint32_t data_len)
             case DEEP_PWR_DOWN_RES:
                 pRx_lastRcvdSframeInfo->sFrameType = DEEP_PWR_DOWN_RES;
                 if(p_data[PH_PROPTO_7816_FRAME_LENGTH_OFFSET] > 0) {
-                    phNxpEseProto7816_DecodeSFrameData(p_data);
+                    phNxpEseProto7816_DecodeSFrameData(p_data, (uint16_t)data_len);
                 }
                 phNxpEseProto7816_3_Var.phNxpEseNextTx_Cntx.FrameType= UNKNOWN;
                 phNxpEseProto7816_3_Var.phNxpEseProto7816_nextTransceiveState = IDLE_STATE;
