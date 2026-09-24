@@ -11,11 +11,11 @@
 
 /* clang-format off */
 #define SSS_APIS_PROD_NAME          "SSS_APIs"
-#define SSS_APIS_VER_STRING_NUM     "v04.08.00_20260216"
-#define SSS_APIS_PROD_NAME_VER_FULL "SSS_APIs_v04.08.00_20260216"
+#define SSS_APIS_VER_STRING_NUM     "v04.08.02_20260216"
+#define SSS_APIS_PROD_NAME_VER_FULL "SSS_APIs_v04.08.02_20260216"
 #define SSS_APIS_VER_MAJOR          (4u)
 #define SSS_APIS_VER_MINOR          (8u)
-#define SSS_APIS_VER_DEV            (0u)
+#define SSS_APIS_VER_DEV            (2u)
 
 /* v04.08 = 40008u */
 #define SSS_APIS_VER_MAJOR_MINOR ( 0 \
@@ -50,7 +50,7 @@
  *
  * v_minor  = "08"
  *
- * v_dev    = "00"
+ * v_dev    = "02"
  *
  * v_meta   = ""
  *

@@ -1,5 +1,10 @@
 # Plug-And-Trust Mini Package Change Log
 
+## Release v04.08.02
+
+- Bug fix - Fix for SCP03 response MAC verification skipped for short responses
+- Bug fix - S-frame decoder TLV lengths checks added
+
 ## Release v04.08.00
 
 - T=1oI2C Layer: Back off delay logic moved to T=1oI2C layer `hostLib/libCommon/smCom/T1oI2C/phNxpEsePal_i2c.c`. Removed platform-specific back off delay implementations from all platform folders.
