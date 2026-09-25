@@ -48,7 +48,7 @@ uint32_t se05x_sssKeyTypeLenToCurveId(sss_cipher_type_t cipherType, size_t keyBi
         case 384:
             eCurveID = kSE05x_ECCurve_NIST_P384;
             break;
-#if SSS_HAVE_EC_NIST_192
+#if SSS_HAVE_EC_NIST_521
         case 521:
             eCurveID = kSE05x_ECCurve_NIST_P521;
             break;
@@ -612,3 +612,4 @@ uint32_t se05x_GetAppletVersion(void)
 // LCOV_EXCL_STOP
 
 #endif /* SSS_HAVE_APPLET_SE05X_IOT */
+
