@@ -574,22 +574,6 @@ sss_status_t sss_se05x_rng_context_free(sss_se05x_rng_context_t *context);
 
 /*! @} */ /* end of : sss_se05x_rng */
 
-/**
-* @addtogroup sss_se05x_tunnel
-* @{
-*/
-/** @copydoc sss_tunnel_context_init
- *
- */
-sss_status_t sss_se05x_tunnel_context_init(sss_se05x_tunnel_context_t *context, sss_se05x_session_t *session);
-
-/** @copydoc sss_tunnel_context_free
-*
-*/
-void sss_se05x_tunnel_context_free(sss_se05x_tunnel_context_t *context);
-
-/*! @} */ /* end of : sss_se05x_tunnel */
-
 /** Refreshes the SE05x session
 *
 */
@@ -811,3 +795,4 @@ sss_status_t sss_se05x_key_store_create_curve(Se05xSession_t *pSession, uint32_t
 #endif /* __cplusplus */
 
 #endif /* FSL_SSS_SE05X_APIS_H */
+
