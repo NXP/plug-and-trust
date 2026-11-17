@@ -28,7 +28,7 @@
 /* doc:end:android-scp03-path */
 #elif defined(__linux__)
 /* doc:start:linux-scp03-path */
-#define EX_SSS_SCP03_FILE_DIR "/tmp/SE05X/"
+#define EX_SSS_SCP03_FILE_DIR "/etc/SE05x/"
 #define EX_SSS_SCP03_FILE_PATH EX_SSS_SCP03_FILE_DIR "plain_scp.txt"
 /* doc:end:linux-scp03-path */
 #elif defined(_MSC_VER)
